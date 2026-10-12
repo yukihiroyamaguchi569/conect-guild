@@ -11,6 +11,8 @@ const SERVED_HEADER = 'x-e2e-snapshot';
 export interface SnapshotServer {
   /** What /snapshot.json returns from the next request on (the collector's next write). */
   serve(snapshot: Snapshot): void;
+  /** Answers an empty response of `status` from the next request on (404: not collected yet). */
+  failWith(status: number): void;
 }
 
 interface GuildFixtures {
@@ -47,13 +49,13 @@ export const test = base.extend<GuildFixtures>({
    */
   snapshotServer: [
     async ({ context, page }, use) => {
-      let current = await sampleSnapshot();
-      await context.route('**/snapshot.json', (route) =>
-        route.fulfill({
-          json: current,
-          headers: { 'Cache-Control': 'no-store', [SERVED_HEADER]: '1' },
-        }),
-      );
+      let current: Snapshot | number = await sampleSnapshot();
+      await context.route('**/snapshot.json', (route) => {
+        const headers = { 'Cache-Control': 'no-store', [SERVED_HEADER]: '1' };
+        return typeof current === 'number'
+          ? route.fulfill({ status: current, body: '', headers })
+          : route.fulfill({ json: current, headers });
+      });
       const responses: boolean[] = [];
       page.on('response', (response) => {
         if (new URL(response.url()).pathname === '/snapshot.json')
@@ -62,6 +64,9 @@ export const test = base.extend<GuildFixtures>({
       await use({
         serve: (snapshot) => {
           current = snapshot;
+        },
+        failWith: (status) => {
+          current = status;
         },
       });
       expect(responses.length).toBeGreaterThan(0);
