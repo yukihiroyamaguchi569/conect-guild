@@ -10,12 +10,20 @@ import {
   type GuildStoreOptions,
 } from './guildStore';
 
-function memoryStorage(): StorageLike & { readonly items: Map<string, string> } {
+interface MemoryStorage extends StorageLike {
+  readonly items: Map<string, string>;
+  /** While true, every write throws (a full or blocked localStorage). */
+  failWrites: boolean;
+}
+
+function memoryStorage(): MemoryStorage {
   const items = new Map<string, string>();
   return {
     items,
+    failWrites: false,
     getItem: (key) => items.get(key) ?? null,
-    setItem: (key, value) => {
+    setItem(key, value) {
+      if (this.failWrites) throw new DOMException('full', 'QuotaExceededError');
       items.set(key, value);
     },
     removeItem: (key) => {
@@ -139,6 +147,27 @@ describe('createGuildStore: an error ends the automatic demo', () => {
     expect(storage.items.get(BASELINE_STORAGE_KEY)).toBe(before);
     await nextTick();
     expect(store.state.snapshot).toEqual(withClear);
+    expect(store.state.messages).toEqual([]);
+    expect(storage.items.get(BASELINE_STORAGE_KEY)).not.toBe(before);
+    store.stop();
+  });
+});
+
+describe('createGuildStore: localStorage failing after the automatic demo', () => {
+  it('stays fresh until the new baseline is stored, so no burst once it works again', async () => {
+    const storage = await storedBaseline();
+    const before = storage.items.get(BASELINE_STORAGE_KEY);
+    storage.failWrites = true;
+    const { store } = storeOn(storage, [ok(withClear), ok(withTwoClears)], {
+      freshBaseline: true,
+    });
+    store.start();
+    await settle();
+    expect(store.state.effectsAvailable).toBe(false);
+    expect(storage.items.get(BASELINE_STORAGE_KEY)).toBe(before);
+    storage.failWrites = false;
+    await nextTick();
+    expect(store.state.effectsAvailable).toBe(true);
     expect(store.state.messages).toEqual([]);
     expect(storage.items.get(BASELINE_STORAGE_KEY)).not.toBe(before);
     store.stop();

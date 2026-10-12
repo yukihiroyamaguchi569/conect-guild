@@ -204,7 +204,8 @@ function applyResult(
   state.haltReason = null;
   noteSessions(state, result, now);
   const outcome = syncBaseline(storage, result.snapshot, fresh.pending);
-  fresh.pending = false;
+  // Fresh until the new baseline is really stored (localStorage may fail for a while).
+  if (outcome.effectsAvailable) fresh.pending = false;
   state.effectsAvailable = outcome.effectsAvailable;
   return outcome.entries;
 }
