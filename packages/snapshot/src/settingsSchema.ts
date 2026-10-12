@@ -113,11 +113,26 @@ export const guildSettingsSchema = z
     });
   });
 
-/** A control character or line break as a `\\uXXXX` escape, so a message stays on its line. */
-function escapeControlCharacters(text: string): string {
+/**
+ * Code point ranges a terminal could act on: the C0 controls (line breaks included), DEL and the
+ * C1 controls, the line and paragraph separators, and the bidi overrides and isolates.
+ */
+const TERMINAL_CONTROL_RANGES: readonly (readonly [number, number])[] = [
+  [0x00, 0x1f],
+  [0x7f, 0x9f],
+  [0x2028, 0x202e],
+  [0x2066, 0x2069],
+];
+
+/**
+ * Every character a terminal could act on as a `\\uXXXX` escape, so text from a file or an input
+ * (a label, a key) is shown as characters on its own line and cannot move the cursor, add a line
+ * or reorder one. Shared with the settings writer (packages/collector/src/settingsText.ts).
+ */
+export function escapeForTerminal(text: string): string {
   return Array.from(text, (char) => {
     const code = char.charCodeAt(0);
-    const control = code < 0x20 || (code >= 0x7f && code <= 0x9f);
+    const control = TERMINAL_CONTROL_RANGES.some(([low, high]) => code >= low && code <= high);
     return control ? `\\u${code.toString(16).padStart(4, '0')}` : char;
   }).join('');
 }
@@ -139,9 +154,9 @@ function pathText(path: readonly PropertyKey[]): string {
 export function describeIssues(error: z.ZodError): string {
   return error.issues
     .map((issue) => {
-      const message = `✖ ${escapeControlCharacters(issue.message)}`;
+      const message = `✖ ${escapeForTerminal(issue.message)}`;
       if (issue.path.length === 0) return message;
-      return `${message}\n  → at ${escapeControlCharacters(pathText(issue.path))}`;
+      return `${message}\n  → at ${escapeForTerminal(pathText(issue.path))}`;
     })
     .join('\n');
 }

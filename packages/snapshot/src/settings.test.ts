@@ -82,8 +82,8 @@ describe('describeIssues', () => {
   });
 
   it('escapes a line break or control character from the file, keeping one line per part', () => {
-    const text = issuesOf({ ...settings(), 'x\n✖ ok\u001b': 1 });
-    expect(text).toContain('x\\u000a✖ ok\\u001b');
+    const text = issuesOf({ ...settings(), 'x\n✖ ok\u001b\u009b\u202e\u2066': 1 });
+    expect(text).toContain('x\\u000a✖ ok\\u001b\\u009b\\u202e\\u2066');
     expect(text.split('\n')).toHaveLength(1);
   });
 });
