@@ -146,7 +146,7 @@ describe('loadSettingsFile with an old guild.settings.local.ts', () => {
     ];
     for (const files of cases) {
       expect(() => loadSettingsFile(ROOT, filesOf(files))).toThrow(
-        /guild\.settings\.local\.ts は読まなくなりました。値を guild\.settings\.local\.json に移し/,
+        /guild\.settings\.local\.ts は読まなくなりました。値を guild\.settings\.local\.json に移し.*（docs\/setup\.md の 2-2）/,
       );
     }
   });
