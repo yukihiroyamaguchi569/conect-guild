@@ -4,7 +4,7 @@
 import type { CollectorFailureKind } from '@conect-guild/snapshot';
 import { computed } from 'vue';
 import { autoDemoBannerText } from '../domain/collectorStatus';
-import { SETUP_GUIDE_URL } from '../project';
+import { COLLECT_GUIDE_URL } from '../project';
 
 const props = defineProps<{ collectorFailure: CollectorFailureKind | null }>();
 const text = computed(() => autoDemoBannerText(props.collectorFailure));
@@ -18,10 +18,10 @@ const text = computed(() => autoDemoBannerText(props.collectorFailure));
     <!-- Opened on a click only; nothing is loaded from GitHub (docs/DESIGN.md 4.3). -->
     <a
       class="auto-demo-banner__link"
-      :href="SETUP_GUIDE_URL"
+      :href="COLLECT_GUIDE_URL"
       target="_blank"
       rel="noopener noreferrer"
-      >集め方（docs/setup.md）</a
+      >集め方（docs/setup.md の 2 章）</a
     >
   </p>
 </template>
