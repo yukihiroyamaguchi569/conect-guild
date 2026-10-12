@@ -52,9 +52,11 @@ GitHub 上の部門ラベル（`経理` など）とは対応表で結び、Issu
 ```
 conect-guild/
 ├── guild.settings.ts         チームごとの値をここだけに置く（10 章 9）。対象リポジトリ、メンバーの名前・役・色、部門（ラベル・担当・固定の順・セッションの起動ディレクトリ）、司令塔のセッションの起動ディレクトリ、ブランチ接頭辞 → 部門、ルール変更のパスの規則
+├── guild.settings.local.ts   手元だけの設定（gitignore。Issue #76）。あれば collector と開発サーバーが guild.settings.ts の代わりに読む。テスト・型検査・build・E2E は読まない（10 章 9）
 ├── apps/web/                 Vue 3 + Vite + TS（画面）
 │   ├── vite.config.ts        server.host を 127.0.0.1 に固定。snapshot 配信プラグインを登録
 │   ├── vite-plugin-snapshot.ts  開発時だけの自作プラグイン。/snapshot.json を .data/ から返す
+│   ├── vite-plugin-settings.ts  開発サーバー（既定のモード）だけ、guild.settings.ts の import を guild.settings.local.ts に向ける（あるとき）
 │   ├── .data/                実データの置き場（gitignore。Vite の配信対象外）
 │   │   └── snapshot.json     collector が書く（0600）
 │   ├── public/
@@ -98,9 +100,10 @@ conect-guild/
 │   └── src/
 │       ├── index.ts          snapshot.json の schema（4.2）
 │       └── settings.ts       guild.settings.ts の schema。読み込んだ時点で検証し、合わなければ項目を挙げて止める。ブランチ接頭辞 → 部門の判定もここに置き、collector と画面で共有する
+│       └── settingsFile.ts   どちらの設定ファイルを読むかの判定（guild.settings.local.ts があればそれ、無ければ guild.settings.ts）。collector と vite-plugin-settings.ts が使う
 ├── packages/collector/       収集スクリプト（TS。Node の型除去で直接実行）
 │   ├── collector.config.ts   guild.settings.ts から対象リポジトリと会社のセッションの起動ディレクトリ（`~` をホームに展開）を受け取り、間隔、MulmoTerminal のファイルのパス、出力先を足す
-│   └── src/main.ts           `gh api` で Issue・PR を取り、MulmoTerminal のファイルからセッションの状態を読み、検証して .data/snapshot.json を原子的に書く
+│   └── src/main.ts           読む設定ファイルを決めて 1 行出し、src/start.ts を読み込む。start.ts が `gh api` で Issue・PR を取り、MulmoTerminal のファイルからセッションの状態を読み、検証して .data/snapshot.json を原子的に書く
 ├── assets/                   コンセプト画、スプライト、タイル（出所とライセンスを README に書く）
 ├── docs/DESIGN.md            この文書
 ├── LICENSE                   MIT
@@ -130,7 +133,8 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 
 ### 4.1 収集（packages/collector）
 
-- **対象リポジトリ**: `guild.settings.ts` の `repo` に固定する（既定 `yukihiroyamaguchi569/conect-management`）。コマンドライン引数や環境変数では変えられず、設定ファイルを書き換えて変える
+- **対象リポジトリ**: 設定ファイルの `repo` に固定する（既定 `yukihiroyamaguchi569/conect-management`）。設定ファイルは、リポジトリ直下に手元だけの `guild.settings.local.ts` があればそれ、無ければ `guild.settings.ts`（10 章 9。Issue #76）。コマンドライン引数や環境変数では変えられず、どちらを読むかもファイルの有無だけで決まる。設定ファイルを書き換えて変える
+- **起動時のログ**: 読んだ設定ファイルの名前だけを 1 行出す（`[collector] settings: guild.settings.local.ts`）。中身は出さない
 - **`gh` の呼び方**: `child_process.execFile('gh', [引数の配列])`。シェル文字列は組まない。認証はユーザーの `gh` のものをそのまま使う
 - **ページ送り**: `gh api --paginate --jq '<射影> | @json'` で、要るフィールドだけに絞った要素を 1 行 1 JSON で受け、行ごとに zod で検証する（`--slurp` は `--jq` と併用できない）。差分の中身や Issue の本文は gh の段階で落とす。ページが配列でなければ jq でエラーにし、空の一覧と取り違えない。`execFile` の `maxBuffer` は 64 MB にし、超えたら失敗として扱う。テストは複数ページの出力で行う
 - **Issue**: open と closed を 1 つの一覧（`state=all`、作成日の新しい順）で全ページ取る。closed を `since` で絞らない（累積の経験値の履歴を毎回数え直すため。Issue #19）。open と closed を別々に取ると、その間に閉じた・開き直した Issue が両方から漏れうるため、1 つの一覧にした。作成日の順なので、読んでいる途中で状態が変わってもページの位置は動かず、どちらかの状態で 1 回は読める。途中で新しい Issue が作られるとページがずれて同じ Issue を 2 回読むことがあり、そのときは後で読んだ方（新しい方）を使う。snapshot の `issues` には open の全部と、直近 7 日に閉じたもの（`closed_at` で確かめる）を同じ一覧から入れる。閉じた理由（`state_reason`）も受ける。GitHub が後で理由の種類を足しても止まらないよう、文字列か null として検証する。GitHub の Issue 一覧には PR が混ざるので、`pull_request` キーを持つものは除く
@@ -490,7 +494,7 @@ M1 まで行けば「本物の Issue が掲示板に出て、クローズでク�
   - `.madgerc` は JSON で書く（コメント可）。先頭が `{` でないと INI として読まれるので、コメントは括弧の中に書く
   - scoria の実行結果で `complete: true` と「probes not scored」に circular が無いことを確かめる。原因は madge の依存（filing-cabinet・precinct）にあり、上流で直れば `.madgerc` は要らなくなる
 - 画面の E2E は Playwright（Issue #34）。`npm run test:e2e` で動かし、遅いので verify には入れない。CI は verify と並行の別ジョブ e2e で、ブラウザを Playwright の版ごとにキャッシュして `npx playwright install --with-deps chromium` で入れ、失敗時はレポートを artifact に残す
-  - 設定は `apps/web/playwright.config.ts`、テストは `apps/web/e2e/`。開発サーバーは 5196 番（`--strictPort`、host は vite.config.ts の 127.0.0.1）で立て、既に動いているサーバーは使わない。chromium だけ、headless、retries は CI だけ 1。テストは 1 本ずつ順に動かす（アプリの 5 秒ごとの再取得を実時間で待つので、負荷で遅れないように）
+  - 設定は `apps/web/playwright.config.ts`、テストは `apps/web/e2e/`。開発サーバーは 5196 番（`--strictPort`、host は vite.config.ts の 127.0.0.1）で、`--mode e2e` を付けて立て（手元の `guild.settings.local.ts` があっても `guild.settings.ts` を使うため。10 章 9）、既に動いているサーバーは使わない。chromium だけ、headless、retries は CI だけ 1。テストは 1 本ずつ順に動かす（アプリの 5 秒ごとの再取得を実時間で待つので、負荷で遅れないように）
   - データはダミーだけで、`apps/web/.data` には一切触れない（collector の実データを上書きしたり消したりしないため）。`/snapshot.json` は Playwright の `context.route` が全部横取りし、`public/snapshot.sample.json` を guild.settings.ts の repo と固定した時刻に合わせたものを返す。テスト中の中身の差し替え（Issue を閉じる、別のリポジトリ）は route が返す値を変えて行う。横取りの印のヘッダーが無い `/snapshot.json` の応答（開発サーバーから来たもの）がページに 1 件でも届いたら、そのテストを落とす。これで `.data` に実データがあっても画面やレポートには出ない
   - 時刻は `page.clock.setFixedTime` で固定する（タイマーは動かし、5 秒ごとの再取得はそのまま）。音は AudioContext をページ内で偽物に差し替える
   - 確かめること: パーティの窓に Lv・ゲージ・内訳が出て、右の列が高くならない（Issue #19）、開いて console・ページのエラーが無い、掲示板・パーティ・メッセージ窓・取得のようすに値が出る、Canvas に部屋が描かれる（単色でない）、`?hour=12` と `?hour=21.5` で明るさが違う、「音を出す」と音量の切り替え（再読み込み後も残る）、「基準を消す」、760px 未満で窓が縦に積まれ Canvas が隠れる、別のリポジトリの snapshot で止まる、Issue を閉じると「クリアした！」が出る、メッセージ窓のクリックで次へ進み最後に閉じる、`?demo=1` で架空の題名と効果音が出て `/snapshot.json` を一度も取りに行かず localStorage に何も残さない（このテストだけは共通の横取りを使わず、`/snapshot*.json` へのリクエストがあれば落とす）
@@ -510,6 +514,11 @@ M1 まで行けば「本物の Issue が掲示板に出て、クローズでク�
    - 置く値: 対象リポジトリ（`repo`）、6 人の名前・役・色（`members`）、部門のラベル・担当・固定の順・セッションの起動ディレクトリ（`departments`）、司令塔のセッションの起動ディレクトリ（`commanderSessionDir`）、ブランチ接頭辞 → 部門（`branchPrefixes`）、ルール変更のパスの規則（`ruleChangePaths`。`exact`・`suffix`・`prefix` の 3 種類で、glob は使わない）
    - 置かない値: 席の位置（Issue #18）、間隔・時間の窓、出力先、MulmoTerminal のファイルのパス（チームで変わらない）
    - TS の値として書き（`as const satisfies`）、collector は Node の型除去で、画面は Vite で読む。JSON にしないのは、書き間違いを型検査でも拾え、ラベルのリテラル型を画面の型に使えるため。schema は `packages/snapshot/src/settings.ts` に置き、型は schema から推論する。読み込んだ時点で zod で検証し、合わなければ collector も画面も項目を挙げて止まる
+   - **手元だけの設定ファイル（Issue #76）**: ほかのチームは `guild.settings.ts` をコピーして `guild.settings.local.ts`（リポジトリ直下、gitignore）にし、そちらを書き換える。`guild.settings.ts` を直接書き換えると、差分が `git status` に残り続けて pull で衝突しうる、PR に混ざりうる、conect.llc の値を前提にしたテストが通らなくなる、のため（メンターの提案、Issue #67）
+     - どちらを読むか: `guild.settings.local.ts` があればそれ、無ければ `guild.settings.ts`。判定は `packages/snapshot/src/settingsFile.ts` の 1 か所。引数・環境変数では変えられない（4.1）。検証は同じ schema（`settings.ts`）で、どちらを読んでも同じにかかる。エラーの文言は、画面からはどちらを読んだか分からないので両方の名前を出す
+     - collector: `src/main.ts` が判定し、Node の `module.registerHooks` の resolve で、`settings.ts` が読む `guild.settings.ts` を `guild.settings.local.ts` に向けてから、残り（`src/start.ts`）を動的 import する。静的 import は評価の前にすべて解決されるので、先に hook を入れてから読み込む必要がある。`snapshot.json` の schema（部門ラベル）も同じ設定から作られるので、モジュールごと差し替える
+     - 画面: `apps/web/vite-plugin-settings.ts` が、開発サーバーの既定のモード（`vite`・`npm run dev`。`command === 'serve'` かつ `mode === 'development'`）のときだけ、同じ import を `guild.settings.local.ts` に向ける。判定は起動時に 1 回で、ファイルを足した・消したら開発サーバーを起動し直す
+     - テストは常に `guild.settings.ts`: vitest はリポジトリ直下の `vitest.config.ts` で動き、このプラグインを読まない。型検査は `guild.settings.ts` だけを見る。build はモードが production なので向けない（ダミーの snapshot.sample.json と組む）。E2E は `--mode e2e` で向けない。ESLint と Prettier は `guild.settings.local.ts` を対象から外す（どの tsconfig にも入らず、書式は人それぞれのため）。モードで変えられるのは「既定に戻す」向きだけで、別のファイルや値を指すことはできない
    - 検証すること: 余分な項目が無い、6 人がそろう、色が `#rrggbb`、部門が 4 つ（Issue #18 まで）、ラベル・担当・起動ディレクトリ（書いた文字列のまま）が重ならない、起動ディレクトリに前後の空白・制御文字が無い、ブランチ接頭辞の部門が部門のラベルにある、`repo` が `owner/name` の形
    - 起動ディレクトリの `~` をホームに展開した後の重複は、共通の検証ではなく collector の起動時に調べて止める。画面は起動ディレクトリを使わないので、画面はそのまま動く
    - メンバーの id（`kaname` など）は変えられない。絵（`assets/sprites/<id>.png`）、手の位置、席がこの id で引かれるため。司令塔は `kaname`、王は `yukihiro`

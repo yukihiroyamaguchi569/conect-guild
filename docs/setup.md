@@ -17,7 +17,7 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
    npm ci --ignore-scripts
    ```
 
-2. リポジトリ直下の [`guild.settings.ts`](../guild.settings.ts) を書き換える。チームごとの値はこのファイルにしかありません
+2. リポジトリ直下の [`guild.settings.ts`](../guild.settings.ts) をコピーして `guild.settings.local.ts` にし（`cp guild.settings.ts guild.settings.local.ts`）、コピーを書き換える。このファイルは git に入らず、あれば collector と画面が `guild.settings.ts` の代わりに読みます
 
    | 項目 | 中身 |
    |---|---|
@@ -51,7 +51,7 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
 
 部門の数は、いまは 4 つに決まっています。席・机・通路を部門の数に合わせて並べる作業は [#18](https://github.com/yukihiroyamaguchi569/conect-guild/issues/18) で進めます。4 つ以外にすると、設定の検証で止まります。
 
-`npm run verify`（lint・型検査・テスト）は、このリポジトリを開発するためのものです。テストは conect.llc の設定を前提にしているので、自分のチーム向けに設定を変えると通りません。設定を変えたら `npm run dev:all`（または `npm run collect` と `npm run dev`）を使ってください。テストを通したいときは、設定を戻すか、#18 の対応を待ってください。
+`npm run verify`（lint・型検査・テスト）は、このリポジトリを開発するためのものです。テストは `guild.settings.local.ts` を読まず、いつも conect.llc の設定（`guild.settings.ts`）で動くので、手元の設定を書き換えても通ります。
 
 ## MulmoTerminal との関係
 
