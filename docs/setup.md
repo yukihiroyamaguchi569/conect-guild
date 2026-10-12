@@ -78,8 +78,8 @@ cp guild.settings.json guild.settings.local.json
 以前の `guild.settings.local.ts` を使っていた場合は、次の順に移します。`guild.settings.local.ts` が残っていると、collector と開発サーバーは「guild.settings.local.ts は読まなくなりました」と案内して止まります。
 
 1. 上の `cp guild.settings.json guild.settings.local.json` で、既定の JSON をコピーします
-2. 古い `guild.settings.local.ts` で変えていた値だけを、コピーした JSON の同じ項目に書き写します。`.ts` のブロックをそのまま貼らないでください。一重引用符、引用符の無い項目名、最後の要素の後ろの `,`、コメント、`as const satisfies` が残ると JSON として読めません（書き方は上の段落のとおり）
-3. どの値を変えていたか分からなければ、古い `.ts` を以前の既定のファイルと見比べます。以前の既定は、設定を JSON にしたコミット（f76825e）の直前のものを `git show f76825e^:guild.settings.ts` で見られます（例: `git show f76825e^:guild.settings.ts | diff - guild.settings.local.ts`）
+2. 古い `guild.settings.local.ts` でどの値を変えていたかを確かめます。覚えていなければ、古い `.ts` を以前の既定のファイルと見比べます。以前の既定は、設定を JSON にしたコミット（f76825e）の直前のものを `git show f76825e^:guild.settings.ts` で見られます（例: `git show f76825e^:guild.settings.ts | diff - guild.settings.local.ts`）
+3. 古い `guild.settings.local.ts` で変えていた値だけを、コピーした JSON の同じ項目に書き写します。`.ts` のブロックをそのまま貼らないでください。一重引用符、引用符の無い項目名、最後の要素の後ろの `,`、コメント、`as const satisfies` が残ると JSON として読めません（書き方は上の段落のとおり）
 4. `guild.settings.local.ts` を消して、collector と開発サーバーを起動し直します
 
 書き換える項目は次の 6 つです。
