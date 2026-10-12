@@ -333,7 +333,12 @@ describe('holdsAt: nobody moves in a call', () => {
     const first = holdsAt(NO_HOLDS, frame, row, 0);
     const sunkFrame = moved(frame, 'yukihiro', 4);
     const second = holdsAt(first, sunkFrame, row, END);
-    expect(second).toEqual({ start: END, points: { yukihiro: seatPoint('yukihiro') }, done: [] });
+    expect(second).toEqual({
+      start: END,
+      end: 2 * END,
+      points: { yukihiro: seatPoint('yukihiro') },
+      done: [],
+    });
     expect(holdsAt(first, sunkFrame, row, 3 * END)).toEqual(NO_HOLDS);
     // A later call after a gap, while the holds of the first call are still around (no frame was
     // drawn in between): the king is held where the new call finds him.

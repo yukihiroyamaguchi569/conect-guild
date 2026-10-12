@@ -39,6 +39,7 @@ import { createCast, stageAt, talkOf, type Cast } from './cast';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
 import type { Speeches } from './summons';
 import type { DecorCues } from './trinkets';
+import { visitFor, withVisit } from './visit';
 
 /**
  * The requestAnimationFrame loop. It runs every frame while a scene plays; between scenes it
@@ -128,8 +129,10 @@ export interface RenderLoop {
    * The king calls the members the president gave an order to (summons.ts, Issue #28), now or
    * after the call still playing. Dropped while the page is hidden or the canvas not shown: the
    * moment has passed by the time it is seen. A call cut off by a hide goes on after it.
+   * かなめ, when free at her counter, walks to the throne to hear it (visit.ts, Issue #87): says
+   * how long until she is back (stage ms), which the message queue waits for.
    */
-  summon(members: readonly MemberId[]): void;
+  summon(members: readonly MemberId[]): HomeIn;
   /**
    * What the party state shows on the stage: the waiting bubbles, the ambient moves, and since
    * when each member has had nothing to do (idle.ts; a member whose time changes while out playing
@@ -399,6 +402,23 @@ function seenAndPruned(
   return prune(director, frame.t);
 }
 
+/**
+ * The king calls `members` at stage time `t` (null: drawing would not be seen, the call is dropped),
+ * with かなめ's walk to the throne when she goes (visit.ts, Issue #87), and how long until she is
+ * back at her counter.
+ */
+export function summonOn(
+  cast: Pick<Cast, 'calls' | 'crew'>,
+  director: Director,
+  members: readonly MemberId[],
+  t: number | null,
+): { readonly director: Director; readonly homeIn: HomeIn } {
+  const stage = { director, idle: cast.crew.poses().kaname, seat: DEFAULT_SEATS.kaname };
+  const added = cast.calls.add(members, t, (start) => visitFor(members, start, stage));
+  if (t === null || added?.visit === undefined) return { director, homeIn: {} };
+  return { director: withVisit(director, added.visit), homeIn: { kaname: added.visit.back - t } };
+}
+
 export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
   const { canvas, art } = options;
   const { now, localHour, context } = loopSources(options);
@@ -450,7 +470,10 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
       return recalled.homeIn;
     },
     summon(members) {
-      if (cast.calls.add(members, paused() ? null : stageNow())) schedule.now();
+      const summoned = summonOn(cast, director, members, paused() ? null : stageNow());
+      director = summoned.director;
+      schedule.now();
+      return summoned.homeIn;
     },
     setParty(next) {
       party = next;
