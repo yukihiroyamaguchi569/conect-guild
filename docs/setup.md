@@ -17,7 +17,7 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
    npm ci --ignore-scripts
    ```
 
-2. リポジトリ直下の [`guild.settings.ts`](../guild.settings.ts) を書き換える。チームごとの値はこのファイルにしかありません
+2. リポジトリ直下の [`guild.settings.ts`](../guild.settings.ts) をコピーして `guild.settings.local.ts` にし（`cp guild.settings.ts guild.settings.local.ts`）、コピーを書き換える。このファイルは git に入らず、あれば collector と画面が `guild.settings.ts` の代わりに読みます
 
    | 項目 | 中身 |
    |---|---|
@@ -51,7 +51,20 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
 
 部門の数は、いまは 4 つに決まっています。席・机・通路を部門の数に合わせて並べる作業は [#18](https://github.com/yukihiroyamaguchi569/conect-guild/issues/18) で進めます。4 つ以外にすると、設定の検証で止まります。
 
-`npm run verify`（lint・型検査・テスト）は、このリポジトリを開発するためのものです。テストは conect.llc の設定を前提にしているので、自分のチーム向けに設定を変えると通りません。設定を変えたら `npm run dev:all`（または `npm run collect` と `npm run dev`）を使ってください。テストを通したいときは、設定を戻すか、#18 の対応を待ってください。
+`npm run verify`（lint・型検査・テスト）は、このリポジトリを開発するためのものです。テストは `guild.settings.local.ts` を読まず、いつも conect.llc の設定（`guild.settings.ts`）で動くので、手元の設定を書き換えても通ります。
+
+## 困ったとき
+
+- **画面の帯に「collector が失敗しています」と出る**: collector は動いていますが、データを集められていません。collector のターミナル（`npm run dev:all` なら行頭が `[collect]` の行）に、失敗の種類（`failed: gh-failed` など）が出ています。帯の（　）の中は種類を短くしたもので、認証・取得は `gh-failed`、データの検証は `validation-failed`、ファイルの書き込みは `write-failed` です。ブラウザのコンソールにも同じ内容が警告として 1 回出ます
+- **`failed: gh-failed` が出る**: `gh` で GitHub から読めていません。`guild.settings.local.ts`（無ければ `guild.settings.ts`。collector の起動時の `settings:` の行に、読んだほうが出ます）の `repo` を、`gh` でログインしているアカウントで読めるか確かめてください。
+
+  ```bash
+  gh auth status                 # gh にログインしているか
+  gh repo view <owner/name>      # repo に書いたリポジトリを読めるか（<owner/name> は repo の値）
+  ```
+
+  読めなければ、読めるリポジトリに `repo` を書き換えるか、読めるアカウントで `gh auth login` します。collector は 60 秒ごとに試し直すので、直れば止めずにそのまま本物の画面に切り替わります
+- **帯が「デモ表示中（架空のデータ）。データを集めると…」のまま変わらない**: collector を動かしていないか、止まっています（5 分より前に止まった collector の失敗は帯に出しません）。`npm run dev:all` か `npm run collect` で動かしてください
 
 ## MulmoTerminal との関係
 

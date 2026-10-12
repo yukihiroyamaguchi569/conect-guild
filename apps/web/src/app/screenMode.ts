@@ -1,5 +1,8 @@
+import type { CollectorFailureKind } from '@conect-guild/snapshot';
 import { shallowRef, type Ref } from 'vue';
+import { loadCollectorStatus, type CollectorStatusRead } from '../adapters/collectorStatus';
 import { defaultExpectedRepo, loadSnapshot, type SnapshotLoadResult } from '../adapters/snapshot';
+import { createCollectorWatch, type CollectorWatch, type ConsoleSink } from './collectorWatch';
 import { createDemoSession, isDemoQuery, type DemoSession } from './demo';
 import { REFRESH_INTERVAL_MS, type GuildStoreOptions } from './guildStore';
 import { globalScheduler, type Cancel, type Scheduler } from './scheduler';
@@ -39,6 +42,10 @@ export interface ScreenModeOptions {
   /** The page's query (`location.search`). */
   readonly search: string;
   readonly loadSnapshot?: () => Promise<SnapshotLoadResult>;
+  /** Reads /collector-status.json during the automatic demo (Issue #74). */
+  readonly loadCollectorStatus?: () => Promise<CollectorStatusRead>;
+  /** The browser console by default. */
+  readonly console?: ConsoleSink;
   readonly scheduler?: Scheduler;
   /** How often /snapshot.json is read during the automatic demo; the live refresh by default. */
   readonly intervalMs?: number;
@@ -54,12 +61,38 @@ export interface ScreenModeState {
   /** Bumped on every change of mode, so the screen is built anew (nothing carries over). */
   readonly generation: Readonly<Ref<number>>;
   /**
+   * The collector's failure during the automatic demo, for its banner (Issue #74); null when it
+   * has not run, succeeded, stopped long ago, or the page is not in the automatic demo.
+   */
+  readonly collectorFailure: Readonly<Ref<CollectorFailureKind | null>>;
+  /**
    * The live screen found nothing collected before its first snapshot: the automatic demo starts.
    * Ignored unless live.
    */
   notCollected(): void;
   /** Stops reading /snapshot.json in the background. */
   dispose(): void;
+}
+
+/** Runs `task` every `ms`, skipping a beat while the last run is still going. */
+function everyWithoutOverlap(scheduler: Scheduler, ms: number, task: () => Promise<void>): Cancel {
+  let inFlight = false;
+  return scheduler.every(ms, () => {
+    if (inFlight) return;
+    inFlight = true;
+    void task().finally(() => {
+      inFlight = false;
+    });
+  });
+}
+
+/** The collector's status, read during the automatic demo only (Issue #74). */
+function collectorWatchFor(options: ScreenModeOptions, now: () => number): CollectorWatch {
+  return createCollectorWatch({
+    loadStatus: options.loadCollectorStatus ?? (() => loadCollectorStatus()),
+    now,
+    console: options.console ?? globalThis.console,
+  });
 }
 
 export function createScreenMode(options: ScreenModeOptions): ScreenModeState {
@@ -72,6 +105,7 @@ export function createScreenMode(options: ScreenModeOptions): ScreenModeState {
   const demo = shallowRef<DemoSession | null>(initial === 'demo' ? createDemoSession(now) : null);
   const handoff = shallowRef<SnapshotLoadResult | null>(null);
   const generation = shallowRef(0);
+  const collector = collectorWatchFor(options, now);
   let cancelWatch: Cancel | null = null;
   // Bumped when the watch stops, so a read in flight then cannot switch the screen.
   let watchGeneration = 0;
@@ -91,23 +125,23 @@ export function createScreenMode(options: ScreenModeOptions): ScreenModeState {
     watchGeneration += 1;
     cancelWatch?.();
     cancelWatch = null;
+    collector.stop();
   }
 
   function watchForSnapshot(): void {
     const started = watchGeneration;
-    let inFlight = false;
-    cancelWatch = scheduler.every(options.intervalMs ?? REFRESH_INTERVAL_MS, () => {
-      if (inFlight) return;
-      inFlight = true;
-      void load()
-        .then((result) => {
-          if (started !== watchGeneration || !endsAutoDemo(result)) return;
-          stopWatch();
-          switchTo('live', null, result);
-        })
-        .finally(() => {
-          inFlight = false;
-        });
+    const intervalMs = options.intervalMs ?? REFRESH_INTERVAL_MS;
+    cancelWatch = everyWithoutOverlap(scheduler, intervalMs, async () => {
+      const result = await load();
+      if (started !== watchGeneration) return;
+      if (endsAutoDemo(result)) {
+        stopWatch();
+        switchTo('live', null, result);
+        return;
+      }
+      // Still nothing collected: has the collector run and failed?
+      // Not awaited: a status that does not answer must not hold up the next snapshot read.
+      void collector.refresh();
     });
   }
 
@@ -116,9 +150,11 @@ export function createScreenMode(options: ScreenModeOptions): ScreenModeState {
     demo,
     handoff,
     generation,
+    collectorFailure: collector.failure,
     notCollected() {
       if (mode.value !== 'live') return;
       switchTo('auto-demo', createDemoSession(now, { auto: true }));
+      void collector.start();
       watchForSnapshot();
     },
     dispose: stopWatch,

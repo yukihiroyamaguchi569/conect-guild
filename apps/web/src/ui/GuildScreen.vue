@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CollectorFailureKind } from '@conect-guild/snapshot';
 import { computed, watch } from 'vue';
 import type { SnapshotLoadResult } from '../adapters/snapshot';
 import type { DemoSession } from '../app/demo';
@@ -25,6 +26,8 @@ const props = defineProps<{
   demo: DemoSession | null;
   /** The read that ended the automatic demo (Issue #67); null otherwise. */
   handoff: SnapshotLoadResult | null;
+  /** The collector's failure, for the automatic demo's banner (Issue #74); null otherwise. */
+  collectorFailure: CollectorFailureKind | null;
 }>();
 const emit = defineEmits<{
   /** /snapshot.json is not there yet (204) and nothing was shown: the collector never ran. */
@@ -78,7 +81,11 @@ function onStageShown(shown: boolean): void {
 
 <template>
   <main class="guild" :class="{ 'guild--banner': demo?.auto }">
-    <AutoDemoBanner v-if="demo?.auto" class="guild__banner" />
+    <AutoDemoBanner
+      v-if="demo?.auto"
+      class="guild__banner"
+      :collector-failure="props.collectorFailure"
+    />
     <div class="stage" :class="{ 'stage--halted': state.halted }">
       <GuildCanvas
         class="stage__art"
@@ -98,8 +105,8 @@ function onStageShown(shown: boolean): void {
         <template v-if="state.haltReason === 'repo-mismatch'">
           <h2 class="rpg-window__title">収集の対象と設定が違います</h2>
           <p>
-            snapshot.json のリポジトリが guild.settings.ts の repo
-            と違うため、表示を止めています。collector
+            snapshot.json のリポジトリが設定（guild.settings.local.ts があればそちら、無ければ
+            guild.settings.ts）の repo と違うため、表示を止めています。collector
             を起動し直して、新しいリポジトリの収集が終わるのを待ってください。
           </p>
         </template>

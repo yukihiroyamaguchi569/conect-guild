@@ -2,39 +2,15 @@ import { snapshotSchema } from '@conect-guild/snapshot';
 import { describe, expect, it } from 'vitest';
 import { CollectorError } from './errors.ts';
 import type { GhRunner } from './gh.ts';
-import { nextTickAt, runCollector, type RunDeps } from './run.ts';
-import { fakeGh, harness, SESSIONS_OK } from './run.fixtures.test-util.ts';
+import { nextTickAt, runCollector } from './run.ts';
+import {
+  clockedHarness,
+  fakeGh,
+  GH_FAILED_NEXT_STEP,
+  harness,
+  SESSIONS_OK,
+} from './run.fixtures.test-util.ts';
 import type { SessionsReading } from './sessions.ts';
-
-/**
- * A clock that only moves when the loop sleeps, or by `workMs` while it reads the sessions (the
- * time a tick takes); aborts once `untilMs` has passed.
- */
-function clockedHarness(gh: GhRunner, untilMs: number, patch: Partial<RunDeps> = {}, workMs = 0) {
-  const controller = new AbortController();
-  const start = Date.parse('2026-10-12T00:00:00.000Z');
-  let elapsed = 0;
-  const sleeps: number[] = [];
-  const sessionReads: number[] = [];
-  const deps = harness(gh, {
-    signal: controller.signal,
-    now: () => new Date(start + elapsed),
-    readSessions: () => {
-      sessionReads.push(elapsed);
-      elapsed += workMs;
-      return Promise.resolve(SESSIONS_OK);
-    },
-    // Like a real sleep, it lets background work (a GitHub fetch) settle before the next tick.
-    sleep: async (ms) => {
-      sleeps.push(ms);
-      await new Promise((resolve) => setImmediate(resolve));
-      elapsed += ms;
-      if (elapsed >= untilMs) controller.abort();
-    },
-    ...patch,
-  });
-  return { deps, sleeps, sessionReads, elapsed: () => elapsed };
-}
 
 function githubCycles(gh: { calls: string[] }): number {
   return gh.calls.filter((c) => c.includes('issues?state=all')).length;
@@ -85,7 +61,10 @@ describe('runCollector loop', () => {
     expect(last.fetchedAt).toBe('2026-10-12T00:00:00.000Z');
     expect(last.sessions.checkedAt).toBe('2026-10-12T00:01:05.000Z');
     // Logged when the background fetch ends, before the next tick.
-    expect(deps.errors).toEqual(['[collector] 2026-10-12T00:01:00.000Z failed: gh-failed']);
+    expect(deps.errors).toEqual([
+      '[collector] 2026-10-12T00:01:00.000Z failed: gh-failed',
+      `[collector] 2026-10-12T00:01:00.000Z ${GH_FAILED_NEXT_STEP}`,
+    ]);
   });
 });
 
@@ -109,7 +88,10 @@ describe('runCollector loop: failures', () => {
     // 12 ticks before the retry at 60 s write nothing. The retry runs in the background, so the
     // tick at 60 s has nothing yet; 65 s writes.
     expect(deps.writes).toHaveLength(1);
-    expect(deps.errors).toEqual(['[collector] 2026-10-12T00:00:00.000Z failed: gh-failed']);
+    expect(deps.errors).toEqual([
+      '[collector] 2026-10-12T00:00:00.000Z failed: gh-failed',
+      `[collector] 2026-10-12T00:00:00.000Z ${GH_FAILED_NEXT_STEP}`,
+    ]);
     expect(deps.logs).toContain(
       '[collector] 2026-10-12T00:01:00.000Z ok: issues=1 prs=2 history: opened=3 completed=1 merged=1',
     );

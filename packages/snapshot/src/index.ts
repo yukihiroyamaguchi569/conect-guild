@@ -126,6 +126,32 @@ export const snapshotSchema = z.strictObject({
   sessions: snapshotSessionsSchema,
 });
 
+/**
+ * Why the collector's last try failed (packages/collector/src/errors.ts): `gh` failed (not logged
+ * in, no access, network), what it read did not validate, the file could not be written, or
+ * something unexpected. The kind only: never a message, a title or a path.
+ */
+export const collectorFailureKindSchema = z.enum([
+  'gh-failed',
+  'validation-failed',
+  'write-failed',
+  'unexpected',
+]);
+
+/**
+ * apps/web/.data/collector-status.json (Issue #74): how the collector's last try at GitHub went,
+ * so the page can tell "never collected" from "the collector fails". `attemptedAt` is when it
+ * tried. No repository name, title, body or path.
+ */
+export const collectorStatusSchema = z.discriminatedUnion('ok', [
+  z.strictObject({ ok: z.literal(true), attemptedAt: isoDateTime }),
+  z.strictObject({
+    ok: z.literal(false),
+    attemptedAt: isoDateTime,
+    kind: collectorFailureKindSchema,
+  }),
+]);
+
 export type SnapshotIssue = z.infer<typeof snapshotIssueSchema>;
 export type SnapshotPr = z.infer<typeof snapshotPrSchema>;
 export type SessionDepartment = (typeof SESSION_DEPARTMENTS)[number];
@@ -137,3 +163,5 @@ export type HistoryPr = z.infer<typeof historyPrSchema>;
 export type SnapshotHistory = z.infer<typeof snapshotHistorySchema>;
 export type GithubPart = z.infer<typeof githubPartSchema>;
 export type Snapshot = z.infer<typeof snapshotSchema>;
+export type CollectorFailureKind = z.infer<typeof collectorFailureKindSchema>;
+export type CollectorStatus = z.infer<typeof collectorStatusSchema>;

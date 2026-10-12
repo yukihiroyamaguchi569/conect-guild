@@ -119,7 +119,10 @@ export type GuildSettingsInput = z.input<typeof guildSettingsSchema>;
 export function checkGuildSettings<const T extends GuildSettingsInput>(raw: T): T {
   const result = guildSettingsSchema.safeParse(raw);
   if (!result.success) {
-    throw new Error(`guild.settings.ts is invalid:\n${z.prettifyError(result.error)}`);
+    throw new Error(
+      // The browser cannot tell which file was read; the collector logs it when it starts.
+      `guild.settings.local.ts or guild.settings.ts (whichever is used) is invalid:\n${z.prettifyError(result.error)}`,
+    );
   }
   return raw;
 }

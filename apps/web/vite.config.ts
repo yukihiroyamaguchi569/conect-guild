@@ -1,9 +1,10 @@
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vite';
+import { settingsPlugin } from './vite-plugin-settings.ts';
 import { snapshotPlugin } from './vite-plugin-snapshot.ts';
 
 export default defineConfig({
-  plugins: [vue(), snapshotPlugin()],
+  plugins: [vue(), settingsPlugin(), snapshotPlugin()],
   server: {
     // Never expose the dev server to the LAN (see docs/DESIGN.md 5).
     host: '127.0.0.1',

@@ -23,7 +23,7 @@ conect.llc の「AI だけで動く会社」（司令塔かなめ 1 + 部門セ�
 
 ### メンバーの名前
 
-部門にはかなめと同じように名前を付ける（社長のリクエスト、2026-10-12）。名前はリポジトリ直下の `guild.settings.ts`（3 章、10 章 9）に置き、後から変えられるようにする。社長が確定した名前（2026-10-12）:
+部門にはかなめと同じように名前を付ける（社長のリクエスト、2026-10-12）。名前はリポジトリ直下の設定ファイル（`guild.settings.local.ts`、無ければ `guild.settings.ts`。3 章、10 章 9）に置き、後から変えられるようにする。社長が確定した名前（2026-10-12）:
 
 | 部門 | 名前 | 由来 |
 |---|---|---|
@@ -51,16 +51,18 @@ GitHub 上の部門ラベル（`経理` など）とは対応表で結び、Issu
 
 ```
 conect-guild/
-├── guild.settings.ts         チームごとの値をここだけに置く（10 章 9）。対象リポジトリ、メンバーの名前・役・色、部門（ラベル・担当・固定の順・セッションの起動ディレクトリ）、司令塔のセッションの起動ディレクトリ、ブランチ接頭辞 → 部門、ルール変更のパスの規則
+├── guild.settings.ts         チームごとの値の既定（conect.llc の設定。テストもこれを使う。10 章 9）。対象リポジトリ、メンバーの名前・役・色、部門（ラベル・担当・固定の順・セッションの起動ディレクトリ）、司令塔のセッションの起動ディレクトリ、ブランチ接頭辞 → 部門、ルール変更のパスの規則
+├── guild.settings.local.ts   手元だけの設定（gitignore。Issue #76）。あれば collector と開発サーバーが guild.settings.ts の代わりに読む。テスト・型検査・build・E2E は読まない（10 章 9）
 ├── apps/web/                 Vue 3 + Vite + TS（画面）
 │   ├── vite.config.ts        server.host を 127.0.0.1 に固定。snapshot 配信プラグインを登録
 │   ├── vite-plugin-snapshot.ts  開発時だけの自作プラグイン。/snapshot.json を .data/ から返す
+│   ├── vite-plugin-settings.ts  開発サーバー（既定のモード）だけ、guild.settings.ts の import を guild.settings.local.ts に向ける（あるとき）
 │   ├── .data/                実データの置き場（gitignore。Vite の配信対象外）
 │   │   └── snapshot.json     collector が書く（0600）
 │   ├── public/
 │   │   └── snapshot.sample.json  ダミー（架空の題名）。build と CI はこれだけを使う
 │   └── src/
-│       ├── guild.config.ts   guild.settings.ts の値を画面の形に並べ直す（部門 → 担当、メンバー → 名前・色）。席の位置と時間の窓はここに置く（席を部門の数に合わせるのは Issue #18）
+│       ├── guild.config.ts   読み込んだ設定ファイルの値を画面の形に並べ直す（部門 → 担当、メンバー → 名前・色）。席の位置と時間の窓はここに置く（席を部門の数に合わせるのは Issue #18）
 │       ├── domain/           純粋関数。型とロジック。テストの主戦場
 │       │   ├── quest.ts      Issue → Quest（部門ラベル → 担当メンバー）
 │       │   ├── party.ts      メンバーの状態の導出（4 章の表）
@@ -97,10 +99,11 @@ conect-guild/
 ├── packages/snapshot/        collector と画面が共有する型と zod の schema
 │   └── src/
 │       ├── index.ts          snapshot.json の schema（4.2）
-│       └── settings.ts       guild.settings.ts の schema。読み込んだ時点で検証し、合わなければ項目を挙げて止める。ブランチ接頭辞 → 部門の判定もここに置き、collector と画面で共有する
+│       └── settings.ts       設定ファイル（guild.settings.local.ts、無ければ guild.settings.ts）の schema。読み込んだ時点で検証し、合わなければ項目を挙げて止める。ブランチ接頭辞 → 部門の判定もここに置き、collector と画面で共有する
+│       └── settingsFile.ts   どちらの設定ファイルを読むかの判定（guild.settings.local.ts があればそれ、無ければ guild.settings.ts）。collector と vite-plugin-settings.ts が使う
 ├── packages/collector/       収集スクリプト（TS。Node の型除去で直接実行）
-│   ├── collector.config.ts   guild.settings.ts から対象リポジトリと会社のセッションの起動ディレクトリ（`~` をホームに展開）を受け取り、間隔、MulmoTerminal のファイルのパス、出力先を足す
-│   └── src/main.ts           `gh api` で Issue・PR を取り、MulmoTerminal のファイルからセッションの状態を読み、検証して .data/snapshot.json を原子的に書く
+│   ├── collector.config.ts   読み込んだ設定ファイルから対象リポジトリと会社のセッションの起動ディレクトリ（`~` をホームに展開）を受け取り、間隔、MulmoTerminal のファイルのパス、出力先を足す
+│   └── src/main.ts           読む設定ファイルを決めて 1 行出し、src/start.ts を読み込む。start.ts が `gh api` で Issue・PR を取り、MulmoTerminal のファイルからセッションの状態を読み、検証して .data/snapshot.json を原子的に書く
 ├── assets/                   コンセプト画、スプライト、タイル（出所とライセンスを README に書く）
 ├── docs/DESIGN.md            この文書
 ├── LICENSE                   MIT
@@ -114,7 +117,7 @@ conect-guild/
 ## 4. データの流れ
 
 ```
-GitHub（guild.settings.ts に固定したリポジトリの Issue / PR）    MulmoTerminal のファイル（~/.mulmoterminal/、読むだけ）
+GitHub（設定ファイルに固定したリポジトリの Issue / PR）    MulmoTerminal のファイル（~/.mulmoterminal/、読むだけ）
    │  gh api（execFile で引数配列。gh の認証を使う。60 秒ごと）          │  会社の 5 セッションの行だけ（5 秒ごと、4.7）
    ▼                                                                      ▼
 packages/collector ──検証して一時ファイルに書き rename──▶ apps/web/.data/snapshot.json（0600、gitignore）
@@ -130,7 +133,8 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 
 ### 4.1 収集（packages/collector）
 
-- **対象リポジトリ**: `guild.settings.ts` の `repo` に固定する（既定 `yukihiroyamaguchi569/conect-management`）。コマンドライン引数や環境変数では変えられず、設定ファイルを書き換えて変える
+- **対象リポジトリ**: 設定ファイルの `repo` に固定する（既定 `yukihiroyamaguchi569/conect-management`）。設定ファイルは、リポジトリ直下に手元だけの `guild.settings.local.ts` があればそれ、無ければ `guild.settings.ts`（10 章 9。Issue #76）。コマンドライン引数や環境変数では変えられず、どちらを読むかもファイルの有無だけで決まる。設定ファイルを書き換えて変える
+- **起動時のログ**: 読んだ設定ファイルの名前だけを 1 行出す（`[collector] settings: guild.settings.local.ts`）。中身は出さない
 - **`gh` の呼び方**: `child_process.execFile('gh', [引数の配列])`。シェル文字列は組まない。認証はユーザーの `gh` のものをそのまま使う
 - **ページ送り**: `gh api --paginate --jq '<射影> | @json'` で、要るフィールドだけに絞った要素を 1 行 1 JSON で受け、行ごとに zod で検証する（`--slurp` は `--jq` と併用できない）。差分の中身や Issue の本文は gh の段階で落とす。ページが配列でなければ jq でエラーにし、空の一覧と取り違えない。`execFile` の `maxBuffer` は 64 MB にし、超えたら失敗として扱う。テストは複数ページの出力で行う
 - **Issue**: open と closed を 1 つの一覧（`state=all`、作成日の新しい順）で全ページ取る。closed を `since` で絞らない（累積の経験値の履歴を毎回数え直すため。Issue #19）。open と closed を別々に取ると、その間に閉じた・開き直した Issue が両方から漏れうるため、1 つの一覧にした。作成日の順なので、読んでいる途中で状態が変わってもページの位置は動かず、どちらかの状態で 1 回は読める。途中で新しい Issue が作られるとページがずれて同じ Issue を 2 回読むことがあり、そのときは後で読んだ方（新しい方）を使う。snapshot の `issues` には open の全部と、直近 7 日に閉じたもの（`closed_at` で確かめる）を同じ一覧から入れる。閉じた理由（`state_reason`）も受ける。GitHub が後で理由の種類を足しても止まらないよう、文字列か null として検証する。GitHub の Issue 一覧には PR が混ざるので、`pull_request` キーを持つものは除く
@@ -146,7 +150,8 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 - **間隔**: GitHub は 60 秒ごと（`gh` のレート制限に十分収まる）。collector 自体は 5 秒ごとに回り、セッションの状態（4.7）を読むたびに、GitHub の最後の正常な結果と合わせて snapshot を書き直す。GitHub の取得は裏で走らせ、遅くてもセッションの 5 秒の周期を止めない（最初の 1 回だけは、書くものが無いので待つ）。周期は予定時刻から数え、1 回の処理の時間も 5 秒に含める。処理が予定を過ぎたら、取り戻そうと続けて回さず、次の予定まで飛ばす。`--once` で 1 回だけ（GitHub とセッションを 1 回ずつ）実行もできる
 - **書き込み**: 取得した結果を zod で検証してから、同じディレクトリの一時ファイルに 0600 で書き、`rename` で `apps/web/.data/snapshot.json` を原子的に置き換える。画面が書きかけの JSON を読むことはない
 - **失敗したとき**: GitHub の取得や検証に 1 つでも失敗したら、GitHub の部分は直前の正常なもの（`fetchedAt` も直前のまま）を使い、空の配列で上書きしない。起動してから GitHub が一度も成功していなければ snapshot を書かない（その間、開発サーバーは `/snapshot.json` に 204 を返し、画面は自動のデモを流す。4.3）。セッションの状態が読めないときは `sessions` を `unavailable` にし、GitHub の部分の書き込みは妨げない
-- **ログ**: 出すのは件数・時刻・エラーの種類だけ（履歴は `history: opened=… completed=… merged=…` の件数だけ）。題名・本文・ブランチ名・パス・セッション ID はログに出さない。セッションの行（`sessions=5 ok` / `sessions unavailable: parse-failed`）は 5 秒ごとには出さず、変わったときだけ出す
+- **状態ファイル（Issue #74）**: snapshot が無いとき、画面が「collector を動かしていない」と「動いているが失敗している」を見分けられるように、collector は自分の状態を `apps/web/.data/collector-status.json` に書く。中身は最後に GitHub を試した時刻（`attemptedAt`）、成功したか（`ok`）、失敗の種類（`kind`。`gh-failed`・`validation-failed`・`write-failed`・`unexpected` のどれか。ログに出す種類と同じ）だけで、リポジトリ名・題名・本文・パスは入れない。schema は `packages/snapshot` の `collectorStatusSchema`（余分な項目を拒む）。snapshot と同じく一時ファイルに 0600 で書いて `rename` で置き換える。GitHub は成功したが snapshot を書けない間は `write-failed` にする（画面には何も届かないため）。ループでは中身が変わったときだけ書く（GitHub を試すたび（60 秒ごと）と、snapshot の書き込みの失敗が始まった・終わったとき。5 秒ごとには書かない）。同じ周期の snapshot を書いた後に書く。`--once` でも 1 回書く。状態ファイルを書けなければ `status not written: write-failed` を失敗が続く間 1 回だけ出し、次の周期で書き直す（終了コードは変えない）
+- **ログ**: 出すのは件数・時刻・エラーの種類だけ（履歴は `history: opened=… completed=… merged=…` の件数だけ）。題名・本文・ブランチ名・パス・セッション ID はログに出さない。`failed: gh-failed` の次の行には、次にやること「次にやること: guild.settings.local.ts（無ければ guild.settings.ts）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください」を出す（Issue #74）。リポジトリ名もログに出さない方針なので、`<owner/name>` は書いたまま出す。セッションの行（`sessions=5 ok` / `sessions unavailable: parse-failed`）は 5 秒ごとには出さず、変わったときだけ出す
 
 ### 4.2 snapshot.json の中身
 
@@ -180,16 +185,17 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 
 - 画面は 5 秒ごとに `/snapshot.json` を `cache: 'no-store'` で fetch する（M3 で 30 秒から短くした。手元の no-store の読み込みなので軽い）。ネットワークエラーと HTTP エラーの両方を扱い、失敗したら前回の表示を残して小さく「取得失敗」と出す
 - **まだ集めていない（Issue #67）**: 204 No Content は、collector がまだ一度も snapshot を書いていない印として、HTTP エラー（404・500 など、`reason: 'http'`）と分けて `reason: 'not-collected'` にする（204 も `ok` なので、その判定より前に見る）。404 ではなく 204 にしたのは、ブラウザが失敗した fetch を 5 秒ごとにコンソールのエラーとして記録し、初めて触る人に壊れて見えるため。最初の snapshot を表示する前に 204 なら、エラーを出さずに自動のデモ（4.11）に切り替える（社長とメンターの判断「だれでも起動だけで見える状態に」）。自動のデモの間も裏で 5 秒ごとに `/snapshot.json` を読み、204 以外が返ったら再読み込みなしで本物の画面に切り替える（500・404・ネットワーク・検証失敗なら、本物の画面がこれまでどおりエラーを出す）。切り替えは画面（`ui/GuildScreen.vue`）を作り直して行い（`app/screenMode.ts`）、デモの状態を本物に持ち込まない。切り替えを決めた取得の結果は、新しいストアの最初の結果としてそのまま渡す（読み直すと 204 が返ってデモに戻り、エラーが一度も出ないことがあるため）。エラーを出した後の取得で 204 が返れば、まだ集めていないので自動のデモに戻る。自動のデモの後の本物のストアは、最初の正常な snapshot を localStorage の基準と比べずに新しい基準として保存する（古い基準が残っていると、切り替え直後に出来事がまとめて出るため。社長の判断）。新しい基準を保存できるまで（localStorage が一時的に使えないときも）この扱いを続け、それまでのエラーでは保存済みの基準に触れない（エラーで切り替わって 204 でデモに戻ったとき、正常な snapshot を受け取らないまま基準を失わないため）。一度 snapshot を表示した後の 204（ファイルを消したなど）は、前回の表示を残して「取得失敗（データのファイルがありません）」と出す（デモにはしない）。ビルドは架空の `snapshot.sample.json` を読むので、204 にはならない
-- **外部へのリンク（Issue #67）**: 自動のデモの帯の docs/setup.md へのリンクは、開発サーバーが `docs/` を配らないので GitHub の公開ページ（conect-guild 自体のリポジトリ。URL は `apps/web/src/project.ts` の定数 1 か所で、チームの設定の `guild.settings.ts` とは別）にし、`target="_blank"`・`rel="noopener noreferrer"` で開く。「ブラウザから外部へ通信しない」は画面が自分から外部と通信・外部の資源を読み込むこと（fetch・img・フォント・スクリプト）を禁じるもので、見る人がクリックしたときにだけ開くリンクはこれに当たらない（社長の判断、2026-10-12）
+- **外部へのリンク（Issue #67）**: 自動のデモの帯の docs/setup.md へのリンクは、開発サーバーが `docs/` を配らないので GitHub の公開ページ（conect-guild 自体のリポジトリ。URL は `apps/web/src/project.ts` の定数 1 か所で、チームの設定ファイル（`guild.settings.local.ts`・`guild.settings.ts`）とは別）にし、`target="_blank"`・`rel="noopener noreferrer"` で開く。「ブラウザから外部へ通信しない」は画面が自分から外部と通信・外部の資源を読み込むこと（fetch・img・フォント・スクリプト）を禁じるもので、見る人がクリックしたときにだけ開くリンクはこれに当たらない（社長の判断、2026-10-12）
 - `schemaVersion` が画面の想定と違えば、表示を止めて「収集スクリプトを更新してください」と出す
-- 開発時（実データ）は snapshot の `repo` が `guild.settings.ts` の `repo` と違えば、表示を止めて「収集の対象と設定が違います」と出す（設定を変えた直後、新しいリポジトリの収集が成功するまで前のチームのデータを新しい名前・部門で出さないため）。build のダミーは照合しない
+- 開発時（実データ）は snapshot の `repo` が読み込んだ設定ファイル（`guild.settings.local.ts`、無ければ `guild.settings.ts`）の `repo` と違えば、表示を止めて「収集の対象と設定が違います」と出す（設定を変えた直後、新しいリポジトリの収集が成功するまで前のチームのデータを新しい名前・部門で出さないため）。build のダミーは照合しない
 - `fetchedAt`（GitHub の取得時刻）が 5 分より古ければ「情報が古い」の印を出す（collector が止まっている合図）。セッションの状態の古さは別に `sessions.checkedAt` で見る（4.7）
-- 開発時だけ、Vite の自作プラグイン（`configureServer` のミドルウェア。依存なし）が `/snapshot.json` を `apps/web/.data/snapshot.json` から返す。ファイルが無ければ 204 No Content（`Cache-Control: no-store`、本文なし。画面は「まだ集めていない」として自動のデモにする）、ほかの読み込みの失敗は 500。`.data/` は `public/` の外なので、Vite の public 監視による再読み込みは起きない
+- 開発時だけ、Vite の自作プラグイン（`configureServer` のミドルウェア。依存なし）が `/snapshot.json` を `apps/web/.data/snapshot.json` から返す。ファイルが無ければ 204 No Content（`Cache-Control: no-store`、本文なし。画面は「まだ集めていない」として自動のデモにする）、ほかの読み込みの失敗は 500。`.data/` は `public/` の外なので、Vite の public 監視による再読み込みは起きない。同じプラグインが `/collector-status.json` を `apps/web/.data/collector-status.json` から同じ決まり（`no-store`、無ければ 204、ほかの失敗は 500）で返す（Issue #74）
+- **collector の状態（Issue #74）**: 自動のデモ（4.11）の間だけ、始めたときと、裏で `/snapshot.json` を読んで 204 だったたびに、`/collector-status.json` を `no-store` で読んで zod で検証する（`adapters/collectorStatus.ts`）。204 は「状態ファイルが無い（collector を動かしていない）」、検証できた状態はそれに置き換え、ほかの失敗（ネットワーク・HTTP エラー・壊れた JSON・合わない形）は前に読んだ状態を残す（1 回の読み損ないで帯がちらつかないように）。状態の読み込みは `/snapshot.json` の読み込みを待たせない（状態が応答しなくても本物への切り替えが遅れないように）。読み込みには番号を振り、後から始めたものを反映した後に終わった古い応答は捨てる。読み損ないは何も確定させないので、その前に始めた有効な応答は後から届いても反映する。帯に出すかどうかは純粋関数 `domain/collectorStatus.ts` の `collectorFailureOf`（時刻を注入）で決める: 状態が無い・成功・`attemptedAt` が 5 分（`STALE_AFTER_MS`。collector は 1 分ごとに試すので、それより古いのは collector が止まった後）より古いときは出さず、それ以外の失敗は種類を出す。本物の画面（snapshot を表示した後）では読まず、「情報が古い」などの表示はこれまでどおり
 
 ### 4.4 差分 → イベント（domain/events.ts, domain/baseline.ts）
 
 - 差分の基準はブラウザの `localStorage` に置く。保存するのは `{ schemaVersion, fetchedAt, repo, issues: [{ number, state, closedAt }], prs: [{ number, state, mergedAt }], levels: { kaname, minori, hibiki, hirame, sasae } }` だけ。`repo` はリポジトリ名の FNV-1a（32 bit）の値で、名前そのものは保存しない。`levels` は各メンバーのレベルの数字だけ（王様は持たない。4.6）。題名・ラベル・ブランチ名も保存しない
-- **初回**（基準が無い、`schemaVersion` が違う、または基準の `repo` が今回のリポジトリと違う。`guild.settings.ts` の `repo` を変えた直後など）は演出を出さず、基準だけ保存する。`repo` を足したので基準の `schemaVersion` を 2 にした（1 の基準は初回扱い）。`levels` を足したので 3 にした（2 の基準は初回扱いなので、更新後の最初の 1 回は全員そろって何も出さずに基準になる）
+- **初回**（基準が無い、`schemaVersion` が違う、または基準の `repo` が今回のリポジトリと違う。設定ファイルの `repo` を変えた直後など）は演出を出さず、基準だけ保存する。`repo` を足したので基準の `schemaVersion` を 2 にした（1 の基準は初回扱い）。`levels` を足したので 3 にした（2 の基準は初回扱いなので、更新後の最初の 1 回は全員そろって何も出さずに基準になる）
 - **巻き戻さない**: 今回の `fetchedAt` が基準の `fetchedAt` 以前なら、イベントも基準の更新もしない
 - **空白が長いとき**: 基準の `fetchedAt` が 7 日（収集の取得範囲）より古ければ、取りこぼしがありうるので演出を出さず、基準だけ置き換えてメッセージ窓に「この期間の出来事は復元できません」と出す。レベルアップ（4.6）だけは出す（レベルは全履歴から数え直すので取りこぼさない）。お知らせの後に出す
 - **基準の更新**は、取得と検証に成功したときだけ行う。失敗した取得では基準を変えない
@@ -200,15 +206,15 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 
 ### 4.5 担当の決め方（domain/quest.ts, domain/party.ts）
 
-- **Issue の担当**: 部門ラベル（`経理`・`広報`・`企画`・`総務`。`guild.settings.ts` の `departments`）で決める
+- **Issue の担当**: 部門ラベル（`経理`・`広報`・`企画`・`総務`。読み込んだ設定ファイル（`guild.settings.local.ts`、無ければ `guild.settings.ts`）の `departments`）で決める
   - 部門ラベルが 0 個 → 「かなめの受付（担当なし）」の巻物として受付に置く
-  - 2 個以上 → 固定の順（`guild.settings.ts` の `departments` の並び順。既定は経理 → 広報 → 企画 → 総務）で最初のものを担当にし、巻物に「複数部門」の印を付ける
+  - 2 個以上 → 固定の順（設定ファイルの `departments` の並び順。既定は経理 → 広報 → 企画 → 総務）で最初のものを担当にし、巻物に「複数部門」の印を付ける
 - **PR の担当**: 次の順で決める
   1. `linkedIssues` のうち snapshot にある Issue の部門ラベル（複数あれば上と同じ固定の順）
-  2. 結べなければ、ブランチ名の接頭辞の対応表（`guild.settings.ts` の `branchPrefixes`。上から順に見て最初に当たったもの）で推定
+  2. 結べなければ、ブランチ名の接頭辞の対応表（設定ファイルの `branchPrefixes`。上から順に見て最初に当たったもの）で推定
   3. それも無ければ「担当不明」として、かなめの受付に置く
 - **PR の待ちの種類**（open PR だけ）
-  - `changedFiles` のどれかがルール変更に当たる → 社長の承認まち（conect-management のルール変更は社長がマージするため）。照合は glob を使わず、文字列比較で行う。規則は `guild.settings.ts` の `ruleChangePaths` に、`exact`（等しい）・`suffix`（で終わる）・`prefix`（で始まる）のどれかとパスの組で書く。既定は次の 3 つ
+  - `changedFiles` のどれかがルール変更に当たる → 社長の承認まち（conect-management のルール変更は社長がマージするため）。照合は glob を使わず、文字列比較で行う。規則は読み込んだ設定ファイル（`guild.settings.local.ts`、無ければ `guild.settings.ts`）の `ruleChangePaths` に、`exact`（等しい）・`suffix`（で終わる）・`prefix`（で始まる）のどれかとパスの組で書く。既定は次の 3 つ
     - パスが `CLAUDE.md` に等しい（ルートの CLAUDE.md）
     - パスが `/CLAUDE.md` で終わる（`accounting/CLAUDE.md`、`projects/CLAUDE.md` など）
     - パスが `.claude/agents/` で始まる
@@ -246,7 +252,7 @@ M3 からは、セッションの状態（4.7）を混ぜる。優先順位は �
   - サンプル（`snapshot.sample.json`）では、かなめ Lv 4（92）、みのり Lv 3（45）、ひびき Lv 2（25）、ひらめ Lv 2（25）、ささえ Lv 3（35）
 - レベルアップ: クリア等のメッセージの後に「〇〇は レベル N に あがった！」、効果音、席で跳ねて紙吹雪。初回・レベルが下がったときは出さない
   - 判定（domain/levelUp.ts、domain/events.ts）: 差分の基準（4.4）の `levels` と今回のレベルを比べ、上がった人ごとにイベント `level-up` を 1 つ出す。2 つ以上上がっても 1 回だけで、上がった先のレベルを言う。下がったとき（ラベルの付け替え、再オープン）は何も出さず、基準のレベルだけ下げる。同じ取得で複数の人が上がったら、かなめ → みのり → ひびき → ひらめ → ささえの順に 1 人 1 行。巻き戻し・初回・リポジトリ違いの扱いは 4.4 のまま。halted から戻ったときは、止まる前の基準と比べて上がっていれば出す（クリアなどと同じ）。純粋関数で、vitest で守る
-  - メッセージ窓: 同じ差分のクリア・宝箱・巻物のメッセージの後に置く（「クリアした！」→「レベル 4 に あがった！」の順で読める）。名前は設定（guild.settings.ts）から取り、番号・題名は入れない
+  - メッセージ窓: 同じ差分のクリア・宝箱・巻物のメッセージの後に置く（「クリアした！」→「レベル 4 に あがった！」の順で読める）。名前は読み込んだ設定ファイルから取り、番号・題名は入れない
   - 効果音: オリジナルの楽譜 `levelup`（4.8）
   - Canvas（render/levelUp.ts、drawLevelUp.ts）: 本人が席で 2 回跳ね（立ちのコマを上下にずらすだけ。1 回 0.42 秒、高さ 12px）、席の上に紙吹雪（クリアと同じ）と「LEVEL UP」の文字（固定の文字列を `fillText`、暗い縁取り付き）を紙吹雪と同じ 2.6 秒出す。文字は少しずつ上がり、終わりの 0.6 秒で消える。かなめは受付で同じことをする。新しい絵は足さない。跳ねるのは描く位置だけで、足元（席・奥行き・席にいるかの判定）は変えない。夜の暗さの後に、吹き出しや紙吹雪と同じく一番上に描く
   - 席にいないとき: 巻物・宝箱の演出の配役と同じく、本人を演出の配役にする。ほかの演出の途中なら、席に戻るのを待ってから席で跳ね、メッセージもそれまで待つ（6 章 M2 の配役待ち）。紙吹雪だけのクリアと違い、跳ねる間は本人の動きを預かるため
@@ -264,7 +270,7 @@ M3 からは、セッションの状態（4.7）を混ぜる。優先順位は �
 
 **会社以外を捨てる**
 
-- 会社の 5 セッションの起動ディレクトリを `guild.settings.ts`（`commanderSessionDir` と `departments[].sessionDir`）に固定する: `~/conect-management`（かなめ）、その下の `accounting`（経理）・`pr`（広報）・`planning`（企画）・`general-affairs`（総務）。`~/` はホームの下を表し、ホームは `os.homedir()` で決める。引数・環境変数では変えない。設定の検証（collector と画面に共通）で、`~`・`~/...`・絶対パスのどれかで、前後の空白・制御文字・末尾の `/`・空や `.`・`..` の区切りが無く、5 つの文字列が互いに違うことを確かめる。`~` とホームの絶対パスのように展開すると同じになる重複は、collector だけが起動時にホームを展開してから調べて止まる（画面はセッションの起動ディレクトリを使わない）
+- 会社の 5 セッションの起動ディレクトリを読み込んだ設定ファイル（`guild.settings.local.ts`、無ければ `guild.settings.ts`）の `commanderSessionDir` と `departments[].sessionDir` に固定する。既定（`guild.settings.ts`）は `~/conect-management`（かなめ）、その下の `accounting`（経理）・`pr`（広報）・`planning`（企画）・`general-affairs`（総務）。`~/` はホームの下を表し、ホームは `os.homedir()` で決める。引数・環境変数では変えない。設定の検証（collector と画面に共通）で、`~`・`~/...`・絶対パスのどれかで、前後の空白・制御文字・末尾の `/`・空や `.`・`..` の区切りが無く、5 つの文字列が互いに違うことを確かめる。`~` とホームの絶対パスのように展開すると同じになる重複は、collector だけが起動時にホームを展開してから調べて止まる（画面はセッションの起動ディレクトリを使わない）
 - 行ログは 1 行ずつストリームで読み、パスが 5 つに**完全一致する行だけ**を残す（末尾の `/`、子ディレクトリ、worktree は当たらない）。それ以外の行はその場で比べて捨て、変数にためず、保存も、件数を含めてログもしない。会社の ID が後で別のパスの行に出たら、その ID は会社の候補から外す（ID の最後の行が正）
 - パスごとに、残った候補のうち最後の行の ID を今のセッションとする。行は MulmoTerminal と同じく前後の空白を落とし、最初の空白で ID とパスに分ける（パスの中の空白はそのまま）。ID が UUID の形でない行、空行、壊れた行は飛ばす
 - 末尾の行（直後に改行が無い行）は書きかけかもしれない（MulmoTerminal は `\n<ID> <パス>` と行頭に改行を付けて追記するので、部門の行が会社のルートまでで途切れるとかなめの行に見える）。前回の周期でも同じ内容が同じ位置で末尾にあったときだけ使い、それ以外はその行を除いて決める。collector が覚えるのは末尾の行のハッシュと終わりの位置だけで、内容は持たない。新しいセッションの反映は最大 1 周期（5 秒）遅れる。`--once` では末尾の行を使わない
@@ -323,7 +329,7 @@ M3 からは、セッションの状態（4.7）を混ぜる。優先順位は �
 出来事のメッセージが無いあいだ（キューが空のとき）、メッセージ窓に「あたらしい できごとは まだ ない。」の代わりにギルドのようすを 20 秒ごとに入れ替えて出す（社長の要望、2026-10-12）。
 
 - 文は 3 種類。A（ふだん）: 1 人ずつの今のようす。パーティの状態（4.6）と暇の段階（うとうと・ねむる・遊ぶ。遊びは行き先に合わせる）から作る。遊びは Canvas と同じく行き帰りの歩きを含むので、行きは「〜へ むかっている」、帰りは「せきに もどっている」と言い、目的地での動作（おちゃ・トイプードルと あそぶ・ながめる・おしゃべり）は滞在中だけ述べる。B（ときどき）: 朝・昼・夕・夜ごとの雰囲気。C（ときどき）: 直近 7 日のクリア数・宝箱の数・いちばん宝箱を集めた人。0 件の行は出さない。7 日の数え方は「最近の成果」（domain/reward.ts）と同じ
-- 名前は設定（guild.settings.ts）から取る。王は「おうさま」、玉座のそばのペットは「トイプードル」と呼ぶ。題名・番号は使わない
+- 名前は読み込んだ設定ファイルから取る。王は「おうさま」、玉座のそばのペットは「トイプードル」と呼ぶ。題名・番号は使わない
 - 選び方は純粋関数: 種類を重み（A 0.65・B 0.2・C 0.15。行の無い種類は除く）で、次に人（A は人を先に選ぶので、文の多い人に偏らない）、次に文を、注入した乱数で選ぶ。直前と同じ文は選ばない
 - 遊びの行き先は Canvas と同じ値で決める: 暇の段階の人ごとの塩（idle.ts の seeds）を画面で 1 回だけ作って Canvas に渡し、Canvas は暇の始まりの時刻を知らせる
 - 出来事のメッセージが来たらすぐそちらを出す。ナレーションはメッセージのキューに入らないので、演出との同期と ▼ の予約は変わらない。最後のメッセージが 30 秒で自動で閉じるか ▼ で閉じてキューが空になったら、新しいナレーションに戻る（6 章 M2）
@@ -350,7 +356,7 @@ M3 からは、セッションの状態（4.7）を混ぜる。優先順位は �
 
 X と note の動画を撮るため、架空のクエストで一連の演出を効果音つきで見せる（社長の依頼、2026-10-12）。本物の Issue の題名は取引先の名前を含みうるので写さない。
 
-- **自動のデモ（Issue #67）**: `?demo=1` が無くても、`/snapshot.json` が 204（collector がまだ書いていない）なら同じ台本を自動で流す（4.3）。違いは 3 つ。「▶ はじめる」の窓を出さず、Canvas の準備ができたら台本を自動で始める。狭い画面（Canvas が隠れる）でも始め、縦に積んだ窓で掲示板・パーティ・メッセージが動く。見えない Canvas の演出だけを捨てる（Canvas が隠れている間の合図を捨てる既存の決まり）。狭い画面で「はじめる」を押せない `?demo=1` の決まりは撮影のためなので、そのまま。ブラウザはクリックの前に音を出せないので、音の設定は「音を出さない・音量 2」から始め（メモリだけ）、「♪ 音を出す」で鳴らせる。画面の上に小さな帯「デモ表示中（架空のデータ）。データを集めると自分のリポジトリに切り替わります」と docs/setup.md へのリンクを出す（帯のぶん画面の高さを詰める）。基準・音の設定・暇の時刻は `?demo=1` と同じくメモリだけに置き、本物の localStorage に触れない
+- **自動のデモ（Issue #67）**: `?demo=1` が無くても、`/snapshot.json` が 204（collector がまだ書いていない）なら同じ台本を自動で流す（4.3）。違いは 3 つ。「▶ はじめる」の窓を出さず、Canvas の準備ができたら台本を自動で始める。狭い画面（Canvas が隠れる）でも始め、縦に積んだ窓で掲示板・パーティ・メッセージが動く。見えない Canvas の演出だけを捨てる（Canvas が隠れている間の合図を捨てる既存の決まり）。狭い画面で「はじめる」を押せない `?demo=1` の決まりは撮影のためなので、そのまま。ブラウザはクリックの前に音を出せないので、音の設定は「音を出さない・音量 2」から始め（メモリだけ）、「♪ 音を出す」で鳴らせる。画面の上に小さな帯「デモ表示中（架空のデータ）。データを集めると自分のリポジトリに切り替わります」と docs/setup.md へのリンクを出す（帯のぶん画面の高さを詰める）。collector が失敗しているとき（4.3 の collector の状態）は、帯の文を「デモ表示中（架空のデータ）。collector が失敗しています（○○）。ターミナルを確認してください」に替え、`--danger` の色で出す。○○は種類を日本語で短くしたもの（`gh-failed` 認証・取得、`validation-failed` データの検証、`write-failed` ファイルの書き込み、`unexpected` 想定外のエラー）。成功が来れば今までどおり本物に切り替わる（Issue #74）。ブラウザのコンソールには、自動のデモを始めたときに `console.info` で案内を 1 行（「collector がまだデータを書いていないので、デモ（架空のデータ）を表示しています。npm run collect（または npm run dev:all）で集めると、自分のリポジトリに切り替わります」）、帯に出す失敗が変わったとき（出始めた・種類が変わった）だけ `console.warn` で帯と同じ文と種類（例: `（gh-failed）`）を出す。`console.error` は使わない（自動のデモの間コンソールのエラーが 0 件であることを E2E が確かめている。Issue #67）。基準・音の設定・暇の時刻は `?demo=1` と同じくメモリだけに置き、本物の localStorage に触れない
 - **入り方**: `?demo=1`（`?hour=` と同じ流儀。`?demo=1&hour=12` で昼に固定できる。`hour` が効くのは開発サーバーのときだけ）。`?demo=1` 自体は開発時もビルドも同じ
 - **実データを読まない**: デモ中のストアは `/snapshot.json` を取りに行かず（`loadSnapshot` を差し替える）、台本が作る架空の snapshot だけを読む。題名・リポジトリ名（`demo-guild/demo-company`）・セッションの状態（MulmoTerminal の代わり）はすべてコードの中の固定値。collector は要らない
 - **localStorage を汚さない**: 差分の基準、音の設定、暇の時刻（`last-active`）をメモリの Storage に置き、ページを閉じれば消える。ふだんの画面の基準と音の設定はそのまま残る。デモの音の設定は最初から「音を出す・音量 2」
@@ -491,7 +497,7 @@ M1 まで行けば「本物の Issue が掲示板に出て、クローズでク�
   - `.madgerc` は JSON で書く（コメント可）。先頭が `{` でないと INI として読まれるので、コメントは括弧の中に書く
   - scoria の実行結果で `complete: true` と「probes not scored」に circular が無いことを確かめる。原因は madge の依存（filing-cabinet・precinct）にあり、上流で直れば `.madgerc` は要らなくなる
 - 画面の E2E は Playwright（Issue #34）。`npm run test:e2e` で動かし、遅いので verify には入れない。CI は verify と並行の別ジョブ e2e で、ブラウザを Playwright の版ごとにキャッシュして `npx playwright install --with-deps chromium` で入れ、失敗時はレポートを artifact に残す
-  - 設定は `apps/web/playwright.config.ts`、テストは `apps/web/e2e/`。開発サーバーは 5196 番（`--strictPort`、host は vite.config.ts の 127.0.0.1）で立て、既に動いているサーバーは使わない。chromium だけ、headless、retries は CI だけ 1。テストは 1 本ずつ順に動かす（アプリの 5 秒ごとの再取得を実時間で待つので、負荷で遅れないように）
+  - 設定は `apps/web/playwright.config.ts`、テストは `apps/web/e2e/`。開発サーバーは 5196 番（`--strictPort`、host は vite.config.ts の 127.0.0.1）で、`--mode e2e` を付けて立て（手元の `guild.settings.local.ts` があっても `guild.settings.ts` を使うため。10 章 9）、既に動いているサーバーは使わない。chromium だけ、headless、retries は CI だけ 1。テストは 1 本ずつ順に動かす（アプリの 5 秒ごとの再取得を実時間で待つので、負荷で遅れないように）
   - データはダミーだけで、`apps/web/.data` には一切触れない（collector の実データを上書きしたり消したりしないため）。`/snapshot.json` は Playwright の `context.route` が全部横取りし、`public/snapshot.sample.json` を guild.settings.ts の repo と固定した時刻に合わせたものを返す。テスト中の中身の差し替え（Issue を閉じる、別のリポジトリ）は route が返す値を変えて行う。横取りの印のヘッダーが無い `/snapshot.json` の応答（開発サーバーから来たもの）がページに 1 件でも届いたら、そのテストを落とす。これで `.data` に実データがあっても画面やレポートには出ない
   - 時刻は `page.clock.setFixedTime` で固定する（タイマーは動かし、5 秒ごとの再取得はそのまま）。音は AudioContext をページ内で偽物に差し替える
   - 確かめること: パーティの窓に Lv・ゲージ・内訳が出て、右の列が高くならない（Issue #19）、開いて console・ページのエラーが無い、掲示板・パーティ・メッセージ窓・取得のようすに値が出る、Canvas に部屋が描かれる（単色でない）、`?hour=12` と `?hour=21.5` で明るさが違う、「音を出す」と音量の切り替え（再読み込み後も残る）、「基準を消す」、760px 未満で窓が縦に積まれ Canvas が隠れる、別のリポジトリの snapshot で止まる、Issue を閉じると「クリアした！」が出る、メッセージ窓のクリックで次へ進み最後に閉じる、`?demo=1` で架空の題名と効果音が出て `/snapshot.json` を一度も取りに行かず localStorage に何も残さない（このテストだけは共通の横取りを使わず、`/snapshot*.json` へのリクエストがあれば落とす）
@@ -507,10 +513,15 @@ M1 まで行けば「本物の Issue が掲示板に出て、クローズでク�
 6. 実データは `apps/web/.data/` に置き、開発時だけの自作プラグインで配信する。build と CI はダミーだけ（5 章）
 7. M3 のセッションの状態は、Claude Code の hooks を足さず、MulmoTerminal が書くファイルを collector が読んで取る（社長の判断）。5 セッションの設定を触らずに済む。会社の 5 つの起動ディレクトリに完全一致する行だけを使い、ほかは捨てる。MulmoTerminal の内部ファイルなので、形が合わなければリアルタイムだけを止める（4.7）
 8. リアルタイムの文言は「いま作業中」「許可待ち」のままにする。`sessions.checkedAt` が 30 秒より古いときにリアルタイムの状態を使わず GitHub だけで決める扱いも、このままにする（社長の判断。4.7）
-9. ほかのチームが使えるように、チームごとの値をリポジトリ直下の `guild.settings.ts` 1 つに集める（Issue #10。社長の判断で、部門の数に応じた席の並べ方は Issue #18 に分けた）
+9. ほかのチームが使えるように、チームごとの値をリポジトリ直下の `guild.settings.ts` 1 つに集める（Issue #10。手元で変えるときはコピーの `guild.settings.local.ts` に書く。下の Issue #76 の項。社長の判断で、部門の数に応じた席の並べ方は Issue #18 に分けた）
    - 置く値: 対象リポジトリ（`repo`）、6 人の名前・役・色（`members`）、部門のラベル・担当・固定の順・セッションの起動ディレクトリ（`departments`）、司令塔のセッションの起動ディレクトリ（`commanderSessionDir`）、ブランチ接頭辞 → 部門（`branchPrefixes`）、ルール変更のパスの規則（`ruleChangePaths`。`exact`・`suffix`・`prefix` の 3 種類で、glob は使わない）
    - 置かない値: 席の位置（Issue #18）、間隔・時間の窓、出力先、MulmoTerminal のファイルのパス（チームで変わらない）
    - TS の値として書き（`as const satisfies`）、collector は Node の型除去で、画面は Vite で読む。JSON にしないのは、書き間違いを型検査でも拾え、ラベルのリテラル型を画面の型に使えるため。schema は `packages/snapshot/src/settings.ts` に置き、型は schema から推論する。読み込んだ時点で zod で検証し、合わなければ collector も画面も項目を挙げて止まる
+   - **手元だけの設定ファイル（Issue #76）**: ほかのチームは `guild.settings.ts` をコピーして `guild.settings.local.ts`（リポジトリ直下、gitignore）にし、そちらを書き換える。`guild.settings.ts` を直接書き換えると、差分が `git status` に残り続けて pull で衝突しうる、PR に混ざりうる、conect.llc の値を前提にしたテストが通らなくなる、のため（メンターの提案、Issue #67）
+     - どちらを読むか: `guild.settings.local.ts` があればそれ、無ければ `guild.settings.ts`。判定は `packages/snapshot/src/settingsFile.ts` の 1 か所。引数・環境変数では変えられない（4.1）。検証は同じ schema（`settings.ts`）で、どちらを読んでも同じにかかる。エラーの文言は、画面からはどちらを読んだか分からないので両方の名前を出す
+     - collector: `src/main.ts` が判定し、Node の `module.registerHooks` の resolve で、`settings.ts` が読む `guild.settings.ts` を `guild.settings.local.ts` に向けてから、残り（`src/start.ts`）を動的 import する。静的 import は評価の前にすべて解決されるので、先に hook を入れてから読み込む必要がある。`snapshot.json` の schema（部門ラベル）も同じ設定から作られるので、モジュールごと差し替える
+     - 画面: `apps/web/vite-plugin-settings.ts` が、開発サーバーの既定のモード（`vite`・`npm run dev`。`command === 'serve'` かつ `mode === 'development'`）のときだけ、同じ import を `guild.settings.local.ts` に向ける。判定は起動時に 1 回で、ファイルを足した・消したら開発サーバーを起動し直す
+     - テストは常に `guild.settings.ts`: vitest はリポジトリ直下の `vitest.config.ts` で動き、このプラグインを読まない。型検査は `guild.settings.ts` だけを見る。build はモードが production なので向けない（ダミーの snapshot.sample.json と組む）。E2E は `--mode e2e` で向けない。ESLint と Prettier は `guild.settings.local.ts` を対象から外す（どの tsconfig にも入らず、書式は人それぞれのため）。モードで変えられるのは「既定に戻す」向きだけで、別のファイルや値を指すことはできない
    - 検証すること: 余分な項目が無い、6 人がそろう、色が `#rrggbb`、部門が 4 つ（Issue #18 まで）、ラベル・担当・起動ディレクトリ（書いた文字列のまま）が重ならない、起動ディレクトリに前後の空白・制御文字が無い、ブランチ接頭辞の部門が部門のラベルにある、`repo` が `owner/name` の形
    - 起動ディレクトリの `~` をホームに展開した後の重複は、共通の検証ではなく collector の起動時に調べて止める。画面は起動ディレクトリを使わないので、画面はそのまま動く
    - メンバーの id（`kaname` など）は変えられない。絵（`assets/sprites/<id>.png`）、手の位置、席がこの id で引かれるため。司令塔は `kaname`、王は `yukihiro`
