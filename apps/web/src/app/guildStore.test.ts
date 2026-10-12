@@ -200,28 +200,6 @@ describe('createGuildStore: failed fetches', () => {
     store.stop();
   });
 
-  it('waits for the collector without halting, then shows its first snapshot (Issue #67)', async () => {
-    const notCollected = { ok: false, reason: 'not-collected' } as const;
-    const { store, storage, loader } = setup([notCollected, notCollected, ok(first)]);
-    store.start();
-    await settle();
-    expect(store.state.failure).toBe('not-collected');
-    expect(store.state.halted).toBe(false);
-    expect(store.state.snapshot).toBeNull();
-    expect(storage.items.has(BASELINE_STORAGE_KEY)).toBe(false);
-    // Polling goes on: the file appears without reloading the page.
-    await nextTick();
-    expect(store.state.failure).toBe('not-collected');
-    await nextTick();
-    expect(loader).toHaveBeenCalledTimes(3);
-    expect(store.state.failure).toBeNull();
-    expect(store.state.snapshot).toEqual(first);
-    // The first snapshot is only the baseline: no events.
-    expect(store.state.messages).toEqual([]);
-    expect(storage.items.has(BASELINE_STORAGE_KEY)).toBe(true);
-    store.stop();
-  });
-
   it('stays halted when a later fetch fails for another reason', async () => {
     const { store } = setup([
       ok(first),
@@ -255,6 +233,30 @@ describe('createGuildStore: failed fetches', () => {
     expect(storage.items.get(BASELINE_STORAGE_KEY)).toBe(baseline);
     await nextTick();
     expect(store.state.halted).toBe(false);
+    store.stop();
+  });
+});
+
+describe('createGuildStore: not collected yet (Issue #67)', () => {
+  it('waits for the collector without halting, then shows its first snapshot (Issue #67)', async () => {
+    const notCollected = { ok: false, reason: 'not-collected' } as const;
+    const { store, storage, loader } = setup([notCollected, notCollected, ok(first)]);
+    store.start();
+    await settle();
+    expect(store.state.failure).toBe('not-collected');
+    expect(store.state.halted).toBe(false);
+    expect(store.state.snapshot).toBeNull();
+    expect(storage.items.has(BASELINE_STORAGE_KEY)).toBe(false);
+    // Polling goes on: the file appears without reloading the page.
+    await nextTick();
+    expect(store.state.failure).toBe('not-collected');
+    await nextTick();
+    expect(loader).toHaveBeenCalledTimes(3);
+    expect(store.state.failure).toBeNull();
+    expect(store.state.snapshot).toEqual(first);
+    // The first snapshot is only the baseline: no events.
+    expect(store.state.messages).toEqual([]);
+    expect(storage.items.has(BASELINE_STORAGE_KEY)).toBe(true);
     store.stop();
   });
 });

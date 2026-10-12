@@ -259,28 +259,6 @@ describe('buildFetchStatus', () => {
     expect(view.fetchedAt).toBe(formatClock(at(fetchedAt)));
   });
 
-  it('guides instead of failing while nothing was collected yet (Issue #67)', () => {
-    expect(buildFetchStatus(null, 'not-collected', at(fetchedAt))).toEqual({
-      failure: null,
-      notCollected: true,
-      stale: false,
-      fetchedAt: null,
-      sessions: null,
-    });
-  });
-
-  it('treats a 404 after a shown snapshot as an ordinary failure, never stale', () => {
-    const later = at(minutesAfter(fetchedAt, 1));
-    const view = buildFetchStatus({ fetchedAt, sessions }, 'not-collected', later);
-    expect(view.notCollected).toBe(false);
-    expect(view.failure).toBe('取得失敗（データのファイルがありません）');
-  });
-
-  it('is not a guide for any other failure before the first snapshot', () => {
-    for (const reason of ['network', 'http', 'invalid'] as const)
-      expect(buildFetchStatus(null, reason, 0).notCollected).toBe(false);
-  });
-
   it('marks the snapshot stale only past five minutes', () => {
     expect(
       buildFetchStatus({ fetchedAt, sessions }, null, at(minutesAfter(fetchedAt, 5))).stale,
@@ -303,6 +281,33 @@ describe('buildFetchStatus', () => {
     for (const reason of reasons) {
       expect(buildFetchStatus(null, reason, 0).failure).toMatch(/^取得失敗（.+）$/);
     }
+  });
+});
+
+describe('buildFetchStatus: not collected yet (Issue #67)', () => {
+  const fetchedAt = '2026-10-12T00:00:00Z';
+  const sessions: Snapshot['sessions'] = { status: 'ok', checkedAt: fetchedAt, members: [] };
+
+  it('guides instead of failing while nothing was collected yet (Issue #67)', () => {
+    expect(buildFetchStatus(null, 'not-collected', at(fetchedAt))).toEqual({
+      failure: null,
+      notCollected: true,
+      stale: false,
+      fetchedAt: null,
+      sessions: null,
+    });
+  });
+
+  it('treats a 404 after a shown snapshot as an ordinary failure, never stale', () => {
+    const later = at(minutesAfter(fetchedAt, 1));
+    const view = buildFetchStatus({ fetchedAt, sessions }, 'not-collected', later);
+    expect(view.notCollected).toBe(false);
+    expect(view.failure).toBe('取得失敗（データのファイルがありません）');
+  });
+
+  it('is not a guide for any other failure before the first snapshot', () => {
+    for (const reason of ['network', 'http', 'invalid'] as const)
+      expect(buildFetchStatus(null, reason, 0).notCollected).toBe(false);
   });
 });
 
