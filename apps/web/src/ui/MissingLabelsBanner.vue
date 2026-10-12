@@ -18,7 +18,7 @@ const text = computed(() => missingLabelsBannerText(props.missing));
       :href="MISSING_LABELS_GUIDE_URL"
       target="_blank"
       rel="noopener noreferrer"
-      >直し方（docs/setup.md）</a
+      >直し方（docs/setup.md の 3 章）</a
     >
   </p>
 </template>

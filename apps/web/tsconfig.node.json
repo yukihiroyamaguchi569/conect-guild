@@ -17,6 +17,7 @@
     "vite-plugin-settings.test.ts",
     "vite-plugin-snapshot.ts",
     "vite-plugin-snapshot.test.ts",
-    "dev-host.test.ts"
+    "dev-host.test.ts",
+    "setup-guide-anchors.test.ts"
   ]
 }

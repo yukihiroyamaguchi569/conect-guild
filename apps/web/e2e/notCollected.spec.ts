@@ -8,7 +8,8 @@ import { NOW, sampleSnapshot } from './sampleSnapshot.ts';
 const REFRESH_TIMEOUT = 15_000;
 /** The demo's first scroll is handed out about 5 s after it starts (domain/demoScript.ts). */
 const FIRST_SCROLL_TIMEOUT = 20_000;
-const SETUP_GUIDE = 'https://github.com/yukihiroyamaguchi569/conect-guild/blob/main/docs/setup.md';
+const SETUP_GUIDE =
+  'https://github.com/yukihiroyamaguchi569/conect-guild/blob/main/docs/setup.md#2-自分のリポジトリで使う';
 
 /** Chrome logs a failed fetch as a console error: expected for the 500 test only. */
 const SERVER_ERROR_LOG = /^console: Failed to load resource: .* status of 500 /;
@@ -46,7 +47,7 @@ test('a 204 plays the demo by itself, then turns live once collected, without ev
   await expect(banner).toContainText(
     'デモ表示中（架空のデータ）。データを集めると自分のリポジトリに切り替わります',
   );
-  const guide = banner.getByRole('link', { name: '集め方（docs/setup.md）' });
+  const guide = banner.getByRole('link', { name: '集め方（docs/setup.md の 2 章）' });
   await expect(guide).toHaveAttribute('href', SETUP_GUIDE);
   await expect(guide).toHaveAttribute('target', '_blank');
   await expect(guide).toHaveAttribute('rel', 'noopener noreferrer');
