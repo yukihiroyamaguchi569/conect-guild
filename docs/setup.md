@@ -61,6 +61,8 @@ gh repo view <owner/name>   # 眺めたいリポジトリ（例: your-name/my-co
 
 ### 2-2. 設定ファイルを作って書き換える
 
+リポジトリ名・5 つのフォルダ・4 つのラベルと接頭辞を書き換えるだけなら、手で書く代わりに道具（`npm run settings:write`）でも書けます（[2-2b](#2-2b-道具で書くnpm-run-settingswrite)）。
+
 **やること**
 
 リポジトリ直下の [`guild.settings.json`](../guild.settings.json)（conect.llc の設定。既定）をコピーして `guild.settings.local.json` を作り、コピーのほうを書き換えます。
@@ -121,6 +123,46 @@ cp guild.settings.json guild.settings.local.json
 **確かめること**
 
 - 設定は collector と画面の起動時に zod で検証します。間違いがあると、次の 2-3 で起動したときに、どの項目が悪いかを出して止まります（[3 章](#設定の検証で止まる)）
+
+### 2-2b. 道具で書く（`npm run settings:write`）
+
+2-2 の手作業の代わりに使えます。値だけを書いた JSON を標準入力で渡すと、検証してから `guild.settings.local.json` を書きます。対話で値を集める入口（Claude Code のスキル）はこれから用意します（[#79](https://github.com/yukihiroyamaguchi569/conect-guild/issues/79)）。
+
+**やること**
+
+値だけの JSON を作ります（例: `input.json`。置き場所はどこでも構いません）。部門は 4 つを並び順のとおりにまとめて書きます。`prefix` はその部門のブランチ名の接頭辞です。
+
+```json
+{
+  "repo": "your-name/my-company",
+  "commanderSessionDir": "~/my-company",
+  "departments": [
+    { "label": "経理", "sessionDir": "~/my-company/accounting", "prefix": "accounting/" },
+    { "label": "広報", "sessionDir": "~/my-company/pr", "prefix": "pr/" },
+    { "label": "企画", "sessionDir": "~/my-company/planning", "prefix": "planning/" },
+    { "label": "総務", "sessionDir": "~/my-company/general-affairs", "prefix": "general-affairs/" }
+  ]
+}
+```
+
+まず書かずに確かめ、よければ書きます。
+
+```bash
+npm run settings:write -- --dry-run < input.json   # 書かずに、確認の表と警告・エラーを出す
+npm run settings:write -- --write < input.json     # 書く（guild.settings.local.json が既にあるときは --overwrite も付ける）
+```
+
+- 入力に無い項目（`members` の名前・色、`ruleChangePaths`、`branchPrefixes` の `docs/` で始まる行など）は、いまの設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の値を保ちます
+- 既にある `guild.settings.local.json` を上書きするときは、前の内容を `guild.settings.local.json.bak`（git に入りません）に残します。戻すときはこのファイルを `guild.settings.local.json` に名前を変えます
+- `--json` を付けると、同じ結果を JSON で出します
+
+**確かめること**
+
+- 確認の表で、部門ごとのラベル・フォルダ・接頭辞と、そのフォルダの `CLAUDE.md` にラベルが見つかったかを見ます
+- **エラー**（書けません）: 設定の検証に合わない、フォルダが無い、`~` を展開すると 2 つのフォルダが同じになる、`guild.settings.local.json` があるのに `--overwrite` が無い
+- **警告**（書けます）: ラベルがリポジトリに無い、GitHub にラベルを問い合わせられなかった（collector があとで照合し直します）、部門のフォルダの `CLAUDE.md` にその部門のラベルが見つからない、接頭辞とフォルダ名が違う。最後の 2 つは、部門のフォルダを取り違えたときに出ます。[orchestration.md](orchestration.md) の雛形どおりでない会社では、取り違えていなくても出ることがあります
+- 部門の `CLAUDE.md` は、ラベルの文字があるかを調べるだけで、中身を表示も保存もしません
+- 書いたら、2-3 の手順で起動し、`settings:` の行が `guild.settings.local.json` で、`ok:` の行が出ることを確かめます。`sessions=5 ok` は MulmoTerminal を使う人だけの確認です
 
 ### 2-3. collector と画面を起動する
 
