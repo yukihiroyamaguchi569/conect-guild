@@ -53,6 +53,19 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
 
 `npm run verify`（lint・型検査・テスト）は、このリポジトリを開発するためのものです。テストは conect.llc の設定を前提にしているので、自分のチーム向けに設定を変えると通りません。設定を変えたら `npm run dev:all`（または `npm run collect` と `npm run dev`）を使ってください。テストを通したいときは、設定を戻すか、#18 の対応を待ってください。
 
+## 困ったとき
+
+- **画面の帯に「collector が失敗しています」と出る**: collector は動いていますが、データを集められていません。collector のターミナル（`npm run dev:all` なら行頭が `[collect]` の行）に、失敗の種類（`failed: gh-failed` など）が出ています。帯の（　）の中は種類を短くしたもので、認証・取得は `gh-failed`、データの検証は `validation-failed`、ファイルの書き込みは `write-failed` です。ブラウザのコンソールにも同じ内容が警告として 1 回出ます
+- **`failed: gh-failed` が出る**: `gh` で GitHub から読めていません。`guild.settings.ts` の `repo` を、`gh` でログインしているアカウントで読めるか確かめてください。
+
+  ```bash
+  gh auth status                 # gh にログインしているか
+  gh repo view <owner/name>      # repo に書いたリポジトリを読めるか（<owner/name> は repo の値）
+  ```
+
+  読めなければ、読めるリポジトリに `repo` を書き換えるか、読めるアカウントで `gh auth login` します。collector は 60 秒ごとに試し直すので、直れば止めずにそのまま本物の画面に切り替わります
+- **帯が「デモ表示中（架空のデータ）。データを集めると…」のまま変わらない**: collector を動かしていないか、止まっています（5 分より前に止まった collector の失敗は帯に出しません）。`npm run dev:all` か `npm run collect` で動かしてください
+
 ## MulmoTerminal との関係
 
 - MulmoTerminal が無くても動きます。GitHub の Issue・PR から、掲示板・パーティの状態・受け渡しの演出までを出します
