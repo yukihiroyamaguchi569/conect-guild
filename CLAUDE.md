@@ -11,7 +11,7 @@ conect-guild は、conect.llc の「AI だけで動く会社」（司令塔 + �
 - **ブラウザから外部へ通信しない。** GitHub API はブラウザから呼ばない。収集は `packages/collector` が `gh` CLI で行う。トークンをフロントのコード・環境変数（`VITE_` を含む）に置かない
 - **collector の権限とログ**: 対象リポジトリはリポジトリ直下の設定ファイル（手元の `guild.settings.local.ts` があればそれ、無ければ `guild.settings.ts`。どちらを読むかもファイルの有無だけで決め、テストは常に `guild.settings.ts`）に固定し、引数や環境変数で変えられないようにする。`gh` は `child_process.execFile('gh', [引数の配列])` で呼び、シェル文字列を組まない。複数ページは `--paginate --jq` で要るフィールドだけに絞って 1 行 1 JSON で受け、行ごとに検証する（差分の中身や Issue の本文を受け取らない）。認証はユーザーの `gh` のものをそのまま使う。ログに出すのは件数・時刻・エラーの種類だけで、題名・本文・ブランチ名は出さない。取得や検証に失敗したら snapshot を書き換えない
 - **実データの置き場所**: collector は `apps/web/.data/snapshot.json`（gitignore、0600）に、一時ファイルに書いてから `rename` で原子的に置き換える。実データを `apps/web/public/` に置かない。画面へは開発時だけの自作 Vite プラグインが `/snapshot.json` を `Cache-Control: no-store` で返す
-- **待ち受けを増やさない。** 立てるサーバーは Vite の開発サーバーだけで、`vite.config.ts` の `server.host` を `127.0.0.1` に固定する。`--host` や `server.host: true` を使わない（LAN に出さない）。独自の HTTP/WS サーバーを作らない
+- **待ち受けを増やさない。** 立てるサーバーは Vite の開発サーバーだけで、`vite.config.ts` の `server.host` を `127.0.0.1` に固定する。`--host` には `127.0.0.1` 以外を渡さない（`0.0.0.0` や `true` で LAN に出さない）。独自の HTTP/WS サーバーを作らない
 - **会話の中身に触れない。** 読むのは Issue・PR の番号・題名・ラベル・状態・日時・ブランチ名と、open PR の変更ファイルのパスだけ。PR の題名と本文は `#番号` を拾うためだけに読み、本文は保存しない。コメント・transcript は読まない。hooks（M3）を入れるときも `tool_input` は保存しない
 - **公開しない前提。** Issue の題名には取引先の名前が入りうる。`vite build` と CI はダミーの `apps/web/public/snapshot.sample.json`（架空の題名）だけを使う。`dist/` は配布しない。GitHub Pages などに載せない。localStorage には番号・状態・時刻だけを保存し、題名を残さない
 - **外部の文字列は文字として描く。** Issue・PR の題名やラベルは Vue のテキスト補間か Canvas の `fillText` だけで描く。`v-html`・`innerHTML` などの HTML への直接挿入と、外部 URL の画像・フォント・スクリプトの読み込みは使わない
