@@ -174,6 +174,28 @@ describe('createScreenMode: the collector status and the switch to live', () => 
 });
 
 describe('createCollectorWatch', () => {
+  it('drops a read that ends after a later one (the slow read at the start)', async () => {
+    const pending: ((read: CollectorStatusRead) => void)[] = [];
+    const console = fakeConsole();
+    const watch = createCollectorWatch({
+      loadStatus: () =>
+        new Promise((done) => {
+          pending.push(done);
+        }),
+      now: () => NOW,
+      console,
+    });
+    const first = watch.start();
+    const second = watch.refresh();
+    pending[1]?.(failedAt(NOW));
+    await second;
+    expect(watch.failure.value).toBe('gh-failed');
+    pending[0]?.(ABSENT);
+    await first;
+    expect(watch.failure.value).toBe('gh-failed');
+    expect(console.warn).toHaveBeenCalledOnce();
+  });
+
   it('warns again for the same failure after a new start (a new automatic demo)', async () => {
     const console = fakeConsole();
     const watch = createCollectorWatch({

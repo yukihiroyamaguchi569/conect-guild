@@ -26,7 +26,7 @@ export interface CollectorWatch {
   start(): Promise<void>;
   /** Reads the status again; a warning goes to the console when the failure shown changes. */
   refresh(): Promise<void>;
-  /** The automatic demo ends: forgets the status; a read in flight then changes nothing. */
+  /** The automatic demo ends: forgets the status; reads in flight then change nothing. */
   stop(): void;
 }
 
@@ -34,7 +34,10 @@ export interface CollectorWatch {
 export function createCollectorWatch(options: CollectorWatchOptions): CollectorWatch {
   const failure = shallowRef<CollectorFailureKind | null>(null);
   let status: CollectorStatus | null = null;
-  let generation = 0;
+  // Reads are numbered: one that ends after a later one was applied, or after stop, is dropped
+  // (the read at the start may still be going when the next read ends).
+  let requested = 0;
+  let applied = 0;
 
   function show(next: CollectorFailureKind | null): void {
     const notice = collectorFailureNotice(failure.value, next);
@@ -43,9 +46,11 @@ export function createCollectorWatch(options: CollectorWatchOptions): CollectorW
   }
 
   async function refresh(): Promise<void> {
-    const started = generation;
+    requested += 1;
+    const order = requested;
     const read = await options.loadStatus();
-    if (started !== generation) return;
+    if (order <= applied) return;
+    applied = order;
     // An unreadable status keeps the last one, so one bad read does not flicker the banner.
     if (read.kind === 'absent') status = null;
     else if (read.kind === 'status') status = read.status;
@@ -53,7 +58,7 @@ export function createCollectorWatch(options: CollectorWatchOptions): CollectorW
   }
 
   function stop(): void {
-    generation += 1;
+    applied = requested;
     status = null;
     failure.value = null;
   }
