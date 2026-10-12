@@ -189,6 +189,19 @@ describe('createScreenMode: the collector status and the switch to live', () => 
 });
 
 describe('createCollectorWatch', () => {
+  it('takes a reader that throws as unreadable, keeping the last status', async () => {
+    let fail = false;
+    const watch = createCollectorWatch({
+      loadStatus: () => (fail ? Promise.reject(new Error('boom')) : Promise.resolve(failedAt(NOW))),
+      now: () => NOW,
+      console: fakeConsole(),
+    });
+    await watch.start();
+    fail = true;
+    await expect(watch.refresh()).resolves.toBeUndefined();
+    expect(watch.failure.value).toBe('gh-failed');
+  });
+
   it('still takes an earlier read that ends after a later unreadable one', async () => {
     const pending: ((read: CollectorStatusRead) => void)[] = [];
     const watch = createCollectorWatch({
@@ -208,7 +221,9 @@ describe('createCollectorWatch', () => {
     await first;
     expect(watch.failure.value).toBe('gh-failed');
   });
+});
 
+describe('createCollectorWatch: reads out of order', () => {
   it('drops a read that ends after a later one (the slow read at the start)', async () => {
     const pending: ((read: CollectorStatusRead) => void)[] = [];
     const console = fakeConsole();

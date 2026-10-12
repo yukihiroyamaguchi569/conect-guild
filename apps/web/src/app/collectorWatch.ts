@@ -45,10 +45,19 @@ export function createCollectorWatch(options: CollectorWatchOptions): CollectorW
     failure.value = next;
   }
 
+  /** The callers do not wait for a read (app/screenMode.ts), so a throwing reader counts as unreadable. */
+  async function readSafely(): Promise<CollectorStatusRead> {
+    try {
+      return await options.loadStatus();
+    } catch {
+      return { kind: 'unreadable' };
+    }
+  }
+
   async function refresh(): Promise<void> {
     requested += 1;
     const order = requested;
-    const read = await options.loadStatus();
+    const read = await readSafely();
     if (order <= applied) return;
     // An unreadable status keeps the last one, so one bad read does not flicker the banner. It
     // settles nothing either: a valid answer to an earlier read may still come and count.
