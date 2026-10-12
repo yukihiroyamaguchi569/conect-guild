@@ -11,5 +11,11 @@
     "allowImportingTsExtensions": true,
     "skipLibCheck": true
   },
-  "include": ["vite.config.ts", "vite-plugin-snapshot.ts", "vite-plugin-snapshot.test.ts"]
+  "include": [
+    "vite.config.ts",
+    "vite-plugin-settings.ts",
+    "vite-plugin-settings.test.ts",
+    "vite-plugin-snapshot.ts",
+    "vite-plugin-snapshot.test.ts"
+  ]
 }

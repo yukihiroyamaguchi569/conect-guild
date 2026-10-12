@@ -1,36 +1,10 @@
-import { setTimeout as delay } from 'node:timers/promises';
-import { COLLECTOR_CONFIG } from '../collector.config.ts';
-import { createGhRunner } from './gh.ts';
-import { runCollector } from './run.ts';
-import { createCompanySessionsReader } from './sessionFiles.ts';
-import { writeFileAtomic } from './write.ts';
+import { existsSync } from 'node:fs';
+import { chooseSettingsFile, SETTINGS_ROOT } from '@conect-guild/snapshot/settingsFile';
+import { useSettingsFile } from './settingsHook.ts';
 
-const controller = new AbortController();
-const readCompanySessions = createCompanySessionsReader(COLLECTOR_CONFIG.sessions);
-process.once('SIGINT', () => {
-  controller.abort();
-});
-
-async function sleepUnlessAborted(ms: number): Promise<void> {
-  try {
-    await delay(ms, undefined, { signal: controller.signal });
-  } catch (error) {
-    if (!controller.signal.aborted) throw error;
-  }
-}
-
-process.exitCode = await runCollector(process.argv.slice(2), {
-  now: () => new Date(),
-  log: (line) => {
-    console.log(line);
-  },
-  error: (line) => {
-    console.error(line);
-  },
-  gh: createGhRunner(controller.signal),
-  readSessions: () => readCompanySessions(controller.signal),
-  writeSnapshot: (content) => writeFileAtomic(COLLECTOR_CONFIG.snapshotPath, content),
-  writeStatus: (content) => writeFileAtomic(COLLECTOR_CONFIG.statusPath, content),
-  sleep: sleepUnlessAborted,
-  signal: controller.signal,
-});
+// guild.settings.local.ts when it exists, else guild.settings.ts (docs/DESIGN.md 4.1). Chosen
+// before the collector is imported, since the settings are read and checked on import.
+const settingsFile = chooseSettingsFile(SETTINGS_ROOT, existsSync);
+useSettingsFile(settingsFile, SETTINGS_ROOT);
+console.log(`[collector] settings: ${settingsFile.name}`);
+await import('./start.ts');

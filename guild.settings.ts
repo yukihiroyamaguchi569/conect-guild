@@ -1,9 +1,10 @@
 /**
- * The team-specific settings in one place: rewrite this file to use conect-guild with your own
- * team. The collector and the web app both read it and check it against the schema
- * (packages/snapshot/src/settings.ts) when they start; an invalid file stops them with a message.
- * None of these values can be changed from command-line arguments or environment variables
- * (docs/DESIGN.md 4.1).
+ * The team-specific settings in one place (conect.llc's, the default). To use conect-guild with
+ * your own team, copy this file to guild.settings.local.ts (git-ignored) and rewrite the copy: the
+ * collector and the dev server read the local file when it exists, while the tests keep this one.
+ * Whichever is read is checked against the schema (packages/snapshot/src/settings.ts) when they
+ * start; an invalid file stops them with a message. None of these values can be changed from
+ * command-line arguments or environment variables (docs/DESIGN.md 4.1).
  */
 import type { GuildSettingsInput } from '@conect-guild/snapshot/settings';
 

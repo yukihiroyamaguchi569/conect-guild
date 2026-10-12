@@ -47,7 +47,8 @@ export function companySeatsOf(settings: SessionDirSettings, home: string): Comp
 
 // Fixed on purpose: the target repository, the company sessions, intervals and paths must not be
 // changeable from command-line arguments or environment variables (docs/DESIGN.md 4.1, 4.7). The
-// team's values come from guild.settings.ts at the repository root.
+// team's values come from guild.settings.local.ts (if it exists) or guild.settings.ts at the
+// repository root (src/main.ts chooses).
 export const COLLECTOR_CONFIG = {
   repo: GUILD_SETTINGS.repo,
   // Branch name prefix → department, for the history (the branch names themselves are not kept).
