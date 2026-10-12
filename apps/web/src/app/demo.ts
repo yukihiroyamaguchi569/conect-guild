@@ -19,6 +19,19 @@ export const DEMO_REFRESH_INTERVAL_MS = 1_000;
 
 /** The sound is on in the demo: the はじめる click lets the browser play it (app/useSound.ts). */
 const DEMO_SOUND: SoundSettings = { enabled: true, volume: 2 };
+/**
+ * The automatic demo (Issue #67) starts with no click, and the browser plays no sound before one:
+ * it starts silent, and the 音を出す button turns the sound on.
+ */
+const AUTO_DEMO_SOUND: SoundSettings = { enabled: false, volume: 2 };
+
+export interface DemoSessionOptions {
+  /**
+   * The automatic demo shown while nothing is collected yet (Issue #67): no はじめる, the script
+   * starts by itself as soon as it could have been started, silent.
+   */
+  readonly auto?: boolean;
+}
 
 /**
  * Why はじめる cannot start the script yet: the canvas is still loading its pictures, or it is
@@ -50,18 +63,29 @@ export interface DemoSession {
   setStageShown(shown: boolean): void;
   /** はじめる: the script starts now. Only the first call with no block counts; else nothing. */
   start(): void;
+  /** The automatic demo (Issue #67): no はじめる window, the script starts by itself. */
+  readonly auto: boolean;
 }
 
-export function createDemoSession(now: () => number = Date.now): DemoSession {
+export function createDemoSession(
+  now: () => number = Date.now,
+  options: DemoSessionOptions = {},
+): DemoSession {
+  const auto = options.auto ?? false;
   const memory = createMemoryStorage();
   const storage = createKeyValueStore(() => memory);
-  storage.write(SOUND_STORAGE_KEY, DEMO_SOUND);
+  storage.write(SOUND_STORAGE_KEY, auto ? AUTO_DEMO_SOUND : DEMO_SOUND);
   const ready = shallowRef(false);
   // Unknown until the canvas measures itself: counted as hidden until then.
   const stageShown = shallowRef(false);
   const block = computed(() => demoBlock(ready.value, stageShown.value));
   const started = shallowRef(false);
   let startedAt: number | null = null;
+  function start(): void {
+    if (block.value !== null || startedAt !== null) return;
+    startedAt = now();
+    started.value = true;
+  }
   return {
     guildOptions: {
       loadSnapshot: () => {
@@ -78,14 +102,13 @@ export function createDemoSession(now: () => number = Date.now): DemoSession {
     started,
     markReady() {
       ready.value = true;
+      if (auto) start();
     },
     setStageShown(shown) {
       stageShown.value = shown;
+      if (auto) start();
     },
-    start() {
-      if (block.value !== null || startedAt !== null) return;
-      startedAt = now();
-      started.value = true;
-    },
+    start,
+    auto,
   };
 }

@@ -186,3 +186,43 @@ describe('the demo, alone', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('the automatic demo (Issue #67)', () => {
+  it('starts silent, in memory only', () => {
+    vi.stubGlobal('localStorage', storage);
+    const demo = createDemoSession(() => Date.now(), { auto: true });
+    expect(demo.auto).toBe(true);
+    expect(loadSoundSettings(demo.storage)).toEqual({ enabled: false, volume: 2 });
+    expect(storage.setItem).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('starts by itself once the canvas is ready and on screen, not before', async () => {
+    vi.useFakeTimers({ now: START });
+    const demo = createDemoSession(() => Date.now(), { auto: true });
+    const store = createGuildStore(demo.guildOptions);
+    store.start();
+    demo.setStageShown(true);
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(demo.started.value).toBe(false);
+    demo.setStageShown(false);
+    demo.markReady();
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(demo.started.value).toBe(false);
+    // No はじめる: being shown is enough, and the king's first call is not lost.
+    demo.setStageShown(true);
+    expect(demo.started.value).toBe(true);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(store.state.summons?.members).toEqual(['kaname']);
+    store.stop();
+    vi.useRealTimers();
+  });
+
+  it('does not start by itself in the demo of ?demo=1', () => {
+    const demo = createDemoSession(() => Date.now());
+    demo.markReady();
+    demo.setStageShown(true);
+    expect(demo.auto).toBe(false);
+    expect(demo.started.value).toBe(false);
+  });
+});
