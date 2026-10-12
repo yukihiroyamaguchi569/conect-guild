@@ -32,6 +32,8 @@ The demo mode with made-up data.
 - **Lines**: members say a short line when a scroll is handed over, a chest is delivered, or a quest is cleared
 - **Demo mode**: plays a loop of scripted, fictional quests
 
+The number of departments is fixed at four (one commander, four departments and the president: six members). What your team needs to use it is listed under 「使える条件」 (requirements) in [docs/setup.md](docs/setup.md#0-使える条件) (Japanese).
+
 ## Try the demo
 
 With Node.js 26.10 or later:
@@ -49,6 +51,7 @@ To watch or film it with sound from the start, open http://127.0.0.1:5173/?demo=
 
 - Design: [docs/DESIGN.md](docs/DESIGN.md) (Japanese)
 - Using it with your own team (settings, collecting, data handling): [docs/setup.md](docs/setup.md) (Japanese)
+- How the commander and department AIs work through GitHub, with CLAUDE.md templates: [docs/orchestration.md](docs/orchestration.md) (Japanese)
 - Changelog: [docs/changes/](docs/changes/) (Japanese)
 
 ## License

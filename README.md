@@ -32,6 +32,8 @@ AI だけで動く小さな会社を、レトロ RPG のギルド画面として
 - **セリフ**: 巻物の受け渡し・宝箱・クリアのときに短い一言
 - **デモモード**: 架空のクエストで一連の演出をくり返す
 
+部門は 4 つで固定です（司令塔 1・部門 4・社長 1 の 6 人）。自分のチームで使える条件は [docs/setup.md の「使える条件」](docs/setup.md#0-使える条件)にまとめています。
+
 ## デモモードで見る
 
 Node.js 26.10 以上で:
@@ -49,6 +51,7 @@ http://127.0.0.1:5173 を開くだけで、架空のクエストのデモが動�
 
 - 設計: [docs/DESIGN.md](docs/DESIGN.md)
 - 自分のチームで使う（設定・収集・データの扱い）: [docs/setup.md](docs/setup.md)
+- 司令塔と部門の AI を GitHub で回す流儀と CLAUDE.md の雛形: [docs/orchestration.md](docs/orchestration.md)
 - 変更履歴: [docs/changes/](docs/changes/)
 
 ## ライセンス
