@@ -28,7 +28,9 @@ const AUTO_DEMO_SOUND: SoundSettings = { enabled: false, volume: 2 };
 export interface DemoSessionOptions {
   /**
    * The automatic demo shown while nothing is collected yet (Issue #67): no はじめる, the script
-   * starts by itself as soon as it could have been started, silent.
+   * starts by itself, silent, once the canvas is ready, even when it is hidden (narrow screens):
+   * the stacked windows still show the messages and the party, and only the unseen scenes are
+   * dropped. Filming (`?demo=1`) keeps waiting for a shown canvas.
    */
   readonly auto?: boolean;
 }
@@ -81,8 +83,8 @@ export function createDemoSession(
   const block = computed(() => demoBlock(ready.value, stageShown.value));
   const started = shallowRef(false);
   let startedAt: number | null = null;
-  function start(): void {
-    if (block.value !== null || startedAt !== null) return;
+  function begin(): void {
+    if (startedAt !== null) return;
     startedAt = now();
     started.value = true;
   }
@@ -102,13 +104,14 @@ export function createDemoSession(
     started,
     markReady() {
       ready.value = true;
-      if (auto) start();
+      if (auto) begin();
     },
     setStageShown(shown) {
       stageShown.value = shown;
-      if (auto) start();
     },
-    start,
+    start() {
+      if (block.value === null) begin();
+    },
     auto,
   };
 }

@@ -83,6 +83,26 @@ test('a 204 plays the demo by itself, then turns live once collected, without ev
   expect(pageErrors).toEqual([]);
 });
 
+test('on a narrow screen the automatic demo still runs in the stacked windows', async ({
+  page,
+  pageErrors,
+  snapshotServer,
+}) => {
+  await page.setViewportSize({ width: 700, height: 900 });
+  await page.clock.setSystemTime(NOW);
+  snapshotServer.failWith(204);
+  await page.goto('/');
+  await expect(page.getByRole('status', { name: 'デモ表示中' })).toBeVisible();
+  // The canvas is hidden, but the script runs: the board, the party and the messages move.
+  await expect(page.getByRole('img', { name: 'ギルドの社屋' })).toBeHidden();
+  const board = page.getByRole('region', { name: 'クエスト掲示板' });
+  await expect(board).toContainText('10 月分の請求書を作る', { timeout: FIRST_SCROLL_TIMEOUT });
+  const message = page.getByRole('region', { name: 'メッセージ' });
+  await expect(message).toContainText('わたした', { timeout: FIRST_SCROLL_TIMEOUT });
+  await expect(page.getByRole('region', { name: 'パーティのようす' })).toContainText('作業中');
+  expect(pageErrors).toEqual([]);
+});
+
 test('a 500 stays an error, never the demo', async ({
   page,
   pageErrors,
