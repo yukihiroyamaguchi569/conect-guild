@@ -8,48 +8,19 @@ import { PLAY_SPOTS } from './idleSpots';
 import { levelTags, type LevelTag } from './levelTags';
 import { linesOf, type LineScene, type SpokenLine } from './lineBook';
 import type { PickLine } from './lines';
-import { BUBBLE_RISE, DETAIL_SCALE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
+import { TILE_SIZE } from './metrics';
 import { MS_PER_TILE, walkSegment } from './motion';
 import { playScene } from './murmurs';
-import { overheadLift, overheadSide, type Side } from './overhead';
-import type { Point } from './path';
+import type { Box } from './overhead';
+import { bodyBox, placeOverheads, placedBox, type Placed } from './overheadPlace';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH, TALLEST_WINDOW_EXTENTS } from './map';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
-import { NO_HOLDS, speechesAt, summonsEnd, withSummons } from './summons';
+import { NO_HOLDS, speechesAt, summonsEnd, withSummons, type SpeechLine } from './summons';
 
 /**
  * The members' line bubbles never meet the 「Lv N」 tags on the desks (levelTags.ts, Issue #19):
  * every moment of every scene, for every department, walked or tossed.
  */
-
-interface Box {
-  readonly left: number;
-  readonly right: number;
-  readonly top: number;
-  readonly bottom: number;
-}
-
-/**
- * A line bubble over feet drawn at `feet` (draw.ts drawBubble): the box, 9 detail px high and as
- * wide as the text (a full-width character of the 7 px font is 7 px, plus 6 px), 3 detail px right
- * of the feet (or left of them on the left side), and its tail, 2 by 2 detail px under the box's
- * end next to the head.
- */
-function bubbleBoxes(feet: Point, lift: number, line: string, side: Side): Box[] {
-  const width = (Array.from(line).length * 7 + 6) * DETAIL_SCALE;
-  const left = side === 'right' ? feet.x + 3 * DETAIL_SCALE : feet.x - 3 * DETAIL_SCALE - width;
-  const top = feet.y - OVERHEAD_OFFSET - BUBBLE_RISE * DETAIL_SCALE - lift;
-  const tail = side === 'right' ? left + DETAIL_SCALE : left + width - 3 * DETAIL_SCALE;
-  return [
-    { left, right: left + width, top, bottom: top + 9 * DETAIL_SCALE },
-    {
-      left: tail,
-      right: tail + 2 * DETAIL_SCALE,
-      top: top + 9 * DETAIL_SCALE,
-      bottom: top + 11 * DETAIL_SCALE,
-    },
-  ];
-}
 
 /** A tag's text (bold 10 px, 「Lv 99」 about 28 px wide) with its 1 px outline. */
 function tagBox(tag: LevelTag): Box {
@@ -86,10 +57,47 @@ const CASES = (['issue-opened', 'pr-merged', 'issue-closed'] as const).flatMap((
 
 const WINDOWS = Object.values(TALLEST_WINDOW_EXTENTS);
 
+/**
+ * Where words over `member` go among `members` (overheadPlace.ts: over the head, or
+ * beside an item held up), said as a line or as the words of the king's call.
+ */
+function wordsBoxOf(
+  members: readonly MemberPose[],
+  member: MemberPose,
+  said: { readonly line: SpokenLine } | { readonly speech: SpeechLine },
+): Placed {
+  const sources = {
+    speeches: 'speech' in said ? { [member.id]: said.speech } : {},
+    lines: 'line' in said ? { [member.id]: said.line } : {},
+    remarks: {},
+    bubbles: {},
+    murmurs: {},
+  };
+  const placed = placeOverheads(members, sources, LEVEL_TAGS).find((p) => p.id === member.id);
+  if (placed === undefined) throw new Error(`nothing over ${member.id}`);
+  return placed;
+}
+
+/** How many words were placed beside an item held up, over all the checks (Issue #77). */
+const beside = { count: 0 };
+
 /** Asserts that words over `member` meet no tag nor HTML window and stay on the canvas. */
-function expectClear(member: MemberPose, words: string, t: number): void {
-  const lift = overheadLift(member.pose, words, LEVEL_TAGS);
-  const boxes = bubbleBoxes(member.pose.point, lift, words, overheadSide(member.pose, words));
+function expectClear(
+  members: readonly MemberPose[],
+  member: MemberPose,
+  said: { readonly line: SpokenLine } | { readonly speech: SpeechLine },
+  t: number,
+): void {
+  const words = 'line' in said ? said.line : said.speech;
+  const placed = wordsBoxOf(members, member, said);
+  const boxes = [placedBox(placed)];
+  if (placed.spot === 'beside-right' || placed.spot === 'beside-left') {
+    beside.count += 1;
+    // Beside the item, the words keep clear of everyone else (overheadPlace.ts).
+    const others = members.filter((m) => m.id !== member.id).map((m) => bodyBox(m.pose.point));
+    const hit = others.filter((body) => boxes.some((box) => meet(box, body)));
+    expect({ who: member.id, t, hit }).toEqual({ who: member.id, t, hit: [] });
+  }
   const met = TAGS.filter((tag) => boxes.some((box) => meet(box, tag)));
   expect({ who: member.id, t, met }).toEqual({ who: member.id, t, met: [] });
   const under = WINDOWS.filter((area) => boxes.some((box) => meet(box, area)));
@@ -129,7 +137,7 @@ function checkLines(director: Director, end: number, from = 0): number {
     for (const member of frame.members) {
       const line = frame.lines[member.id];
       if (line === undefined) continue;
-      expectClear(member, line, t);
+      expectClear(frame.members, member, { line }, t);
       checked += 1;
     }
   }
@@ -158,11 +166,18 @@ describe('line bubbles and level tags', () => {
       for (const member of frame.members) {
         const line = frame.lines[member.id];
         if (line === undefined) continue;
-        expectClear(member, line, t);
+        expectClear(frame.members, member, { line }, t);
         checked += 1;
       }
     }
     expect(checked).toBeGreaterThan(0);
+  });
+});
+
+describe('words said holding an item up (Issue #77)', () => {
+  it('go beside the item in the scenes above (the takers hold scrolls and chests up)', () => {
+    // The scenes of 'line bubbles and level tags' ran first in this file.
+    expect(beside.count).toBeGreaterThan(0);
   });
 });
 
@@ -187,9 +202,9 @@ describe('the words of the king’s call and level tags', () => {
     const speeches = speechesAt(list, t);
     let checked = 0;
     for (const member of frame.members) {
-      const words = speeches[member.id];
-      if (words === undefined) continue;
-      expectClear(member, words, t);
+      const speech = speeches[member.id];
+      if (speech === undefined) continue;
+      expectClear(frame.members, member, { speech }, t);
       checked += 1;
     }
     return checked;
@@ -231,6 +246,15 @@ describe('line bubbles and level tags when scenes overlap', () => {
 
 const WAITS = ['awaitPresident', 'awaitKaname', 'awaitPermission'] as const;
 
+describe('the king’s own words (Issue #28) on the throne', () => {
+  it('shout 「！」 and whisper 「ゴニョゴニョ」 clear of the tags, the windows and the edges', () => {
+    const members = frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS).members;
+    const king = members.find((m) => m.id === 'yukihiro');
+    if (king === undefined) throw new Error('no king');
+    for (const speech of ['！', 'ゴニョゴニョ'] as const) expectClear(members, king, { speech }, 0);
+  });
+});
+
 describe('lines on starting to wait and level tags (remarks.ts)', () => {
   const seated = frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS).members;
 
@@ -244,7 +268,7 @@ describe('lines on starting to wait and level tags (remarks.ts)', () => {
         (a, b) => Array.from(b).length - Array.from(a).length,
       )[0];
       if (line === undefined) continue;
-      expectClear(member, line, 0);
+      expectClear(seated, member, { line }, 0);
       checked += 1;
     }
     expect(checked).toBeGreaterThan(0);
@@ -255,13 +279,16 @@ describe('murmurs and level tags (murmurs.ts)', () => {
   const SEAT_SCENES = ['work', 'idle', 'doze', 'sleepTalk'] as const;
   const seeds = createAmbientSeeds(() => 0);
   /** Everyone as drawn with `idle` (idle.ts) applied to `id`. */
-  const drawnWith = (id: MemberId, idle: IdlePose): MemberPose | undefined =>
+  const everyoneWith = (id: MemberId, idle: IdlePose): readonly MemberPose[] =>
     frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS, {
       moods: {},
       seeds,
       hasHoldFrames: () => false,
       idle: { [id]: idle },
-    }).members.find((m) => m.id === id);
+    }).members;
+  const drawnWith = (id: MemberId, idle: IdlePose): MemberPose | undefined =>
+    everyoneWith(id, idle).find((m) => m.id === id);
+  const atSeats = frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS).members;
 
   it.each([...EVERYONE, 'yukihiro' as const])(
     '%s at the seat, awake, dozing or asleep: the longest murmur meets no tag nor window',
@@ -278,7 +305,7 @@ describe('murmurs and level tags (murmurs.ts)', () => {
         for (const scene of SEAT_SCENES) {
           const line = longest(id, scene);
           if (line === null) continue;
-          expectClear(member, line, 0);
+          expectClear(atSeats, member, { line }, 0);
           checked += 1;
         }
       }
@@ -293,15 +320,16 @@ describe('murmurs and level tags (murmurs.ts)', () => {
     (o) => {
       const out = walkSegment(o.spot.path, 0);
       const outing = { spot: o.spot, out, back: walkSegment(o.spot.path, out.end + 10_000) };
-      const member = drawnWith(
+      const everyone = everyoneWith(
         o.id,
         idlePose({ kind: 'play', outing }, DEFAULT_SEATS[o.id], 0, out.end),
       );
+      const member = everyone.find((m) => m.id === o.id);
       if (member === undefined) throw new Error(`no ${o.id}`);
       for (const hour of [7, 12, 17, 22]) {
         const line = longest(o.id, playScene(o.spot.kind, hour));
         if (line === null) throw new Error(`no line at ${o.spot.kind}`);
-        expectClear(member, line, hour);
+        expectClear(everyone, member, { line }, hour);
       }
     },
   );

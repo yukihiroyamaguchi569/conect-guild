@@ -20,6 +20,14 @@ import { drawAnimatedDecor } from './drawDecor';
 import { drawLightPatches, drawShade, drawWindowSun, type ShadeScratch } from './drawDaylight';
 import { drawLevelTags } from './drawLevelTags';
 import { drawLevelUpBanners } from './drawLevelUp';
+import {
+  NO_PLACES,
+  overheadsOf,
+  rememberPlaces,
+  type OverheadStage,
+  type PlaceMemory,
+  type Placed,
+} from './overheadPlace';
 import { BACK_ANIMATED_DECOR, FRONT_LAYERS } from './layers';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
 import { AMBIENT } from './metrics';
@@ -259,6 +267,8 @@ interface Painter {
   readonly background: HTMLCanvasElement;
   readonly front: readonly CachedFrontLayer[];
   readonly art: GuildArt;
+  /** Where the words over each head were in the frame painted last (overheadPlace.ts). */
+  readonly placer: Placer;
 }
 
 interface Moment {
@@ -291,15 +301,33 @@ function paint(painter: Painter, scale: number, moment: Moment): void {
   drawShade(ctx, painter.scratch, light, lampLights(moment.now));
   const tags = levelTags(moment.levels, DEFAULT_SEATS);
   drawLevelTags(ctx, tags);
-  drawOverhead(ctx, { ...moment, tags });
-  drawLevelUpBanners(ctx, { ...moment, tags });
+  const placed = painter.placer.place({ ...moment, tags });
+  drawOverhead(ctx, { placed, confetti: moment.frame.confetti });
+  drawLevelUpBanners(ctx, { placed, confetti: moment.frame.confetti });
+}
+
+/** Places what is over the heads, keeping each line's spot from the frame painted before. */
+interface Placer {
+  place(stage: OverheadStage): Placed[];
+}
+
+function createPlacer(): Placer {
+  let places: PlaceMemory = NO_PLACES;
+  return {
+    place(stage) {
+      const placed = overheadsOf(stage, places);
+      places = rememberPlaces(placed);
+      return placed;
+    },
+  };
 }
 
 /** The canvas, the scenery drawn once and an empty canvas for the shade. */
 function createPainter(ctx: CanvasRenderingContext2D, art: GuildArt): Painter {
   const { background, front } = cachedScenery(art);
   const image = cachedLayer(() => undefined);
-  return { ctx, scratch: { ctx: context2d(image), image }, background, front, art };
+  const scratch = { ctx: context2d(image), image };
+  return { ctx, scratch, background, front, art, placer: createPlacer() };
 }
 
 /** The scenes and the remarks to keep: none while the canvas is out of sight (scenesShown). */

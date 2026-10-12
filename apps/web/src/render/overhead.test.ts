@@ -8,10 +8,13 @@ import { tileToPoint } from './path';
 import { DEFAULT_SEATS } from './scenes';
 import { TALLEST_WINDOW_EXTENTS } from './map';
 import {
+  bubbleBox,
+  bubbleOf,
   overheadLift,
   overheadOf,
   overheadSide,
   tagBox,
+  voiceOf,
   wordsBox,
   wordsOf,
   type Overhead,
@@ -53,7 +56,7 @@ describe('overheadOf: one thing over a head, the first that is there', () => {
     [
       'then a murmur',
       drop('speeches', 'lines', 'remarks', 'bubbles'),
-      { kind: 'line', words: 'ぱちぱち…' },
+      { kind: 'murmur', words: 'ぱちぱち…' },
     ],
     [
       'then the sign of an idle spell',
@@ -129,8 +132,18 @@ describe('overheadLift: clear of the level tags', () => {
   /** A tag centred on the bubble's right end, half way down the bubble. */
   const under: LevelTag = { text: 'Lv 9', x: box.right - 4, y: box.bottom - 4 };
 
-  it('measures the words as drawBubble draws them', () => {
-    expect(box).toEqual({ left: 6, right: 6 + 48 * DETAIL_SCALE, top: 404, bottom: 426 });
+  it('measures the words as drawBubble draws them: the box, the tail and the shadow', () => {
+    // 6 characters of 8 px, 3 px of padding and a 1 px border each side, 2 px right of the feet
+    // (the tail leans back to the feet' x); 14 px high over the point over the head, the tail 4
+    // rows under it, the shadow 1 px right and down.
+    const top = FEET.y - OVERHEAD_OFFSET - BUBBLE_RISE * DETAIL_SCALE;
+    expect(BUBBLE_RISE).toBe(14);
+    expect(box).toEqual({
+      left: FEET.x,
+      right: (2 + 6 * 8 + 8 + 1) * DETAIL_SCALE,
+      top,
+      bottom: top + (14 + 4 + 1) * DETAIL_SCALE,
+    });
   });
 
   it('lifts words that would meet a tag until they are tagGapPx over it', () => {
@@ -181,30 +194,59 @@ describe('overheadLift: clear of the level tags', () => {
   });
 });
 
+describe('voiceOf and bubbleOf (Issue #77)', () => {
+  it('shouts the king’s 「！」 and whispers 「ゴニョゴニョ」; other words of the call are said', () => {
+    expect(voiceOf({ kind: 'speech', words: '！' })).toBe('shout');
+    expect(voiceOf({ kind: 'speech', words: 'ゴニョゴニョ' })).toBe('whisper');
+    expect(voiceOf({ kind: 'speech', words: 'はっ！' })).toBe('say');
+  });
+
+  it('says a line, whispers a murmur and draws the waiting bubble and idle signs as glyphs', () => {
+    expect(voiceOf({ kind: 'line', words: 'おまかせを' })).toBe('say');
+    expect(voiceOf({ kind: 'murmur', words: 'ぱちぱち…' })).toBe('whisper');
+    expect(voiceOf({ kind: 'bubble', bubble: 'awaiting-permission' })).toBe('glyph');
+    expect(voiceOf({ kind: 'mark', mark: MARK })).toBe('glyph');
+  });
+
+  it('gives the 「Z」 of a sleeper no bubble', () => {
+    const z: Overhead = { kind: 'mark', mark: { kind: 'z', rise: 0.5 } };
+    expect(voiceOf(z)).toBeNull();
+    expect(bubbleOf(z)).toBeNull();
+  });
+
+  it('counts the characters of the words; a glyph is one', () => {
+    expect(bubbleOf({ kind: 'line', words: 'おまかせを' })).toEqual({ voice: 'say', chars: 5 });
+    expect(bubbleOf({ kind: 'bubble', bubble: 'awaiting-kaname' })).toEqual({
+      voice: 'glyph',
+      chars: 1,
+    });
+  });
+});
+
 describe('wordsOf', () => {
-  it('gives the words of the summons and of a line, and nothing for a bubble or a sign', () => {
+  it('gives the words of the summons, a line and a murmur, and nothing for a bubble or a sign', () => {
     expect(wordsOf({ kind: 'speech', words: 'はっ！' })).toBe('はっ！');
     expect(wordsOf({ kind: 'line', words: 'おまかせを' })).toBe('おまかせを');
+    expect(wordsOf({ kind: 'murmur', words: 'ぱちぱち…' })).toBe('ぱちぱち…');
     expect(wordsOf({ kind: 'bubble', bubble: 'awaiting-kaname' })).toBeNull();
     expect(wordsOf({ kind: 'mark', mark: MARK })).toBeNull();
   });
 });
 
 describe('overheadLift: clear of the raised item', () => {
-  /** The bottom of a bubble's tail (draw.ts: box 9 detail px from the top, tail 2 more) over the feet. */
-  const TAIL_PX = OVERHEAD_OFFSET + BUBBLE_RISE * DETAIL_SCALE - 11 * DETAIL_SCALE;
-
   it.each(['kaname', 'minori', 'hibiki', 'hirame', 'sasae', 'yukihiro'] as const)(
-    '%s: the lifted bubble ends above the top of a raised scroll or chest',
+    '%s: the lifted bubble and its tail end above the top of a raised scroll or chest',
     (id) => {
       const feet = { x: 0, y: 500 };
       for (const prop of ['scroll', 'chest'] as const) {
         for (const holdFrames of [true, false]) {
           const item = raisedItemPoint(id, feet, prop, holdFrames);
           const itemTop = item.y - HOLD.raisedItemHalfPx;
-          const tail =
-            feet.y - TAIL_PX - overheadLift({ point: feet, held: raise(prop) }, null, []);
-          expect(tail).toBeLessThanOrEqual(itemTop);
+          const lift = overheadLift({ point: feet, held: raise(prop) }, null, []);
+          const glyph = bubbleBox(feet, { voice: 'glyph', chars: 1 }, 'right', lift);
+          expect(glyph.bottom).toBeLessThanOrEqual(itemTop);
+          const words = wordsBox(feet, 7, lift);
+          expect(words.bottom).toBeLessThanOrEqual(itemTop);
         }
       }
     },
@@ -226,10 +268,12 @@ describe('overheadSide: words keep clear of the HTML windows', () => {
     expect(overheadSide(sasae, 'いいかしら？')).toBe('left');
   });
 
-  it('mirrors the bubble on the left: as wide, ending 3 detail px left of the feet', () => {
+  it('mirrors the bubble on the left: as wide, the tail leaning back to the feet', () => {
     const right = wordsBox(sasae.point, 6, 0, 'right');
     const left = wordsBox(sasae.point, 6, 0, 'left');
-    expect(left.right).toBe(sasae.point.x - 3 * DETAIL_SCALE);
+    // The tail's tip ends at the feet's x on either side (and its shadow 1 detail px right of it).
+    expect(right.left).toBe(sasae.point.x);
+    expect(left.right).toBe(sasae.point.x + DETAIL_SCALE);
     expect(left.right - left.left).toBe(right.right - right.left);
     expect({ top: left.top, bottom: left.bottom }).toEqual({
       top: right.top,
