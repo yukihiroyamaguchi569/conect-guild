@@ -81,17 +81,16 @@ describe('collectSnapshot', () => {
 });
 
 describe('collectSnapshot: order of the lists', () => {
-  it('reads the PRs before the Issues, so an Issue created in between keeps its link', async () => {
+  it('waits for the PR list before reading the Issues, so an Issue created in between keeps its link', async () => {
     const calls: string[] = [];
-    // Issue #2 is created right after the PR list is read; the PR refers to it.
+    // The PR list answers only when released by hand; Issue #2 is created after that answer.
+    const prList = Promise.withResolvers<string>();
     let issueTwoExists = false;
     const gh: GhRunner = async (args) => {
       const path = args.at(-1) ?? '';
       if (path.includes('pulls?state=all')) {
         calls.push('prs');
-        const pr = { ...openPr(10), body: 'Closes #2' };
-        issueTwoExists = true;
-        return lines([pr]);
+        return prList.promise;
       }
       if (path.includes('issues?state=all')) {
         calls.push('issues');
@@ -100,7 +99,12 @@ describe('collectSnapshot: order of the lists', () => {
       await Promise.resolve();
       return '';
     };
-    const snapshot = await collectSnapshot(gh, REPO, new Date('2026-10-12T00:00:00.000Z'), []);
+    const run = collectSnapshot(gh, REPO, new Date('2026-10-12T00:00:00.000Z'), []);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(calls).toEqual(['prs']);
+    prList.resolve(lines([{ ...openPr(10), body: 'Closes #2' }]));
+    issueTwoExists = true;
+    const snapshot = await run;
     expect(calls).toEqual(['prs', 'issues']);
     expect(snapshot.prs.map((pr) => pr.linkedIssues)).toEqual([[2]]);
   });
