@@ -24,7 +24,7 @@ my-company/                ← 司令塔（直下の CLAUDE.md）
 └── projects/              ← 司令塔が書く案件の記録（決定の一覧など）
 ```
 
-部門の名前・フォルダ・ラベルは例です。部門の数は 4 つで固定です（[setup.md の使える条件](setup.md#0-使える条件)）。名前・フォルダ・ラベルを変えるときは、司令塔の `CLAUDE.md` の部門の表（[4 章](#4-司令塔の-claudemd-の雛形)）と、conect-guild の設定（`departments` の `label`・`sessionDir`、`branchPrefixes`）も合わせて変えてください。
+部門の名前・フォルダ・ラベルは例です。部門の数は 4 つで固定です（[setup.md の使える条件](setup.md#0-使える条件)）。名前・フォルダ・ラベルを変えるときは、司令塔の `CLAUDE.md` の部門の表（[4 章](#4-司令塔の-claudemd-の雛形)）と、conect-guild の設定（`departments` の `label`・`sessionDir`、`branchPrefixes`、画面に出る役の名前の `members` の `role`）も合わせて変えてください。
 
 ## 2. GitHub での流れ
 
