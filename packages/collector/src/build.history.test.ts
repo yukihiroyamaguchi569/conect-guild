@@ -156,10 +156,19 @@ describe('toHistory: PRs', () => {
 
   it('links Issues of the same repository from the title and body', () => {
     const history = historyOf(
-      [],
+      [issue(7), completed(8)],
       [pr(1, { title: 'Fix (#3)', body: 'Closes #7, closes o/r#8, closes other/repo#9' })],
     );
     expect(history.mergedPrs[0]?.linkedIssues).toEqual([7, 8]);
+  });
+
+  it('drops links to numbers that are no Issue: missing, a PR, or too large', () => {
+    const history = historyOf(
+      [issue(5), issue(6, { is_pull_request: true })],
+      [pr(1, { body: 'see #5, #6, #404 and #99999999999999999999' })],
+    );
+    expect(history.mergedPrs[0]?.linkedIssues).toEqual([5]);
+    expect(snapshotHistorySchema.safeParse(history).success).toBe(true);
   });
 
   it('counts a PR read twice (the pages shifted) once, in the state read last', () => {

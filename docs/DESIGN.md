@@ -141,7 +141,7 @@ packages/collector ──検証して一時ファイルに書き rename──▶
   - マージ済みの PR（`mergedPrs`）: `merged_at` があるものだけ。リンクした Issue の番号（上の結び付けと同じ規則）と、ブランチ名を `branchPrefixes` に当てて引いた部門（当たらなければ null）。ブランチ名そのものは collector の中で部門に変えて捨て、履歴には入れない
   - Issue も PR も、ページのずれで同じものを 2 回読んだら後で読んだ方（新しい方）を使う。番号の順に並べる
 - **API の呼び出し回数**（2026-10-12 に件数だけを確かめた: closed の Issue 109 件、closed の PR 198 件、open の Issue 2 件、open の PR 0 件）: 1 回の GitHub の取得で、Issue の一覧（PR も混ざるので 2 + 109 + 198 = 309 件）4 回、PR の一覧（198 件）2 回、open PR ごとの変更ファイル 1 回ずつ（100 ファイルまで。それを超える PR は 100 ファイルごとに 1 回）。Issue #19 の前は open の Issue 1 回、直近 7 日の closed の Issue 1 回、open の PR 1 回、closed の PR 2 回の計 5 回だったので、増えるのは 1 回/分（約 60 回/時）。全体で約 6 回/分（約 360 回/時、open PR が無いとき）で、`gh` の上限 5000 回/時の 1 割に収まる。Issue が 100 件増えるごとに 1 回/分、PR が 100 件増えるごとに 2 回/分（Issue の一覧と PR の一覧の両方）増える。Issue と PR が合わせて 2000 件を超えたら（Issue の一覧だけで 20 回/分）、履歴の取得だけを 10 分ごとに間引くことを考える。そのときも数え直しの考え方は変えない
-- **PR と Issue の結び付け**: PR の題名と本文から、同じリポジトリを指す参照（`#番号` と `<対象リポジトリ>#番号`）を正規表現で拾い、`linkedIssues: number[]` として持つ。別リポジトリの参照（`owner/other#番号`）は拾わない。`Closes`・`Fixes`・`Resolves` の後の参照が 1 つでもあれば、それだけを使う。本文そのものは保存しない
+- **PR と Issue の結び付け**: PR の題名と本文から、同じリポジトリを指す参照（`#番号` と `<対象リポジトリ>#番号`）を正規表現で拾い、`linkedIssues: number[]` として持つ。別リポジトリの参照（`owner/other#番号`）は拾わない。対象リポジトリに実在する Issue の番号（取得した全履歴の Issue。PR の番号は含めない）だけを残し、ほかは捨てる（GitHub も実在する Issue だけをリンクにする。本文の例として書かれた `#99999999999999999999` などで snapshot の検証が落ちないように。Issue #68）。`Closes`・`Fixes`・`Resolves` の後の参照が 1 つでもあれば（実在するものに限る）、それだけを使う。本文そのものは保存しない
 - **変更ファイル**: open PR だけ、`gh api --paginate --jq` で `repos/<r>/pulls/<n>/files` の `filename` だけを取り、`changedFiles: string[]` として持つ（差分の中身は取らない）
 - **間隔**: GitHub は 60 秒ごと（`gh` のレート制限に十分収まる）。collector 自体は 5 秒ごとに回り、セッションの状態（4.7）を読むたびに、GitHub の最後の正常な結果と合わせて snapshot を書き直す。GitHub の取得は裏で走らせ、遅くてもセッションの 5 秒の周期を止めない（最初の 1 回だけは、書くものが無いので待つ）。周期は予定時刻から数え、1 回の処理の時間も 5 秒に含める。処理が予定を過ぎたら、取り戻そうと続けて回さず、次の予定まで飛ばす。`--once` で 1 回だけ（GitHub とセッションを 1 回ずつ）実行もできる
 - **書き込み**: 取得した結果を zod で検証してから、同じディレクトリの一時ファイルに 0600 で書き、`rename` で `apps/web/.data/snapshot.json` を原子的に置き換える。画面が書きかけの JSON を読むことはない
@@ -447,7 +447,7 @@ M1 まで行けば「本物の Issue が掲示板に出て、クローズでク�
 ## 7. 依存の方針（具体）
 
 - 実行時: `vue`、`zod`
-- 開発時: `vite`、`typescript`、`vue-tsc`、`vitest`、`eslint` + `eslint-plugin-vue` + `eslint-plugin-sonarjs` + `typescript-eslint`、`prettier`、`@vitest/coverage-v8`（scoria にカバレッジを渡すため。Issue #33）、`@playwright/test`（画面の E2E。Issue #34）。ブラウザ本体は postinstall では入れず、`npx playwright install chromium` で明示的に入れる
+- 開発時: `vite`、`typescript`、`vue-tsc`、`vitest`、`eslint` + `eslint-plugin-vue` + `eslint-plugin-sonarjs` + `typescript-eslint`、`prettier`、`@vitest/coverage-v8`（scoria にカバレッジを渡すため。Issue #33）、`@playwright/test`（画面の E2E。Issue #34）、`concurrently`（`npm run dev:all` で collector と開発サーバーを一緒に起動・停止する。Issue #70。推移依存の `shell-quote` は脆弱性 GHSA-pqg4-j6r4-53mv の直った版に `overrides` で固定し、`concurrently` がその版を取り込んだら外す）。ブラウザ本体は postinstall では入れず、`npx playwright install chromium` で明示的に入れる
 - 入れ方:
   1. `npm install <pkg> --ignore-scripts --before=<7 日前の日付>` で npm に版を決めさせる（記憶から版を書かない）。`--before` で推移依存も含めて 7 日より前に公開された版だけになり、`--ignore-scripts` で確かめる前にスクリプトが走らない
   2. `npm view <pkg> time --json` で入った版の公開日を確かめる

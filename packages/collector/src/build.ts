@@ -40,6 +40,11 @@ function isoOrNull(value: string | null): string | null {
   return value === null ? null : new Date(value).toISOString();
 }
 
+/** Numbers of every Issue (PRs excluded) in the repository: the only numbers a PR may link. */
+export function issueNumbersOf(raw: readonly RawIssue[]): ReadonlySet<number> {
+  return new Set(raw.filter((issue) => !issue.is_pull_request).map((issue) => issue.number));
+}
+
 /** Issues without PRs: all open ones and those closed since `cutoff`. */
 export function toSnapshotIssues(raw: readonly RawIssue[], cutoff: Date): SnapshotIssue[] {
   const issues = uniqueReadLast(raw.filter((issue) => !issue.is_pull_request)).filter((issue) =>
@@ -62,7 +67,12 @@ export function selectRecentPrs(raw: readonly RawPr[], cutoff: Date): RawPr[] {
 }
 
 /** Snapshot form of a PR. The body is read for links only and dropped here. */
-export function toSnapshotPr(pr: RawPr, repo: string, changedFiles: readonly string[]): SnapshotPr {
+export function toSnapshotPr(
+  pr: RawPr,
+  repo: string,
+  existingIssues: ReadonlySet<number>,
+  changedFiles: readonly string[],
+): SnapshotPr {
   return {
     number: pr.number,
     title: pr.title,
@@ -70,7 +80,7 @@ export function toSnapshotPr(pr: RawPr, repo: string, changedFiles: readonly str
     mergedAt: isoOrNull(pr.merged_at),
     closedAt: isoOrNull(pr.closed_at),
     headRef: pr.head_ref,
-    linkedIssues: extractLinkedIssues(pr.title, pr.body, repo),
+    linkedIssues: extractLinkedIssues(pr.title, pr.body, repo, existingIssues),
     changedFiles: pr.state === 'open' ? [...changedFiles] : [],
   };
 }
@@ -89,11 +99,12 @@ function toHistoryIssue(issue: RawIssue): HistoryIssue {
 function toHistoryPr(
   pr: RawPr,
   repo: string,
+  existingIssues: ReadonlySet<number>,
   branchPrefixes: readonly BranchPrefixRule[],
 ): HistoryPr {
   return {
     number: pr.number,
-    linkedIssues: extractLinkedIssues(pr.title, pr.body, repo),
+    linkedIssues: extractLinkedIssues(pr.title, pr.body, repo, existingIssues),
     branchDepartment: departmentFromBranch(pr.head_ref, branchPrefixes),
   };
 }
@@ -114,9 +125,12 @@ export function toHistory(
     (issue) => issue.state === 'closed' && issue.state_reason === 'completed',
   );
   const merged = uniqueReadLast(rawPrs).filter((pr) => pr.merged_at !== null);
+  const existingIssues = issueNumbersOf(issues);
   return {
     openedIssueCount: issues.length,
     completedIssues: completed.map(toHistoryIssue).toSorted(byNumber),
-    mergedPrs: merged.map((pr) => toHistoryPr(pr, repo, branchPrefixes)).toSorted(byNumber),
+    mergedPrs: merged
+      .map((pr) => toHistoryPr(pr, repo, existingIssues, branchPrefixes))
+      .toSorted(byNumber),
   };
 }
