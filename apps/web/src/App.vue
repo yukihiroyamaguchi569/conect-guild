@@ -9,6 +9,7 @@ import FetchStatus from './ui/FetchStatus.vue';
 import GuildCanvas from './ui/GuildCanvas.vue';
 import KingBubble from './ui/KingBubble.vue';
 import MessageWindow from './ui/MessageWindow.vue';
+import NotCollected from './ui/NotCollected.vue';
 import PartyStatus from './ui/PartyStatus.vue';
 import QuestBoard from './ui/QuestBoard.vue';
 import SoundControl from './ui/SoundControl.vue';
@@ -99,6 +100,7 @@ function onStageShown(shown: boolean): void {
           :block="demo?.block.value ?? null"
           @start="demo?.start()"
         />
+        <NotCollected v-if="fetchStatus.notCollected" class="stage__notice" />
       </template>
       <div class="stage__side">
         <PartyStatus v-if="!state.halted" class="stage__party" :rows="party" />
@@ -154,7 +156,8 @@ function onStageShown(shown: boolean): void {
 .stage__message,
 .stage__king,
 .stage__halt,
-.stage__demo {
+.stage__demo,
+.stage__notice {
   position: absolute;
 }
 
@@ -212,6 +215,14 @@ function onStageShown(shown: boolean): void {
   font-size: 1.1em;
 }
 
+/* Before the collector's first write (Issue #67), over the middle of the room. */
+.stage__notice {
+  left: 30%;
+  top: 30%;
+  width: 40%;
+  font-size: 1.1em;
+}
+
 /*
  * Narrow screens: stack the windows. The canvas is hidden because the windows no longer leave
  * its stage free; the king's row still shows 承認まち.
@@ -226,7 +237,8 @@ function onStageShown(shown: boolean): void {
   .stage__side,
   .stage__message,
   .stage__halt,
-  .stage__demo {
+  .stage__demo,
+  .stage__notice {
     position: static;
     width: auto;
     min-height: 0;
