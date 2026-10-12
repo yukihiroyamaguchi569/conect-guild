@@ -185,6 +185,27 @@ gh repo view <owner/name>      # repo に書いたリポジトリを読めるか
 
 collector を動かしていないか、止まっています（5 分より前に止まった collector の失敗は帯に出しません）。`npm run dev:all` か `npm run collect` で動かしてください。
 
+### 画面の帯に「部門のラベルがリポジトリにありません」と出る
+
+設定（`guild.settings.local.ts`、無ければ `guild.settings.ts`）の `departments[].label` のうち、対象のリポジトリに同じ名前のラベルが無いものがあります。そのままだと、その部門の Issue は部門の机に配られず、受付に置かれます。帯には部門のラベルと、設定の何番目か（`departments[n]`。0 から数えます）が出ます。collector のターミナルにも `labels missing 1/4: departments[1] のラベルがリポジトリに無い` のような行と「次にやること: …」の行が出ます（ログにはラベル名を出しません）。
+
+collector は起動したときと、そのあと 10 分ごとに、リポジトリのラベル名を `gh` で読んで設定と照らし合わせます。比べ方は Issue のラベルを部門に結ぶときと同じで、1 文字でも違えば別の名前です（大文字と小文字、前後の空白、全角と半角も区別します）。
+
+まず、リポジトリのラベル名を確かめます。
+
+```bash
+gh label list --repo <owner/name> --limit 1000
+```
+
+| 見つかったこと | 直し方 |
+|---|---|
+| 設定の名前のラベルが無い | `gh label create "<設定のラベル>" --repo <owner/name>` で作る |
+| 似た名前のラベルがある（`Accounting` と `accounting` など） | GitHub 側を `gh label edit "<今のラベル>" --name "<設定のラベル>" --repo <owner/name>` で設定の名前にする（付いている Issue はそのまま新しい名前になります）か、設定の `label` を GitHub の名前に書き換える |
+
+GitHub 側を直したときは、collector を止めずに次の照合（10 分以内）で帯が消えます。設定を書き換えたときは、`npm run dev:all` を止めて起動し直してください（collector と画面は起動時に設定を読みます）。起動し直すと、すぐに照合し直します。
+
+ラベルを読めなかったとき（ログに `labels unknown: gh-failed` など）は「無い」とは扱いません。帯は最後に読めたときの結果のままで、次に読めたときに更新します。collector を止めて 5 分たつと、帯は消えます。
+
 ### 設定の検証で止まる
 
 collector は `Error: guild.settings.local.ts or guild.settings.ts (whichever is used) is invalid:` に続けて、悪い項目を `✖` と `→ at <項目>` の組で出して止まります（画面はブラウザのコンソールに同じものを出します）。よく出るもの:
