@@ -268,6 +268,7 @@ export function takeCues(queue: CueQueue): { queue: CueQueue; play: readonly Sce
 const FAILURE_LABELS: Readonly<Record<SnapshotLoadFailure, string>> = {
   network: 'つながりません',
   timeout: '時間切れ',
+  'not-collected': 'データのファイルがありません',
   http: 'サーバーがエラーを返しました',
   parse: 'データが壊れています',
   invalid: 'データの形が違います',
@@ -276,8 +277,16 @@ const FAILURE_LABELS: Readonly<Record<SnapshotLoadFailure, string>> = {
 };
 
 export interface FetchStatusView {
-  /** e.g. `取得失敗（つながりません）`; null after a successful fetch. */
+  /**
+   * e.g. `取得失敗（つながりません）`; null after a successful fetch, and while `notCollected`
+   * (the screen shows a guide instead of an error).
+   */
   readonly failure: string | null;
+  /**
+   * True before any snapshot while the file is not there yet: the collector has never run
+   * (Issue #67). A 404 after a snapshot was shown is an ordinary failure.
+   */
+  readonly notCollected: boolean;
   /** True when the shown snapshot is older than the stale limit (the collector may be down). */
   readonly stale: boolean;
   /** `HH:MM` (local time) of the shown snapshot's fetchedAt; null before the first success. */
@@ -303,8 +312,10 @@ export function buildFetchStatus(
   failure: SnapshotLoadFailure | null,
   now: number,
 ): FetchStatusView {
+  const notCollected = snapshot === null && failure === 'not-collected';
   return {
-    failure: failure === null ? null : `取得失敗（${FAILURE_LABELS[failure]}）`,
+    failure: failure === null || notCollected ? null : `取得失敗（${FAILURE_LABELS[failure]}）`,
+    notCollected,
     stale: snapshot !== null && isSnapshotStale(snapshot.fetchedAt, now),
     fetchedAt: snapshot === null ? null : formatClock(Date.parse(snapshot.fetchedAt)),
     sessions: snapshot === null ? null : sessionsNotice(snapshot, now),

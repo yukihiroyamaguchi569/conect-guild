@@ -2,9 +2,19 @@ import { SNAPSHOT_SCHEMA_VERSION, snapshotSchema, type Snapshot } from '@conect-
 import { GUILD_SETTINGS } from '@conect-guild/snapshot/settings';
 import { z } from 'zod';
 
-/** Why a snapshot could not be loaded. The adapter never throws; it returns one of these. */
+/**
+ * Why a snapshot could not be loaded. The adapter never throws; it returns one of these.
+ * 'not-collected' is a 404: the collector has not written the file yet (Issue #67).
+ */
 export type SnapshotLoadFailure =
-  'network' | 'timeout' | 'http' | 'parse' | 'schema-version' | 'invalid' | 'repo-mismatch';
+  | 'network'
+  | 'timeout'
+  | 'not-collected'
+  | 'http'
+  | 'parse'
+  | 'schema-version'
+  | 'invalid'
+  | 'repo-mismatch';
 
 export type SnapshotLoadResult =
   | { readonly ok: true; readonly snapshot: Snapshot }
@@ -90,6 +100,8 @@ async function fetchText(
   } catch {
     return failure();
   }
+  // The dev server answers 404 only while the collector has not written the file (DESIGN.md 4.3).
+  if (response.status === 404) return { ok: false, reason: 'not-collected' };
   if (!response.ok) return { ok: false, reason: 'http', status: response.status };
   try {
     return { ok: true, text: await response.text() };
