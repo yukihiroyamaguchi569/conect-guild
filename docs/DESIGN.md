@@ -444,7 +444,7 @@ M1 まで行けば「本物の Issue が掲示板に出て、クローズでク�
 ## 7. 依存の方針（具体）
 
 - 実行時: `vue`、`zod`
-- 開発時: `vite`、`typescript`、`vue-tsc`、`vitest`、`eslint` + `eslint-plugin-vue` + `eslint-plugin-sonarjs` + `typescript-eslint`、`prettier`、`@vitest/coverage-v8`（scoria にカバレッジを渡すため。Issue #33）、`@playwright/test`（画面の E2E。Issue #34）。ブラウザ本体は postinstall では入れず、`npx playwright install chromium` で明示的に入れる
+- 開発時: `vite`、`typescript`、`vue-tsc`、`vitest`、`eslint` + `eslint-plugin-vue` + `eslint-plugin-sonarjs` + `typescript-eslint`、`prettier`、`@vitest/coverage-v8`（scoria にカバレッジを渡すため。Issue #33）、`@playwright/test`（画面の E2E。Issue #34）、`concurrently`（`npm run dev:all` で collector と開発サーバーを一緒に起動・停止する。Issue #70。推移依存の `shell-quote` は脆弱性 GHSA-pqg4-j6r4-53mv の直った版に `overrides` で固定し、`concurrently` がその版を取り込んだら外す）。ブラウザ本体は postinstall では入れず、`npx playwright install chromium` で明示的に入れる
 - 入れ方:
   1. `npm install <pkg> --ignore-scripts --before=<7 日前の日付>` で npm に版を決めさせる（記憶から版を書かない）。`--before` で推移依存も含めて 7 日より前に公開された版だけになり、`--ignore-scripts` で確かめる前にスクリプトが走らない
   2. `npm view <pkg> time --json` で入った版の公開日を確かめる
