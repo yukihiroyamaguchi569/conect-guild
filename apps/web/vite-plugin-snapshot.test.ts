@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  createCollectorStatusMiddleware,
   createSnapshotMiddleware,
   snapshotPlugin,
   type ReadSnapshotFile,
@@ -128,6 +129,7 @@ describe('createSnapshotMiddleware: methods and routes', () => {
     '/.data/snapshot.json',
     '/snapshot.json/extra',
     '/sub/snapshot.json',
+    '/collector-status.json',
     undefined,
   ])('passes %s to the next middleware without reading', async (url) => {
     const read = vi.fn<ReadSnapshotFile>().mockResolvedValue(BODY);
@@ -136,6 +138,54 @@ describe('createSnapshotMiddleware: methods and routes', () => {
     expect(recorded.ended).toBe(false);
     expect(read).not.toHaveBeenCalled();
   });
+});
+
+describe('createCollectorStatusMiddleware (Issue #74)', () => {
+  const STATUS_PATH = '/fixed/.data/collector-status.json';
+  const STATUS = new TextEncoder().encode('{"ok":true}');
+
+  async function statusRequest(method: string, url: string, read: ReadSnapshotFile) {
+    const middleware = createCollectorStatusMiddleware(STATUS_PATH, read);
+    const { res, recorded, done } = fakeResponse();
+    const next = vi.fn();
+    middleware({ method, url }, res, next);
+    if (next.mock.calls.length === 0) await done;
+    return { recorded, next };
+  }
+
+  it('serves its own fixed file with no-store', async () => {
+    const read = vi.fn<ReadSnapshotFile>().mockResolvedValue(STATUS);
+    const { recorded } = await statusRequest('GET', '/collector-status.json?t=1', read);
+    expect(read).toHaveBeenCalledExactlyOnceWith(STATUS_PATH);
+    expect(recorded.statusCode).toBe(200);
+    expect(recorded.headers.get('cache-control')).toBe('no-store');
+    expect(recorded.body).toEqual(STATUS);
+  });
+
+  it('returns 204 with no-store and no body while the collector has not run', async () => {
+    const read = vi.fn<ReadSnapshotFile>().mockRejectedValue(enoent());
+    const { recorded } = await statusRequest('GET', '/collector-status.json', read);
+    expect(recorded.statusCode).toBe(204);
+    expect(recorded.headers.get('cache-control')).toBe('no-store');
+    expect(recorded.body).toBeUndefined();
+  });
+
+  it('rejects POST with 405 without reading', async () => {
+    const read = vi.fn<ReadSnapshotFile>().mockResolvedValue(STATUS);
+    const { recorded } = await statusRequest('POST', '/collector-status.json', read);
+    expect(recorded.statusCode).toBe(405);
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it.each(['/snapshot.json', '/.data/collector-status.json', '/collector-status.json/x'])(
+    'passes %s to the next middleware without reading',
+    async (url) => {
+      const read = vi.fn<ReadSnapshotFile>().mockResolvedValue(STATUS);
+      const { next } = await statusRequest('GET', url, read);
+      expect(next).toHaveBeenCalledOnce();
+      expect(read).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe('snapshotPlugin', () => {

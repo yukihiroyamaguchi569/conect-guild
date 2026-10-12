@@ -5,6 +5,7 @@ import { collectSnapshot } from './collect.ts';
 import { CollectorError, errorKind, type CollectorErrorKind } from './errors.ts';
 import { parseOrThrow, type GhRunner } from './gh.ts';
 import type { SessionsReading } from './sessions.ts';
+import { collectorStatusOf, statusContent, type GithubAttempt } from './status.ts';
 
 export interface RunDeps {
   readonly now: () => Date;
@@ -14,6 +15,8 @@ export interface RunDeps {
   /** Reads the company sessions from MulmoTerminal's files. Never throws; ends on `signal`. */
   readonly readSessions: () => Promise<SessionsReading>;
   readonly writeSnapshot: (content: string) => Promise<void>;
+  /** Writes apps/web/.data/collector-status.json (Issue #74) atomically. */
+  readonly writeStatus: (content: string) => Promise<void>;
   /** Waits between cycles; resolves early when `signal` aborts. */
   readonly sleep: (ms: number) => Promise<void>;
   readonly signal: AbortSignal;
@@ -128,6 +131,13 @@ function prefix(deps: RunDeps): string {
   return `[collector] ${deps.now().toISOString()}`;
 }
 
+/**
+ * What to do after `gh-failed` (Issue #74). The repository stays `<owner/name>`: the logs carry no
+ * repository name, like no title or path.
+ */
+const GH_FAILED_NEXT_STEP =
+  '次にやること: guild.settings.ts（または guild.settings.local.ts）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください';
+
 /** Logs carry only counts, times and error kinds (no titles, bodies, branch names, paths or ids). */
 function reportCycle(deps: RunDeps, result: CycleResult): void {
   if (result.ok) {
@@ -138,7 +148,22 @@ function reportCycle(deps: RunDeps, result: CycleResult): void {
     );
   } else {
     deps.error(`${prefix(deps)} failed: ${result.kind}`);
+    if (result.kind === 'gh-failed') deps.error(`${prefix(deps)} ${GH_FAILED_NEXT_STEP}`);
   }
+}
+
+/** Writes the status file; false when it could not. */
+async function writeStatusSafely(deps: RunDeps, content: string): Promise<boolean> {
+  try {
+    await deps.writeStatus(content);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function reportStatusNotWritten(deps: RunDeps): void {
+  deps.error(`${prefix(deps)} status not written: write-failed`);
 }
 
 /** e.g. `sessions=5 ok` or `sessions unavailable: parse-failed`. */
@@ -157,6 +182,11 @@ interface LoopState {
   /** The last logged sessions summary; the loop logs only changes (it reads every 5 seconds). */
   sessionsLogged: string | null;
   writeFailing: boolean;
+  /** The last finished GitHub fetch, for the status file; null before the first. */
+  githubAttempt: GithubAttempt | null;
+  /** The status file's content as last written; null when nothing is written yet or it failed. */
+  statusWritten: string | null;
+  statusFailing: boolean;
 }
 
 function isGithubDue(lastAttemptAt: number | null, now: number): boolean {
@@ -178,6 +208,25 @@ function reportWrite(deps: RunDeps, state: LoopState, write: WriteResult | null)
 }
 
 /**
+ * Writes the status file when it changes: after each GitHub fetch (once a minute) and when writing
+ * the snapshot starts or stops failing. A failed write is logged once and retried on the next tick.
+ */
+async function updateStatus(
+  deps: RunDeps,
+  state: LoopState,
+  write: WriteResult | null,
+): Promise<void> {
+  if (state.githubAttempt === null) return;
+  const writeFailure = write !== null && !write.ok ? write.kind : null;
+  const content = statusContent(collectorStatusOf(state.githubAttempt, writeFailure));
+  if (content === state.statusWritten) return;
+  const written = await writeStatusSafely(deps, content);
+  if (!written && !state.statusFailing) reportStatusNotWritten(deps);
+  state.statusFailing = !written;
+  state.statusWritten = written ? content : null;
+}
+
+/**
  * Starts a GitHub fetch in the background, so a slow GitHub does not hold up the 5-second
  * sessions. A failed fetch keeps the last good part. An interrupted one ends quietly.
  */
@@ -186,6 +235,7 @@ function startGithub(deps: RunDeps, state: LoopState, now: Date): Promise<void> 
   const running = fetchGithub(deps, now).then((result) => {
     state.githubInFlight = null;
     if (deps.signal.aborted) return;
+    state.githubAttempt = { at: now, failure: result.ok ? null : result.kind };
     if (result.ok) state.github = result.part;
     reportCycle(deps, cycleResult(result, null));
   });
@@ -213,6 +263,8 @@ async function tick(deps: RunDeps, state: LoopState): Promise<void> {
   const write = state.github === null ? null : await writeSnapshot(deps, state.github, reading);
   reportWrite(deps, state, write);
   reportSessions(deps, state, reading);
+  // After the snapshot, so the page never reads a success before the file it is about.
+  await updateStatus(deps, state, write);
 }
 
 /**
@@ -233,6 +285,9 @@ async function runLoop(deps: RunDeps): Promise<void> {
     githubInFlight: null,
     sessionsLogged: null,
     writeFailing: false,
+    githubAttempt: null,
+    statusWritten: null,
+    statusFailing: false,
   };
   // A function call keeps TypeScript from narrowing `aborted` across awaits.
   const stopped = (): boolean => deps.signal.aborted;
@@ -253,9 +308,13 @@ async function runLoop(deps: RunDeps): Promise<void> {
 export async function runCollector(args: readonly string[], deps: RunDeps): Promise<number> {
   const mode = parseCliArgs(args);
   if (mode === 'once') {
+    const at = deps.now();
     const result = await collectOnce(deps);
     reportCycle(deps, result.github);
     deps.log(`${prefix(deps)} ${sessionsSummary(result.sessions)}`);
+    const failure = result.github.ok ? null : result.github.kind;
+    if (!(await writeStatusSafely(deps, statusContent(collectorStatusOf({ at, failure }, null)))))
+      reportStatusNotWritten(deps);
     return result.github.ok ? 0 : 1;
   }
   if (mode === 'loop') {

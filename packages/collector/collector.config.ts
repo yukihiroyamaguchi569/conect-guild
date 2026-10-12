@@ -56,6 +56,8 @@ export const COLLECTOR_CONFIG = {
   intervalMs: 60_000,
   // Outside apps/web/public so real data never enters a build (docs/DESIGN.md 5).
   snapshotPath: resolve(import.meta.dirname, '../../apps/web/.data/snapshot.json'),
+  // How the last try went (Issue #74): the time, ok or not, and the error kind only.
+  statusPath: resolve(import.meta.dirname, '../../apps/web/.data/collector-status.json'),
   sessions: {
     intervalMs: 5_000,
     seats: companySeatsOf(GUILD_SETTINGS, HOME),
