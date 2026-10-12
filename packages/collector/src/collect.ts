@@ -10,7 +10,7 @@ import {
 } from './build.ts';
 import { parseOrThrow, type GhRunner } from './gh.ts';
 import { fetchChangedFiles, fetchIssues, fetchPrs } from './github.ts';
-import { bothOrThrow, mapWithConcurrency } from './limit.ts';
+import { mapWithConcurrency } from './limit.ts';
 
 /** At most this many `gh` processes fetch changed files at once. */
 export const CHANGED_FILES_CONCURRENCY = 4;
@@ -26,7 +26,10 @@ export async function collectSnapshot(
   branchPrefixes: readonly BranchPrefixRule[],
 ): Promise<GithubPart> {
   const cutoff = recentCutoff(now);
-  const [rawIssues, rawPrs] = await bothOrThrow(fetchIssues(gh, repo), fetchPrs(gh, repo));
+  // PRs first, then Issues: every Issue that exists when the PRs are read is in the Issue list
+  // read after, so a link to an Issue created between the two lists is kept (Issue #73).
+  const rawPrs = await fetchPrs(gh, repo);
+  const rawIssues = await fetchIssues(gh, repo);
   const existingIssues = issueNumbersOf(rawIssues);
   const prs = await mapWithConcurrency(
     selectRecentPrs(rawPrs, cutoff),

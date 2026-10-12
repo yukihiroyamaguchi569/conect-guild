@@ -105,6 +105,17 @@ describe('collectOnce: nothing is written', () => {
     await expect(collectOnce(deps)).resolves.toMatchObject({ github: { ok: false, kind } });
     expect(deps.writes).toEqual([]);
   });
+
+  it('does not write, nor read the Issues, when gh fails for the PR list (Issue #73)', async () => {
+    const gh = fakeGh({ 'pulls?state=all': new CollectorError('gh-failed') });
+    const deps = harness(gh);
+    await expect(collectOnce(deps)).resolves.toMatchObject({
+      github: { ok: false, kind: 'gh-failed' },
+    });
+    expect(deps.writes).toEqual([]);
+    expect(gh.calls.some((c) => c.includes('pulls?state=all'))).toBe(true);
+    expect(gh.calls.some((c) => c.includes('issues?state=all'))).toBe(false);
+  });
 });
 
 describe('collectOnce: failures', () => {

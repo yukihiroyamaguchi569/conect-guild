@@ -17,6 +17,20 @@ function openPr(number: number): object {
   };
 }
 
+function openIssue(number: number): object {
+  return {
+    number,
+    title: 'Issue',
+    state: 'open',
+    state_reason: null,
+    labels: [],
+    created_at: '2026-10-11T00:00:00Z',
+    updated_at: '2026-10-11T00:00:00Z',
+    closed_at: null,
+    is_pull_request: false,
+  };
+}
+
 /** What `gh api --jq '... | @json'` prints: one JSON value per line. */
 function lines(items: readonly unknown[]): string {
   return items.map((item) => `${JSON.stringify(item)}\n`).join('');
@@ -63,5 +77,35 @@ describe('collectSnapshot', () => {
       collectSnapshot(gh, REPO, new Date('2026-10-12T00:00:00.000Z'), []),
     ).rejects.toThrow('gh failed');
     expect(inFlight).toBe(0);
+  });
+});
+
+describe('collectSnapshot: order of the lists', () => {
+  it('waits for the PR list before reading the Issues, so an Issue created in between keeps its link', async () => {
+    const calls: string[] = [];
+    // The PR list answers only when released by hand; Issue #2 is created after that answer.
+    const prList = Promise.withResolvers<string>();
+    let issueTwoExists = false;
+    const gh: GhRunner = async (args) => {
+      const path = args.at(-1) ?? '';
+      if (path.includes('pulls?state=all')) {
+        calls.push('prs');
+        return prList.promise;
+      }
+      if (path.includes('issues?state=all')) {
+        calls.push('issues');
+        return lines(issueTwoExists ? [openIssue(2), openIssue(1)] : [openIssue(1)]);
+      }
+      await Promise.resolve();
+      return '';
+    };
+    const run = collectSnapshot(gh, REPO, new Date('2026-10-12T00:00:00.000Z'), []);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(calls).toEqual(['prs']);
+    prList.resolve(lines([{ ...openPr(10), body: 'Closes #2' }]));
+    issueTwoExists = true;
+    const snapshot = await run;
+    expect(calls).toEqual(['prs', 'issues']);
+    expect(snapshot.prs.map((pr) => pr.linkedIssues)).toEqual([[2]]);
   });
 });

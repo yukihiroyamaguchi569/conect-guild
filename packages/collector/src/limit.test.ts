@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bothOrThrow, mapWithConcurrency } from './limit.ts';
+import { mapWithConcurrency } from './limit.ts';
 
 function tick(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));
@@ -58,31 +58,5 @@ describe('mapWithConcurrency', () => {
     await expect(run).rejects.toThrow('boom');
     expect(inFlight).toBe(0);
     expect(started).toEqual([1, 2]);
-  });
-});
-
-describe('bothOrThrow', () => {
-  it('resolves with both values in order', async () => {
-    await expect(bothOrThrow(Promise.resolve(1), Promise.resolve('a'))).resolves.toEqual([1, 'a']);
-  });
-
-  it('rejects only after the other side has finished', async () => {
-    let otherDone = false;
-    const other = (async () => {
-      for (let i = 0; i < 5; i += 1) await tick();
-      otherDone = true;
-      return 2;
-    })();
-    await expect(bothOrThrow(Promise.reject(new Error('first')), other)).rejects.toThrow('first');
-    expect(otherDone).toBe(true);
-  });
-
-  it('reports the first rejection in argument order', async () => {
-    await expect(
-      bothOrThrow(Promise.reject(new Error('a')), Promise.reject(new Error('b'))),
-    ).rejects.toThrow('a');
-    await expect(bothOrThrow(Promise.resolve(1), Promise.reject(new Error('b')))).rejects.toThrow(
-      'b',
-    );
   });
 });
