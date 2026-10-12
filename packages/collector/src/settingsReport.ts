@@ -93,7 +93,10 @@ export function renderText(report: WriteReport): string {
   return `${lines.join('\n')}\n`;
 }
 
-/** The same report as one JSON object, for the skill that runs this. */
+/**
+ * The same report as one JSON object, for the skill that runs this. JSON leaves the C1 controls
+ * and bidi overrides as they are; they are escaped too (still valid JSON, the same strings).
+ */
 export function renderJson(report: WriteReport): string {
-  return `${JSON.stringify(report, null, 2)}\n`;
+  return `${escapeControls(JSON.stringify(report, null, 2))}\n`;
 }

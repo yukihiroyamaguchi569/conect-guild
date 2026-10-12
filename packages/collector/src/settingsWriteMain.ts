@@ -1,8 +1,9 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { text } from 'node:stream/consumers';
 import { SETTINGS_ROOT } from '@conect-guild/snapshot/settingsFile';
 import { createGhRunner } from './gh.ts';
+import { isDirectoryOnDisk } from './settingsChecks.ts';
 import { runSettingsWrite } from './settingsWrite.ts';
 import { createFileExclusive, writeFileAtomic } from './write.ts';
 
@@ -15,7 +16,7 @@ process.exitCode = await runSettingsWrite(process.argv.slice(2), {
   home: homedir(),
   readStdin: () => text(process.stdin),
   exists: existsSync,
-  isDirectory: (path) => statSync(path, { throwIfNoEntry: false })?.isDirectory() ?? false,
+  isDirectory: isDirectoryOnDisk,
   readText: (path) => readFileSync(path, 'utf8'),
   gh: createGhRunner(AbortSignal.timeout(GH_TIMEOUT_MS)),
   writeFile: writeFileAtomic,

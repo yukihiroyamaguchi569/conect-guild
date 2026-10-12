@@ -366,6 +366,18 @@ describe('runSettingsWrite: messages that repeat a string from the input', () =>
     expect(f.output()).not.toContain('\n  - 偽の行');
   });
 
+  it('escapes C1 controls and bidi overrides in the JSON too, which still reads back', async () => {
+    const data = input();
+    const first = data.departments[0];
+    if (first === undefined) throw new Error('fixture');
+    first.label = 'a\u009b\u202eb';
+    const f = fake({ stdin: JSON.stringify(data) });
+    await runSettingsWrite(['--dry-run', '--json'], f.deps);
+    expect(f.output()).not.toContain('\u009b');
+    expect(f.output()).not.toContain('\u202e');
+    expect(JSON.parse(f.output())).toHaveProperty('departments.0.label', 'a\u009b\u202eb');
+  });
+
   it('shows a label with a line break on one line in the table', async () => {
     const data = input();
     const first = data.departments[0];

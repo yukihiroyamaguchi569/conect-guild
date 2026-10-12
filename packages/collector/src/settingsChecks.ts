@@ -1,3 +1,4 @@
+import { statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import type { GuildSettings } from '@conect-guild/snapshot/settingsSchema';
 import type { GhRunner } from './gh.ts';
@@ -17,6 +18,18 @@ export interface FolderReader {
   readonly isDirectory: (path: string) => boolean;
   /** The file's text; throws when it cannot be read. */
   readonly readText: (path: string) => string;
+}
+
+/**
+ * True when `path` is a directory. Any failure (missing, not allowed, a file on the way) is false:
+ * the folder is reported as missing, and no error with the path escapes to the terminal.
+ */
+export function isDirectoryOnDisk(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 /** Whether the department folder's CLAUDE.md mentions the department label. */

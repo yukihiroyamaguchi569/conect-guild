@@ -1,11 +1,11 @@
-import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { chmod, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadSettingsFile } from '@conect-guild/snapshot/settingsFile';
 import { checkGuildSettings } from '@conect-guild/snapshot/settingsSchema';
-import { claudeMdMentions, prefixMatchesFolder } from './settingsChecks.ts';
+import { claudeMdMentions, isDirectoryOnDisk, prefixMatchesFolder } from './settingsChecks.ts';
 import { mergeSettings } from './settingsInput.ts';
 import { escapeControls, quote } from './settingsText.ts';
 import { parseWriteArgs, runSettingsWrite } from './settingsWrite.ts';
@@ -112,6 +112,25 @@ describe('quote', () => {
   });
 });
 
+describe('isDirectoryOnDisk', () => {
+  it('answers false, never throws, for a folder it may not look into or under a file', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'is-directory-'));
+    const locked = join(dir, 'locked');
+    await mkdir(join(locked, 'inner'), { recursive: true });
+    await chmod(locked, 0o000);
+    try {
+      expect(isDirectoryOnDisk(join(locked, 'inner'))).toBe(false);
+    } finally {
+      await chmod(locked, 0o700);
+    }
+    await writeFile(join(dir, 'file'), '');
+    expect(isDirectoryOnDisk(join(dir, 'file', 'x'))).toBe(false);
+    expect(isDirectoryOnDisk(join(dir, 'file'))).toBe(false);
+    expect(isDirectoryOnDisk(locked)).toBe(true);
+    await rm(dir, { recursive: true, force: true });
+  });
+});
+
 describe('runSettingsWrite on real files', () => {
   let root = '';
 
@@ -137,7 +156,7 @@ describe('runSettingsWrite on real files', () => {
       home: join(root, 'home'),
       readStdin: () => Promise.resolve(JSON.stringify(input())),
       exists: existsSync,
-      isDirectory: (path) => statSync(path, { throwIfNoEntry: false })?.isDirectory() ?? false,
+      isDirectory: isDirectoryOnDisk,
       readText: (path) => readFileSync(path, 'utf8'),
       gh: () => Promise.resolve(LABELS.map((l) => `${JSON.stringify(l)}\n`).join('')),
       writeFile: writeFileAtomic,
