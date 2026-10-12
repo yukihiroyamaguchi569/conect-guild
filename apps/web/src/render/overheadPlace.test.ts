@@ -4,7 +4,17 @@ import { LOGICAL_WIDTH } from './map';
 import { LINES } from './metrics';
 import { carry, raise, type Held } from './motion';
 import { bubbleBox, meet, tagBox, WINDOWS, type OverheadSources } from './overhead';
-import { bodyBox, placedBox, placeOverheads, wordsTop, type OverheadMember } from './overheadPlace';
+import {
+  bodyBox,
+  NO_PLACES,
+  placedBox,
+  placeOverheads,
+  rememberPlaces,
+  wordsTop,
+  type OverheadMember,
+  type PlaceMemory,
+  type Placed,
+} from './overheadPlace';
 import type { Point } from './path';
 
 const NOTHING: OverheadSources = { speeches: {}, lines: {}, remarks: {}, bubbles: {}, murmurs: {} };
@@ -141,5 +151,87 @@ describe('wordsTop', () => {
     expect(top({ ...NOTHING, murmurs: { minori: 'ぱちぱち…' } })).toBeNull();
     expect(top({ ...NOTHING, bubbles: { minori: 'awaiting-kaname' } })).toBeNull();
     expect(top(says, 'kaname')).toBeNull();
+  });
+});
+
+describe('placeOverheads: one line keeps its spot (rememberPlaces)', () => {
+  const left = member('kaname', { x: OPEN.x - 40, y: OPEN.y - 20 });
+  const right = member('hibiki', { x: OPEN.x + 40, y: OPEN.y - 20 });
+  const place = (
+    members: readonly OverheadMember[],
+    memory: PlaceMemory,
+    sources: OverheadSources = says,
+  ) => placeOverheads(members, sources, [], memory);
+  const spotOf = (placed: readonly Placed[]) => placed.find((p) => p.id === 'minori')?.spot;
+
+  it('stays over the item when the neighbours walk off during the line', () => {
+    const first = place([minori, left, right], NO_PLACES);
+    expect(spotOf(first)).toBe('right');
+    const later = place([minori], rememberPlaces(first));
+    expect(spotOf(later)).toBe('right');
+    expect(later[0]?.feet).toEqual({ x: OPEN.x, y: OPEN.y - LINES.raisedLiftPx });
+    // Without the memory the same frame would go beside: the memory is what keeps it.
+    expect(spotOf(place([minori], NO_PLACES))).toBe('beside-right');
+  });
+
+  it('stays beside the item when a neighbour walks up during the line', () => {
+    const first = place([minori], NO_PLACES);
+    expect(spotOf(first)).toBe('beside-right');
+    expect(spotOf(place([minori, right], rememberPlaces(first)))).toBe('beside-right');
+  });
+
+  it('places the next line afresh', () => {
+    const first = place([minori, left, right], NO_PLACES);
+    const next = { ...NOTHING, lines: { minori: 'はい、どうぞ' } } as const;
+    expect(spotOf(place([minori], rememberPlaces(first), next))).toBe('beside-right');
+  });
+
+  it('remembers the kind too, and places words of another kind afresh', () => {
+    const first = place([minori, left, right], NO_PLACES, {
+      ...NOTHING,
+      speeches: { minori: 'はっ！' },
+    });
+    expect(rememberPlaces(first).minori).toEqual({
+      kind: 'speech',
+      words: 'はっ！',
+      spot: 'right',
+    });
+    // The same words kept for the call, now said as a line: placed afresh.
+    const memory: PlaceMemory = { minori: { kind: 'speech', words: 'おまかせを', spot: 'right' } };
+    expect(spotOf(place([minori], memory))).toBe('beside-right');
+  });
+});
+
+describe('placeOverheads: a kept spot beside the item that no longer fits', () => {
+  const place = (members: readonly OverheadMember[], memory: PlaceMemory) =>
+    placeOverheads(members, says, [], memory);
+  const spotOf = (placed: readonly Placed[]) => placed.find((p) => p.id === 'minori')?.spot;
+
+  it('places again when the kept spot beside would go under a window', () => {
+    const near = { x: WINDOWS[1]?.left ?? 0, y: 400 };
+    const memory: PlaceMemory = {
+      minori: { kind: 'line', words: 'おまかせを', spot: 'beside-right' },
+    };
+    expect(spotOf(place([member('minori', near, raise('chest'))], memory))).toBe('beside-left');
+  });
+
+  it('places again when the kept spot beside would leave the canvas', () => {
+    const edge = { x: LOGICAL_WIDTH - 24, y: 480 };
+    const memory: PlaceMemory = {
+      minori: { kind: 'line', words: 'おまかせを', spot: 'beside-right' },
+    };
+    expect(spotOf(place([member('minori', edge, raise('chest'))], memory))).toBe('beside-left');
+  });
+});
+
+describe('rememberPlaces', () => {
+  it('keeps only words: a sign or a member with nothing over the head leaves nothing', () => {
+    const sources = {
+      ...NOTHING,
+      lines: { minori: 'おまかせを' },
+      bubbles: { hibiki: 'awaiting-permission' },
+    } as const;
+    const memory = rememberPlaces(placeOverheads([minori, member('hibiki', OPEN)], sources, []));
+    expect(Object.keys(memory)).toEqual(['minori']);
   });
 });

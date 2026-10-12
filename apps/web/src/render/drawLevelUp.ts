@@ -1,6 +1,6 @@
 import type { StageFrame } from './director';
 import { bannerPoint, LEVEL_UP } from './levelUp';
-import { overheadsOf, wordsTop, type OverheadStage } from './overheadPlace';
+import { wordsTop, type Placed } from './overheadPlace';
 
 /** What the words need of a 2D context (tests pass a recording one). */
 export type BannerContext = Pick<
@@ -27,9 +27,13 @@ export type BannerContext = Pick<
  */
 export function drawLevelUpBanners(
   ctx: BannerContext,
-  stage: OverheadStage & { readonly frame: Pick<StageFrame, 'confetti'> },
+  stage: {
+    readonly confetti: StageFrame['confetti'];
+    /** What is over the heads this frame, as drawn (overheadPlace.ts). */
+    readonly placed: readonly Placed[];
+  },
 ): void {
-  const placed = overheadsOf(stage);
+  const { placed } = stage;
   ctx.save();
   ctx.font = 'bold 16px sans-serif';
   ctx.textAlign = 'center';
@@ -38,7 +42,7 @@ export function drawLevelUpBanners(
   ctx.lineJoin = 'round';
   ctx.strokeStyle = '#2a1608';
   ctx.fillStyle = '#ffd84a';
-  for (const { actor, origin, banner } of stage.frame.confetti) {
+  for (const { actor, origin, banner } of stage.confetti) {
     if (banner === null) continue;
     const at = bannerPoint(origin, banner, wordsTop(placed, actor));
     ctx.globalAlpha = banner.alpha;

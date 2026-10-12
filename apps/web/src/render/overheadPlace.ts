@@ -52,6 +52,31 @@ export interface Placed {
 }
 
 /**
+ * The spot kept for the words over a member while they last (one line: the same speaker, words and
+ * kind, shown frame after frame), so a bubble does not jump from over the item to beside it when a
+ * neighbour walks off. The loop keeps it from one painted frame to the next (rememberPlaces).
+ */
+export interface Kept {
+  readonly kind: Overhead['kind'];
+  readonly words: string;
+  readonly spot: Spot;
+}
+
+export type PlaceMemory = Readonly<Partial<Record<MemberId, Kept>>>;
+
+export const NO_PLACES: PlaceMemory = {};
+
+/** What to keep for the next frame: the spot of every member's words placed now. */
+export function rememberPlaces(placed: readonly Placed[]): PlaceMemory {
+  const kept: Partial<Record<MemberId, Kept>> = {};
+  for (const one of placed) {
+    const words = wordsOf(one.shown);
+    if (words !== null) kept[one.id] = { kind: one.shown.kind, words, spot: one.spot };
+  }
+  return kept;
+}
+
+/**
  * Where another member stands, logical px: the feet up to the top of the hair (the sprites are
  * 80 px frames with the head about 70 px up), 16 px each side of the middle.
  */
@@ -77,6 +102,23 @@ function overHead(member: OverheadMember, shown: Overhead, tags: readonly LevelT
 
 const BESIDE: readonly Spot[] = ['beside-right', 'beside-left'];
 
+/**
+ * The spot beside the item for words held up, or null for over it: the one kept for this line if
+ * any (beside only while it still fits), else the first free one.
+ */
+function besideOrOver(
+  member: OverheadMember,
+  said: { readonly what: Overhead; readonly bubble: BubbleOf },
+  blockers: readonly Box[],
+  memory: PlaceMemory,
+): Spot | null {
+  const point = member.pose.point;
+  const kept = keptFor(member, said.what, memory);
+  if (kept !== null && !BESIDE.includes(kept)) return null;
+  if (kept !== null && stillFits(point, said.bubble, kept)) return kept;
+  return besideSpot(point, said.bubble, blockers);
+}
+
 /** The first spot beside the raised item clear of `blockers` and on the canvas, if any. */
 function besideSpot(point: Point, bubble: BubbleOf, blockers: readonly Box[]): Spot | null {
   for (const spot of BESIDE) {
@@ -86,14 +128,33 @@ function besideSpot(point: Point, bubble: BubbleOf, blockers: readonly Box[]): S
   return null;
 }
 
+/** Still clear of the windows and on the canvas: then a kept spot beside the item stays. */
+function stillFits(point: Point, bubble: BubbleOf, spot: Spot): boolean {
+  const box = bubbleBox(point, bubble, spot, 0);
+  return onCanvas(box) && !WINDOWS.some((area) => meet(box, area));
+}
+
+/** The spot kept for these words, if they are the line placed in the frame before. */
+function keptFor(member: OverheadMember, what: Overhead, memory: PlaceMemory): Spot | null {
+  const kept = memory[member.id];
+  if (kept?.kind !== what.kind || kept.words !== wordsOf(what)) return null;
+  return kept.spot;
+}
+
 function holdsUp(member: OverheadMember): boolean {
   return member.pose.held?.hold === 'raise';
 }
 
+/**
+ * `memory`: the spots of the frame before (rememberPlaces). Words held up keep their spot for the
+ * whole line: beside the item while it still fits clear of the windows and on the canvas (else
+ * placed again), or over the item, even once a side frees up.
+ */
 export function placeOverheads(
   members: readonly OverheadMember[],
   sources: OverheadSources,
   tags: readonly LevelTag[],
+  memory: PlaceMemory = NO_PLACES,
 ): Placed[] {
   const shown = members.flatMap((member) => {
     const what = overheadOf(member, sources);
@@ -114,7 +175,7 @@ export function placeOverheads(
       ...members.filter((m) => m.id !== member.id).map((m) => bodyBox(m.pose.point)),
       ...[...placed.values()].flatMap((p) => (p.bubble === null ? [] : [placedBox(p)])),
     ];
-    const spot = besideSpot(member.pose.point, bubble, blockers);
+    const spot = besideOrOver(member, { what, bubble }, blockers, memory);
     placed.set(
       member.id,
       spot === null
@@ -162,7 +223,8 @@ export interface OverheadStage {
   readonly tags: readonly LevelTag[];
 }
 
-/** Where everything over the heads goes this frame. */
-export function overheadsOf(stage: OverheadStage): Placed[] {
-  return placeOverheads(stage.frame.members, { ...stage, lines: stage.frame.lines }, stage.tags);
+/** Where everything over the heads goes this frame, keeping the spots of `memory`. */
+export function overheadsOf(stage: OverheadStage, memory: PlaceMemory = NO_PLACES): Placed[] {
+  const sources = { ...stage, lines: stage.frame.lines };
+  return placeOverheads(stage.frame.members, sources, stage.tags, memory);
 }

@@ -9,7 +9,7 @@ import type { PickLine } from './lines';
 import { DETAIL_SCALE, LINES, OVERHEAD_TOP } from './metrics';
 import { raise } from './motion';
 import { overheadLift } from './overhead';
-import { placeOverheads, wordsTop, type OverheadMember } from './overheadPlace';
+import { overheadsOf, placeOverheads, wordsTop, type OverheadMember } from './overheadPlace';
 import { SPIKE_PX } from './bubbleShape';
 import type { SpokenLines } from './lines';
 import type { Speeches } from './summons';
@@ -48,14 +48,10 @@ function bannerY(director: Director, t: number): number | undefined {
       written.push(y);
     },
   };
-  drawLevelUpBanners(ctx, {
-    frame: frameAt(director, t, DEFAULT_SEATS),
-    speeches: {},
-    bubbles: {},
-    remarks: {},
-    murmurs: {},
-    tags: TAGS,
-  });
+  const frame = frameAt(director, t, DEFAULT_SEATS);
+  const quiet = { speeches: {}, bubbles: {}, remarks: {}, murmurs: {} };
+  const placed = overheadsOf({ frame, ...quiet, tags: TAGS });
+  drawLevelUpBanners(ctx, { confetti: frame.confetti, placed });
   return written[0];
 }
 

@@ -10,7 +10,7 @@ import { GROUND } from './map';
 import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
 import { heldLook } from './hands';
 import type { Overhead } from './overhead';
-import { overheadsOf, type OverheadStage, type Placed } from './overheadPlace';
+import type { Placed } from './overheadPlace';
 import type { Point } from './path';
 import type { SpeechLine } from './summons';
 import { flyingItemPoint } from './toss';
@@ -197,8 +197,8 @@ function drawPlaced(ctx: CanvasRenderingContext2D, placed: Placed): void {
  */
 export function drawOverhead(
   ctx: CanvasRenderingContext2D,
-  stage: OverheadStage & { readonly frame: Pick<StageFrame, 'confetti'> },
+  stage: { readonly placed: readonly Placed[]; readonly confetti: readonly ConfettiView[] },
 ): void {
-  for (const placed of overheadsOf(stage)) drawPlaced(ctx, placed);
-  for (const view of stage.frame.confetti) drawConfetti(ctx, view);
+  for (const placed of stage.placed) drawPlaced(ctx, placed);
+  for (const view of stage.confetti) drawConfetti(ctx, view);
 }
