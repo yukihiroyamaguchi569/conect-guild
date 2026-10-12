@@ -53,7 +53,7 @@ describe('checkGuildSettings', () => {
 
   it('throws a message naming the file when invalid', () => {
     expect(() => checkGuildSettings({ ...settings(), repo: 'no-slash' })).toThrow(
-      /guild\.settings\.ts is invalid[\s\S]*repo/,
+      /guild\.settings\.local\.ts or guild\.settings\.ts \(whichever is used\) is invalid[\s\S]*repo/,
     );
   });
 });
