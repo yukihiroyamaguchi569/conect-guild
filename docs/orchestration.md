@@ -184,7 +184,13 @@ conect-guild はルールの変更を、設定の `ruleChangePaths` で見分け
 
 部門のフォルダに司令塔が書き込むのは、この部門を作るときだけ。以後、部門のルールの変更は部門自身が PR で出す。
 
-司令塔も PR を出すときは作業用の worktree（`.claude/worktrees/commander-<番号>`）でブランチを切る。直下のチェックアウトは main のままにする（部門のセッションもここから起動するため）。
+司令塔も PR を出すときは作業用の worktree でブランチを切る。直下のチェックアウトは main のままにする（部門のセッションもここから起動するため）。直下から次のように作り、以後そのフォルダの中で作業する。PR がマージされたら、直下に戻って `git worktree remove .claude/worktrees/commander-<名前>` で片付ける（`--force` は付けない。消せないときは社長に聞く。ブランチは消さない）。
+
+```bash
+git fetch origin
+git worktree add -b <ブランチ名> --no-track .claude/worktrees/commander-<名前> origin/main
+cd .claude/worktrees/commander-<名前>
+```
 
 ## 原則（部門をいずれ独立させても回るように）
 
