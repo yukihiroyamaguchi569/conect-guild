@@ -93,7 +93,9 @@ describe('createLabelWatch', () => {
     expect(watch.missing.value).toEqual([]);
     watch.stop();
   });
+});
 
+describe('createLabelWatch: stale, unchanged and stopped', () => {
   it('drops a finding once its status is stale (the collector stopped)', async () => {
     const watch = watchWith(reader([found([1], NOW - STALE_AFTER_MS - 1)]));
     watch.start();
@@ -113,17 +115,17 @@ describe('createLabelWatch', () => {
   });
 
   it('stops reading on stop, and a read in flight then changes nothing', async () => {
-    let answer: (read: CollectorStatusRead) => void = () => undefined;
+    const pending: ((read: CollectorStatusRead) => void)[] = [];
     const load = vi.fn(
       () =>
         new Promise<CollectorStatusRead>((resolve) => {
-          answer = resolve;
+          pending.push(resolve);
         }),
     );
     const watch = watchWith(load);
     watch.start();
     watch.stop();
-    answer(found([1]));
+    for (const resolve of pending) resolve(found([1]));
     await vi.advanceTimersByTimeAsync(3 * INTERVAL_MS);
     expect(watch.missing.value).toEqual([]);
     expect(load).toHaveBeenCalledOnce();
