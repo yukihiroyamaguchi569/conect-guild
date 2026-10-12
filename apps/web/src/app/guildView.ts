@@ -284,7 +284,7 @@ export interface FetchStatusView {
   readonly failure: string | null;
   /**
    * True before any snapshot while the file is not there yet: the collector has never run
-   * (Issue #67). A 404 after a snapshot was shown is an ordinary failure.
+   * (Issue #67). The file gone after a snapshot was shown is an ordinary failure.
    */
   readonly notCollected: boolean;
   /** True when the shown snapshot is older than the stale limit (the collector may be down). */

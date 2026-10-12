@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 /**
  * Why a snapshot could not be loaded. The adapter never throws; it returns one of these.
- * 'not-collected' is a 404: the collector has not written the file yet (Issue #67).
+ * 'not-collected' is a 204 No Content: the collector has not written the file yet (Issue #67).
  */
 export type SnapshotLoadFailure =
   | 'network'
@@ -100,8 +100,9 @@ async function fetchText(
   } catch {
     return failure();
   }
-  // The dev server answers 404 only while the collector has not written the file (DESIGN.md 4.3).
-  if (response.status === 404) return { ok: false, reason: 'not-collected' };
+  // The dev server answers 204 while the collector has not written the file (DESIGN.md 4.3).
+  // Checked before `ok`, which a 204 also is. A 404 is an ordinary HTTP error (a wrong route).
+  if (response.status === 204) return { ok: false, reason: 'not-collected' };
   if (!response.ok) return { ok: false, reason: 'http', status: response.status };
   try {
     return { ok: true, text: await response.text() };

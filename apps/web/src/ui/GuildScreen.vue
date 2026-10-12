@@ -23,7 +23,7 @@ const props = defineProps<{
   demo: DemoSession | null;
 }>();
 const emit = defineEmits<{
-  /** /snapshot.json is not there yet (404) and nothing was shown: the collector never ran. */
+  /** /snapshot.json is not there yet (204) and nothing was shown: the collector never ran. */
   'not-collected': [];
 }>();
 const demo = props.demo;

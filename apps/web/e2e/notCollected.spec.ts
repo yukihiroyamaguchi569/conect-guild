@@ -1,4 +1,4 @@
-// Issue #67: before the collector's first write the dev server answers /snapshot.json with 404.
+// Issue #67: before the collector's first write the dev server answers /snapshot.json with 204.
 // The page then plays the demo by itself and turns live once the file is there.
 import type { Page } from '@playwright/test';
 import { BASELINE_KEY, expect, expectNarration, test } from './fixtures.ts';
@@ -10,12 +10,12 @@ const REFRESH_TIMEOUT = 15_000;
 const FIRST_SCROLL_TIMEOUT = 20_000;
 const SETUP_GUIDE = 'https://github.com/yukihiroyamaguchi569/conect-guild/blob/main/docs/setup.md';
 
-/** Chrome logs every failed fetch as a console error; only those of /snapshot.json are expected. */
-const FAILED_FETCH_LOG = /^console: Failed to load resource: .* status of (404|500) /;
+/** Chrome logs a failed fetch as a console error: expected for the 500 test only. */
+const SERVER_ERROR_LOG = /^console: Failed to load resource: .* status of 500 /;
 
-/** Drops the expected logs, so the fixture's own check sees only the others. */
-function dropFailedFetchLogs(pageErrors: string[]): void {
-  const rest = pageErrors.filter((error) => !FAILED_FETCH_LOG.test(error));
+/** Drops the expected 500 logs, so the fixture's own check sees only the others. */
+function dropServerErrorLogs(pageErrors: string[]): void {
+  const rest = pageErrors.filter((error) => !SERVER_ERROR_LOG.test(error));
   pageErrors.splice(0, pageErrors.length, ...rest);
 }
 
@@ -31,7 +31,7 @@ function recordRequests(page: Page, origin: string) {
   return { outside, snapshotReads: () => snapshotReads };
 }
 
-test('a 404 plays the demo by itself, then turns live once collected, without events', async ({
+test('a 204 plays the demo by itself, then turns live once collected, without events', async ({
   page,
   pageErrors,
   snapshotServer,
@@ -39,7 +39,7 @@ test('a 404 plays the demo by itself, then turns live once collected, without ev
   const requests = recordRequests(page, String(testInfo.project.use.baseURL));
   // The fixtures fix Date, which would hold the demo's script at its start: let the time flow.
   await page.clock.setSystemTime(NOW);
-  snapshotServer.failWith(404);
+  snapshotServer.failWith(204);
   await page.goto('/');
 
   const banner = page.getByRole('status', { name: 'デモ表示中' });
@@ -79,7 +79,8 @@ test('a 404 plays the demo by itself, then turns live once collected, without ev
     .not.toBeNull();
 
   expect(requests.outside).toEqual([]);
-  dropFailedFetchLogs(pageErrors);
+  // A 204 is no failure to the browser: not one console error while the demo plays.
+  expect(pageErrors).toEqual([]);
 });
 
 test('a 500 stays an error, never the demo', async ({
@@ -97,5 +98,5 @@ test('a 500 stays an error, never the demo', async ({
   await expect(fetch).toContainText('取得失敗（サーバーがエラーを返しました）');
   await expect(page.getByRole('status', { name: 'デモ表示中' })).toHaveCount(0);
   await expect(fetch).not.toContainText('デモ（架空のデータ）');
-  dropFailedFetchLogs(pageErrors);
+  dropServerErrorLogs(pageErrors);
 });

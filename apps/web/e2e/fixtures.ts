@@ -11,7 +11,7 @@ const SERVED_HEADER = 'x-e2e-snapshot';
 export interface SnapshotServer {
   /** What /snapshot.json returns from the next request on (the collector's next write). */
   serve(snapshot: Snapshot): void;
-  /** Answers an empty response of `status` from the next request on (404: not collected yet). */
+  /** Answers an empty response of `status` from the next request on (204: not collected yet). */
   failWith(status: number): void;
 }
 

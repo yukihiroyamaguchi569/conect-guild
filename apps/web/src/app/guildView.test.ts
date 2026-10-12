@@ -298,7 +298,7 @@ describe('buildFetchStatus: not collected yet (Issue #67)', () => {
     });
   });
 
-  it('treats a 404 after a shown snapshot as an ordinary failure, never stale', () => {
+  it('treats nothing collected (204) after a shown snapshot as an ordinary failure, never stale', () => {
     const later = at(minutesAfter(fetchedAt, 1));
     const view = buildFetchStatus({ fetchedAt, sessions }, 'not-collected', later);
     expect(view.notCollected).toBe(false);

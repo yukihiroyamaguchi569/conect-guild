@@ -53,7 +53,9 @@ async function serveSnapshot(
   try {
     body = await readSnapshotFile(filePath);
   } catch (error) {
-    sendStatus(res, isMissingFile(error) ? 404 : 500);
+    // No file yet: the collector has never run. 204, not 404, so the browser logs no error on
+    // every 5-second read while the page plays the demo instead (Issue #67).
+    sendStatus(res, isMissingFile(error) ? 204 : 500);
     return;
   }
   res.statusCode = 200;

@@ -8,7 +8,7 @@ import { globalScheduler, type Cancel, type Scheduler } from './scheduler';
  * Which screen the page shows (Issue #67):
  * - 'live': the collector's data at /snapshot.json
  * - 'demo': `?demo=1`, the fictional script after はじめる (Issue #49)
- * - 'auto-demo': the same script, started by itself, while /snapshot.json is not there yet (404:
+ * - 'auto-demo': the same script, started by itself, while /snapshot.json is not there yet (204:
  *   the collector has never run). /snapshot.json is still read in the background, and the page
  *   turns live as soon as it answers anything else.
  */
