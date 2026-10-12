@@ -16,6 +16,7 @@
     "vite-plugin-settings.ts",
     "vite-plugin-settings.test.ts",
     "vite-plugin-snapshot.ts",
-    "vite-plugin-snapshot.test.ts"
+    "vite-plugin-snapshot.test.ts",
+    "dev-host.test.ts"
   ]
 }

@@ -13,8 +13,30 @@ export const SPRITE_SIZE = 80;
 export const DETAIL_SCALE = TILE_SIZE / 16;
 /** How far above the feet held items and confetti are centred: just over the head. */
 export const OVERHEAD_OFFSET = SPRITE_SIZE + 2 * DETAIL_SCALE;
-/** How far a waiting bubble's top sits over OVERHEAD_OFFSET, in detail px (draw.ts). */
-export const BUBBLE_RISE = 6;
+/**
+ * The bubbles over the heads (bubbleShape.ts, Issue #77), in detail px: bold `textPx` text
+ * (`glyphPx` for a waiting sign) with `padXPx` at the sides and `padYPx` over and under, inside a
+ * 1 px border; a tail `tailInsidePx` wide inside its border at the base, `tailRows` rows under the
+ * box. Over the head the box starts `overXPx` right (or left) of the feet; beside an item held up
+ * over the head (itemHalf 8 detail px each side of the middle) it starts `besideXPx` out, its bottom
+ * `besideBottomPx` under the point over the head (at the head's height).
+ */
+export const BUBBLE = {
+  textPx: 8,
+  glyphPx: 9,
+  padXPx: 3,
+  padYPx: 2,
+  tailInsidePx: 4,
+  tailRows: 4,
+  overXPx: 2,
+  besideXPx: 10,
+  besideBottomPx: 4,
+} as const;
+/**
+ * How far a bubble's top sits over OVERHEAD_OFFSET, in detail px: the text, its padding and the
+ * border (bubbleShape.ts; a shout's spikes reach higher, only over the king).
+ */
+export const BUBBLE_RISE = BUBBLE.textPx + 2 * BUBBLE.padYPx + 2;
 /** The highest point drawn over a member, above the feet: the top of a bubble. */
 export const OVERHEAD_TOP = OVERHEAD_OFFSET + BUBBLE_RISE * DETAIL_SCALE;
 
@@ -244,11 +266,10 @@ export const TOSS = {
  * toss as the scroll flies off (`tossMs`), the one who takes it as they hold it up (`takeMs`), the
  * cleared member under the confetti (`clearMs`), then the king `kingGapMs` later (`kingMs`). A
  * member does not say again any of the last `recentLines` lines they said at the same moment (fewer
- * when the moment has fewer lines). While the member holds an item up over the head, what is over
- * the head goes `raisedLiftPx` higher, so the whole bubble sits over the item: the item is centred
- * over the head and wider than the gap to the bubble's left edge, so only lifting it past the
- * item's top clears it (the chest showed under the bubble's left end on screenshots; overhead.test.ts
- * checks every member). Words that would meet a 「Lv N」 tag on a desk go up until they are
+ * when the moment has fewer lines). While the member holds an item up over the head, words go
+ * beside the item (overhead.placeOverheads, Issue #77); where neither side is free, and for a
+ * sign with no words, what is over the head goes `raisedLiftPx` higher, so the whole bubble and
+ * its tail sit over the item (overhead.test.ts checks every member). Words that would meet a 「Lv N」 tag on a desk go up until they are
  * `tagGapPx` over it (overhead.overheadLift). A member who starts waiting on someone (the waiting
  * bubble is new) says a line `remarkMs` long only when the injected random number is under
  * `remarkChance` (remarks.ts: now and then, not every time). One member at a time murmurs
@@ -272,6 +293,6 @@ export const LINES = {
   murmurRestMs: 2_000,
   sleepTalkWeight: 0.3,
   recentLines: 2,
-  raisedLiftPx: 36,
+  raisedLiftPx: 34,
   tagGapPx: 2,
 } as const;

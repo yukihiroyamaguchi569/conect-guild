@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { GuildEvent } from '../domain/events';
 import { createCalls } from './calls';
-import { EMPTY_DIRECTOR, frameAt, scheduleEvent } from './director';
+import { EMPTY_DIRECTOR, frameAt, scheduleEvent, type StageFrame } from './director';
+import type { Speeches } from './summons';
 import { drawLevelUpBanners, type BannerContext } from './drawLevelUp';
 import { bannerAt, bannerPoint, LEVEL_UP } from './levelUp';
+import { overheadsOf } from './overheadPlace';
 import { OVERHEAD_TOP } from './metrics';
 import { DEFAULT_SEATS } from './scenes';
 
@@ -61,15 +63,26 @@ describe('bannerPoint', () => {
   });
 
   it('goes over the top of the answer bubble', () => {
-    const feet = { x: 100, y: 200 + OVERHEAD_TOP - 40 };
-    const at = bannerPoint(origin, banner, feet);
-    expect(at.y).toBe(feet.y - OVERHEAD_TOP - LEVEL_UP.bannerGapPx - banner.rise);
+    const top = 160;
+    const at = bannerPoint(origin, banner, top);
+    expect(at.y).toBe(top - LEVEL_UP.bannerGapPx - banner.rise);
   });
 
   it('never goes lower than over the confetti', () => {
-    expect(bannerPoint(origin, banner, { x: 100, y: 10_000 })).toEqual({ x: 100, y: 195 });
+    expect(bannerPoint(origin, banner, 10_000)).toEqual({ x: 100, y: 195 });
   });
 });
+
+/** Nobody waits, remarks or murmurs. */
+const QUIET = { bubbles: {}, remarks: {}, murmurs: {} } as const;
+
+/** What drawLevelUpBanners reads of a stage with no tags, placed as the loop places it. */
+function bannersOf(view: { readonly frame: StageFrame; readonly speeches: Speeches }) {
+  return {
+    confetti: view.frame.confetti,
+    placed: overheadsOf({ ...view, ...QUIET, tags: [] }),
+  };
+}
 
 describe('drawLevelUpBanners with the king calling', () => {
   // The answer 「はっ！」 comes 2.1 s after the call, while "LEVEL UP" still shows (2.6 s).
@@ -81,7 +94,7 @@ describe('drawLevelUpBanners with the king calling', () => {
     const minori = view.frame.members.find((m) => m.id === 'minori');
     if (minori === undefined) throw new Error('no minori');
     const { written, ctx } = recordingContext();
-    drawLevelUpBanners(ctx, { ...view, tags: [] });
+    drawLevelUpBanners(ctx, bannersOf(view));
     expect(written.map((w) => w.text)).toEqual(['LEVEL UP']);
     // The bottom of the words is over the top of the bubble.
     expect(written[0]?.y).toBeLessThan(minori.pose.point.y - OVERHEAD_TOP);
@@ -90,7 +103,7 @@ describe('drawLevelUpBanners with the king calling', () => {
   it('writes it in its usual place without a call', () => {
     const view = stageAt(T, null);
     const { written, ctx } = recordingContext();
-    drawLevelUpBanners(ctx, { ...view, tags: [] });
+    drawLevelUpBanners(ctx, bannersOf(view));
     const [confetti] = view.frame.confetti;
     const banner = bannerAt(T);
     if (confetti === undefined || banner === null) throw new Error('no level-up');
