@@ -138,7 +138,7 @@ conect-guild はルールの変更を、設定の `ruleChangePaths` で見分け
 
 ### 3-6. conect-guild の設定を書く
 
-**やること**: conect-guild の `guild.settings.local.ts` に、リポジトリ名（`repo`）、5 つのフォルダ（`commanderSessionDir` と `departments[].sessionDir`）、4 つのラベル名（`departments[].label`）を書きます。手順は [setup.md の 2 章](setup.md#2-自分のリポジトリで使う)です。
+**やること**: conect-guild の `guild.settings.local.ts` に、リポジトリ名（`repo`）、5 つのフォルダ（`commanderSessionDir` と `departments[].sessionDir`）、4 つのラベル名（`departments[].label`）と、ブランチの接頭辞（`branchPrefixes`。部門の表の「ブランチの接頭辞」）を書きます。手順は [setup.md の 2 章](setup.md#2-自分のリポジトリで使う)です。
 
 **確かめること**
 
@@ -147,7 +147,7 @@ conect-guild はルールの変更を、設定の `ruleChangePaths` で見分け
 
 ## 4. 司令塔の CLAUDE.md の雛形
 
-書き換えるのは、`<呼び名>`（司令塔が社長を呼ぶ名前）と `<owner/name>`（3-1 で選んだリポジトリ）の 2 か所と、部門の表（例なので自分の会社に合わせる）です。ほかの `<番号>`・`<フォルダ>` などは、AI が使うときに埋める書式なので、そのまま残します。
+書き換えるのは、`<呼び名>`（司令塔が社長を呼ぶ名前）と `<owner/name>`（3-1 で選んだリポジトリ）の 2 か所と、部門の表（例なので自分の会社に合わせる）です。部門の名前を変えたら、表の下の「どこにも当てはまらない依頼は総務に振る」の部門名も、表にある部門に揃えます。ほかの `<番号>`・`<フォルダ>` などは、AI が使うときに埋める書式なので、そのまま残します。
 
 ````markdown
 # CLAUDE.md
