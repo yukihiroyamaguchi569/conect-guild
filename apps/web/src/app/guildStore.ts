@@ -168,30 +168,41 @@ function initialState(): GuildState {
 }
 
 /**
- * Compares the session reading of a fetch with the last one and publishes the president's
- * orders (Issue #28). A halt forgets the reading, so the first one after it only starts over.
+ * Compares the session reading of a fetch with the last one and returns whom the president gave
+ * an order (Issue #28). A halt forgets the reading, so the first one after it only starts over.
  */
-function noteSessions(state: GuildState, result: SnapshotLoadResult, now: number): void {
+function noteSessions(state: GuildState, result: SnapshotLoadResult, now: number): MemberId[] {
   if (!result.ok) {
     if (state.halted) state.sessionReading = null;
-    return;
+    return [];
   }
   const next = readSessions(result.snapshot.sessions, now);
   const members = summonedMembers(state.sessionReading, next);
   state.sessionReading = comparedReading(state.sessionReading, next);
+  return members;
+}
+
+/** Publishes an order of the president: the king calls those members on the canvas. */
+function publishSummons(state: GuildState, members: readonly MemberId[]): void {
   if (members.length > 0) state.summons = { id: (state.summons?.id ?? 0) + 1, members };
+}
+
+/** What one fetch brings: the messages to queue and whom the president gave an order. */
+interface Applied {
+  readonly entries: readonly MessageEntry[];
+  readonly summoned: readonly MemberId[];
 }
 
 /**
  * Applies one fetch result, finished at `now` (epoch ms). Returns the messages (with their events)
- * to queue.
+ * to queue, and the order to publish after them (createGuildStore).
  */
 function applyResult(
   state: GuildState,
   storage: KeyValueStore,
   result: SnapshotLoadResult,
   at: { readonly now: number; readonly fresh: { pending: boolean } },
-): readonly MessageEntry[] {
+): Applied {
   const { now, fresh } = at;
   if (!result.ok) {
     state.failure = result.reason;
@@ -199,18 +210,18 @@ function applyResult(
     state.haltReason = haltReasonOf(result.reason) ?? state.haltReason;
     state.halted = state.haltReason !== null;
     noteSessions(state, result, now);
-    return [];
+    return { entries: [], summoned: [] };
   }
   state.snapshot = result.snapshot;
   state.failure = null;
   state.halted = false;
   state.haltReason = null;
-  noteSessions(state, result, now);
+  const summoned = noteSessions(state, result, now);
   const outcome = syncBaseline(storage, result.snapshot, fresh.pending);
   // Fresh until the new baseline is really stored (localStorage may fail for a while).
   if (outcome.effectsAvailable) fresh.pending = false;
   state.effectsAvailable = outcome.effectsAvailable;
-  return outcome.entries;
+  return { entries: outcome.entries, summoned };
 }
 
 /** The message queue that publishes into `state.messages`. */
@@ -303,11 +314,14 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
       const result = await load();
       if (started !== generation) return;
       state.checkedAt = now();
-      const entries = applyResult(state, storage, result, { now: now(), fresh });
+      const { entries, summoned } = applyResult(state, storage, result, { now: now(), fresh });
       // While halted the window is hidden: hold the messages (and their scenes) until it is back.
       if (state.halted) queue.pause();
       else queue.resume();
       queue.push(entries);
+      // After the messages: a scene of this fetch that needs かなめ is booked on the canvas before
+      // the king's call, so she answers where she is instead of walking to the throne (Issue #87).
+      publishSummons(state, summoned);
     } finally {
       inFlight = false;
     }

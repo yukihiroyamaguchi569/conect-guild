@@ -2,7 +2,8 @@ import type { SessionState, Snapshot } from '@conect-guild/snapshot';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SnapshotLoadResult } from '../adapters/snapshot';
 import { createKeyValueStore, type StorageLike } from '../adapters/storage';
-import { snapshot, T0 } from '../domain/fixtures.test-util';
+import { watch } from 'vue';
+import { issue, snapshot, T0 } from '../domain/fixtures.test-util';
 import { SESSION_STALE_AFTER_MS } from '../guild.config';
 import { createGuildStore } from './guildStore';
 
@@ -45,6 +46,8 @@ const network: SnapshotLoadResult = { ok: false, reason: 'network' };
 
 /** A store that loads `results` in turn, with the wall clock at T0 + `seconds` on each load. */
 function setup() {
+  // One storage for the store's lifetime, so the baseline of a fetch is there for the next.
+  const storage = memoryStorage();
   const queue: { result: SnapshotLoadResult; seconds: number }[] = [];
   let clock = Date.parse(T0);
   const store = createGuildStore({
@@ -54,7 +57,7 @@ function setup() {
       clock = Date.parse(T0) + next.seconds * 1000;
       return Promise.resolve(next.result);
     },
-    storage: createKeyValueStore(memoryStorage),
+    storage: createKeyValueStore(() => storage),
     now: () => clock,
   });
   const load = async (result: SnapshotLoadResult, seconds: number): Promise<void> => {
@@ -103,6 +106,33 @@ describe('guild store summons', () => {
     await load(ok(reading(10, 'resting')), 10);
     await load(ok(reading(15, 'working')), 15);
     expect(store.state.summons).toEqual({ id: 2, members: ['kaname'] });
+  });
+
+  it('publishes an order after the messages of the same fetch (Issue #87)', async () => {
+    const { store, load } = setup();
+    const seen: string[] = [];
+    // Synchronous, so the order of the changes is seen as the canvas's watchers take them.
+    watch(
+      () => store.state.messages,
+      () => seen.push('messages'),
+      { flush: 'sync' },
+    );
+    watch(
+      () => store.state.summons,
+      () => seen.push('summons'),
+      { flush: 'sync' },
+    );
+    await load(ok(reading(0, 'idle')), 0);
+    const scroll = {
+      ...reading(5, 'working'),
+      fetchedAt: new Date(Date.parse(T0) + 5_000).toISOString(),
+      issues: [issue(7, { labels: ['経理'] })],
+    };
+    await load(ok(scroll), 5);
+    expect(store.state.summons).toEqual({ id: 1, members: ['kaname'] });
+    expect(store.state.messages).toHaveLength(1);
+    expect(seen.indexOf('messages')).toBeGreaterThanOrEqual(0);
+    expect(seen.indexOf('messages')).toBeLessThan(seen.indexOf('summons'));
   });
 
   it('does not report work stopping', async () => {
