@@ -30,7 +30,7 @@ function forbidden(name: string) {
   });
 }
 
-/** The store as App.vue builds it in the demo, the timers faked. */
+/** The store as GuildScreen.vue builds it in the demo, the timers faked. */
 function setup() {
   const demo = createDemoSession(() => Date.now());
   const store = createGuildStore(demo.guildOptions);
