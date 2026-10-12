@@ -50,10 +50,12 @@ export function createCollectorWatch(options: CollectorWatchOptions): CollectorW
     const order = requested;
     const read = await options.loadStatus();
     if (order <= applied) return;
-    applied = order;
-    // An unreadable status keeps the last one, so one bad read does not flicker the banner.
-    if (read.kind === 'absent') status = null;
-    else if (read.kind === 'status') status = read.status;
+    // An unreadable status keeps the last one, so one bad read does not flicker the banner. It
+    // settles nothing either: a valid answer to an earlier read may still come and count.
+    if (read.kind !== 'unreadable') {
+      applied = order;
+      status = read.kind === 'absent' ? null : read.status;
+    }
     show(collectorFailureOf(status, options.now()));
   }
 

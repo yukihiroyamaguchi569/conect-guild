@@ -139,6 +139,21 @@ describe('createScreenMode: the collector status as it changes', () => {
 });
 
 describe('createScreenMode: the collector status and the switch to live', () => {
+  it('keeps reading the snapshot while the status does not answer', async () => {
+    const loadSnapshot = reader([NOT_COLLECTED, NOT_COLLECTED, COLLECTED], NOT_COLLECTED);
+    const screen = createScreenMode({
+      search: '',
+      loadSnapshot,
+      loadCollectorStatus: () => new Promise<CollectorStatusRead>(() => undefined),
+      console: fakeConsole(),
+    });
+    screen.notCollected();
+    await vi.advanceTimersByTimeAsync(3 * REFRESH_INTERVAL_MS);
+    expect(loadSnapshot).toHaveBeenCalledTimes(3);
+    expect(screen.mode.value).toBe('live');
+    screen.dispose();
+  });
+
   it('forgets the failure when the page turns live, and stops reading the status', async () => {
     const { screen, loadCollectorStatus } = autoDemo([failedAt(NOW)], [NOT_COLLECTED, COLLECTED]);
     await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS);
@@ -174,6 +189,26 @@ describe('createScreenMode: the collector status and the switch to live', () => 
 });
 
 describe('createCollectorWatch', () => {
+  it('still takes an earlier read that ends after a later unreadable one', async () => {
+    const pending: ((read: CollectorStatusRead) => void)[] = [];
+    const watch = createCollectorWatch({
+      loadStatus: () =>
+        new Promise((done) => {
+          pending.push(done);
+        }),
+      now: () => NOW,
+      console: fakeConsole(),
+    });
+    const first = watch.start();
+    const second = watch.refresh();
+    pending[1]?.(UNREADABLE);
+    await second;
+    expect(watch.failure.value).toBeNull();
+    pending[0]?.(failedAt(NOW));
+    await first;
+    expect(watch.failure.value).toBe('gh-failed');
+  });
+
   it('drops a read that ends after a later one (the slow read at the start)', async () => {
     const pending: ((read: CollectorStatusRead) => void)[] = [];
     const console = fakeConsole();

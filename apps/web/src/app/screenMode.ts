@@ -140,7 +140,8 @@ export function createScreenMode(options: ScreenModeOptions): ScreenModeState {
         return;
       }
       // Still nothing collected: has the collector run and failed?
-      await collector.refresh();
+      // Not awaited: a status that does not answer must not hold up the next snapshot read.
+      void collector.refresh();
     });
   }
 
