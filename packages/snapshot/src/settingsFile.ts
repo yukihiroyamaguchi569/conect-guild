@@ -45,6 +45,17 @@ export interface LoadedSettings {
 }
 
 /**
+ * Where the JSON stopped parsing, or the kind of failure. Never the parser's own message: it can
+ * quote a piece of the file, and the collector logs this (only kinds and positions go to logs).
+ */
+export function whereUnreadable(error: unknown): string {
+  if (!(error instanceof SyntaxError)) return 'ファイルを読めません';
+  const at = /line (\d+) column (\d+)/.exec(error.message);
+  if (at !== null) return `${String(at[1])} 行 ${String(at[2])} 列`;
+  return error.message.includes('end of JSON input') ? '途中で終わっています' : '書き方の誤り';
+}
+
+/**
  * Chooses the settings file under `root`, reads it as JSON and checks it against the schema. The
  * file is only parsed, never run. Throws with a message saying what to do when an old
  * guild.settings.local.ts is still there (it is never silently skipped), when the file is not
@@ -61,8 +72,9 @@ export function loadSettingsFile(root: string, reader: SettingsReader): LoadedSe
   try {
     raw = JSON.parse(reader.readText(file.path));
   } catch (error) {
-    const reason = error instanceof SyntaxError ? error.message : 'could not be read';
-    throw new Error(`${file.name} を JSON として読めません: ${reason}`, { cause: error });
+    throw new Error(`${file.name} を JSON として読めません（${whereUnreadable(error)}）`, {
+      cause: error,
+    });
   }
   return { file, settings: checkGuildSettings(raw, file.name) };
 }

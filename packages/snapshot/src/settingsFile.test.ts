@@ -101,8 +101,26 @@ describe('loadSettingsFile', () => {
       'guild.settings.local.json': '{ repo: ',
     });
     expect(() => loadSettingsFile(ROOT, files)).toThrow(
-      /^guild\.settings\.local\.json を JSON として読めません: /,
+      /^guild\.settings\.local\.json を JSON として読めません（/,
     );
+  });
+
+  it('gives only the position, never a piece of the file', () => {
+    const files = filesOf({
+      'guild.settings.json': DEFAULT_TEXT,
+      'guild.settings.local.json': '{\n  "repo": "secret-owner/secret-repo",\n}',
+    });
+    expect(() => loadSettingsFile(ROOT, files)).toThrow(
+      /^guild\.settings\.local\.json を JSON として読めません（3 行 1 列）$/,
+    );
+    expect(() => loadSettingsFile(ROOT, files)).not.toThrow(/secret/);
+  });
+
+  it('says a cut-off file ends early and a missing file cannot be read', () => {
+    const cut = filesOf({ 'guild.settings.json': '{ "repo": ' });
+    expect(() => loadSettingsFile(ROOT, cut)).toThrow(/（途中で終わっています）$/);
+    const missing = filesOf({});
+    expect(() => loadSettingsFile(ROOT, missing)).toThrow(/（ファイルを読めません）$/);
   });
 
   it('stops with the schema message naming the file when a value is invalid', () => {

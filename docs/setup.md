@@ -222,7 +222,7 @@ collector は `[collector] guild.settings.local.json is invalid:`（読んだフ
 | `label ... twice`・`member ... twice`・`session dir ... twice` | 部門どうしでラベル・担当・フォルダが重なっている。別々にする |
 | `owner/name`（`repo`） | `repo` を `owner/name` の形にする |
 
-JSON として読めないとき（`"` の付け忘れ、最後の要素の後ろの `,`、コメントなど）は `guild.settings.local.json を JSON として読めません: ...` と出して止まります。`...` に、どこで読めなくなったかが出ます。
+JSON として読めないとき（`"` の付け忘れ、最後の要素の後ろの `,`、コメントなど）は `guild.settings.local.json を JSON として読めません（3 行 1 列）` のように、読めなくなった位置を出して止まります。その位置か、すぐ手前を直します。
 
 `guild.settings.local.ts は読まなくなりました。…` と出たら、2-2 のとおり値を `guild.settings.local.json` に移し、`guild.settings.local.ts` を消します。
 
