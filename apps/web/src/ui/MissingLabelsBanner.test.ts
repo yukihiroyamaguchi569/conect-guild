@@ -13,7 +13,7 @@ describe('MissingLabelsBanner', () => {
     expect(html).toContain(
       '部門のラベルがリポジトリにありません: 企画（departments[2]）。この部門の Issue は受付に置かれます',
     );
-    expect(html).toContain('直し方（docs/setup.md）');
+    expect(html).toContain('直し方（docs/setup.md の 3 章）');
     expect(html).toContain(
       'href="https://github.com/yukihiroyamaguchi569/conect-guild/blob/main/docs/setup.md#画面の帯に部門のラベルがリポジトリにありませんと出る"',
     );

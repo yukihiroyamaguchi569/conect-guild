@@ -57,7 +57,7 @@ test('a failing collector shows on the banner and in one console warning', async
 
   const banner = page.getByRole('status', { name: 'デモ表示中' });
   await expect(banner).toContainText(FAILURE_BANNER);
-  await expect(banner.getByRole('link', { name: '集め方（docs/setup.md）' })).toBeVisible();
+  await expect(banner.getByRole('link', { name: '集め方（docs/setup.md の 2 章）' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'クエスト掲示板' })).toBeVisible();
   // Still failing on the next reads: one warning only, and the start's hint once.
   await expect.poll(() => logs.info.length).toBe(1);
@@ -127,10 +127,9 @@ test('missing department labels show on the live banner until they are fixed', a
   await expect(banner).toContainText(
     '部門のラベルがリポジトリにありません: 広報（departments[1]）。この部門の Issue は受付に置かれます',
   );
-  await expect(banner.getByRole('link', { name: '直し方（docs/setup.md）' })).toHaveAttribute(
-    'href',
-    /docs\/setup\.md#/,
-  );
+  await expect(
+    banner.getByRole('link', { name: '直し方（docs/setup.md の 3 章）' }),
+  ).toHaveAttribute('href', /docs\/setup\.md#/);
   await expect(page.getByRole('status', { name: 'デモ表示中' })).toHaveCount(0);
 
   // The collector's next check finds every label: the banner goes on the next read.
