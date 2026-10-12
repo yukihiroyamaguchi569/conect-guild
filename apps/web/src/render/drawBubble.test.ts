@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bubbleShape, type Spot, type Voice } from './bubbleShape';
+import { bubbleShape, shapeExtent, type Spot, type Voice } from './bubbleShape';
 import { BUBBLE_COLORS, drawBubble, type BubbleContext } from './drawBubble';
 import { BUBBLE, DETAIL_SCALE, OVERHEAD_OFFSET } from './metrics';
 
@@ -8,6 +8,8 @@ interface Recorded {
   readonly fills: string[];
   /** How many rectangles each fill() painted. */
   readonly rects: number[];
+  /** Every rectangle painted, in detail px: [x, y, w, h]. */
+  readonly boxes: [number, number, number, number][];
   readonly texts: { text: string; x: number; y: number; color: string; font: string }[];
   readonly moves: string[];
 }
@@ -18,7 +20,7 @@ function colorOf(style: unknown): string {
 }
 
 function recordingContext(): { ctx: BubbleContext; seen: Recorded } {
-  const seen: Recorded = { fills: [], rects: [], texts: [], moves: [] };
+  const seen: Recorded = { fills: [], rects: [], boxes: [], texts: [], moves: [] };
   let pending = 0;
   const ctx: BubbleContext = {
     fillStyle: '#000000',
@@ -36,8 +38,9 @@ function recordingContext(): { ctx: BubbleContext; seen: Recorded } {
     beginPath: () => {
       pending = 0;
     },
-    rect: () => {
+    rect: (x: number, y: number, w: number, h: number) => {
       pending += 1;
+      seen.boxes.push([x, y, w, h]);
     },
     fill: () => {
       seen.fills.push(colorOf(ctx.fillStyle));
@@ -104,5 +107,29 @@ describe('drawBubble', () => {
     const seen = draw('glyph', '?');
     expect(seen.fills).toEqual([shadow, ink, paper]);
     expect(seen.texts[0]?.font).toBe(`bold ${String(BUBBLE.glyphPx)}px sans-serif`);
+  });
+});
+
+describe('drawBubble paints exactly what the overlap checks count (shapeExtent)', () => {
+  const VOICES: readonly [Voice, string][] = [
+    ['say', 'おまかせを'],
+    ['shout', '！'],
+    ['whisper', 'ゴニョゴニョ'],
+    ['glyph', '?'],
+  ];
+  const SPOTS: readonly Spot[] = ['right', 'left', 'beside-right', 'beside-left'];
+  const CASES = VOICES.flatMap(([voice, text]) => SPOTS.map((spot) => ({ voice, text, spot })));
+
+  it.each(CASES)('$voice at $spot', ({ voice, text, spot }) => {
+    const { boxes } = draw(voice, text, spot);
+    // The tail's rows are a little over 1 px high so they overlap: round to whole pixels.
+    const painted = {
+      left: Math.min(...boxes.map(([x]) => x)),
+      right: Math.max(...boxes.map(([x, , w]) => x + w)),
+      top: Math.min(...boxes.map(([, y]) => y)),
+      bottom: Math.round(Math.max(...boxes.map(([, y, , h]) => y + h))),
+    };
+    const chars = voice === 'glyph' ? 1 : Array.from(text).length;
+    expect(painted).toEqual(shapeExtent(bubbleShape(voice, chars, spot)));
   });
 });
