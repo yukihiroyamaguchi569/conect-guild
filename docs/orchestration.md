@@ -99,9 +99,9 @@ conect-guild はルールの変更を、設定の `ruleChangePaths` で見分け
 
 **確かめること**
 
-- コマンド: `gh label list --repo <owner/name>`
-- 結果: 部門の表のとおりの名前で、4 つのラベルが出る
-- コマンド: `gh pr list --repo <owner/name>`
+- コマンド: `gh label list --repo <owner/name> --limit 1000`
+- 結果: 部門の表のとおりの名前の 4 つのラベルが、一覧の中にある
+- コマンド: `gh pr list --repo <owner/name> --limit 1000`
 - 結果: 部門の `CLAUDE.md` の PR が開いている
 
 ### 3-4. 部門の CLAUDE.md を読んで、マージする
