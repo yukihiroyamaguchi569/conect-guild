@@ -104,7 +104,7 @@ describe('drawBubble', () => {
   });
 
   it.each(['right', 'left', 'beside-right', 'beside-left'] as const)(
-    'whispers at %s: the tail’s border dotted too, every other row, its tip whole',
+    'whispers at %s: the tail’s border dotted too, from the row under the box, its tip whole',
     (spot) => {
       const seen = draw('whisper', 'ゴニョゴニョ', spot);
       const shape = bubbleShape('whisper', 6, spot);
@@ -113,11 +113,11 @@ describe('drawBubble', () => {
       const dots = new Set(seen.boxes.filter(([, , w, h]) => w === 1 && h === 1).map(String));
       const at = (px: number, j: number) => dots.has(String([px, top + j, 1, 1]));
       rows.forEach(([l, r], j) => {
-        // Under the box (j > 0), every other row, but never the tip.
-        const dotted = j > 0 && j % 2 === 0 && j < rows.length - 1;
+        // From the row under the box (j 1), every other row, but never the tip.
+        const dotted = j % 2 === 1 && j < rows.length - 1;
         expect([at(l, j), at(r, j)]).toEqual([dotted, dotted]);
       });
-      expect(rows.some((_, j) => j > 0 && j % 2 === 0 && j < rows.length - 1)).toBe(true);
+      expect(at(rows[1]?.[0] ?? Number.NaN, 1)).toBe(true);
     },
   );
 

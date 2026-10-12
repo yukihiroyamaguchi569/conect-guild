@@ -119,10 +119,10 @@ function dots(ctx: BubbleContext, shape: Shape): void {
     ctx.rect(x, py, 1, 1);
     ctx.rect(x + w - 1, py, 1, 1);
   }
-  // The tail's border too: every other row under the box, the 2 px tip left whole.
+  // The tail's border too: every other row from the one under the box, the 2 px tip left whole.
   const rows = tailSpans(shape);
   const top = y + h - shape.border;
-  for (let j = shape.border + 1; j < rows.length - 1; j += 2) {
+  for (let j = shape.border; j < rows.length - 1; j += 2) {
     const [l, r] = rows[j] ?? [x, x];
     ctx.rect(l, top + j, 1, 1);
     ctx.rect(r, top + j, 1, 1);
