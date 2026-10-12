@@ -98,9 +98,14 @@ export const guildSettingsSchema = z
     if (settings.departments.length !== DEPARTMENT_MEMBER_IDS.length) {
       issue(['departments'], `exactly ${String(DEPARTMENT_MEMBER_IDS.length)} departments (#18)`);
     }
-    for (const label of duplicates(labels)) issue(['departments'], `label ${label} twice`);
+    // Quoted as JSON: a value with a line break or a control character stays on one line.
+    for (const label of duplicates(labels)) {
+      issue(['departments'], `label ${JSON.stringify(label)} twice`);
+    }
     for (const member of duplicates(members)) issue(['departments'], `member ${member} twice`);
-    for (const dir of duplicates(dirs)) issue(['departments'], `session dir ${dir} twice`);
+    for (const dir of duplicates(dirs)) {
+      issue(['departments'], `session dir ${JSON.stringify(dir)} twice`);
+    }
     settings.branchPrefixes.forEach((rule, i) => {
       if (!labels.includes(rule.department)) {
         issue(['branchPrefixes', i, 'department'], 'not a department label');

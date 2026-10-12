@@ -206,7 +206,7 @@ describe('runSettingsWrite: settings that stop it', () => {
     second.label = first.label;
     const f = fake({ stdin: JSON.stringify(data) });
     expect(await runSettingsWrite(['--write'], f.deps)).toBe(1);
-    expect(f.output()).toContain('label 経理 twice');
+    expect(f.output()).toContain('label "経理" twice');
     expect(f.writes).toEqual([]);
   });
 
@@ -338,7 +338,9 @@ describe('runSettingsWrite: any string stays a string', () => {
       expect(row).toContain(JSON.stringify(label));
     },
   );
+});
 
+describe('runSettingsWrite: messages that repeat a string from the input', () => {
   it('escapes a control character a schema error repeats from the input', async () => {
     const data = input();
     const [first, second] = data.departments;
@@ -347,9 +349,21 @@ describe('runSettingsWrite: any string stays a string', () => {
     second.label = first.label;
     const f = fake({ stdin: JSON.stringify(data) });
     expect(await runSettingsWrite(['--dry-run'], f.deps)).toBe(1);
-    expect(f.output()).toContain('label x\\u001b[2J\\u009b twice');
+    expect(f.output()).toContain('label "x\\u001b[2J\\u009b" twice');
     expect(f.output()).not.toContain('\u001b');
     expect(f.output()).not.toContain('\u009b');
+  });
+
+  it('keeps a schema error about a label with a line break on one line', async () => {
+    const data = input();
+    const [first, second] = data.departments;
+    if (first === undefined || second === undefined) throw new Error('fixture');
+    first.label = 'x\n  - 偽の行';
+    second.label = first.label;
+    const f = fake({ stdin: JSON.stringify(data) });
+    expect(await runSettingsWrite(['--dry-run'], f.deps)).toBe(1);
+    expect(f.output()).toContain('label "x\\n  - 偽の行" twice');
+    expect(f.output()).not.toContain('\n  - 偽の行');
   });
 
   it('shows a label with a line break on one line in the table', async () => {
