@@ -1,11 +1,20 @@
 <script setup lang="ts">
-// Over the automatic demo, while nothing is collected yet (Issue #67).
+// Over the automatic demo, while nothing is collected yet (Issue #67), with the collector's
+// failure when it runs and fails (Issue #74).
+import type { CollectorFailureKind } from '@conect-guild/snapshot';
+import { computed } from 'vue';
+import { autoDemoBannerText } from '../domain/collectorStatus';
 import { SETUP_GUIDE_URL } from '../project';
+
+const props = defineProps<{ collectorFailure: CollectorFailureKind | null }>();
+const text = computed(() => autoDemoBannerText(props.collectorFailure));
 </script>
 
 <template>
   <p class="auto-demo-banner" role="status" aria-label="デモ表示中">
-    <span>デモ表示中（架空のデータ）。データを集めると自分のリポジトリに切り替わります</span>
+    <span :class="{ 'auto-demo-banner__failure': props.collectorFailure !== null }">{{
+      text
+    }}</span>
     <!-- Opened on a click only; nothing is loaded from GitHub (docs/DESIGN.md 4.3). -->
     <a
       class="auto-demo-banner__link"
@@ -33,6 +42,10 @@ import { SETUP_GUIDE_URL } from '../project';
   background: var(--window-bg-deep);
   border-bottom: 1px solid var(--window-line);
   color: var(--window-text);
+}
+
+.auto-demo-banner__failure {
+  color: var(--danger);
 }
 
 .auto-demo-banner__link {
