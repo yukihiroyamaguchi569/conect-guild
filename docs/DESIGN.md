@@ -104,6 +104,7 @@ conect-guild/
 │       └── settingsFile.ts   どちらの設定ファイルを読むかの判定（guild.settings.local.json があればそれ、無ければ guild.settings.json）。collector と vite-plugin-settings.ts が使う
 ├── packages/collector/       収集スクリプト（TS。Node の型除去で直接実行）
 │   ├── collector.config.ts   読み込んだ設定ファイルから対象リポジトリと会社のセッションの起動ディレクトリ（`~` をホームに展開）を受け取り、間隔、MulmoTerminal のファイルのパス、出力先を足す
+│   ├── src/settingsWriteMain.ts  `npm run settings:write`。値だけの JSON を検証して guild.settings.local.json を書く（10 章 9。Issue #79）
 │   └── src/main.ts           読む設定ファイルを決めて 1 行出し、src/start.ts を読み込む。start.ts が `gh api` で Issue・PR を取り、MulmoTerminal のファイルからセッションの状態を読み、検証して .data/snapshot.json を原子的に書く
 ├── assets/                   コンセプト画、スプライト、タイル（出所とライセンスを README に書く）
 ├── docs/DESIGN.md            この文書
@@ -541,6 +542,14 @@ M1 まで行けば「本物の Issue が掲示板に出て、クローズでク�
      - build に手元の値が入らないことは #76 のまま（build はプラグインが向けず、既定の JSON だけが入る）
    - 検証すること: 余分な項目が無い、6 人がそろう、色が `#rrggbb`、部門が 4 つ（Issue #18 まで）、ラベル・担当・起動ディレクトリ（書いた文字列のまま）が重ならない、起動ディレクトリに前後の空白・制御文字が無い、ブランチ接頭辞の部門が部門のラベルにある、`repo` が `owner/name` の形
    - 起動ディレクトリの `~` をホームに展開した後の重複は、共通の検証ではなく collector の起動時に調べて止める。画面は起動ディレクトリを使わないので、画面はそのまま動く
+   - **手元の設定を書く道具（Issue #79）**: `npm run settings:write -- --dry-run | --write [--overwrite] [--json]`（`packages/collector/src/settingsWriteMain.ts`）。値だけの JSON（`repo`・`commanderSessionDir`・`departments[4]` の `label`・`sessionDir`・`prefix`）を標準入力から受け、検証して `guild.settings.local.json` を書く。書く・検証する土台で、値を集める入口（Claude Code のスキル）は別に作る（社長の判断）。ブラウザの画面では作らない（4.1 と同じく、ブラウザから GitHub に問い合わせず、開発サーバーに書き込みの口を作らない）
+     - 出発点: いま読まれる設定（`loadSettingsFile`。手元のファイルがあればそれ、無ければ既定）。入力に無い項目は保つ。部門は 4 つまとめて置き換え、並びの i 番目の担当（`member`）は出発点の i 番目のまま（席がメンバーの id で決まるため）。メンバーの役（`role`）は、出発点で部門のラベルと同じだったときだけ新しいラベルに合わせ、手で変えた役は保つ。`branchPrefixes` は入力の接頭辞の 4 行を先に置き、出発点の行のうち部門のラベルが残っていて接頭辞が入力と重ならないもの（`docs/accounting-` など）をその後ろに保つ（実装時の判断）
+     - 止めるもの（エラー）: 入力の形、合わせた結果の schema、5 つのフォルダが手元に無い（`~` はホームに展開して確かめる）、展開すると 2 つのフォルダが同じ、`guild.settings.local.json` があるのに `--write` に `--overwrite` が無い（Issue の「上書きは `--overwrite` か確認なしには行わない」。dry-run はその旨を出すだけ）
+     - 警告にとどめるもの: ラベルがリポジトリに無い（#85 の `missingLabelPositions`。gh の呼び方は collector と同じ）、ラベルを問い合わせられない（gh の失敗・30 秒のタイムアウト。collector があとで照合するので、警告して書く。社長の判断）、取り違えの突き合わせ（部門のフォルダの `CLAUDE.md` にその部門のラベルの文字があるか、接頭辞の末尾の `/` を除いたものとフォルダ名が同じか）。雛形どおりでない会社もあるので止めない（社長の判断）
+     - 部門の `CLAUDE.md` は、ラベルの文字を含むかの判定にだけ使い、中身は保存・表示・ログに出さない。結果は「見つかった・見つからない・読めない」だけ（社長の判断）
+     - 出力: 人が読む確認の表（部門ごとにラベル・フォルダ・接頭辞・`CLAUDE.md` にラベルが見つかったか）と警告・エラー。`--json` で同じものを JSON で出す（入口のスキルが読む）。外から来た文字（ラベル・パス）は JSON の文字列として引用し、制御文字などはエスケープして、端末に文字として出す
+     - 書き方: 書くのは `JSON.stringify` の結果だけ（実行されるものは書かない）。前の手元の設定があれば、先に `guild.settings.local.json.bak`（gitignore）に残す。どちらも collector と同じ `writeFileAtomic`（0600 の一時ファイル → `rename`）で原子的に置き換える。書く先はリポジトリ直下に固定で、引数・環境変数では変えられない
+     - 書いたあとの案内: `npm run dev:all` で collector の `ok:` を確かめる。`sessions=5 ok` は MulmoTerminal を使う人だけ
    - メンバーの id（`kaname` など）は変えられない。絵（`assets/sprites/<id>.png`）、手の位置、席がこの id で引かれるため。司令塔は `kaname`、王は `yukihiro`
    - 引数・環境変数では変えられない方針（4.1）は保つ。変えるときは設定ファイルを書き換える
    - 画面のバンドルにも設定ファイル全体（対象リポジトリの名前と起動ディレクトリを含む）が入る。`dist/` は配布しない（5 章）ので扱いは変えない
