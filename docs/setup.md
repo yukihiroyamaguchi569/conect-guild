@@ -56,7 +56,7 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
 ## 困ったとき
 
 - **画面の帯に「collector が失敗しています」と出る**: collector は動いていますが、データを集められていません。collector のターミナル（`npm run dev:all` なら行頭が `[collect]` の行）に、失敗の種類（`failed: gh-failed` など）が出ています。帯の（　）の中は種類を短くしたもので、認証・取得は `gh-failed`、データの検証は `validation-failed`、ファイルの書き込みは `write-failed` です。ブラウザのコンソールにも同じ内容が警告として 1 回出ます
-- **`failed: gh-failed` が出る**: `gh` で GitHub から読めていません。`guild.settings.ts` の `repo` を、`gh` でログインしているアカウントで読めるか確かめてください。
+- **`failed: gh-failed` が出る**: `gh` で GitHub から読めていません。`guild.settings.local.ts`（無ければ `guild.settings.ts`。collector の起動時の `settings:` の行に、読んだほうが出ます）の `repo` を、`gh` でログインしているアカウントで読めるか確かめてください。
 
   ```bash
   gh auth status                 # gh にログインしているか
