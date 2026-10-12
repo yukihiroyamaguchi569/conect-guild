@@ -71,6 +71,9 @@ describe('bannerPoint', () => {
   });
 });
 
+/** Nobody waits, remarks or murmurs. */
+const QUIET = { bubbles: {}, remarks: {}, murmurs: {} } as const;
+
 describe('drawLevelUpBanners with the king calling', () => {
   // The answer 「はっ！」 comes 2.1 s after the call, while "LEVEL UP" still shows (2.6 s).
   const T = 2_300;
@@ -81,7 +84,7 @@ describe('drawLevelUpBanners with the king calling', () => {
     const minori = view.frame.members.find((m) => m.id === 'minori');
     if (minori === undefined) throw new Error('no minori');
     const { written, ctx } = recordingContext();
-    drawLevelUpBanners(ctx, { ...view, tags: [] });
+    drawLevelUpBanners(ctx, { ...view, ...QUIET, tags: [] });
     expect(written.map((w) => w.text)).toEqual(['LEVEL UP']);
     // The bottom of the words is over the top of the bubble.
     expect(written[0]?.y).toBeLessThan(minori.pose.point.y - OVERHEAD_TOP);
@@ -90,7 +93,7 @@ describe('drawLevelUpBanners with the king calling', () => {
   it('writes it in its usual place without a call', () => {
     const view = stageAt(T, null);
     const { written, ctx } = recordingContext();
-    drawLevelUpBanners(ctx, { ...view, tags: [] });
+    drawLevelUpBanners(ctx, { ...view, ...QUIET, tags: [] });
     const [confetti] = view.frame.confetti;
     const banner = bannerAt(T);
     if (confetti === undefined || banner === null) throw new Error('no level-up');

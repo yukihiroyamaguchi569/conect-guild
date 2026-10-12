@@ -8,7 +8,10 @@ import { linesOf } from './lineBook';
 import type { PickLine } from './lines';
 import { LINES, OVERHEAD_TOP } from './metrics';
 import { raise } from './motion';
-import { overheadLift, wordsFeet } from './overhead';
+import { overheadLift } from './overhead';
+import { placeOverheads, wordsFeet, type OverheadMember } from './overheadPlace';
+import type { SpokenLines } from './lines';
+import type { Speeches } from './summons';
 import { DEFAULT_SEATS } from './scenes';
 
 /** "LEVEL UP" (Issue #19) and a member's line of a scene (Issue #47) over the same head. */
@@ -44,7 +47,14 @@ function bannerY(director: Director, t: number): number | undefined {
       written.push(y);
     },
   };
-  drawLevelUpBanners(ctx, { frame: frameAt(director, t, DEFAULT_SEATS), speeches: {}, tags: TAGS });
+  drawLevelUpBanners(ctx, {
+    frame: frameAt(director, t, DEFAULT_SEATS),
+    speeches: {},
+    bubbles: {},
+    remarks: {},
+    murmurs: {},
+    tags: TAGS,
+  });
   return written[0];
 }
 
@@ -81,30 +91,46 @@ describe('"LEVEL UP" over a line of a scene', () => {
   });
 });
 
+/** Where words over `member` are drawn from, alone on the stage (overheadPlace.wordsFeet). */
+function feetOf(
+  member: OverheadMember,
+  said: { readonly speeches: Speeches; readonly lines: SpokenLines },
+  tags = TAGS.slice(0, 0),
+) {
+  const sources = { ...said, remarks: {}, bubbles: {}, murmurs: {} };
+  return wordsFeet(placeOverheads([member], sources, tags), member.id);
+}
+
 describe('wordsFeet', () => {
-  const member = { id: 'minori', pose: { point: { x: 10, y: 400 }, held: null } } as const;
+  const member = {
+    id: 'minori',
+    pose: { point: { x: 500, y: 400 }, held: null },
+    inScene: false,
+    mark: null,
+  } as const;
 
   it('is null with no words over the head', () => {
-    expect(wordsFeet(member, { speeches: {}, lines: {} }, [])).toBeNull();
-    expect(wordsFeet(member, { speeches: { hibiki: 'はっ！' }, lines: {} }, [])).toBeNull();
+    expect(feetOf(member, { speeches: {}, lines: {} })).toBeNull();
+    expect(feetOf(member, { speeches: { hibiki: 'はっ！' }, lines: {} })).toBeNull();
   });
 
-  it('gives the feet for the king’s call or a line, lifted as the bubble is', () => {
-    expect(wordsFeet(member, { speeches: { minori: 'はっ！' }, lines: {} }, [])).toEqual({
-      x: 10,
+  it('gives the feet for the king’s call or a line, as the bubble is drawn', () => {
+    expect(feetOf(member, { speeches: { minori: 'はっ！' }, lines: {} })).toEqual({
+      x: 500,
       y: 400,
     });
+    // Held up, the words go beside the item at the head's height: not lifted.
     const raised = { ...member, pose: { ...member.pose, held: raise('scroll') } };
-    expect(wordsFeet(raised, { speeches: {}, lines: { minori: 'おまかせを' } }, [])).toEqual({
-      x: 10,
-      y: 400 - LINES.raisedLiftPx,
+    expect(feetOf(raised, { speeches: {}, lines: { minori: 'おまかせを' } })).toEqual({
+      x: 500,
+      y: 400,
     });
   });
 
   it('measures the words that show: the king’s call before a line', () => {
     // In the open middle of the room, clear of the HTML windows: both go to the right.
-    const open = { id: 'minori', pose: { point: { x: 500, y: 300 }, held: null } } as const;
-    // Past the end of 「はっ！」 (to x 560), under that of 「うけたまわり！」 (to x 616).
+    const open = { ...member, pose: { point: { x: 500, y: 300 }, held: null } } as const;
+    // Past the end of 「はっ！」, under that of 「うけたまわり！」.
     const tag = { text: 'Lv 9', x: 600, y: 300 - OVERHEAD_TOP + 10 };
     expect(overheadLift(open.pose, 'はっ！', [tag])).toBe(0);
     expect(overheadLift(open.pose, 'うけたまわり！', [tag])).toBeGreaterThan(0);
@@ -112,8 +138,8 @@ describe('wordsFeet', () => {
       speeches: { minori: 'はっ！' as const },
       lines: { minori: 'うけたまわり！' as const },
     };
-    expect(wordsFeet(open, sources, [tag])).toEqual({ x: 500, y: 300 });
-    expect(wordsFeet(open, { speeches: {}, lines: sources.lines }, [tag])?.y).toBe(
+    expect(feetOf(open, sources, [tag])).toEqual({ x: 500, y: 300 });
+    expect(feetOf(open, { speeches: {}, lines: sources.lines }, [tag])?.y).toBe(
       300 - overheadLift(open.pose, 'うけたまわり！', [tag]),
     );
   });

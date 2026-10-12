@@ -1,26 +1,18 @@
 import type { MemberId } from '../guild.config';
 import type { GuildArt } from './art';
-import type { BubbleKind, Bubbles } from './bubbles';
+import type { BubbleKind } from './bubbles';
 import type { ConfettiView, MemberPose, StageFrame } from './director';
 import type { DecorPlacement } from './decor';
+import { drawBubble } from './drawBubble';
 import { drawAnimatedDecor } from './drawDecor';
 import { BACK_OBJECTS, BACK_STILL_DECOR, stageSteps, type FrontLayer } from './layers';
 import { GROUND } from './map';
-import type { IdleMark } from './idle';
-import { BUBBLE_RISE, DETAIL_SCALE, IDLE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
+import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
 import { heldLook } from './hands';
-import type { LevelTag } from './levelTags';
-import type { SpokenLines } from './lines';
-import {
-  overheadLift,
-  overheadOf,
-  overheadSide,
-  wordsOf,
-  type Overhead,
-  type Side,
-} from './overhead';
+import type { Overhead } from './overhead';
+import { overheadsOf, type OverheadStage, type Placed } from './overheadPlace';
 import type { Point } from './path';
-import type { SpeechLine, Speeches } from './summons';
+import type { SpeechLine } from './summons';
 import { flyingItemPoint } from './toss';
 import type { DecorCues } from './trinkets';
 
@@ -80,52 +72,6 @@ const IDLE_GLYPHS: Readonly<Record<'…' | '♪', Glyph>> = {
   '♪': { glyph: '♪', color: '#2a7a2a' },
 };
 
-/**
- * A bubble's font and width in detail px; a null width fits the text (summons.ts words). Words may
- * go on the left of the head (`side`, overhead.overheadSide); the rest are on the right.
- */
-interface BubbleSize {
-  readonly font: string;
-  readonly width: number | null;
-  readonly side?: Side;
-}
-
-/** The waiting bubbles and the signs of a long idle spell: one glyph. */
-const SMALL_BUBBLE: BubbleSize = { font: 'bold 8px sans-serif', width: 11 };
-/** The words of the king's summons and the members' lines (lines.ts). */
-const SPEECH_BUBBLE: BubbleSize = { font: 'bold 7px sans-serif', width: null };
-
-/**
- * A bubble to the upper right of the head (or the upper left, `side`: overhead.overheadSide), drawn
- * in detail pixels, its tail at the end next to the head.
- */
-function drawBubble(
-  ctx: CanvasRenderingContext2D,
-  { glyph, color }: Glyph,
-  feet: Point,
-  size: BubbleSize = SMALL_BUBBLE,
-): void {
-  const side = size.side ?? 'right';
-  ctx.save();
-  ctx.translate(Math.round(feet.x), Math.round(feet.y - OVERHEAD_OFFSET));
-  ctx.scale(DETAIL_SCALE, DETAIL_SCALE);
-  ctx.font = size.font;
-  const width = size.width ?? Math.ceil(ctx.measureText(glyph).width) + 6;
-  const x = side === 'right' ? 3 : -3 - width;
-  const y = -BUBBLE_RISE;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(x, y, width, 9);
-  ctx.fillRect(side === 'right' ? x + 1 : x + width - 3, y + 9, 2, 2);
-  ctx.strokeStyle = '#222222';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x + 0.5, y + 0.5, width - 1, 8);
-  ctx.fillStyle = color;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(glyph, x + width / 2, y + 5);
-  ctx.restore();
-}
-
 /** A "Z" rising from over the head and fading as it goes (`rise` 0 to 1), in detail pixels. */
 function drawSleepZ(ctx: CanvasRenderingContext2D, rise: number, feet: Point): void {
   ctx.save();
@@ -154,11 +100,6 @@ const SPEECH_COLORS: Readonly<Record<SpeechLine, string>> = {
 
 /** The members' lines (lineBook.ts) read best in the dark ink of the king's murmur. */
 const LINE_COLOR = '#222222';
-
-function drawMark(ctx: CanvasRenderingContext2D, mark: IdleMark, feet: Point): void {
-  if (mark.kind === 'z') drawSleepZ(ctx, mark.rise, feet);
-  else drawBubble(ctx, IDLE_GLYPHS[mark.glyph], feet);
-}
 
 function drawConfetti(ctx: CanvasRenderingContext2D, view: ConfettiView): void {
   for (const p of view.particles) {
@@ -228,52 +169,36 @@ export function drawActors(
   drawFlights(ctx, stage.frame, art);
 }
 
-function drawOverheadOf(
-  ctx: CanvasRenderingContext2D,
-  shown: Overhead,
-  place: { readonly feet: Point; readonly side: Side },
-): void {
-  const { feet, side } = place;
-  if (shown.kind === 'speech') {
-    const glyph = { glyph: shown.words, color: SPEECH_COLORS[shown.words] };
-    drawBubble(ctx, glyph, feet, { ...SPEECH_BUBBLE, side });
-  } else if (shown.kind === 'line') {
-    drawBubble(ctx, { glyph: shown.words, color: LINE_COLOR }, feet, { ...SPEECH_BUBBLE, side });
-  } else if (shown.kind === 'bubble') drawBubble(ctx, BUBBLE_GLYPHS[shown.bubble], feet);
-  else drawMark(ctx, shown.mark, feet);
+/** The text and the ink of what is over the head; null for the 「Z」, which has no bubble. */
+function textOf(shown: Overhead): Glyph | null {
+  if (shown.kind === 'speech') return { glyph: shown.words, color: SPEECH_COLORS[shown.words] };
+  if (shown.kind === 'line' || shown.kind === 'murmur')
+    return { glyph: shown.words, color: LINE_COLOR };
+  if (shown.kind === 'bubble') return BUBBLE_GLYPHS[shown.bubble];
+  return shown.mark.kind === 'z' ? null : IDLE_GLYPHS[shown.mark.glyph];
+}
+
+function drawPlaced(ctx: CanvasRenderingContext2D, placed: Placed): void {
+  const { shown, bubble } = placed;
+  if (shown.kind === 'mark' && shown.mark.kind === 'z') {
+    drawSleepZ(ctx, shown.mark.rise, placed.feet);
+    return;
+  }
+  const text = textOf(shown);
+  if (text === null || bubble === null) return;
+  drawBubble(ctx, { text: text.glyph, color: text.color, ...bubble }, placed.feet, placed.spot);
 }
 
 /**
  * Over everything, after the shade of the night (drawDaylight.ts), so they read the same at any
  * hour: one thing over each head (overhead.ts: the words of the king's summons, a line of a scene,
- * a line on starting to wait, the waiting bubble, a murmur or the sign of a long idle spell), and
- * confetti.
+ * a line on starting to wait, the waiting bubble, a murmur or the sign of a long idle spell),
+ * placed by overheadPlace.ts, and confetti.
  */
 export function drawOverhead(
   ctx: CanvasRenderingContext2D,
-  stage: {
-    readonly frame: StageFrame;
-    readonly bubbles: Bubbles;
-    readonly speeches: Speeches;
-    /** Lines on starting to wait (remarks.ts). */
-    readonly remarks: SpokenLines;
-    /** Murmurs while nothing happens (murmurs.ts). */
-    readonly murmurs: SpokenLines;
-    /** The 「Lv N」 tags on the desks, which words go over (overhead.overheadLift). */
-    readonly tags: readonly LevelTag[];
-  },
+  stage: OverheadStage & { readonly frame: Pick<StageFrame, 'confetti'> },
 ): void {
-  const sources = { ...stage, lines: stage.frame.lines };
-  for (const member of stage.frame.members) {
-    const shown = overheadOf(member, sources);
-    if (shown === null) continue;
-    const { x, y } = member.pose.point;
-    const words = wordsOf(shown);
-    const lift = overheadLift(member.pose, words, stage.tags);
-    drawOverheadOf(ctx, shown, {
-      feet: { x, y: y - lift },
-      side: overheadSide(member.pose, words),
-    });
-  }
+  for (const placed of overheadsOf(stage)) drawPlaced(ctx, placed);
   for (const view of stage.frame.confetti) drawConfetti(ctx, view);
 }
