@@ -187,6 +187,28 @@ describe('map: かなめ’s counter', () => {
   });
 });
 
+describe('map: the side of the throne (Issue #87)', () => {
+  const throne = MAP_OBJECTS.find((o) => o.tile === 'throne');
+
+  it('is a free tile right beside the throne, on its front row, clear of the windows', () => {
+    expect(throne).toBeDefined();
+    if (throne === undefined) return;
+    expect(isWalkable(PLACES.throneSide)).toBe(true);
+    expect(PLACES.throneSide.col).toBe(throne.col - 1);
+    expect(PLACES.throneSide.row).toBe(throne.row + throne.h - 1);
+    expect(isUnderWindow(PLACES.throneSide)).toBe(false);
+  });
+
+  it('is no seat, and かなめ walks there from the counter and back in 5 steps', () => {
+    const seats = Object.values(MEMBERS).map((m) => `${String(m.seat.col)},${String(m.seat.row)}`);
+    expect(seats).not.toContain(
+      `${String(PLACES.throneSide.col)},${String(PLACES.throneSide.row)}`,
+    );
+    expect(findPath(MEMBERS.kaname.seat, PLACES.throneSide)).toHaveLength(6);
+    expect(findPath(PLACES.throneSide, MEMBERS.kaname.seat)).toHaveLength(6);
+  });
+});
+
 describe('map: walkable grid', () => {
   it('blocks walls, solid furniture and the outside', () => {
     expect(isWalkable({ col: 0, row: 10 })).toBe(false);
