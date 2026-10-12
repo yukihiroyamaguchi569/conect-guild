@@ -7,7 +7,7 @@ import type { SessionsReading } from './sessions.ts';
 
 /** The line after `failed: gh-failed` (Issue #74), written out here so a change shows. */
 export const GH_FAILED_NEXT_STEP =
-  '次にやること: guild.settings.ts の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください';
+  '次にやること: guild.settings.ts（または guild.settings.local.ts）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください';
 
 export const SECRET_TITLE = 'Secret client Ltd invoice';
 export const SECRET_BRANCH = 'accounting/secret-client';
