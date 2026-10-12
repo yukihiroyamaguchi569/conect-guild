@@ -30,6 +30,7 @@ process.exitCode = await runCollector(process.argv.slice(2), {
   gh: createGhRunner(controller.signal),
   readSessions: () => readCompanySessions(controller.signal),
   writeSnapshot: (content) => writeFileAtomic(COLLECTOR_CONFIG.snapshotPath, content),
+  writeStatus: (content) => writeFileAtomic(COLLECTOR_CONFIG.statusPath, content),
   sleep: sleepUnlessAborted,
   signal: controller.signal,
 });

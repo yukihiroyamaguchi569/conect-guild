@@ -5,6 +5,10 @@ import type { SessionsReading } from './sessions.ts';
 
 /** Shared fakes for the run tests. Titles, bodies and branch names are the secrets to keep out. */
 
+/** The line after `failed: gh-failed` (Issue #74), written out here so a change shows. */
+export const GH_FAILED_NEXT_STEP =
+  '次にやること: guild.settings.ts（または guild.settings.local.ts）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください';
+
 export const SECRET_TITLE = 'Secret client Ltd invoice';
 export const SECRET_BRANCH = 'accounting/secret-client';
 const SECRET_BODY = 'Confidential body Closes #1';
@@ -89,16 +93,20 @@ export interface Harness extends RunDeps {
   readonly logs: string[];
   readonly errors: string[];
   readonly writes: string[];
+  /** The status files written (Issue #74), parsed later by the tests. */
+  readonly statuses: string[];
 }
 
 export function harness(gh: GhRunner, patch: Partial<RunDeps> = {}): Harness {
   const logs: string[] = [];
   const errors: string[] = [];
   const writes: string[] = [];
+  const statuses: string[] = [];
   return {
     logs,
     errors,
     writes,
+    statuses,
     now: () => new Date('2026-10-12T00:00:00.000Z'),
     log: (line) => logs.push(line),
     error: (line) => errors.push(line),
@@ -108,8 +116,47 @@ export function harness(gh: GhRunner, patch: Partial<RunDeps> = {}): Harness {
       writes.push(content);
       return Promise.resolve();
     },
+    writeStatus: (content) => {
+      statuses.push(content);
+      return Promise.resolve();
+    },
     sleep: () => Promise.resolve(),
     signal: new AbortController().signal,
     ...patch,
   };
+}
+
+/**
+ * A clock that only moves when the loop sleeps, or by `workMs` while it reads the sessions (the
+ * time a tick takes); aborts once `untilMs` has passed.
+ */
+export function clockedHarness(
+  gh: GhRunner,
+  untilMs: number,
+  patch: Partial<RunDeps> = {},
+  workMs = 0,
+) {
+  const controller = new AbortController();
+  const start = Date.parse('2026-10-12T00:00:00.000Z');
+  let elapsed = 0;
+  const sleeps: number[] = [];
+  const sessionReads: number[] = [];
+  const deps = harness(gh, {
+    signal: controller.signal,
+    now: () => new Date(start + elapsed),
+    readSessions: () => {
+      sessionReads.push(elapsed);
+      elapsed += workMs;
+      return Promise.resolve(SESSIONS_OK);
+    },
+    // Like a real sleep, it lets background work (a GitHub fetch) settle before the next tick.
+    sleep: async (ms) => {
+      sleeps.push(ms);
+      await new Promise((resolve) => setImmediate(resolve));
+      elapsed += ms;
+      if (elapsed >= untilMs) controller.abort();
+    },
+    ...patch,
+  });
+  return { deps, sleeps, sessionReads, elapsed: () => elapsed };
 }
