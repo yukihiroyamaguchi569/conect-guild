@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, onMounted } from 'vue';
 import { documentVisibility } from '../adapters/visibility';
 import { createGuildStore, type GuildStoreOptions } from './guildStore';
+import type { HomeIn } from '../render/idleCrew';
 import type { StageRecall } from './messageQueue';
 import { buildBoard, buildFetchStatus, buildKingBubble, buildParty, sceneCue } from './guildView';
 
@@ -57,6 +58,9 @@ export function useGuild(options: GuildStoreOptions = {}) {
     },
     setStage: (stage: StageRecall | null) => {
       store.setStage(stage);
+    },
+    occupy: (homeIn: HomeIn) => {
+      store.occupy(homeIn);
     },
     clearBaseline: () => {
       store.clearBaseline();

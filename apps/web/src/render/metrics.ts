@@ -124,7 +124,9 @@ export const IDLE = {
  * The king calls a member the president gave an order to (summons.ts, Issue #28): "！" with the
  * king rising `kingRisePx` for `callMs`, then "ゴニョゴニョ" for `murmurMs`; then the members turn
  * to the throne and answer "はっ！" for `replyMs` (one facing the throne head-on hops `hopPx` for
- * `hopMs` instead). Times are ms, distances logical px.
+ * `hopMs` instead). Times are ms, distances logical px. When かなめ goes to the throne to hear
+ * it (visit.ts, Issue #87) she sets off after `callMs`, walks at motion.MS_PER_TILE (5 tiles, 1.25 s
+ * each way), and the whisper starts once she is there: about 6.2 s in all.
  */
 export const SUMMONS = {
   callMs: 700,

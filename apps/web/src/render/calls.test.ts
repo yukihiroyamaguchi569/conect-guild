@@ -142,13 +142,13 @@ describe('createCalls: the end of a call', () => {
 describe('createCalls: add', () => {
   it('adds a call only when it can be seen and the screen is live, and says so', () => {
     const { calls, frame } = setup();
-    expect(calls.add(['kaname'], null)).toBe(false);
-    expect(calls.add([], 0)).toBe(false);
+    expect(calls.add(['kaname'], null)).toBeNull();
+    expect(calls.add([], 0)).toBeNull();
     calls.setHalted(true);
-    expect(calls.add(['kaname'], 0)).toBe(false);
+    expect(calls.add(['kaname'], 0)).toBeNull();
     calls.setHalted(false);
     expect(calls.view(() => frame, 0).calling).toBe(false);
-    expect(calls.add(['kaname'], 0)).toBe(true);
+    expect(calls.add(['kaname'], 0)).toEqual({ start: 0, members: ['kaname'] });
     expect(calls.view(() => frame, 0).calling).toBe(true);
   });
 });

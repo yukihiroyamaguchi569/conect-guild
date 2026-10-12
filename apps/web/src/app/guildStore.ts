@@ -24,6 +24,7 @@ import {
   type MessageQueue,
   type StageRecall,
 } from './messageQueue';
+import type { HomeIn } from '../render/idleCrew';
 import { globalScheduler, type Cancel, type Scheduler } from './scheduler';
 
 export type { GuildMessage } from './messageQueue';
@@ -123,6 +124,8 @@ export interface GuildStore {
   setStageShown(shown: boolean): void;
   /** The canvas's stage once it runs (null when it stops): a level-up's member walks back first. */
   setStage(stage: StageRecall | null): void;
+  /** かなめ is away hearing the king's order for `homeIn` (MessageQueue.occupy, Issue #87). */
+  occupy(homeIn: HomeIn): void;
   /** Removes the stored baseline; the next fetch counts as the first one (no events). */
   clearBaseline(): void;
 }
@@ -255,6 +258,29 @@ function loaderOf(options: GuildStoreOptions): () => Promise<SnapshotLoadResult>
   );
 }
 
+/** What the store passes on to its message queue. */
+function queueControls(
+  queue: MessageQueue,
+): Pick<GuildStore, 'nextMessage' | 'setHidden' | 'setStageShown' | 'setStage' | 'occupy'> {
+  return {
+    nextMessage() {
+      queue.next();
+    },
+    setHidden(hidden) {
+      queue.setHidden(hidden);
+    },
+    setStageShown(shown) {
+      queue.setStageShown(shown);
+    },
+    setStage(stage) {
+      queue.setStage(stage);
+    },
+    occupy(homeIn) {
+      queue.occupy(homeIn);
+    },
+  };
+}
+
 export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
   const storage = options.storage ?? createKeyValueStore();
   const load = loaderOf(options);
@@ -303,18 +329,7 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
       queue.dispose();
     },
     refresh,
-    nextMessage() {
-      queue.next();
-    },
-    setHidden(hidden) {
-      queue.setHidden(hidden);
-    },
-    setStageShown(shown) {
-      queue.setStageShown(shown);
-    },
-    setStage(stage) {
-      queue.setStage(stage);
-    },
+    ...queueControls(queue),
     clearBaseline() {
       clearStoredBaseline(state, storage);
     },
