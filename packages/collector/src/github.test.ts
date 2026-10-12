@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { GhRunner } from './gh.ts';
 import { projectionFilter } from './gh.ts';
-import { fetchChangedFiles, fetchIssues, fetchPrs } from './github.ts';
+import { fetchChangedFiles, fetchIssues, fetchLabelNames, fetchPrs } from './github.ts';
 
 /** Records the jq filter of each call and answers with `stdout`. */
 function recordingGh(stdout: string): GhRunner & { filters: string[]; args: string[][] } {
@@ -108,5 +108,30 @@ describe('fetchPrs', () => {
       'repos/o/r/pulls?state=all&sort=created&direction=desc&per_page=100',
     ]);
     expect(gh.args.every((a) => a.includes('--paginate'))).toBe(true);
+  });
+});
+
+describe('fetchLabelNames (Issue #85)', () => {
+  it('asks gh for every page of label names only', async () => {
+    const gh = recordingGh('"bug"\n"経理"\n');
+    await expect(fetchLabelNames(gh, 'o/r')).resolves.toEqual(['bug', '経理']);
+    expect(gh.filters).toEqual([projectionFilter('.name')]);
+    expect(gh.args).toEqual([
+      ['api', '--paginate', '--jq', projectionFilter('.name'), 'repos/o/r/labels?per_page=100'],
+    ]);
+  });
+
+  it('reads an empty repository as no labels', async () => {
+    await expect(fetchLabelNames(recordingGh(''), 'o/r')).resolves.toEqual([]);
+  });
+
+  it.each([
+    ['whole label objects', '{"name":"経理","description":"secret"}\n'],
+    ['a name that is no string', '7\n'],
+    ['a broken line', '"経理\n'],
+  ])('rejects %s', async (_label, stdout) => {
+    await expect(fetchLabelNames(recordingGh(stdout), 'o/r')).rejects.toMatchObject({
+      kind: 'validation-failed',
+    });
   });
 });

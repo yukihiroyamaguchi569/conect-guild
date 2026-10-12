@@ -4,6 +4,13 @@ import { parseCliArgs } from './args.ts';
 import { collectSnapshot } from './collect.ts';
 import { CollectorError, errorKind, type CollectorErrorKind } from './errors.ts';
 import { parseOrThrow, type GhRunner } from './gh.ts';
+import {
+  checkLabels,
+  isLabelCheckDue,
+  labelReport,
+  missingAfter,
+  type LabelCheck,
+} from './labels.ts';
 import type { SessionsReading } from './sessions.ts';
 import { collectorStatusOf, statusContent, type GithubAttempt } from './status.ts';
 
@@ -152,6 +159,16 @@ function reportCycle(deps: RunDeps, result: CycleResult): void {
   }
 }
 
+function checkRepoLabels(deps: RunDeps): Promise<LabelCheck> {
+  return checkLabels(deps.gh, COLLECTOR_CONFIG.repo, COLLECTOR_CONFIG.labels.departments);
+}
+
+/** Positions and kinds only (Issue #85); the label names stay out of the logs. */
+function reportLabels(deps: RunDeps, check: LabelCheck): void {
+  const report = labelReport(check);
+  for (const line of report.lines) deps[report.level](`${prefix(deps)} ${line}`);
+}
+
 /** Writes the status file; false when it could not. */
 async function writeStatusSafely(deps: RunDeps, content: string): Promise<boolean> {
   try {
@@ -187,6 +204,13 @@ interface LoopState {
   /** The status file's content as last written; null when nothing is written yet or it failed. */
   statusWritten: string | null;
   statusFailing: boolean;
+  /** Issue #85: when the label check last started, and the one still running, if any. */
+  labelsAttemptAt: number | null;
+  labelsInFlight: Promise<void> | null;
+  /** Positions of the missing labels from the last check that read them; null before one did. */
+  missingLabels: readonly number[] | null;
+  /** The last label report logged; a check is logged only when it says something new. */
+  labelsLogged: string | null;
 }
 
 function isGithubDue(lastAttemptAt: number | null, now: number): boolean {
@@ -218,7 +242,9 @@ async function updateStatus(
 ): Promise<void> {
   if (state.githubAttempt === null) return;
   const writeFailure = write !== null && !write.ok ? write.kind : null;
-  const content = statusContent(collectorStatusOf(state.githubAttempt, writeFailure));
+  const content = statusContent(
+    collectorStatusOf(state.githubAttempt, writeFailure, state.missingLabels),
+  );
   if (content === state.statusWritten) return;
   const written = await writeStatusSafely(deps, content);
   if (!written && !state.statusFailing) reportStatusNotWritten(deps);
@@ -244,6 +270,23 @@ function startGithub(deps: RunDeps, state: LoopState, now: Date): Promise<void> 
 }
 
 /**
+ * Starts the label check in the background (Issue #85), apart from the GitHub fetch: its failure
+ * or slowness never holds up the snapshot. A failed check keeps what the last good one found.
+ */
+function startLabelCheck(deps: RunDeps, state: LoopState, now: Date): void {
+  state.labelsAttemptAt = now.getTime();
+  state.labelsInFlight = checkRepoLabels(deps).then((check) => {
+    state.labelsInFlight = null;
+    if (deps.signal.aborted) return;
+    state.missingLabels = missingAfter(state.missingLabels, check);
+    const logged = labelReport(check).lines.join('\n');
+    if (logged === state.labelsLogged) return;
+    state.labelsLogged = logged;
+    reportLabels(deps, check);
+  });
+}
+
+/**
  * One tick of the loop: start GitHub when its interval has passed, read the sessions, and write
  * both atomically. Only the very first fetch is waited for (there is nothing to write before it);
  * retries run in the background like every later fetch.
@@ -252,6 +295,12 @@ async function tick(deps: RunDeps, state: LoopState): Promise<void> {
   // A function call keeps TypeScript from narrowing `aborted` across awaits.
   const stopped = (): boolean => deps.signal.aborted;
   const now = deps.now();
+  const labelsDue = isLabelCheckDue(
+    state.labelsAttemptAt,
+    now.getTime(),
+    COLLECTOR_CONFIG.labels.intervalMs,
+  );
+  if (state.labelsInFlight === null && labelsDue) startLabelCheck(deps, state, now);
   if (state.githubInFlight === null && isGithubDue(state.githubAttemptAt, now.getTime())) {
     const first = state.githubAttemptAt === null;
     const running = startGithub(deps, state, now);
@@ -288,6 +337,10 @@ async function runLoop(deps: RunDeps): Promise<void> {
     githubAttempt: null,
     statusWritten: null,
     statusFailing: false,
+    labelsAttemptAt: null,
+    labelsInFlight: null,
+    missingLabels: null,
+    labelsLogged: null,
   };
   // A function call keeps TypeScript from narrowing `aborted` across awaits.
   const stopped = (): boolean => deps.signal.aborted;
@@ -302,6 +355,7 @@ async function runLoop(deps: RunDeps): Promise<void> {
   }
   // No gh process outlives the loop.
   await state.githubInFlight;
+  await state.labelsInFlight;
 }
 
 /** Entry logic of the collector. Resolves with the process exit code. */
@@ -309,12 +363,13 @@ export async function runCollector(args: readonly string[], deps: RunDeps): Prom
   const mode = parseCliArgs(args);
   if (mode === 'once') {
     const at = deps.now();
-    const result = await collectOnce(deps);
+    const [result, labels] = await Promise.all([collectOnce(deps), checkRepoLabels(deps)]);
     reportCycle(deps, result.github);
+    reportLabels(deps, labels);
     deps.log(`${prefix(deps)} ${sessionsSummary(result.sessions)}`);
     const failure = result.github.ok ? null : result.github.kind;
-    if (!(await writeStatusSafely(deps, statusContent(collectorStatusOf({ at, failure }, null)))))
-      reportStatusNotWritten(deps);
+    const status = collectorStatusOf({ at, failure }, null, missingAfter(null, labels));
+    if (!(await writeStatusSafely(deps, statusContent(status)))) reportStatusNotWritten(deps);
     return result.github.ok ? 0 : 1;
   }
   if (mode === 'loop') {

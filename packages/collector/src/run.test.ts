@@ -149,6 +149,7 @@ describe('runCollector --once', () => {
     await expect(runCollector(['--once'], deps)).resolves.toBe(0);
     expect(deps.logs).toEqual([
       '[collector] 2026-10-12T00:00:00.000Z ok: issues=1 prs=2 history: opened=3 completed=1 merged=1',
+      '[collector] 2026-10-12T00:00:00.000Z labels ok: 4/4',
       '[collector] 2026-10-12T00:00:00.000Z sessions=5 ok',
     ]);
     expect(deps.errors).toEqual([]);
@@ -161,6 +162,7 @@ describe('runCollector --once', () => {
     await expect(runCollector(['--once'], deps)).resolves.toBe(0);
     expect(deps.logs).toEqual([
       '[collector] 2026-10-12T00:00:00.000Z ok: issues=1 prs=2 history: opened=3 completed=1 merged=1',
+      '[collector] 2026-10-12T00:00:00.000Z labels ok: 4/4',
       '[collector] 2026-10-12T00:00:00.000Z sessions unavailable: parse-failed',
     ]);
   });
