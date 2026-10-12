@@ -43,6 +43,8 @@ npm run dev
 
 Open http://127.0.0.1:5173/?demo=1 (for a daytime room, `?demo=1&hour=12`) and press 「▶ はじめる」 (Start). The button is disabled in a narrow window, so widen it if needed. No collector or GitHub access is needed.
 
+Opened without `?demo=1`, the page shows a guide 「まだ データを あつめていません」 (nothing collected yet), since the collector has not run; its link opens the demo.
+
 ## Learn more
 
 - Design: [docs/DESIGN.md](docs/DESIGN.md) (Japanese)

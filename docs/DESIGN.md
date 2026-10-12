@@ -179,10 +179,11 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 ### 4.3 画面の取得と表示
 
 - 画面は 5 秒ごとに `/snapshot.json` を `cache: 'no-store'` で fetch する（M3 で 30 秒から短くした。手元の no-store の読み込みなので軽い）。ネットワークエラーと HTTP エラーの両方を扱い、失敗したら前回の表示を残して小さく「取得失敗」と出す
+- **まだ集めていない（Issue #67）**: 404 は、collector がまだ一度も snapshot を書いていない印として、ほかの HTTP エラー（500 など、`reason: 'http'`）と分けて `reason: 'not-collected'` にする。最初の snapshot を表示する前なら、「取得失敗」の代わりに部屋の中央に案内の窓を出す（「まだ データを あつめていません」、自分のリポジトリを見るなら `npm run collect`（docs/setup.md）、デモを見るなら `?demo=1` への同じオリジンの相対リンク）。表示は止めず（halt ではない）、5 秒ごとの取得を続けるので、collector がファイルを書けば再読み込みなしで通常の画面に移る。snapshot が無い間は「情報が古い」も出ず、パーティが空なので効果音も鳴らない。一度 snapshot を表示した後の 404（ファイルを消したなど）は、前回の表示を残して「取得失敗（データのファイルがありません）」と出す。ビルドは架空の `snapshot.sample.json` を読むので、ふつうは 404 にならない
 - `schemaVersion` が画面の想定と違えば、表示を止めて「収集スクリプトを更新してください」と出す
 - 開発時（実データ）は snapshot の `repo` が `guild.settings.ts` の `repo` と違えば、表示を止めて「収集の対象と設定が違います」と出す（設定を変えた直後、新しいリポジトリの収集が成功するまで前のチームのデータを新しい名前・部門で出さないため）。build のダミーは照合しない
 - `fetchedAt`（GitHub の取得時刻）が 5 分より古ければ「情報が古い」の印を出す（collector が止まっている合図）。セッションの状態の古さは別に `sessions.checkedAt` で見る（4.7）
-- 開発時だけ、Vite の自作プラグイン（`configureServer` のミドルウェア。依存なし）が `/snapshot.json` を `apps/web/.data/snapshot.json` から返す。ファイルが無ければ 404。`.data/` は `public/` の外なので、Vite の public 監視による再読み込みは起きない
+- 開発時だけ、Vite の自作プラグイン（`configureServer` のミドルウェア。依存なし）が `/snapshot.json` を `apps/web/.data/snapshot.json` から返す。ファイルが無ければ 404（画面は「まだ集めていない」として扱う）。`.data/` は `public/` の外なので、Vite の public 監視による再読み込みは起きない
 
 ### 4.4 差分 → イベント（domain/events.ts, domain/baseline.ts）
 
