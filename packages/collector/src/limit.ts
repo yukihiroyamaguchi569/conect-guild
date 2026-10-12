@@ -28,15 +28,3 @@ export async function mapWithConcurrency<T, R>(
   if (failure !== undefined) throw failure.error;
   return results;
 }
-
-/**
- * Promise.all for two promises, but it settles only after both have finished
- * and then rejects with the first rejection (in argument order). A failure on
- * one side never leaves the other (e.g. a gh process) running.
- */
-export async function bothOrThrow<A, B>(a: Promise<A>, b: Promise<B>): Promise<[A, B]> {
-  const [first, second] = await Promise.allSettled([a, b]);
-  if (first.status === 'rejected') throw first.reason;
-  if (second.status === 'rejected') throw second.reason;
-  return [first.value, second.value];
-}
