@@ -61,13 +61,13 @@ describe('bannerPoint', () => {
   });
 
   it('goes over the top of the answer bubble', () => {
-    const feet = { x: 100, y: 200 + OVERHEAD_TOP - 40 };
-    const at = bannerPoint(origin, banner, feet);
-    expect(at.y).toBe(feet.y - OVERHEAD_TOP - LEVEL_UP.bannerGapPx - banner.rise);
+    const top = 160;
+    const at = bannerPoint(origin, banner, top);
+    expect(at.y).toBe(top - LEVEL_UP.bannerGapPx - banner.rise);
   });
 
   it('never goes lower than over the confetti', () => {
-    expect(bannerPoint(origin, banner, { x: 100, y: 10_000 })).toEqual({ x: 100, y: 195 });
+    expect(bannerPoint(origin, banner, 10_000)).toEqual({ x: 100, y: 195 });
   });
 });
 

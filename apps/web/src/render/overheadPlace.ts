@@ -138,15 +138,15 @@ export function placedBox(placed: Placed): Box {
 }
 
 /**
- * Where words over `id` are drawn from, or null when no words are over the head (the king's call
- * first, then a line: overheadOf). The words "LEVEL UP" of a level-up go over them
- * (levelUp.bannerPoint).
+ * The top of everything drawn for the words over `id` (a shout's spikes too), or null when no
+ * words are over the head (the king's call or a line). The words "LEVEL UP" of a level-up go over
+ * it (levelUp.bannerPoint).
  */
-export function wordsFeet(placed: readonly Placed[], id: MemberId): Point | null {
+export function wordsTop(placed: readonly Placed[], id: MemberId): number | null {
   const one = placed.find((p) => p.id === id);
   if (one === undefined) return null;
-  const { shown } = one;
-  return shown.kind === 'speech' || shown.kind === 'line' ? one.feet : null;
+  const { kind } = one.shown;
+  return kind === 'speech' || kind === 'line' ? placedBox(one).top : null;
 }
 
 /** What the bubbles over the heads (draw.ts) and the "LEVEL UP" words read of the stage. */

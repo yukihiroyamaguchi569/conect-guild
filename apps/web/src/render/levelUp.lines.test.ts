@@ -6,10 +6,11 @@ import { drawLevelUpBanners, type BannerContext } from './drawLevelUp';
 import { levelTags } from './levelTags';
 import { linesOf } from './lineBook';
 import type { PickLine } from './lines';
-import { LINES, OVERHEAD_TOP } from './metrics';
+import { DETAIL_SCALE, LINES, OVERHEAD_TOP } from './metrics';
 import { raise } from './motion';
 import { overheadLift } from './overhead';
-import { placeOverheads, wordsFeet, type OverheadMember } from './overheadPlace';
+import { placeOverheads, wordsTop, type OverheadMember } from './overheadPlace';
+import { SPIKE_PX } from './bubbleShape';
 import type { SpokenLines } from './lines';
 import type { Speeches } from './summons';
 import { DEFAULT_SEATS } from './scenes';
@@ -91,17 +92,17 @@ describe('"LEVEL UP" over a line of a scene', () => {
   });
 });
 
-/** Where words over `member` are drawn from, alone on the stage (overheadPlace.wordsFeet). */
-function feetOf(
+/** The top of the words over `member`, alone on the stage (overheadPlace.wordsTop). */
+function topOf(
   member: OverheadMember,
   said: { readonly speeches: Speeches; readonly lines: SpokenLines },
   tags = TAGS.slice(0, 0),
 ) {
   const sources = { ...said, remarks: {}, bubbles: {}, murmurs: {} };
-  return wordsFeet(placeOverheads([member], sources, tags), member.id);
+  return wordsTop(placeOverheads([member], sources, tags), member.id);
 }
 
-describe('wordsFeet', () => {
+describe('wordsTop', () => {
   const member = {
     id: 'minori',
     pose: { point: { x: 500, y: 400 }, held: null },
@@ -110,21 +111,23 @@ describe('wordsFeet', () => {
   } as const;
 
   it('is null with no words over the head', () => {
-    expect(feetOf(member, { speeches: {}, lines: {} })).toBeNull();
-    expect(feetOf(member, { speeches: { hibiki: 'はっ！' }, lines: {} })).toBeNull();
+    expect(topOf(member, { speeches: {}, lines: {} })).toBeNull();
+    expect(topOf(member, { speeches: { hibiki: 'はっ！' }, lines: {} })).toBeNull();
   });
 
-  it('gives the feet for the king’s call or a line, as the bubble is drawn', () => {
-    expect(feetOf(member, { speeches: { minori: 'はっ！' }, lines: {} })).toEqual({
-      x: 500,
-      y: 400,
-    });
-    // Held up, the words go beside the item at the head's height: not lifted.
+  it('gives the top of the bubble of the king’s call or a line, as it is drawn', () => {
+    expect(topOf(member, { speeches: { minori: 'はっ！' }, lines: {} })).toBe(400 - OVERHEAD_TOP);
+    // Held up, the words go beside the item at the head's height: lower than over the head.
     const raised = { ...member, pose: { ...member.pose, held: raise('scroll') } };
-    expect(feetOf(raised, { speeches: {}, lines: { minori: 'おまかせを' } })).toEqual({
-      x: 500,
-      y: 400,
-    });
+    expect(topOf(raised, { speeches: {}, lines: { minori: 'おまかせを' } })).toBeGreaterThan(
+      400 - OVERHEAD_TOP,
+    );
+  });
+
+  it('counts the spikes of a shout (the king’s 「！」), over the top of a plain bubble', () => {
+    const king = { ...member, id: 'yukihiro' } as const;
+    const top = topOf(king, { speeches: { yukihiro: '！' }, lines: {} });
+    expect(top).toBe(400 - OVERHEAD_TOP - (2 + SPIKE_PX) * DETAIL_SCALE);
   });
 
   it('measures the words that show: the king’s call before a line', () => {
@@ -138,9 +141,9 @@ describe('wordsFeet', () => {
       speeches: { minori: 'はっ！' as const },
       lines: { minori: 'うけたまわり！' as const },
     };
-    expect(feetOf(open, sources, [tag])).toEqual({ x: 500, y: 300 });
-    expect(feetOf(open, { speeches: {}, lines: sources.lines }, [tag])?.y).toBe(
-      300 - overheadLift(open.pose, 'うけたまわり！', [tag]),
+    expect(topOf(open, sources, [tag])).toBe(300 - OVERHEAD_TOP);
+    expect(topOf(open, { speeches: {}, lines: sources.lines }, [tag])).toBe(
+      300 - OVERHEAD_TOP - overheadLift(open.pose, 'うけたまわり！', [tag]),
     );
   });
 });

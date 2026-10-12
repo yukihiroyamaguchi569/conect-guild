@@ -8,13 +8,33 @@ import type { Point } from './path';
  * scaling to the screen (not a whole number) leaves no hairline between the rows.
  */
 
-const INK = '#1d1a2e';
-const PAPER = '#ffffff';
-const SHADOW = 'rgba(20, 16, 40, 0.45)';
-/** A shout's fill: a pale yellow, so the king's call stands out. */
-const SHOUT_PAPER = '#fff6d0';
-/** A whisper's words: grey, quieter than the dark ink. */
-const WHISPER_INK = '#55506a';
+export const BUBBLE_COLORS = {
+  ink: '#1d1a2e',
+  paper: '#ffffff',
+  shadow: 'rgba(20, 16, 40, 0.45)',
+  /** A shout's fill: a pale yellow, so the king's call stands out. */
+  shoutPaper: '#fff6d0',
+  /** A whisper's words: grey, quieter than the dark ink. */
+  whisperInk: '#55506a',
+} as const;
+const { ink: INK, paper: PAPER, shadow: SHADOW } = BUBBLE_COLORS;
+
+/** What drawing a bubble needs of a 2D context (tests pass a recording one). */
+export type BubbleContext = Pick<
+  CanvasRenderingContext2D,
+  | 'save'
+  | 'restore'
+  | 'translate'
+  | 'scale'
+  | 'beginPath'
+  | 'rect'
+  | 'fill'
+  | 'fillStyle'
+  | 'font'
+  | 'textAlign'
+  | 'textBaseline'
+  | 'fillText'
+>;
 
 interface Rect {
   readonly x: number;
@@ -24,7 +44,7 @@ interface Rect {
 }
 
 /** A box with corners stepped by `steps` (inset per row from the top and the bottom), as rects. */
-function boxPath(ctx: CanvasRenderingContext2D, r: Rect, steps: readonly number[]): void {
+function boxPath(ctx: BubbleContext, r: Rect, steps: readonly number[]): void {
   steps.forEach((inset, i) => {
     ctx.rect(r.x + inset, r.y + i, r.w - 2 * inset, r.h - 2 * i);
   });
@@ -32,7 +52,7 @@ function boxPath(ctx: CanvasRenderingContext2D, r: Rect, steps: readonly number[
 }
 
 /** The tail's rows narrowed by `k` at each end, moved by `d` down and right. */
-function tailPath(ctx: CanvasRenderingContext2D, shape: Shape, k: number, d = 0): void {
+function tailPath(ctx: BubbleContext, shape: Shape, k: number, d = 0): void {
   const top = shape.y + shape.h - shape.border;
   tailSpans(shape).forEach(([l, r], j) => {
     if (r - k < l + k) return;
@@ -42,7 +62,7 @@ function tailPath(ctx: CanvasRenderingContext2D, shape: Shape, k: number, d = 0)
 }
 
 /** Layer k of the bubble (0: the outer border): the box and the tail narrowed by k, one path. */
-function fillLayer(ctx: CanvasRenderingContext2D, shape: Shape, k: number, color: string): void {
+function fillLayer(ctx: BubbleContext, shape: Shape, k: number, color: string): void {
   ctx.fillStyle = color;
   ctx.beginPath();
   const box = { x: shape.x + k, y: shape.y + k, w: shape.w - 2 * k, h: shape.h - 2 * k };
@@ -51,7 +71,7 @@ function fillLayer(ctx: CanvasRenderingContext2D, shape: Shape, k: number, color
   ctx.fill();
 }
 
-function shadow(ctx: CanvasRenderingContext2D, shape: Shape): void {
+function shadow(ctx: BubbleContext, shape: Shape): void {
   ctx.fillStyle = SHADOW;
   ctx.beginPath();
   boxPath(ctx, { x: shape.x + 1, y: shape.y + 1, w: shape.w, h: shape.h }, [2, 1]);
@@ -60,7 +80,7 @@ function shadow(ctx: CanvasRenderingContext2D, shape: Shape): void {
 }
 
 /** A shout's spikes: 3 px rays from the corners, the sides and the top, outlined in ink. */
-function spikes(ctx: CanvasRenderingContext2D, shape: Shape, paper: string): void {
+function spikes(ctx: BubbleContext, shape: Shape, paper: string): void {
   const { x, y, w, h } = shape;
   const points: [number, number][] = [];
   const ray = (px: number, py: number, dx: number, dy: number): void => {
@@ -85,7 +105,7 @@ function spikes(ctx: CanvasRenderingContext2D, shape: Shape, paper: string): voi
 }
 
 /** A whisper's border: every other pixel of its straight parts let through (paper over it). */
-function dots(ctx: CanvasRenderingContext2D, shape: Shape): void {
+function dots(ctx: BubbleContext, shape: Shape): void {
   const { x, y, w, h } = shape;
   const [first] = tailSpans(shape);
   const tail = first ?? [x, x];
@@ -112,15 +132,10 @@ export interface BubbleText {
 }
 
 /** A bubble for `text` over feet at `feet`, at `spot` (bubbleShape.ts). */
-export function drawBubble(
-  ctx: CanvasRenderingContext2D,
-  bubble: BubbleText,
-  feet: Point,
-  spot: Spot,
-): void {
+export function drawBubble(ctx: BubbleContext, bubble: BubbleText, feet: Point, spot: Spot): void {
   const { voice } = bubble;
   const shape = bubbleShape(voice, bubble.chars, spot);
-  const paper = voice === 'shout' ? SHOUT_PAPER : PAPER;
+  const paper = voice === 'shout' ? BUBBLE_COLORS.shoutPaper : PAPER;
   ctx.save();
   ctx.translate(Math.round(feet.x), Math.round(feet.y - OVERHEAD_OFFSET));
   ctx.scale(DETAIL_SCALE, DETAIL_SCALE);
@@ -130,7 +145,7 @@ export function drawBubble(
   fillLayer(ctx, shape, shape.border, paper);
   if (voice === 'whisper') dots(ctx, shape);
   ctx.font = `bold ${String(voice === 'glyph' ? BUBBLE.glyphPx : BUBBLE.textPx)}px sans-serif`;
-  ctx.fillStyle = voice === 'whisper' ? WHISPER_INK : bubble.color;
+  ctx.fillStyle = voice === 'whisper' ? BUBBLE_COLORS.whisperInk : bubble.color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(bubble.text, shape.x + shape.w / 2, shape.y + shape.h / 2 + 0.5);

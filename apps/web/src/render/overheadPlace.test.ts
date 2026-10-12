@@ -4,13 +4,7 @@ import { LOGICAL_WIDTH } from './map';
 import { LINES } from './metrics';
 import { carry, raise, type Held } from './motion';
 import { bubbleBox, meet, tagBox, WINDOWS, type OverheadSources } from './overhead';
-import {
-  bodyBox,
-  placedBox,
-  placeOverheads,
-  wordsFeet,
-  type OverheadMember,
-} from './overheadPlace';
+import { bodyBox, placedBox, placeOverheads, wordsTop, type OverheadMember } from './overheadPlace';
 import type { Point } from './path';
 
 const NOTHING: OverheadSources = { speeches: {}, lines: {}, remarks: {}, bubbles: {}, murmurs: {} };
@@ -135,16 +129,17 @@ describe('placeOverheads: everything else', () => {
   });
 });
 
-describe('wordsFeet', () => {
-  it('gives the feet of the words of the call or a line, null for a sign or a murmur', () => {
+describe('wordsTop', () => {
+  it('gives the top of the words of the call or a line, null for a sign or a murmur', () => {
     const at = member('minori', OPEN);
-    expect(wordsFeet(placeOverheads([at], says, []), 'minori')).toEqual(OPEN);
-    const call = { ...NOTHING, speeches: { minori: 'はっ！' } } as const;
-    expect(wordsFeet(placeOverheads([at], call, []), 'minori')).toEqual(OPEN);
-    const murmur = { ...NOTHING, murmurs: { minori: 'ぱちぱち…' } } as const;
-    expect(wordsFeet(placeOverheads([at], murmur, []), 'minori')).toBeNull();
-    const waiting = { ...NOTHING, bubbles: { minori: 'awaiting-kaname' } } as const;
-    expect(wordsFeet(placeOverheads([at], waiting, []), 'minori')).toBeNull();
-    expect(wordsFeet(placeOverheads([at], says, []), 'kaname')).toBeNull();
+    const top = (sources: OverheadSources, id: MemberId = 'minori') =>
+      wordsTop(placeOverheads([at], sources, []), id);
+    const line = placeOverheads([at], says, [])[0];
+    if (line === undefined) throw new Error('no line');
+    expect(top(says)).toBe(placedBox(line).top);
+    expect(top({ ...NOTHING, speeches: { minori: 'はっ！' } })).toBe(placedBox(line).top);
+    expect(top({ ...NOTHING, murmurs: { minori: 'ぱちぱち…' } })).toBeNull();
+    expect(top({ ...NOTHING, bubbles: { minori: 'awaiting-kaname' } })).toBeNull();
+    expect(top(says, 'kaname')).toBeNull();
   });
 });

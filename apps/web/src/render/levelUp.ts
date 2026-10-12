@@ -1,6 +1,5 @@
 import type { TilePos } from '../guild.config';
 import { CONFETTI_MS } from './confetti';
-import { OVERHEAD_TOP } from './metrics';
 import { staySegment, type Segment } from './motion';
 import type { Point } from './path';
 
@@ -55,14 +54,11 @@ export function bannerAt(elapsedMs: number): BannerView | null {
 
 /**
  * Where the words "LEVEL UP" stand (the bottom centre of the text): over the confetti's origin,
- * risen by `banner.rise`. While the member answers the king's call (summons.ts, a bubble over the
- * head drawn at `speakerFeet`), the words go up over the top of that bubble, so neither hides the
- * other.
+ * risen by `banner.rise`. While the member has words over the head (the answer to the king's call,
+ * a line: a bubble whose top is at `wordsTop`, overheadPlace.wordsTop), the words go up over the
+ * top of that bubble, so neither hides the other.
  */
-export function bannerPoint(origin: Point, banner: BannerView, speakerFeet: Point | null): Point {
-  const over =
-    speakerFeet === null
-      ? origin.y
-      : Math.min(origin.y, speakerFeet.y - OVERHEAD_TOP - LEVEL_UP.bannerGapPx);
+export function bannerPoint(origin: Point, banner: BannerView, wordsTop: number | null): Point {
+  const over = wordsTop === null ? origin.y : Math.min(origin.y, wordsTop - LEVEL_UP.bannerGapPx);
   return { x: origin.x, y: over - banner.rise };
 }
