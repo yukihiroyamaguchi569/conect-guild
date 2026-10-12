@@ -59,7 +59,7 @@ export interface PxRect {
 }
 
 /**
- * App.vue places the windows in % of the stage (left / right / width of its width, top / bottom /
+ * GuildScreen.vue places the windows in % of the stage (left / right / width of its width, top / bottom /
  * height of its height) and cqw (1 % of the stage width). The stage is the canvas, 1024 x 576
  * logical px, so 1 % across = 10.24 px, 1 % down = 5.76 px and 1cqw = 10.24 px.
  */
@@ -67,7 +67,7 @@ const PCT_X = LOGICAL_WIDTH / 100;
 const PCT_Y = LOGICAL_HEIGHT / 100;
 const CQW = LOGICAL_WIDTH / 100;
 
-/** The most each window covers (logical px), from the numbers in App.vue's styles. */
+/** The most each window covers (logical px), from the numbers in GuildScreen.vue's styles. */
 export const WINDOW_EXTENTS: Readonly<Record<'board' | 'party' | 'message', PxRect>> = {
   // .stage__board: left 1.2%, top 1.6%, width 29%, max-height 31cqw (it scrolls beyond that)
   board: {

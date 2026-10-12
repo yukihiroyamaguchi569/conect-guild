@@ -30,7 +30,7 @@ function forbidden(name: string) {
   });
 }
 
-/** The store as App.vue builds it in the demo, the timers faked. */
+/** The store as GuildScreen.vue builds it in the demo, the timers faked. */
 function setup() {
   const demo = createDemoSession(() => Date.now());
   const store = createGuildStore(demo.guildOptions);
@@ -184,5 +184,60 @@ describe('the demo, alone', () => {
     expect(loadSoundSettings(demo.storage)).toEqual({ enabled: true, volume: 2 });
     expect(storage.setItem).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+});
+
+describe('the automatic demo (Issue #67)', () => {
+  it('starts silent, in memory only', () => {
+    vi.stubGlobal('localStorage', storage);
+    const demo = createDemoSession(() => Date.now(), { auto: true });
+    expect(demo.auto).toBe(true);
+    expect(loadSoundSettings(demo.storage)).toEqual({ enabled: false, volume: 2 });
+    expect(storage.setItem).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('starts by itself once the canvas is ready and on screen, not before', async () => {
+    vi.useFakeTimers({ now: START });
+    const demo = createDemoSession(() => Date.now(), { auto: true });
+    const store = createGuildStore(demo.guildOptions);
+    store.start();
+    demo.setStageShown(true);
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(demo.started.value).toBe(false);
+    // No はじめる: the canvas being ready is enough, and the king's first call is not lost.
+    demo.markReady();
+    expect(demo.started.value).toBe(true);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(store.state.summons?.members).toEqual(['kaname']);
+    store.stop();
+    vi.useRealTimers();
+  });
+
+  it('starts on a narrow screen too (the canvas hidden), and the messages go on', async () => {
+    vi.useFakeTimers({ now: START });
+    const demo = createDemoSession(() => Date.now(), { auto: true });
+    const store = createGuildStore(demo.guildOptions);
+    store.setStageShown(false);
+    store.start();
+    demo.setStageShown(false);
+    demo.markReady();
+    expect(demo.block.value).toBe('narrow');
+    expect(demo.started.value).toBe(true);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(store.state.snapshot?.issues.length).toBeGreaterThan(0);
+    expect(store.state.messages[0]?.text).toContain('わたした');
+    store.stop();
+    vi.useRealTimers();
+  });
+
+  it('does not start by itself in the demo of ?demo=1, nor on a narrow screen', () => {
+    const demo = createDemoSession(() => Date.now());
+    demo.markReady();
+    demo.start();
+    expect(demo.started.value).toBe(false);
+    demo.setStageShown(true);
+    expect(demo.auto).toBe(false);
+    expect(demo.started.value).toBe(false);
   });
 });
