@@ -4,7 +4,9 @@ dist/
 .env.*
 .dev.vars
 apps/web/.data/
-# A team's own settings (docs/setup.md); the tests always use guild.settings.ts.
+# A team's own settings (docs/setup.md); the tests always use guild.settings.json.
+guild.settings.local.json
+# The local settings before Issue #89 (no longer read; the collector asks to move them).
 guild.settings.local.ts
 .DS_Store
 __pycache__/

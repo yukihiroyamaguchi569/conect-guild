@@ -10,7 +10,6 @@
   },
   "files": [
     "vitest.config.ts",
-    "guild.settings.ts",
     "assets/tiles/tiles.ts",
     "assets/decor/decor.ts",
     "assets/props/props.ts"

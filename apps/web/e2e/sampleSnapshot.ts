@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { snapshotSchema, type Snapshot, type SnapshotIssue } from '@conect-guild/snapshot';
-import { GUILD_SETTINGS } from '../../../guild.settings.ts';
+import { GUILD_SETTINGS } from '@conect-guild/snapshot/settings';
 
 /**
  * The only data the E2E tests show: the dummy sample (public/snapshot.sample.json, made-up
@@ -13,7 +13,7 @@ const SAMPLE_FILE = path.resolve(import.meta.dirname, '..', 'public', 'snapshot.
 /** The fixed "now" of every test (12:00 in Tokyo). */
 export const NOW = Date.parse('2026-10-12T03:00:00.000Z');
 
-/** The sample, pointed at guild.settings.ts's repo and fetched at `at`. */
+/** The sample, pointed at guild.settings.json's repo and fetched at `at`. */
 export async function sampleSnapshot(at: number = NOW): Promise<Snapshot> {
   const sample = snapshotSchema.parse(JSON.parse(await readFile(SAMPLE_FILE, 'utf8')));
   const iso = new Date(at).toISOString();

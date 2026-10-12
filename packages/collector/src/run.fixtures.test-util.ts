@@ -7,7 +7,7 @@ import type { SessionsReading } from './sessions.ts';
 
 /** The line after `failed: gh-failed` (Issue #74), written out here so a change shows. */
 export const GH_FAILED_NEXT_STEP =
-  '次にやること: guild.settings.local.ts（無ければ guild.settings.ts）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください';
+  '次にやること: guild.settings.local.json（無ければ guild.settings.json）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください';
 
 export const SECRET_TITLE = 'Secret client Ltd invoice';
 export const SECRET_BRANCH = 'accounting/secret-client';
@@ -56,7 +56,7 @@ const OUTPUTS: Record<string, unknown[][]> = {
   'issues?state=all': [[ISSUE, PR_AS_ISSUE], [OLD_CLOSED_ISSUE], [NOT_PLANNED_ISSUE]],
   'pulls?state=all': [[OPEN_PR], [MERGED_PR]],
   'pulls/2/files': [['a/CLAUDE.md'], ['b.md']],
-  // Issue #85: every department label of guild.settings.ts, over two pages, among others.
+  // Issue #85: every department label of guild.settings.json, over two pages, among others.
   labels: [
     ['bug', '経理', '広報'],
     ['企画', '総務'],

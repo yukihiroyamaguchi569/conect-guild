@@ -46,7 +46,7 @@ export function defaultSnapshotUrl(): string {
 }
 
 /**
- * The real data must be of the repository in guild.settings.ts: after the settings change, the
+ * The real data must be of the repository in guild.settings.json: after the settings change, the
  * old snapshot stays until the collector succeeds for the new one. The fictional sample of a build
  * is of no real repository, so it is not checked.
  */

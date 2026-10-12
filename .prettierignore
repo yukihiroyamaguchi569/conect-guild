@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 apps/web/.data/
+guild.settings.local.json
 guild.settings.local.ts
 package-lock.json
 assets/

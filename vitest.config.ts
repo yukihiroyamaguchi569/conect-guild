@@ -19,7 +19,6 @@ export default defineConfig({
         'apps/web/vite-plugin-snapshot.ts',
         'packages/*/src/**/*.ts',
         'packages/collector/collector.config.ts',
-        'guild.settings.ts',
         'assets/*/*.ts',
       ],
       exclude: ['**/*.test.ts', '**/*.test-util.ts', '**/*.d.ts'],

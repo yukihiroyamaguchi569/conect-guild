@@ -6,11 +6,11 @@ import {
   departmentFromBranch,
   guildSettingsSchema,
   isSessionDir,
-  type GuildSettingsInput,
+  type GuildSettings,
 } from './settings.ts';
 
 /** A mutable copy of the shipped settings to break one field at a time. */
-function settings(): GuildSettingsInput {
+function settings(): GuildSettings {
   return structuredClone(GUILD_SETTINGS);
 }
 
@@ -22,7 +22,7 @@ function rejects(input: unknown): boolean {
   return !guildSettingsSchema.safeParse(input).success;
 }
 
-describe('guild.settings.ts', () => {
+describe('guild.settings.json', () => {
   it('passes the schema as shipped', () => {
     expect(guildSettingsSchema.safeParse(GUILD_SETTINGS).success).toBe(true);
   });
@@ -46,14 +46,20 @@ describe('guild.settings.ts', () => {
 });
 
 describe('checkGuildSettings', () => {
-  it('returns the very same value when valid', () => {
+  it('returns an equal value when valid', () => {
     const input = settings();
-    expect(checkGuildSettings(input)).toBe(input);
+    expect(checkGuildSettings(input)).toEqual(input);
   });
 
   it('throws a message naming the file when invalid', () => {
     expect(() => checkGuildSettings({ ...settings(), repo: 'no-slash' })).toThrow(
-      /guild\.settings\.local\.ts or guild\.settings\.ts \(whichever is used\) is invalid[\s\S]*repo/,
+      /guild\.settings\.local\.json or guild\.settings\.json \(whichever is used\) is invalid[\s\S]*repo/,
+    );
+  });
+
+  it('names the given file', () => {
+    expect(() => checkGuildSettings({}, 'guild.settings.local.json')).toThrow(
+      /^guild\.settings\.local\.json is invalid/,
     );
   });
 });

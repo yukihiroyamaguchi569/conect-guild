@@ -79,7 +79,7 @@ export const DEMO_RECEPTION_TITLES: readonly DemoQuestTitles[] = [
 ];
 
 /**
- * Fictional quests per department, in the order of guild.settings.ts (経理, 広報, 企画, 総務).
+ * Fictional quests per department, in the order of guild.settings.json (経理, 広報, 企画, 総務).
  * Plain everyday work: no client, product or real project names.
  */
 export const DEMO_TITLES: readonly (readonly DemoQuestTitles[])[] = [

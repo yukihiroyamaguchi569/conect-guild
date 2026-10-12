@@ -1,5 +1,5 @@
 import type { SessionDepartment, SnapshotSessions } from '@conect-guild/snapshot';
-import { DEPARTMENT_MEMBER, SESSION_STALE_AFTER_MS, type MemberId } from '../guild.config';
+import { departmentMember, SESSION_STALE_AFTER_MS, type MemberId } from '../guild.config';
 
 /**
  * What the company sessions are doing right now (docs/DESIGN.md 4.7). Only the two states that
@@ -13,7 +13,7 @@ export const NO_LIVE_STATES: LiveStates = {};
 
 /** かなめ has no department (null); the others sit at their department's desk. */
 export function memberOfSession(department: SessionDepartment | null): MemberId {
-  return department === null ? 'kaname' : DEPARTMENT_MEMBER[department];
+  return department === null ? 'kaname' : departmentMember(department);
 }
 
 /**

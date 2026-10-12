@@ -9,7 +9,7 @@ import { clockedHarness, fakeGh, harness } from './run.fixtures.test-util.ts';
 
 const MINUTE_MS = 60_000;
 const AT = '2026-10-12T00:00:00.000Z';
-/** The labels of guild.settings.ts, in its order. None may reach a log or the status file. */
+/** The labels of guild.settings.json, in its order. None may reach a log or the status file. */
 const DEPARTMENT_LABELS = ['経理', '広報', '企画', '総務'];
 
 function parsed(statuses: readonly string[]): CollectorStatus[] {

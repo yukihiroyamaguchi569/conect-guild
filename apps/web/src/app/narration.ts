@@ -1,7 +1,7 @@
 import type { Snapshot } from '@conect-guild/snapshot';
 import {
   DEPARTMENT_LABELS,
-  DEPARTMENT_MEMBER,
+  departmentMember,
   MEMBERS,
   RECENT_REWARD_WINDOW_MS,
   type MemberId,
@@ -208,9 +208,9 @@ function topCollectors(
   now: number,
 ): { readonly count: number; readonly names: readonly string[] } {
   const rewards = countRecentRewards(snapshot, now);
-  const count = Math.max(0, ...DEPARTMENT_LABELS.map((label) => rewards[label]));
+  const count = Math.max(0, ...DEPARTMENT_LABELS.map((label) => rewards[label] ?? 0));
   const names = DEPARTMENT_LABELS.filter((label) => count > 0 && rewards[label] === count).map(
-    (label) => MEMBERS[DEPARTMENT_MEMBER[label]].name,
+    (label) => MEMBERS[departmentMember(label)].name,
   );
   return { count, names };
 }

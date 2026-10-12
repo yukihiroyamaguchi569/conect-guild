@@ -13,7 +13,7 @@ export interface CompanySeat {
 const HOME = homedir();
 const MULMOTERMINAL_HOME = join(HOME, '.mulmoterminal');
 
-/** `~` and `~/...` in guild.settings.ts are under the home directory; other paths are absolute. */
+/** `~` and `~/...` in guild.settings.json are under the home directory; other paths are absolute. */
 export function expandHome(dir: string, home: string): string {
   if (dir === '~') return home;
   return dir.startsWith('~/') ? join(home, dir.slice(2)) : dir;
@@ -40,14 +40,14 @@ export function companySeatsOf(settings: SessionDirSettings, home: string): Comp
     })),
   ];
   if (new Set(seats.map((seat) => seat.cwd)).size !== seats.length) {
-    throw new Error('guild.settings.ts is invalid: two session dirs point to the same directory');
+    throw new Error('guild.settings.json is invalid: two session dirs point to the same directory');
   }
   return seats;
 }
 
 // Fixed on purpose: the target repository, the company sessions, intervals and paths must not be
 // changeable from command-line arguments or environment variables (docs/DESIGN.md 4.1, 4.7). The
-// team's values come from guild.settings.local.ts (if it exists) or guild.settings.ts at the
+// team's values come from guild.settings.local.json (if it exists) or guild.settings.json at the
 // repository root (src/main.ts chooses).
 export const COLLECTOR_CONFIG = {
   repo: GUILD_SETTINGS.repo,

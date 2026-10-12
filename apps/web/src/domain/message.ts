@@ -1,10 +1,10 @@
 import type { Snapshot } from '@conect-guild/snapshot';
-import { DEPARTMENT_MEMBER, MEMBERS, type DepartmentLabel } from '../guild.config';
+import { departmentMember, MEMBERS, type DepartmentLabel } from '../guild.config';
 import type { DiffResult, GuildEvent } from './events';
 
 /** Name of the member who acts for a department; かなめ handles the reception (no department). */
 export function actorName(department: DepartmentLabel | null): string {
-  return department === null ? MEMBERS.kaname.name : MEMBERS[DEPARTMENT_MEMBER[department]].name;
+  return department === null ? MEMBERS.kaname.name : MEMBERS[departmentMember(department)].name;
 }
 
 /** `「title」` right after the number, or a plain space when the title is unknown. */

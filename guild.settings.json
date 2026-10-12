@@ -1,0 +1,33 @@
+{
+  "repo": "yukihiroyamaguchi569/conect-management",
+  "members": {
+    "kaname": { "name": "かなめ", "role": "司令塔", "color": "#e0b040" },
+    "minori": { "name": "みのり", "role": "経理", "color": "#4caf50" },
+    "hibiki": { "name": "ひびき", "role": "広報", "color": "#e91e63" },
+    "hirame": { "name": "ひらめ", "role": "企画", "color": "#2196f3" },
+    "sasae": { "name": "ささえ", "role": "総務", "color": "#9c6b3f" },
+    "yukihiro": { "name": "ゆきひろ", "role": "社長", "color": "#8e44ad" }
+  },
+  "commanderSessionDir": "~/conect-management",
+  "departments": [
+    { "label": "経理", "member": "minori", "sessionDir": "~/conect-management/accounting" },
+    { "label": "広報", "member": "hibiki", "sessionDir": "~/conect-management/pr" },
+    { "label": "企画", "member": "hirame", "sessionDir": "~/conect-management/planning" },
+    { "label": "総務", "member": "sasae", "sessionDir": "~/conect-management/general-affairs" }
+  ],
+  "branchPrefixes": [
+    { "prefix": "accounting/", "department": "経理" },
+    { "prefix": "docs/accounting-", "department": "経理" },
+    { "prefix": "pr/", "department": "広報" },
+    { "prefix": "docs/pr-", "department": "広報" },
+    { "prefix": "planning/", "department": "企画" },
+    { "prefix": "docs/planning-", "department": "企画" },
+    { "prefix": "general-affairs/", "department": "総務" },
+    { "prefix": "docs/general-affairs-", "department": "総務" }
+  ],
+  "ruleChangePaths": [
+    { "match": "exact", "path": "CLAUDE.md" },
+    { "match": "suffix", "path": "/CLAUDE.md" },
+    { "match": "prefix", "path": ".claude/agents/" }
+  ]
+}

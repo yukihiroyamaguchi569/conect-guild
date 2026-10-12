@@ -141,7 +141,7 @@ export function diffSnapshot(
 ): DiffResult {
   const next = toBaseline(snapshot);
   const replace: BaselineUpdate = { action: 'replace', baseline: next };
-  // A baseline of another repository (guild.settings.ts changed) counts as the first load.
+  // A baseline of another repository (guild.settings.json changed) counts as the first load.
   if (baseline?.repo !== repoFingerprint(snapshot.repo)) {
     return { events: [], baselineUpdate: replace, notice: null };
   }

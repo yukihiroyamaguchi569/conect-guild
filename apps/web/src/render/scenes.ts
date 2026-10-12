@@ -1,5 +1,5 @@
 import type { GuildEvent } from '../domain/events';
-import { DEPARTMENT_MEMBER, MEMBERS, type MemberId, type TilePos } from '../guild.config';
+import { departmentMember, MEMBERS, type MemberId, type TilePos } from '../guild.config';
 import { createConfetti, type Particle, type Random } from './confetti';
 import type { LineScene } from './lineBook';
 import type { PickLine, Turn } from './lines';
@@ -91,7 +91,7 @@ export interface SceneContext {
 
 /** The member who acts for an event; かなめ for the reception. */
 export function actorOf(event: Pick<GuildEvent, 'department'>): MemberId {
-  return event.department === null ? 'kaname' : DEPARTMENT_MEMBER[event.department];
+  return event.department === null ? 'kaname' : departmentMember(event.department);
 }
 
 /** Members whose movement a scene takes over (they must not be in two scenes at once). */

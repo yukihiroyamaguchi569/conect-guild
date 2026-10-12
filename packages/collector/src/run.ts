@@ -143,7 +143,7 @@ function prefix(deps: RunDeps): string {
  * repository name, like no title or path.
  */
 const GH_FAILED_NEXT_STEP =
-  '次にやること: guild.settings.local.ts（無ければ guild.settings.ts）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください';
+  '次にやること: guild.settings.local.json（無ければ guild.settings.json）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください';
 
 /** Logs carry only counts, times and error kinds (no titles, bodies, branch names, paths or ids). */
 function reportCycle(deps: RunDeps, result: CycleResult): void {

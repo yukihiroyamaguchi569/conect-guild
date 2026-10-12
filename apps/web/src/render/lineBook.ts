@@ -6,7 +6,7 @@ import type { MemberId } from '../guild.config';
  * branch name from a snapshot ever reaches a bubble,
  * and the types keep it so (a bubble takes a SpokenLine, a union of these literals). Hiragana and
  * katakana with a few signs, at most 7 characters (lines.test.ts checks every one); no names, so
- * renaming a member in guild.settings.ts never puts a wrong name in someone's mouth. Nothing that
+ * renaming a member in guild.settings.json never puts a wrong name in someone's mouth. Nothing that
  * reads as a fact about the company (its accounts, its posts).
  *
  * The murmurs (murmurs.ts) at the play spots, dozing and asleep are the same for everyone

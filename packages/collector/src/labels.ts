@@ -64,7 +64,7 @@ export function missingAfter(
 }
 
 const LABELS_NEXT_STEP =
-  '次にやること: 設定（guild.settings.local.ts、無ければ guild.settings.ts）の departments[n].label を GitHub のラベル名と 1 文字も違わないようにそろえるか、gh label create でラベルを作ってください（docs/setup.md の「困ったとき」）';
+  '次にやること: 設定（guild.settings.local.json、無ければ guild.settings.json）の departments[n].label を GitHub のラベル名と 1 文字も違わないようにそろえるか、gh label create でラベルを作ってください（docs/setup.md の「困ったとき」）';
 
 /** The log lines of a check: positions, counts and kinds only (never a label name or title). */
 export interface LabelReport {
