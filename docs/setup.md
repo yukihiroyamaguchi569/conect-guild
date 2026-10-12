@@ -63,41 +63,45 @@ gh repo view <owner/name>   # 眺めたいリポジトリ（例: your-name/my-co
 
 **やること**
 
-リポジトリ直下の [`guild.settings.ts`](../guild.settings.ts)（conect.llc の設定。既定）をコピーして `guild.settings.local.ts` を作り、コピーのほうを書き換えます。
+リポジトリ直下の [`guild.settings.json`](../guild.settings.json)（conect.llc の設定。既定）をコピーして `guild.settings.local.json` を作り、コピーのほうを書き換えます。
 
 ```bash
-cp guild.settings.ts guild.settings.local.ts
+cp guild.settings.json guild.settings.local.json
 ```
 
-`guild.settings.local.ts` は git に入りません。このファイルがあれば、collector と画面は `guild.settings.ts` の代わりにこちらを読みます。`guild.settings.ts` は書き換えないでください。
+`guild.settings.local.json` は git に入りません。このファイルがあれば、collector と画面は `guild.settings.json` の代わりにこちらを読みます。`guild.settings.json` は書き換えないでください。
+
+設定は JSON で書きます。collector と画面はファイルを JSON として読んで検証するだけで、実行はしません。JSON なので、文字列と項目名は `"` で囲み、最後の要素の後ろに `,` を付けず、コメントは書けません（各項目の説明は下の表にあります）。
+
+以前の `guild.settings.local.ts` を使っていた場合は、同じ値を `guild.settings.local.json` に書き移し、`guild.settings.local.ts` を消してください。`guild.settings.local.ts` が残っていると、collector と開発サーバーは「guild.settings.local.ts は読まなくなりました」と案内して止まります。
 
 書き換える項目は次の 6 つです。
 
 | 項目 | 中身 |
 |---|---|
-| `repo` | 眺める GitHub リポジトリ（`owner/name`） |
+| `repo` | 眺める GitHub リポジトリ（`owner/name`）。Issue と PR をここから集める |
 | `members` | 6 人の名前・役・色（`#rrggbb`）。id（`kaname` など）は絵のファイル名なので変えない。`kaname` は受付の司令塔、`yukihiro` は玉座の王、残る 4 人（`minori`・`hibiki`・`hirame`・`sasae`）が部門の机に座る |
 | `commanderSessionDir` | 司令塔のセッションを起動するフォルダ |
-| `departments` | 4 つの部門。それぞれ GitHub のラベル（`label`）・担当のメンバー（`member`）・セッションを起動するフォルダ（`sessionDir`）。並び順が、Issue に部門ラベルが複数あるときの優先順になる |
-| `branchPrefixes` | ブランチ名の接頭辞 → 部門のラベル。Issue に結べない PR の担当を推定する。上から順に見て、最初に当たったものを使う |
+| `departments` | 4 つの部門（いまはちょうど 4 つ。席が 4 つ分のため。Issue #18）。それぞれ GitHub のラベル（`label`）・担当のメンバー（`member`。部門の机に座る 4 人のどれか）・セッションを起動するフォルダ（`sessionDir`）。並び順が、Issue に部門ラベルが複数あるときの優先順になる |
+| `branchPrefixes` | ブランチ名の接頭辞（`prefix`）→ 部門のラベル（`department`）。部門ラベルの付いた Issue に結べない PR の担当を推定する。上から順に見て、ブランチ名が最初に当てはまったものを使う |
 | `ruleChangePaths` | 変えると社長の承認が要るファイル。`exact`（パスが等しい）・`suffix`（で終わる）・`prefix`（で始まる）の 3 種類で書き、glob は使えない。既定は `CLAUDE.md`・`/CLAUDE.md` で終わるもの・`.claude/agents/` で始まるもので、そのままでよければ変えない |
 
 たとえば、リポジトリ `your-name/my-company` を `~/my-company` に clone し、その下の 4 つのフォルダで部門の AI を動かすなら、次のようになります（`members` と `ruleChangePaths` は省略）。
 
-```ts
-  repo: 'your-name/my-company',
-  commanderSessionDir: '~/my-company',
-  departments: [
-    { label: '経理', member: 'minori', sessionDir: '~/my-company/accounting' },
-    { label: '広報', member: 'hibiki', sessionDir: '~/my-company/pr' },
-    { label: '企画', member: 'hirame', sessionDir: '~/my-company/planning' },
-    { label: '総務', member: 'sasae', sessionDir: '~/my-company/general-affairs' },
+```json
+  "repo": "your-name/my-company",
+  "commanderSessionDir": "~/my-company",
+  "departments": [
+    { "label": "経理", "member": "minori", "sessionDir": "~/my-company/accounting" },
+    { "label": "広報", "member": "hibiki", "sessionDir": "~/my-company/pr" },
+    { "label": "企画", "member": "hirame", "sessionDir": "~/my-company/planning" },
+    { "label": "総務", "member": "sasae", "sessionDir": "~/my-company/general-affairs" }
   ],
-  branchPrefixes: [
-    { prefix: 'accounting/', department: '経理' },
-    { prefix: 'pr/', department: '広報' },
-    { prefix: 'planning/', department: '企画' },
-    { prefix: 'general-affairs/', department: '総務' },
+  "branchPrefixes": [
+    { "prefix": "accounting/", "department": "経理" },
+    { "prefix": "pr/", "department": "広報" },
+    { "prefix": "planning/", "department": "企画" },
+    { "prefix": "general-affairs/", "department": "総務" }
   ],
 ```
 
@@ -128,13 +132,13 @@ npm run dev:all   # collector と開発サーバーを一緒に起動する。Ct
 起動から数秒で、次のような行が出ます（時刻と件数は環境で変わります）。
 
 ```text
-[collect] [collector] settings: guild.settings.local.ts
+[collect] [collector] settings: guild.settings.local.json
 [web]   ➜  Local:   http://127.0.0.1:5173/
 [collect] [collector] 2026-10-12T01:23:45.678Z ok: issues=12 prs=8 history: opened=40 completed=31 merged=27
 [collect] [collector] 2026-10-12T01:23:45.690Z sessions=5 ok
 ```
 
-- `settings:` の行が `guild.settings.local.ts` であること。`guild.settings.ts` と出たら、手元のファイルが無いか、名前か置き場所（リポジトリ直下）が違います
+- `settings:` の行が `guild.settings.local.json` であること。`guild.settings.json` と出たら、手元のファイルが無いか、名前か置き場所（リポジトリ直下）が違います
 - `ok:` の行が出ること。`issues`・`prs` は画面に渡す Issue・PR の件数、`history` は経験値に数える全履歴の件数です（時刻は UTC で出ます）。`failed:` の行が出たら [3 章](#3-困ったとき) へ
 - `sessions=` の行は MulmoTerminal のセッションを読んだ結果です（`sessions=5 ok` なら 5 つとも見つかった）。MulmoTerminal を使わないなら `sessions unavailable: missing` などと出ますが、気にしなくてかまいません
 
@@ -153,7 +157,7 @@ collector は GitHub を 60 秒ごと、MulmoTerminal を 5 秒ごとに読み�
 
 これで準備は終わりです。
 
-`npm run verify`（lint・型検査・テスト）は、このリポジトリを開発するためのものです。テストは `guild.settings.local.ts` を読まず、いつも conect.llc の設定（`guild.settings.ts`）で動くので、手元の設定を書き換えても通ります。
+`npm run verify`（lint・型検査・テスト）は、このリポジトリを開発するためのものです。テストは `guild.settings.local.json` を読まず、いつも conect.llc の設定（`guild.settings.json`）で動くので、手元の設定を書き換えても通ります。
 
 ## 3. 困ったとき
 
@@ -172,7 +176,7 @@ collector は動いていますが、データを集められていません。c
 
 ### `failed: gh-failed` が出る
 
-すぐ下に「次にやること: …」の行が続きます。`guild.settings.local.ts`（無ければ `guild.settings.ts`。起動時の `settings:` の行に、読んだほうが出ます）の `repo` を、`gh` でログインしているアカウントで読めるか確かめます。
+すぐ下に「次にやること: …」の行が続きます。`guild.settings.local.json`（無ければ `guild.settings.json`。起動時の `settings:` の行に、読んだほうが出ます）の `repo` を、`gh` でログインしているアカウントで読めるか確かめます。
 
 ```bash
 gh auth status                 # gh にログインしているか
@@ -187,7 +191,7 @@ collector を動かしていないか、止まっています（5 分より前�
 
 ### 画面の帯に「部門のラベルがリポジトリにありません」と出る
 
-設定（`guild.settings.local.ts`、無ければ `guild.settings.ts`）の `departments[].label` のうち、対象のリポジトリに同じ名前のラベルが無いものがあります。そのままだと、その部門の Issue は部門の机に配られず、受付に置かれます。帯には部門のラベルと、設定の何番目か（`departments[n]`。0 から数えます）が出ます。collector のターミナルにも `labels missing 1/4: departments[1] のラベルがリポジトリに無い` のような行と「次にやること: …」の行が出ます（ログにはラベル名を出しません）。
+設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の `departments[].label` のうち、対象のリポジトリに同じ名前のラベルが無いものがあります。そのままだと、その部門の Issue は部門の机に配られず、受付に置かれます。帯には部門のラベルと、設定の何番目か（`departments[n]`。0 から数えます）が出ます。collector のターミナルにも `labels missing 1/4: departments[1] のラベルがリポジトリに無い` のような行と「次にやること: …」の行が出ます（ログにはラベル名を出しません）。
 
 collector は起動したときと、そのあと 10 分ごとに、リポジトリのラベル名を `gh` で読んで設定と照らし合わせます。比べ方は Issue のラベルを部門に結ぶときと同じで、1 文字でも違えば別の名前です（大文字と小文字、前後の空白、全角と半角も区別します）。
 
@@ -208,7 +212,7 @@ GitHub 側を直したときは、collector を止めずに次の照合（10 分
 
 ### 設定の検証で止まる
 
-collector は `Error: guild.settings.local.ts or guild.settings.ts (whichever is used) is invalid:` に続けて、悪い項目を `✖` と `→ at <項目>` の組で出して止まります（画面はブラウザのコンソールに同じものを出します）。よく出るもの:
+collector は `[collector] guild.settings.local.json is invalid:`（読んだファイルの名前）に続けて、悪い項目を `✖` と `→ at <項目>` の組で出して止まります。開発サーバーも起動時に同じものを出して止まります。よく出るもの:
 
 | メッセージ | 直し方 |
 |---|---|
@@ -218,7 +222,11 @@ collector は `Error: guild.settings.local.ts or guild.settings.ts (whichever is
 | `label ... twice`・`member ... twice`・`session dir ... twice` | 部門どうしでラベル・担当・フォルダが重なっている。別々にする |
 | `owner/name`（`repo`） | `repo` を `owner/name` の形にする |
 
-`~/x` と `/Users/<名前>/x` のように、書き方が違っても同じフォルダを指すものがあると、collector だけが `guild.settings.ts is invalid: two session dirs point to the same directory` と出して止まります（読んだのが `guild.settings.local.ts` でも、この文言です）。別々のフォルダにしてください。
+JSON として読めないとき（`"` の付け忘れ、最後の要素の後ろの `,`、コメントなど）は `guild.settings.local.json を JSON として読めません: ...` と出して止まります。`...` に、どこで読めなくなったかが出ます。
+
+`guild.settings.local.ts は読まなくなりました。…` と出たら、2-2 のとおり値を `guild.settings.local.json` に移し、`guild.settings.local.ts` を消します。
+
+`~/x` と `/Users/<名前>/x` のように、書き方が違っても同じフォルダを指すものがあると、collector だけが `guild.settings.json is invalid: two session dirs point to the same directory` と出して止まります（読んだのが `guild.settings.local.json` でも、この文言です）。別々のフォルダにしてください。
 
 ### 「いま作業中」「許可待ち」が出ない
 
