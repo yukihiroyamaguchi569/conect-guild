@@ -17,6 +17,29 @@ describe('collectorStatusSchema', () => {
       });
   });
 
+  it('accepts the positions of missing department labels (Issue #85)', () => {
+    expect(
+      collectorStatusSchema.parse({ ok: true, attemptedAt: AT, missingLabels: [0, 3] }),
+    ).toEqual({ ok: true, attemptedAt: AT, missingLabels: [0, 3] });
+    const failed = { ok: false, attemptedAt: AT, kind: 'gh-failed', missingLabels: [2] } as const;
+    expect(collectorStatusSchema.parse(failed)).toEqual(failed);
+  });
+
+  it.each([
+    ['no positions', []],
+    ['a position past the departments', [4]],
+    ['a negative position', [-1]],
+    ['a fraction', [0.5]],
+    ['a repeat', [1, 1]],
+    ['positions out of order', [2, 1]],
+    ['label names', ['経理']],
+    ['no array', 1],
+  ])('rejects missing labels with %s', (_label, missingLabels) => {
+    expect(
+      collectorStatusSchema.safeParse({ ok: true, attemptedAt: AT, missingLabels }).success,
+    ).toBe(false);
+  });
+
   it.each([
     ['an unknown kind', { ok: false, attemptedAt: AT, kind: 'auth-failed' }],
     ['a failure with no kind', { ok: false, attemptedAt: AT }],

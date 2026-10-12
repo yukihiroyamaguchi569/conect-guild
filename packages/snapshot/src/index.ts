@@ -143,12 +143,38 @@ export const collectorFailureKindSchema = z.enum([
  * so the page can tell "never collected" from "the collector fails". `attemptedAt` is when it
  * tried. No repository name, title, body or path.
  */
+/** True when the numbers are in ascending order with no repeats. */
+function strictlyAscending(values: readonly number[]): boolean {
+  return values.every((value, i) => i === 0 || value > (values[i - 1] ?? value));
+}
+
+/**
+ * Issue #85: the positions in `departments` of the settings whose label the repository does not
+ * have (the last check that got the labels). Positions only, never the label names. Left out when
+ * every label is there or nothing is known yet (the check has not got the labels).
+ */
+export const missingLabelsSchema = z
+  .array(
+    z
+      .number()
+      .int()
+      .nonnegative()
+      .max(DEPARTMENT_LABELS.length - 1),
+  )
+  .min(1)
+  .refine(strictlyAscending, 'ascending, no repeats');
+
 export const collectorStatusSchema = z.discriminatedUnion('ok', [
-  z.strictObject({ ok: z.literal(true), attemptedAt: isoDateTime }),
+  z.strictObject({
+    ok: z.literal(true),
+    attemptedAt: isoDateTime,
+    missingLabels: missingLabelsSchema.optional(),
+  }),
   z.strictObject({
     ok: z.literal(false),
     attemptedAt: isoDateTime,
     kind: collectorFailureKindSchema,
+    missingLabels: missingLabelsSchema.optional(),
   }),
 ]);
 

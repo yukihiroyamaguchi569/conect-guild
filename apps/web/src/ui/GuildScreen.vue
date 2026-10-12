@@ -5,6 +5,7 @@ import type { SnapshotLoadResult } from '../adapters/snapshot';
 import type { DemoSession } from '../app/demo';
 import { liveGuildOptions } from '../app/screenMode';
 import { useGuild } from '../app/useGuild';
+import { useMissingLabels } from '../app/useMissingLabels';
 import { useNarration } from '../app/useNarration';
 import { useSound } from '../app/useSound';
 import DemoStart from './DemoStart.vue';
@@ -13,6 +14,7 @@ import GuildCanvas from './GuildCanvas.vue';
 import KingBubble from './KingBubble.vue';
 import MessageWindow from './MessageWindow.vue';
 import AutoDemoBanner from './AutoDemoBanner.vue';
+import MissingLabelsBanner from './MissingLabelsBanner.vue';
 import PartyStatus from './PartyStatus.vue';
 import QuestBoard from './QuestBoard.vue';
 import SoundControl from './SoundControl.vue';
@@ -36,6 +38,9 @@ const emit = defineEmits<{
 const demo = props.demo;
 /** はじめる waits for a click in the demo of ?demo=1 only; the automatic one starts itself. */
 const demoWaiting = computed(() => demo !== null && !demo.auto && !demo.started.value);
+/** Department labels missing in the repository (Issue #85), read on the live screen only. */
+const missingLabels = useMissingLabels(demo === null);
+const showMissingLabels = computed(() => missingLabels.value.length > 0);
 
 const {
   state,
@@ -81,12 +86,13 @@ function onStageShown(shown: boolean): void {
 </script>
 
 <template>
-  <main class="guild" :class="{ 'guild--banner': demo?.auto }">
+  <main class="guild" :class="{ 'guild--banner': demo?.auto || showMissingLabels }">
     <AutoDemoBanner
       v-if="demo?.auto"
       class="guild__banner"
       :collector-failure="props.collectorFailure"
     />
+    <MissingLabelsBanner v-if="showMissingLabels" class="guild__banner" :missing="missingLabels" />
     <div class="stage" :class="{ 'stage--halted': state.halted }">
       <GuildCanvas
         class="stage__art"

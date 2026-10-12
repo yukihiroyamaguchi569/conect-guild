@@ -89,6 +89,8 @@ describe('runCollector loop: failures', () => {
     // tick at 60 s has nothing yet; 65 s writes.
     expect(deps.writes).toHaveLength(1);
     expect(deps.errors).toEqual([
+      // The label check at the start failed too (Issue #85); it is next tried at 10 minutes.
+      '[collector] 2026-10-12T00:00:00.000Z labels unknown: gh-failed',
       '[collector] 2026-10-12T00:00:00.000Z failed: gh-failed',
       `[collector] 2026-10-12T00:00:00.000Z ${GH_FAILED_NEXT_STEP}`,
     ]);

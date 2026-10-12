@@ -56,6 +56,11 @@ const OUTPUTS: Record<string, unknown[][]> = {
   'issues?state=all': [[ISSUE, PR_AS_ISSUE], [OLD_CLOSED_ISSUE], [NOT_PLANNED_ISSUE]],
   'pulls?state=all': [[OPEN_PR], [MERGED_PR]],
   'pulls/2/files': [['a/CLAUDE.md'], ['b.md']],
+  // Issue #85: every department label of guild.settings.ts, over two pages, among others.
+  labels: [
+    ['bug', '経理', '広報'],
+    ['企画', '総務'],
+  ],
 };
 
 export function fakeGh(

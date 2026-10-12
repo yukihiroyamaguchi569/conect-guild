@@ -43,6 +43,25 @@ describe('collectorStatusOf', () => {
     });
   });
 
+  it('carries the missing label positions only when a check found some (Issue #85)', () => {
+    expect(collectorStatusOf({ at: AT, failure: null }, null, [1, 3])).toEqual({
+      ok: true,
+      attemptedAt: '2026-10-12T00:00:00.000Z',
+      missingLabels: [1, 3],
+    });
+    expect(collectorStatusOf({ at: AT, failure: 'gh-failed' }, null, [0])).toMatchObject({
+      ok: false,
+      kind: 'gh-failed',
+      missingLabels: [0],
+    });
+    // All there, or nothing known: no key at all.
+    for (const missing of [[], null])
+      expect(collectorStatusOf({ at: AT, failure: null }, null, missing)).toEqual({
+        ok: true,
+        attemptedAt: '2026-10-12T00:00:00.000Z',
+      });
+  });
+
   it('is one line of JSON the schema accepts', () => {
     const content = statusContent(collectorStatusOf({ at: AT, failure: 'unexpected' }, null));
     expect(content).toBe(
