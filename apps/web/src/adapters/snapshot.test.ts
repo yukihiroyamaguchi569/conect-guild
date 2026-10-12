@@ -77,9 +77,17 @@ describe('loadSnapshot', () => {
     });
   });
 
-  it.each([404, 500, 503])('reports HTTP %i with its status', async (status) => {
+  it.each([400, 403, 404, 405, 500, 503])('reports HTTP %i with its status', async (status) => {
     const result = await loadSnapshot({ url: '/s.json', fetchFn: respondWith('nope', status) });
     expect(result).toEqual({ ok: false, reason: 'http', status });
+  });
+
+  it('reports a 204 as not collected yet, without reading the body (Issue #67)', async () => {
+    const response = new Response(null, { status: 204 });
+    const text = vi.spyOn(response, 'text');
+    const result = await loadSnapshot({ url: '/s.json', fetchFn: () => Promise.resolve(response) });
+    expect(result).toEqual({ ok: false, reason: 'not-collected' });
+    expect(text).not.toHaveBeenCalled();
   });
 });
 

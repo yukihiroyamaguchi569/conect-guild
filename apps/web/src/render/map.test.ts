@@ -226,8 +226,8 @@ describe('map: walkable grid', () => {
   });
 });
 
-describe('map: windows over the canvas (App.vue)', () => {
-  it('converts App.vue’s % and cqw to logical px', () => {
+describe('map: windows over the canvas (GuildScreen.vue)', () => {
+  it('converts GuildScreen.vue’s % and cqw to logical px', () => {
     const { board, party, message } = WINDOW_EXTENTS;
     // 1.6% of 576 down, then max-height 31cqw = 31 x 10.24.
     expect(board.top).toBeCloseTo(9.216);

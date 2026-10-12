@@ -38,7 +38,7 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
    npm run dev:all   # collector と開発サーバーを一緒に起動する。Ctrl-C で両方止まる
    ```
 
-   出力の行頭の `[collect]` が collector、`[web]` が開発サーバーです。どちらかが止まると、もう片方も止まります。別々に動かしたいときは、ターミナルを 2 つ使います。
+   出力の行頭の `[collect]` が collector、`[web]` が開発サーバーです。どちらかが止まると、もう片方も止まります。別々に動かしたいときは、ターミナルを 2 つ使い、`npm run collect` を先に動かします。
 
    ```bash
    npm run collect   # GitHub を 60 秒ごと、MulmoTerminal を 5 秒ごとに読む。1 回だけなら npm run collect:once
@@ -46,6 +46,8 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
    ```
 
 4. ブラウザで http://127.0.0.1:5173 を開く
+
+   collector がまだ一度も書いていないと、画面は架空のデータのデモを自動で流し、上に「デモ表示中」の帯を出します（エラーではありません）。collector の最初の収集が終われば（`npm run dev:all` なら起動から数秒）、再読み込みしなくても 5 秒ほどで自分のリポジトリの画面に変わります。
 
 部門の数は、いまは 4 つに決まっています。席・机・通路を部門の数に合わせて並べる作業は [#18](https://github.com/yukihiroyamaguchi569/conect-guild/issues/18) で進めます。4 つ以外にすると、設定の検証で止まります。
 

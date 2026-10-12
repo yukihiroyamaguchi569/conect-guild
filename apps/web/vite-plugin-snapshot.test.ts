@@ -86,10 +86,11 @@ describe('createSnapshotMiddleware: serving the file', () => {
     expect(recorded.body).toBeUndefined();
   });
 
-  it('returns 404 with no-store when the file does not exist', async () => {
+  it('returns 204 with no-store and no body when the file does not exist yet (Issue #67)', async () => {
     const read = vi.fn<ReadSnapshotFile>().mockRejectedValue(enoent());
     const { recorded } = await request('GET', '/snapshot.json', read);
-    expect(recorded.statusCode).toBe(404);
+    expect(recorded.statusCode).toBe(204);
+    expect(recorded.headers.has('content-type')).toBe(false);
     expect(recorded.headers.get('cache-control')).toBe('no-store');
     expect(recorded.body).toBeUndefined();
   });
