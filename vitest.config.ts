@@ -15,6 +15,7 @@ export default defineConfig({
       // Implementation files only; tool configs (vite/vitest/eslint) are left out.
       include: [
         'apps/web/src/**/*.{ts,vue}',
+        'apps/web/vite-plugin-settings.ts',
         'apps/web/vite-plugin-snapshot.ts',
         'packages/*/src/**/*.ts',
         'packages/collector/collector.config.ts',

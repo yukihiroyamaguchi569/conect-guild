@@ -25,8 +25,9 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    // The host stays 127.0.0.1 from vite.config.ts; never pass --host.
-    command: `npx vite --port ${String(PORT)} --strictPort`,
+    // The host stays 127.0.0.1 from vite.config.ts; never pass --host. `--mode e2e` keeps
+    // guild.settings.ts even when guild.settings.local.ts exists (vite-plugin-settings.ts).
+    command: `npx vite --port ${String(PORT)} --strictPort --mode e2e`,
     cwd: import.meta.dirname,
     url: BASE_URL,
     reuseExistingServer: false,
