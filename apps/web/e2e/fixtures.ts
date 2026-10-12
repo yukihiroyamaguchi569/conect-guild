@@ -1,5 +1,5 @@
 import { test as base, expect, type Locator, type Page } from '@playwright/test';
-import type { Snapshot } from '@conect-guild/snapshot';
+import type { CollectorStatus, Snapshot } from '@conect-guild/snapshot';
 import { NOW, sampleSnapshot } from './sampleSnapshot.ts';
 
 /** localStorage key of the diff baseline (app/guildStore.ts). */
@@ -15,11 +15,18 @@ export interface SnapshotServer {
   failWith(status: number): void;
 }
 
+export interface CollectorStatusServer {
+  /** What /collector-status.json returns from the next request on; null: 204 (never ran). */
+  report(status: CollectorStatus | null): void;
+}
+
 interface GuildFixtures {
   /** Console errors and uncaught page errors; every test ends by checking there are none. */
   pageErrors: string[];
   /** Answers every /snapshot.json request of the test; starts with the sample. */
   snapshotServer: SnapshotServer;
+  /** Answers every /collector-status.json request (Issue #74); starts with 204 (not run). */
+  collectorStatus: CollectorStatusServer;
 }
 
 /**
@@ -71,6 +78,24 @@ export const test = base.extend<GuildFixtures>({
       });
       expect(responses.length).toBeGreaterThan(0);
       expect(responses.filter((served) => !served)).toEqual([]);
+    },
+    { auto: true },
+  ],
+  /** Like snapshotServer: the dev server's real apps/web/.data is never read. */
+  collectorStatus: [
+    async ({ context }, use) => {
+      let current: CollectorStatus | null = null;
+      await context.route('**/collector-status.json', (route) => {
+        const headers = { 'Cache-Control': 'no-store', [SERVED_HEADER]: '1' };
+        return current === null
+          ? route.fulfill({ status: 204, body: '', headers })
+          : route.fulfill({ json: current, headers });
+      });
+      await use({
+        report: (status) => {
+          current = status;
+        },
+      });
     },
     { auto: true },
   ],
