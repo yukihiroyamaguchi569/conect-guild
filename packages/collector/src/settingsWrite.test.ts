@@ -365,17 +365,22 @@ describe('runSettingsWrite: messages that repeat a string from the input', () =>
     expect(f.output()).toContain('label "x\\n  - 偽の行" twice');
     expect(f.output()).not.toContain('\n  - 偽の行');
   });
+});
 
+describe('runSettingsWrite: bidi and other format characters', () => {
   it('escapes C1 controls and bidi overrides in the JSON too, which still reads back', async () => {
     const data = input();
     const first = data.departments[0];
     if (first === undefined) throw new Error('fixture');
-    first.label = 'a\u009b\u202eb';
+    first.label = 'a\u009b\u202e\u200f\u061c\u{e0001}b';
     const f = fake({ stdin: JSON.stringify(data) });
     await runSettingsWrite(['--dry-run', '--json'], f.deps);
     expect(f.output()).not.toContain('\u009b');
-    expect(f.output()).not.toContain('\u202e');
-    expect(JSON.parse(f.output())).toHaveProperty('departments.0.label', 'a\u009b\u202eb');
+    for (const char of ['\u202e', '\u200f', '\u061c']) expect(f.output()).not.toContain(char);
+    expect(JSON.parse(f.output())).toHaveProperty(
+      'departments.0.label',
+      'a\u009b\u202e\u200f\u061c\u{e0001}b',
+    );
   });
 
   it('keeps an unknown key with a line break on one line, in the input or the local file', async () => {
@@ -388,6 +393,22 @@ describe('runSettingsWrite: messages that repeat a string from the input', () =>
     for (const f of [fromInput, fromLocal]) {
       expect(f.output()).toContain('x\\u000a  - エラーはありません');
       expect(f.output()).not.toContain(forged);
+    }
+  });
+
+  it('escapes bidi marks in the table and in a schema error', async () => {
+    const data = input();
+    const [first, second] = data.departments;
+    if (first === undefined || second === undefined) throw new Error('fixture');
+    first.label = 'a\u200e\u200f\u061cb';
+    const table = fake({ stdin: JSON.stringify(data) });
+    await runSettingsWrite(['--dry-run'], table.deps);
+    expect(table.output()).toContain('"a\\u200e\\u200f\\u061cb"');
+    second.label = first.label;
+    const error = fake({ stdin: JSON.stringify(data) });
+    expect(await runSettingsWrite(['--dry-run'], error.deps)).toBe(1);
+    for (const f of [table, error]) {
+      for (const char of ['\u200e', '\u200f', '\u061c']) expect(f.output()).not.toContain(char);
     }
   });
 

@@ -82,8 +82,11 @@ describe('describeIssues', () => {
   });
 
   it('escapes a line break or control character from the file, keeping one line per part', () => {
-    const text = issuesOf({ ...settings(), 'x\n✖ ok\u001b\u009b\u202e\u2066': 1 });
-    expect(text).toContain('x\\u000a✖ ok\\u001b\\u009b\\u202e\\u2066');
+    const key = 'x\n✖ ok\u001b\u009b\u202e\u2066\u200e\u200f\u061c\u2028\u{e0001}';
+    const text = issuesOf({ ...settings(), [key]: 1 });
+    expect(text).toContain(
+      'x\\u000a✖ ok\\u001b\\u009b\\u202e\\u2066\\u200e\\u200f\\u061c\\u2028\\udb40\\udc01',
+    );
     expect(text.split('\n')).toHaveLength(1);
   });
 });

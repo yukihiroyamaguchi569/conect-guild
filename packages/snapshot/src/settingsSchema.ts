@@ -114,15 +114,11 @@ export const guildSettingsSchema = z
   });
 
 /**
- * Code point ranges a terminal could act on: the C0 controls (line breaks included), DEL and the
- * C1 controls, the line and paragraph separators, and the bidi overrides and isolates.
+ * What a terminal could act on, by Unicode category: the controls (Cc: C0 with the line breaks, DEL,
+ * C1), the format characters (Cf: every bidi mark, override and isolate, zero-width characters)
+ * and the line and paragraph separators (Zl, Zp). One character at a time (no `g` flag).
  */
-const TERMINAL_CONTROL_RANGES: readonly (readonly [number, number])[] = [
-  [0x00, 0x1f],
-  [0x7f, 0x9f],
-  [0x2028, 0x202e],
-  [0x2066, 0x2069],
-];
+const TERMINAL_CONTROL = /^[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]$/u;
 
 /**
  * Every character a terminal could act on as a `\\uXXXX` escape, so text from a file or an input
@@ -131,9 +127,12 @@ const TERMINAL_CONTROL_RANGES: readonly (readonly [number, number])[] = [
  */
 export function escapeForTerminal(text: string): string {
   return Array.from(text, (char) => {
-    const code = char.charCodeAt(0);
-    const control = TERMINAL_CONTROL_RANGES.some(([low, high]) => code >= low && code <= high);
-    return control ? `\\u${code.toString(16).padStart(4, '0')}` : char;
+    if (!TERMINAL_CONTROL.test(char)) return char;
+    // Each UTF-16 unit (a surrogate pair for a character past U+FFFF), as JSON writes them.
+    return Array.from(
+      { length: char.length },
+      (_, i) => `\\u${char.charCodeAt(i).toString(16).padStart(4, '0')}`,
+    ).join('');
   }).join('');
 }
 

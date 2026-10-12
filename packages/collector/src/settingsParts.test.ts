@@ -101,7 +101,7 @@ describe('claudeMdMentions', () => {
 
 describe('quote', () => {
   it('escapes controls but keeps line breaks in a message', () => {
-    expect(escapeControls('a\nb\u001b\u009b\u202e')).toBe('a\nb\\u001b\\u009b\\u202e');
+    expect(escapeControls('a\nb\u001b\u009b\u202e\u200f')).toBe('a\nb\\u001b\\u009b\\u202e\\u200f');
   });
 
   it('shows controls, quotes, line separators and bidi overrides as escapes', () => {
