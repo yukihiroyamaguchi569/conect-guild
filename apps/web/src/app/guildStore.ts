@@ -100,8 +100,9 @@ export interface GuildStoreOptions {
    */
   readonly firstResult?: SnapshotLoadResult;
   /**
-   * Drops the stored baseline, so the first snapshot becomes the new one without events (Issue #67:
-   * after the automatic demo, an old baseline would bring a burst of events at once).
+   * The first snapshot replaces the stored baseline without a diff, so no events (Issue #67: after
+   * the automatic demo, an old baseline would bring a burst of them). Failures before it leave the
+   * stored baseline as it is.
    */
   readonly freshBaseline?: boolean;
 }
@@ -135,11 +136,12 @@ interface SyncOutcome {
  * Diffs against the stored baseline and stores the new one (docs/DESIGN.md 4.4).
  * Without a working localStorage there are no events, so nothing is replayed on every fetch.
  */
-function syncBaseline(storage: KeyValueStore, snapshot: Snapshot): SyncOutcome {
+function syncBaseline(storage: KeyValueStore, snapshot: Snapshot, fresh: boolean): SyncOutcome {
   const stored = storage.read(BASELINE_STORAGE_KEY, z.unknown());
   if (!stored.ok && stored.reason === 'unavailable')
     return { effectsAvailable: false, entries: [] };
-  const diff = diffSnapshot(stored.ok ? parseBaseline(stored.value) : null, snapshot);
+  // A fresh start counts as the first fetch: no events, only the new baseline.
+  const diff = diffSnapshot(stored.ok && !fresh ? parseBaseline(stored.value) : null, snapshot);
   if (diff.baselineUpdate.action === 'replace') {
     const written = storage.write(BASELINE_STORAGE_KEY, diff.baselineUpdate.baseline);
     if (!written.ok) return { effectsAvailable: false, entries: [] };
@@ -185,8 +187,9 @@ function applyResult(
   state: GuildState,
   storage: KeyValueStore,
   result: SnapshotLoadResult,
-  now: number,
+  at: { readonly now: number; readonly fresh: { pending: boolean } },
 ): readonly MessageEntry[] {
+  const { now, fresh } = at;
   if (!result.ok) {
     state.failure = result.reason;
     // Once halted, only a snapshot of the expected version and repository resumes the screen.
@@ -200,7 +203,8 @@ function applyResult(
   state.halted = false;
   state.haltReason = null;
   noteSessions(state, result, now);
-  const outcome = syncBaseline(storage, result.snapshot);
+  const outcome = syncBaseline(storage, result.snapshot, fresh.pending);
+  fresh.pending = false;
   state.effectsAvailable = outcome.effectsAvailable;
   return outcome.entries;
 }
@@ -242,15 +246,8 @@ function handedFirst(
   };
 }
 
-/**
- * The store's loads. After the automatic demo (Issue #67) the read that ended it comes first, and
- * the stored baseline is dropped, so the first snapshot counts as the first fetch (no events).
- */
-function loaderOf(
-  options: GuildStoreOptions,
-  storage: KeyValueStore,
-): () => Promise<SnapshotLoadResult> {
-  if (options.freshBaseline === true) storage.remove(BASELINE_STORAGE_KEY);
+/** The store's loads; after the automatic demo (Issue #67) the read that ended it comes first. */
+function loaderOf(options: GuildStoreOptions): () => Promise<SnapshotLoadResult> {
   return handedFirst(
     options.loadSnapshot ?? (() => loadSnapshot({ expectedRepo: defaultExpectedRepo() })),
     options.firstResult,
@@ -259,7 +256,9 @@ function loaderOf(
 
 export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
   const storage = options.storage ?? createKeyValueStore();
-  const load = loaderOf(options, storage);
+  const load = loaderOf(options);
+  // Until the first snapshot is applied (Issue #67).
+  const fresh = { pending: options.freshBaseline === true };
   const now = options.now ?? Date.now;
   const scheduler = options.scheduler ?? globalScheduler;
   const state = shallowReactive<GuildState>(initialState());
@@ -277,7 +276,7 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
       const result = await load();
       if (started !== generation) return;
       state.checkedAt = now();
-      const entries = applyResult(state, storage, result, now());
+      const entries = applyResult(state, storage, result, { now: now(), fresh });
       // While halted the window is hidden: hold the messages (and their scenes) until it is back.
       if (state.halted) queue.pause();
       else queue.resume();

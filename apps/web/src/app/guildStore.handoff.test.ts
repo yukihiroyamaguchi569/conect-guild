@@ -113,6 +113,38 @@ describe('createGuildStore: a fresh baseline after the automatic demo', () => {
   });
 });
 
+describe('createGuildStore: an error ends the automatic demo', () => {
+  const serverError: SnapshotLoadResult = { ok: false, reason: 'http', status: 500 };
+  const afterDemo = { firstResult: serverError, freshBaseline: true };
+
+  it('keeps the stored baseline through the error and a 204 back to the demo', async () => {
+    const storage = await storedBaseline();
+    const before = storage.items.get(BASELINE_STORAGE_KEY);
+    const { store } = storeOn(storage, [{ ok: false, reason: 'not-collected' }], afterDemo);
+    store.start();
+    await settle();
+    expect(store.state.failure).toBe('http');
+    await nextTick();
+    expect(store.state.failure).toBe('not-collected');
+    expect(storage.items.get(BASELINE_STORAGE_KEY)).toBe(before);
+    store.stop();
+  });
+
+  it('replaces it with the first good snapshot after the error, without events', async () => {
+    const storage = await storedBaseline();
+    const before = storage.items.get(BASELINE_STORAGE_KEY);
+    const { store } = storeOn(storage, [ok(withClear)], afterDemo);
+    store.start();
+    await settle();
+    expect(storage.items.get(BASELINE_STORAGE_KEY)).toBe(before);
+    await nextTick();
+    expect(store.state.snapshot).toEqual(withClear);
+    expect(store.state.messages).toEqual([]);
+    expect(storage.items.get(BASELINE_STORAGE_KEY)).not.toBe(before);
+    store.stop();
+  });
+});
+
 describe('createGuildStore: the handed first result', () => {
   it('applies it first, without loading, so its error shows', async () => {
     const { store, loader } = storeOn(memoryStorage(), [{ ok: false, reason: 'not-collected' }], {
