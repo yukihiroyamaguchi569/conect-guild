@@ -54,6 +54,12 @@ export const COLLECTOR_CONFIG = {
   // Branch name prefix → department, for the history (the branch names themselves are not kept).
   branchPrefixes: GUILD_SETTINGS.branchPrefixes,
   intervalMs: 60_000,
+  // Issue #85: the check that each department label exists in the repository, at the start and
+  // then this often, apart from the fetch above.
+  labels: {
+    intervalMs: 10 * 60_000,
+    departments: GUILD_SETTINGS.departments,
+  },
   // Outside apps/web/public so real data never enters a build (docs/DESIGN.md 5).
   snapshotPath: resolve(import.meta.dirname, '../../apps/web/.data/snapshot.json'),
   // How the last try went (Issue #74): the time, ok or not, and the error kind only.

@@ -109,3 +109,32 @@ test('a failure from long ago (the collector stopped) keeps the banner as before
   await expect(banner).toContainText(DEMO_BANNER);
   expect(logs.warnings).toEqual([]);
 });
+
+// Issue #85: on the live screen, the department labels the collector found missing in the
+// repository show on a banner of their own, and go once the labels are there.
+test('missing department labels show on the live banner until they are fixed', async ({
+  page,
+  pageErrors,
+  collectorStatus,
+}) => {
+  await page.clock.setSystemTime(NOW);
+  const attemptedAt = new Date(NOW).toISOString();
+  collectorStatus.report({ ok: true, attemptedAt, missingLabels: [1] });
+  await page.goto('/');
+  await expect(page.getByText('#101')).toBeVisible();
+
+  const banner = page.getByRole('status', { name: '部門のラベルの食い違い' });
+  await expect(banner).toContainText(
+    '部門のラベルがリポジトリにありません: 広報（departments[1]）。この部門の Issue は受付に置かれます',
+  );
+  await expect(banner.getByRole('link', { name: '直し方（docs/setup.md）' })).toHaveAttribute(
+    'href',
+    /docs\/setup\.md#/,
+  );
+  await expect(page.getByRole('status', { name: 'デモ表示中' })).toHaveCount(0);
+
+  // The collector's next check finds every label: the banner goes on the next read.
+  collectorStatus.report({ ok: true, attemptedAt });
+  await expect(banner).toHaveCount(0, { timeout: REFRESH_TIMEOUT });
+  expect(pageErrors).toEqual([]);
+});

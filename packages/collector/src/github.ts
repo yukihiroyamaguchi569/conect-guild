@@ -8,6 +8,7 @@ const ISSUE_PROJECTION =
   '{number, title, state, state_reason, labels: [.labels[].name], created_at, updated_at, closed_at, is_pull_request: has("pull_request")}';
 const PR_PROJECTION = '{number, title, body, state, merged_at, closed_at, head_ref: .head.ref}';
 const FILE_PROJECTION = '.filename';
+const LABEL_PROJECTION = '.name';
 
 const rawIssueSchema = z.strictObject({
   number: z.number().int().positive(),
@@ -83,4 +84,10 @@ export async function fetchChangedFiles(
     FILE_PROJECTION,
   );
   return parseOrThrow(z.array(z.string()), files);
+}
+
+/** The names of the repository's labels (Issue #85); nothing else of a label is read. */
+export async function fetchLabelNames(gh: GhRunner, repo: string): Promise<string[]> {
+  const names = await ghApiProjected(gh, `repos/${repo}/labels?${PER_PAGE}`, LABEL_PROJECTION);
+  return parseOrThrow(z.array(z.string()), names);
 }
