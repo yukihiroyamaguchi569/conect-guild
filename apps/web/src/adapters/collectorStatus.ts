@@ -28,12 +28,16 @@ export function defaultCollectorStatusUrl(): string {
   return `${import.meta.env.BASE_URL}collector-status.json`;
 }
 
-async function readStatus(url: string, fetchFn: FetchFn, signal: AbortSignal) {
+async function readStatus(
+  url: string,
+  fetchFn: FetchFn,
+  signal: AbortSignal,
+): Promise<CollectorStatusRead> {
   const response = await fetchFn(url, { cache: 'no-store', signal });
-  if (response.status === 204) return { kind: 'absent' } as const;
+  if (response.status === 204) return { kind: 'absent' };
   if (!response.ok) return UNREADABLE;
   const parsed = collectorStatusSchema.safeParse(JSON.parse(await response.text()));
-  return parsed.success ? ({ kind: 'status', status: parsed.data } as const) : UNREADABLE;
+  return parsed.success ? { kind: 'status', status: parsed.data } : UNREADABLE;
 }
 
 /** Fetches the collector's status with no-store and a timeout, then validates it. */
