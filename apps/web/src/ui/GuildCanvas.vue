@@ -198,25 +198,27 @@ watch(
   },
 );
 
+/** Takes the message now in the window (once per message: receiveCue) and plays its scene. */
+function takeCue(): void {
+  cues = receiveCue(cues, props.cue);
+  playCues();
+}
+
 // Not kept for later: an order seen while the pictures load or the canvas is out of sight is past.
+// The message of the same fetch is taken first, whichever watcher runs first: a scene that needs
+// かなめ is booked before the call, so she answers where she is (Issue #87).
 watch(
   () => props.summons?.id,
   () => {
+    takeCue();
     if (props.summons === null || loop === null) return;
     const homeIn = loop.summon(props.summons.members);
     if (Object.keys(homeIn).length > 0) emit('away', homeIn);
   },
 );
 
-watch(
-  () => props.cue?.id,
-  () => {
-    cues = receiveCue(cues, props.cue);
-    playCues();
-  },
-  // The message in the window at mount counts too.
-  { immediate: true },
-);
+// The message in the window at mount counts too.
+watch(() => props.cue?.id, takeCue, { immediate: true });
 </script>
 
 <template>
