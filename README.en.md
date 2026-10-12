@@ -41,9 +41,9 @@ npm ci --ignore-scripts
 npm run dev
 ```
 
-Open http://127.0.0.1:5173/?demo=1 (for a daytime room, `?demo=1&hour=12`) and press 「▶ はじめる」 (Start). The button is disabled in a narrow window, so widen it if needed. No collector or GitHub access is needed.
+Just open http://127.0.0.1:5173 and a demo with made-up quests plays by itself (while the collector has not collected anything; press 「♪ 音を出す」 for sound). No collector or GitHub access is needed.
 
-Opened without `?demo=1`, the page shows a guide 「まだ データを あつめていません」 (nothing collected yet), since the collector has not run; its link opens the demo.
+To watch or film it with sound from the start, open http://127.0.0.1:5173/?demo=1 (for a daytime room, `?demo=1&hour=12`) and press 「▶ はじめる」 (Start). The button is disabled in a narrow window, so widen it if needed.
 
 ## Learn more
 
