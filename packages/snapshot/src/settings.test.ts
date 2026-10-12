@@ -4,6 +4,7 @@ import {
   GUILD_SETTINGS,
   checkGuildSettings,
   departmentFromBranch,
+  describeIssues,
   guildSettingsSchema,
   isSessionDir,
   type GuildSettings,
@@ -61,6 +62,29 @@ describe('checkGuildSettings', () => {
     expect(() => checkGuildSettings({}, 'guild.settings.local.json')).toThrow(
       /^guild\.settings\.local\.json is invalid/,
     );
+  });
+});
+
+describe('describeIssues', () => {
+  function issuesOf(input: unknown): string {
+    const result = guildSettingsSchema.safeParse(input);
+    if (result.success) throw new Error('expected issues');
+    return describeIssues(result.error);
+  }
+
+  it('writes each issue as a message line and a path line', () => {
+    const departmentsWithBadDir = departments().map((d, i) =>
+      i === 2 ? { ...d, sessionDir: 'relative' } : d,
+    );
+    expect(issuesOf({ ...settings(), departments: departmentsWithBadDir })).toBe(
+      '✖ ~, ~/... or /... without a trailing / or surrounding spaces\n  → at departments[2].sessionDir',
+    );
+  });
+
+  it('escapes a line break or control character from the file, keeping one line per part', () => {
+    const text = issuesOf({ ...settings(), 'x\n✖ ok\u001b': 1 });
+    expect(text).toContain('x\\u000a✖ ok\\u001b');
+    expect(text.split('\n')).toHaveLength(1);
   });
 });
 

@@ -113,6 +113,39 @@ export const guildSettingsSchema = z
     });
   });
 
+/** A control character or line break as a `\\uXXXX` escape, so a message stays on its line. */
+function escapeControlCharacters(text: string): string {
+  return Array.from(text, (char) => {
+    const code = char.charCodeAt(0);
+    const control = code < 0x20 || (code >= 0x7f && code <= 0x9f);
+    return control ? `\\u${code.toString(16).padStart(4, '0')}` : char;
+  }).join('');
+}
+
+function pathText(path: readonly PropertyKey[]): string {
+  return path
+    .map((key, i) => {
+      if (typeof key === 'number') return `[${String(key)}]`;
+      return i === 0 ? String(key) : `.${String(key)}`;
+    })
+    .join('');
+}
+
+/**
+ * The issues in the shape of z.prettifyError (`✖ message` and `→ at path`), but with each message
+ * and path kept on its own line: a value or key from the file (an unknown key with a line break,
+ * say) is escaped, so it can never add a line that looks like another result.
+ */
+export function describeIssues(error: z.ZodError): string {
+  return error.issues
+    .map((issue) => {
+      const message = `✖ ${escapeControlCharacters(issue.message)}`;
+      if (issue.path.length === 0) return message;
+      return `${message}\n  → at ${escapeControlCharacters(pathText(issue.path))}`;
+    })
+    .join('\n');
+}
+
 /** The settings once checked. */
 export type GuildSettings = z.output<typeof guildSettingsSchema>;
 
@@ -126,7 +159,7 @@ export function checkGuildSettings(
 ): GuildSettings {
   const result = guildSettingsSchema.safeParse(raw);
   if (!result.success) {
-    throw new Error(`${source} is invalid:\n${z.prettifyError(result.error)}`);
+    throw new Error(`${source} is invalid:\n${describeIssues(result.error)}`);
   }
   return result.data;
 }

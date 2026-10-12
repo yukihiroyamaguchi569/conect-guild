@@ -378,6 +378,19 @@ describe('runSettingsWrite: messages that repeat a string from the input', () =>
     expect(JSON.parse(f.output())).toHaveProperty('departments.0.label', 'a\u009b\u202eb');
   });
 
+  it('keeps an unknown key with a line break on one line, in the input or the local file', async () => {
+    const forged = 'x\n  - エラーはありません';
+    const fromInput = fake({ stdin: JSON.stringify({ ...input(), [forged]: 1 }) });
+    expect(await runSettingsWrite(['--dry-run'], fromInput.deps)).toBe(1);
+    const fromLocal = fake();
+    fromLocal.files.set(LOCAL, JSON.stringify({ ...JSON.parse(DEFAULT_TEXT), [forged]: 1 }));
+    expect(await runSettingsWrite(['--dry-run'], fromLocal.deps)).toBe(1);
+    for (const f of [fromInput, fromLocal]) {
+      expect(f.output()).toContain('x\\u000a  - エラーはありません');
+      expect(f.output()).not.toContain(forged);
+    }
+  });
+
   it('shows a label with a line break on one line in the table', async () => {
     const data = input();
     const first = data.departments[0];

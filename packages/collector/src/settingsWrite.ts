@@ -1,12 +1,15 @@
 import { join } from 'node:path';
-import { z } from 'zod';
 import {
   LOCAL_SETTINGS_FILE,
   loadSettingsFile,
   whereUnreadable,
   type LoadedSettings,
 } from '@conect-guild/snapshot/settingsFile';
-import { guildSettingsSchema, type GuildSettings } from '@conect-guild/snapshot/settingsSchema';
+import {
+  describeIssues,
+  guildSettingsSchema,
+  type GuildSettings,
+} from '@conect-guild/snapshot/settingsSchema';
 import type { GhRunner } from './gh.ts';
 import { checkFolders, checkRepoLabels, type Findings } from './settingsChecks.ts';
 import {
@@ -87,7 +90,7 @@ async function readInput(deps: SettingsWriteDeps): Promise<Step<SettingsInput>> 
   }
   const result = settingsInputSchema.safeParse(raw);
   if (result.success) return { ok: true, value: result.data };
-  return { ok: false, error: `入力の形が違います:\n${z.prettifyError(result.error)}` };
+  return { ok: false, error: `入力の形が違います:\n${describeIssues(result.error)}` };
 }
 
 function emptyReport(options: WriteOptions, base: string | null, error: string): WriteReport {
@@ -133,7 +136,7 @@ async function checkMerged(
 ): Promise<Checked> {
   const checked = guildSettingsSchema.safeParse(merged.raw);
   if (!checked.success) {
-    const error = `設定の検証で止まりました:\n${z.prettifyError(checked.error)}`;
+    const error = `設定の検証で止まりました:\n${describeIssues(checked.error)}`;
     return { settings: null, findings: { ...NO_FINDINGS, errors: [error] }, labelWarnings: [] };
   }
   const prefixes = input.departments.map((d) => d.prefix);
