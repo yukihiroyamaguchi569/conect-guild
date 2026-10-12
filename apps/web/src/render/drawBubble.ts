@@ -104,7 +104,7 @@ function spikes(ctx: BubbleContext, shape: Shape, paper: string): void {
   ctx.fill();
 }
 
-/** A whisper's border: every other pixel of its straight parts let through (paper over it). */
+/** A whisper's border: every other pixel of its straight parts and of the tail let through. */
 function dots(ctx: BubbleContext, shape: Shape): void {
   const { x, y, w, h } = shape;
   const [first] = tailSpans(shape);
@@ -118,6 +118,14 @@ function dots(ctx: BubbleContext, shape: Shape): void {
   for (let py = y + 3; py < y + h - 3; py += 2) {
     ctx.rect(x, py, 1, 1);
     ctx.rect(x + w - 1, py, 1, 1);
+  }
+  // The tail's border too: every other row under the box, the 2 px tip left whole.
+  const rows = tailSpans(shape);
+  const top = y + h - shape.border;
+  for (let j = shape.border + 1; j < rows.length - 1; j += 2) {
+    const [l, r] = rows[j] ?? [x, x];
+    ctx.rect(l, top + j, 1, 1);
+    ctx.rect(r, top + j, 1, 1);
   }
   ctx.fill();
 }

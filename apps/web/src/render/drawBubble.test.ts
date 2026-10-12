@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bubbleShape, shapeExtent, type Spot, type Voice } from './bubbleShape';
+import { bubbleShape, shapeExtent, tailSpans, type Spot, type Voice } from './bubbleShape';
 import { BUBBLE_COLORS, drawBubble, type BubbleContext } from './drawBubble';
 import { BUBBLE, DETAIL_SCALE, OVERHEAD_OFFSET } from './metrics';
 
@@ -102,6 +102,24 @@ describe('drawBubble', () => {
     expect(seen.rects.at(-1)).toBeGreaterThan(10);
     expect(seen.texts[0]?.color).toBe(whisperInk);
   });
+
+  it.each(['right', 'left', 'beside-right', 'beside-left'] as const)(
+    'whispers at %s: the tail’s border dotted too, every other row, its tip whole',
+    (spot) => {
+      const seen = draw('whisper', 'ゴニョゴニョ', spot);
+      const shape = bubbleShape('whisper', 6, spot);
+      const rows = tailSpans(shape);
+      const top = shape.y + shape.h - shape.border;
+      const dots = new Set(seen.boxes.filter(([, , w, h]) => w === 1 && h === 1).map(String));
+      const at = (px: number, j: number) => dots.has(String([px, top + j, 1, 1]));
+      rows.forEach(([l, r], j) => {
+        // Under the box (j > 0), every other row, but never the tip.
+        const dotted = j > 0 && j % 2 === 0 && j < rows.length - 1;
+        expect([at(l, j), at(r, j)]).toEqual([dotted, dotted]);
+      });
+      expect(rows.some((_, j) => j > 0 && j % 2 === 0 && j < rows.length - 1)).toBe(true);
+    },
+  );
 
   it('draws a waiting sign in the larger glyph font', () => {
     const seen = draw('glyph', '?');
