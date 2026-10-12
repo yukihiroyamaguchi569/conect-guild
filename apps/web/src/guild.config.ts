@@ -1,6 +1,6 @@
 /**
  * Guild settings for the web app: the team's values come from the repository root's
- * guild.settings.ts (validated when it is imported); the seats and the time windows the domain
+ * guild.settings.json (validated when it is imported); the seats and the time windows the domain
  * uses stay here.
  */
 import { z } from 'zod';
@@ -76,6 +76,16 @@ export const MEMBERS: Readonly<Record<MemberId, MemberConfig>> = {
 export const DEPARTMENT_MEMBER: Readonly<Record<DepartmentLabel, MemberId>> = z
   .record(departmentLabelSchema, memberIdSchema)
   .parse(Object.fromEntries(GUILD_SETTINGS.departments.map((d) => [d.label, d.member])));
+
+/**
+ * The member who works a department. Labels come from the settings, so they are plain strings to
+ * the type checker; every label has a member (checked above), and any other text is a bug.
+ */
+export function departmentMember(label: DepartmentLabel): MemberId {
+  const member = DEPARTMENT_MEMBER[label];
+  if (member === undefined) throw new Error(`no member for department ${label}`);
+  return member;
+}
 
 /**
  * Branch name prefix → department, used only when a PR links no labelled Issue.

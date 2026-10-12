@@ -3,6 +3,7 @@ import {
   BRANCH_PREFIX_RULES,
   DEPARTMENT_LABELS,
   DEPARTMENT_MEMBER,
+  departmentMember,
   DONE_WINDOW_MS,
   EVENT_GAP_LIMIT_MS,
   MEMBERS,
@@ -32,7 +33,7 @@ describe('guild.config', () => {
 
   it('maps each department label to the member whose role it is', () => {
     for (const label of DEPARTMENT_LABELS) {
-      expect(MEMBERS[DEPARTMENT_MEMBER[label]].role).toBe(label);
+      expect(MEMBERS[departmentMember(label)].role).toBe(label);
     }
   });
 
@@ -55,9 +56,9 @@ describe('guild.config', () => {
   });
 });
 
-describe('guild.config from guild.settings.ts', () => {
-  it('keeps the literal types of the labels and ids', () => {
-    expectTypeOf<DepartmentLabel>().toEqualTypeOf<'経理' | '広報' | '企画' | '総務'>();
+describe('guild.config from guild.settings.json', () => {
+  it('keeps the literal types of the ids; the labels are strings checked when read', () => {
+    expectTypeOf<DepartmentLabel>().toEqualTypeOf<string>();
     expectTypeOf<MemberId>().toEqualTypeOf<
       'kaname' | 'minori' | 'hibiki' | 'hirame' | 'sasae' | 'yukihiro'
     >();
@@ -74,6 +75,10 @@ describe('guild.config from guild.settings.ts', () => {
       sasae: ['#9c6b3f', { col: 21, row: 10 }],
       yukihiro: ['#8e44ad', { col: 16, row: 3 }],
     });
+  });
+
+  it('stops at a label the settings do not have', () => {
+    expect(() => departmentMember('営業')).toThrow(/no member for department/);
   });
 
   it('maps the departments to the same members as before', () => {

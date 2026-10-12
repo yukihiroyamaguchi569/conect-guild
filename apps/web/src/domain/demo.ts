@@ -97,8 +97,9 @@ export function laneStatesAt(
 
 function departmentAt(index: number): DepartmentLabel {
   const label = DEPARTMENT_LABELS[index];
-  // guild.settings.ts is checked to have exactly four departments (packages/snapshot/src/settings.ts).
-  if (label === undefined) throw new Error(`no department #${String(index)} in guild.settings.ts`);
+  // guild.settings.json is checked to have exactly four departments (packages/snapshot/src/settings.ts).
+  if (label === undefined)
+    throw new Error(`no department #${String(index)} in guild.settings.json`);
   return label;
 }
 
@@ -133,7 +134,7 @@ function titlesOf(department: DepartmentLabel | null, loop: number): DemoQuestTi
   return titles ?? { issue: '架空のクエスト', pr: '架空の成果' };
 }
 
-/** A path that the first rule-change rule of guild.settings.ts matches (承認まち). */
+/** A path that the first rule-change rule of guild.settings.json matches (承認まち). */
 export function ruleChangeFile(rules: readonly RuleChangePath[] = RULE_CHANGE_PATHS): string {
   const rule = rules[0];
   if (rule === undefined) return 'CLAUDE.md';

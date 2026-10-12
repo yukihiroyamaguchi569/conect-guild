@@ -22,7 +22,7 @@ export function redirectModule(from: string, to: string): ResolveHookSync {
 
 /**
  * Makes the settings module (packages/snapshot/src/settings.ts) read `file` in place of
- * guild.settings.ts. Must run before anything imports the settings: the module graph is resolved
+ * guild.settings.json. Must run before anything imports the settings: the module graph is resolved
  * when it is first imported, so the collector imports the rest of itself after this.
  */
 export function useSettingsFile(file: SettingsFile, root: string): void {

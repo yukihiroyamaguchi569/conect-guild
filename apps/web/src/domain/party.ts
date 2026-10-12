@@ -3,7 +3,7 @@ import { departmentFromBranch as departmentFromBranchIn } from '@conect-guild/sn
 import {
   BRANCH_PREFIX_RULES,
   DEPARTMENT_LABELS,
-  DEPARTMENT_MEMBER,
+  departmentMember,
   DONE_WINDOW_MS,
   MEMBERS,
   RULE_CHANGE_PATHS,
@@ -76,7 +76,7 @@ function matchesRule(path: string, rule: RuleChangePath): boolean {
 
 /**
  * True for files whose change needs the president's merge. Plain string comparisons only, no glob
- * (`ruleChangePaths` in guild.settings.ts; by default the root CLAUDE.md, any `<dir>/CLAUDE.md`,
+ * (`ruleChangePaths` in guild.settings.json; by default the root CLAUDE.md, any `<dir>/CLAUDE.md`,
  * or anything under the root `.claude/agents/`).
  */
 export function isRuleChangePath(
@@ -202,10 +202,10 @@ export function deriveMemberStatuses(
   const unassigned = countUnassigned(snapshot, index);
   return DEPARTMENT_LABELS.map((department) => {
     const load = loads.get(department) ?? emptyWorkload();
-    const state = stateOf(load, live[DEPARTMENT_MEMBER[department]]);
+    const state = stateOf(load, live[departmentMember(department)]);
     return {
       department,
-      memberId: DEPARTMENT_MEMBER[department],
+      memberId: departmentMember(department),
       state,
       reason: state === 'idle' ? idleReason(load, unassigned) : null,
     };

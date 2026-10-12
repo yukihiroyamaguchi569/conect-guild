@@ -2,7 +2,7 @@ import type { Snapshot } from '@conect-guild/snapshot';
 import type { SnapshotLoadFailure } from '../adapters/snapshot';
 import {
   DEPARTMENT_LABELS,
-  DEPARTMENT_MEMBER,
+  departmentMember,
   MEMBERS,
   type MemberConfig,
   type MemberId,
@@ -59,7 +59,7 @@ export function buildBoard(snapshot: SnapshotLists): BoardGroup[] {
     quests: open.filter((quest) => quest.department === null),
   };
   const departments = DEPARTMENT_LABELS.map((department): BoardGroup => {
-    const member = MEMBERS[DEPARTMENT_MEMBER[department]];
+    const member = MEMBERS[departmentMember(department)];
     return {
       key: `department:${department}`,
       label: `${member.name}（${department}）`,
@@ -203,7 +203,7 @@ export function buildParty(
       state: status.state,
       stateLabel: STATE_LABELS[status.state],
       tooltip: memberTooltip(status.state, status.reason),
-      rewards: rewards[status.department],
+      rewards: rewards[status.department] ?? 0,
     }),
   );
   const levels = buildPartyLevels(snapshot);

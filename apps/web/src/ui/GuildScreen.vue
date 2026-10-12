@@ -113,8 +113,8 @@ function onStageShown(shown: boolean): void {
         <template v-if="state.haltReason === 'repo-mismatch'">
           <h2 class="rpg-window__title">収集の対象と設定が違います</h2>
           <p>
-            snapshot.json のリポジトリが設定（guild.settings.local.ts があればそちら、無ければ
-            guild.settings.ts）の repo と違うため、表示を止めています。collector
+            snapshot.json のリポジトリが設定（guild.settings.local.json があればそちら、無ければ
+            guild.settings.json）の repo と違うため、表示を止めています。collector
             を起動し直して、新しいリポジトリの収集が終わるのを待ってください。
           </p>
         </template>

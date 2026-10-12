@@ -138,7 +138,7 @@ conect-guild はルールの変更を、設定の `ruleChangePaths` で見分け
 
 ### 3-6. conect-guild の設定を書く
 
-**やること**: conect-guild の `guild.settings.local.ts` に、リポジトリ名（`repo`）、5 つのフォルダ（`commanderSessionDir` と `departments[].sessionDir`）、4 つのラベル名（`departments[].label`）と、ブランチの接頭辞（`branchPrefixes`。部門の表の「ブランチの接頭辞」）を書きます。手順は [setup.md の 2 章](setup.md#2-自分のリポジトリで使う)です。
+**やること**: conect-guild の `guild.settings.local.json` に、リポジトリ名（`repo`）、5 つのフォルダ（`commanderSessionDir` と `departments[].sessionDir`）、4 つのラベル名（`departments[].label`）と、ブランチの接頭辞（`branchPrefixes`。部門の表の「ブランチの接頭辞」）を書きます。手順は [setup.md の 2 章](setup.md#2-自分のリポジトリで使う)です。
 
 **確かめること**
 

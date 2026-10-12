@@ -29,7 +29,7 @@ export const snapshotPrSchema = z.strictObject({
 });
 
 /**
- * Departments that have a session of their own (guild.settings.ts). かなめ (the 司令塔) is `null`.
+ * Departments that have a session of their own (guild.settings.json). かなめ (the 司令塔) is `null`.
  */
 export const SESSION_DEPARTMENTS = DEPARTMENT_LABELS;
 

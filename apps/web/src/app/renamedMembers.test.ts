@@ -25,7 +25,7 @@ const FIXED_NAMES = /かなめ|みのり|ひびき|ひらめ|ささえ|ゆきひ
 const reception = { id: 'x', number: 7, department: null } as const;
 const desk = { id: 'y', number: 8, department: '経理' } as const;
 
-describe('names from guild.settings.ts', () => {
+describe('names from guild.settings.json', () => {
   it('writes the event messages with the configured names', () => {
     const lists = { issues: [], prs: [] };
     const lines = [

@@ -8,18 +8,18 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const run = promisify(execFile);
 const HOOK_URL = new URL('./settingsHook.ts', import.meta.url).href;
-const SETTINGS_URL = new URL('../../snapshot/src/settings.ts', import.meta.url).href;
+const SETTINGS_URL = new URL('../../snapshot/src/settingsSchema.ts', import.meta.url).href;
 
 let root = '';
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'guild-settings-'));
-  await writeFile(join(root, 'guild.settings.ts'), "export const NAME = 'default';\n");
-  await writeFile(join(root, 'guild.settings.local.ts'), "export const NAME = 'local';\n");
-  // Stands in for packages/snapshot/src/settings.ts: imports the default file by its path.
+  await writeFile(join(root, 'guild.settings.json'), '{ "name": "default" }\n');
+  await writeFile(join(root, 'guild.settings.local.json'), '{ "name": "local" }\n');
+  // Stands in for packages/snapshot/src/settingsSchema.ts: imports the default file by its path.
   await writeFile(
     join(root, 'reader.ts'),
-    "import { NAME } from './guild.settings.ts';\nconsole.log(NAME);\n",
+    "import data from './guild.settings.json' with { type: 'json' };\nconsole.log(data.name);\n",
   );
 });
 
@@ -40,30 +40,27 @@ async function readThrough(fileName: string, reader = 'reader.ts'): Promise<stri
 }
 
 describe('useSettingsFile', () => {
-  it('sends the imports of guild.settings.ts to guild.settings.local.ts', async () => {
-    expect(await readThrough('guild.settings.local.ts')).toBe('local');
+  it('sends the imports of guild.settings.json to guild.settings.local.json', async () => {
+    expect(await readThrough('guild.settings.local.json')).toBe('local');
   });
 
-  it('leaves guild.settings.ts alone when it is the file in use', async () => {
-    expect(await readThrough('guild.settings.ts')).toBe('default');
+  it('leaves guild.settings.json alone when it is the file in use', async () => {
+    expect(await readThrough('guild.settings.json')).toBe('default');
   });
 
   it('checks the local file against the same schema and stops when it is invalid', async () => {
-    await writeFile(
-      join(root, 'guild.settings.local.ts'),
-      "export const GUILD_SETTINGS = { repo: 'not a repo' };\n",
-    );
+    await writeFile(join(root, 'guild.settings.local.json'), '{ "repo": "not a repo" }\n');
     await writeFile(
       join(root, 'checker.ts'),
       [
-        "import { GUILD_SETTINGS } from './guild.settings.ts';",
+        "import data from './guild.settings.json' with { type: 'json' };",
         `import { checkGuildSettings } from ${JSON.stringify(SETTINGS_URL)};`,
-        'checkGuildSettings(GUILD_SETTINGS);',
+        'checkGuildSettings(data);',
         "console.log('accepted');",
       ].join('\n'),
     );
-    await expect(readThrough('guild.settings.local.ts', 'checker.ts')).rejects.toThrow(
-      /guild\.settings\.local\.ts or guild\.settings\.ts[\s\S]*is invalid[\s\S]*repo/,
+    await expect(readThrough('guild.settings.local.json', 'checker.ts')).rejects.toThrow(
+      /guild\.settings\.local\.json or guild\.settings\.json[\s\S]*is invalid[\s\S]*repo/,
     );
   });
 });

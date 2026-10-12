@@ -14,7 +14,7 @@ export default defineConfig(
       '**/node_modules/**',
       'apps/web/.data/**',
       'coverage/**',
-      // A team's own settings: in no tsconfig, git-ignored, checked by the schema when read.
+      // The local settings before Issue #89: in no tsconfig, git-ignored, never read.
       'guild.settings.local.ts',
     ],
   },

@@ -51,7 +51,7 @@ export interface GuildState {
   failure: SnapshotLoadFailure | null;
   /**
    * True after a schema-version or repo-mismatch failure: the screen stops and asks to update the
-   * collector, or to wait for it to collect the repository in guild.settings.ts.
+   * collector, or to wait for it to collect the repository in guild.settings.json.
    */
   halted: boolean;
   /** Why the screen is halted; null while it is not. */

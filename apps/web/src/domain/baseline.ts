@@ -11,7 +11,7 @@ const issueNumber = z.number().int().positive();
 
 /**
  * FNV-1a (32 bit) of the repository name as 8 hex digits. The baseline keeps this instead of the
- * name, so it can tell repositories apart (after guild.settings.ts points elsewhere) without
+ * name, so it can tell repositories apart (after guild.settings.json points elsewhere) without
  * storing the name. Pure.
  */
 export function repoFingerprint(repo: string): string {
