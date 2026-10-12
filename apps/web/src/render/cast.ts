@@ -30,6 +30,7 @@ import {
 } from './remarks';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
 import { decorCuesOf, type DecorCues } from './trinkets';
+import { cutVisit } from './visit';
 
 /**
  * The render loop's cast (render/loop.ts): the members' small moves and long idle spells over the
@@ -98,8 +99,11 @@ export function createCast(
     crew,
     calls,
     receive: (director, party, at) => {
-      calls.setHalted(party.halted);
-      const next = crew.setSince(party.halted ? hushed(director) : director, party.idleSince, at.t);
+      // かなめ's visits to the throne dropped with the calls turn back to her counter (visit.ts).
+      const cut = calls
+        .setHalted(party.halted)
+        .reduce((kept, visit) => cutVisit(kept, visit, at.t), director);
+      const next = crew.setSince(party.halted ? hushed(cut) : cut, party.idleSince, at.t);
       // After the walks back: a member called home now is not free to speak.
       const free = (id: MemberId) => isFree(next, at.t, id, crew.poses());
       remarks = receiveParty(remarks, party, { ...at, ...talk, free });

@@ -46,6 +46,11 @@ export interface MessageQueue {
   setStageShown(shown: boolean): void;
   /** The canvas's stage once it runs (null before and after): it calls members back to their seat. */
   setStage(stage: StageRecall | null): void;
+  /**
+   * Members away from their seat on the stage for a while (`homeIn`, stage ms from now): かなめ
+   * hearing the king's order at the throne (Issue #87). The next scenes that need them wait.
+   */
+  occupy(homeIn: HomeIn): void;
 }
 
 /**
@@ -126,6 +131,8 @@ interface Pacer {
   headDelay(head: GuildMessage): number | null;
   /** New messages were queued: members of their level-ups walk back to their seat now. */
   recall(added: readonly GuildMessage[]): void;
+  /** Members the stage took away from their seat for `homeIn` (MessageQueue.occupy). */
+  occupy(homeIn: HomeIn): void;
   setStage(stage: StageRecall | null): void;
   /**
    * Ms until `next` may show (nextShowAt), or until the head closes when it is the last one; null
@@ -166,6 +173,10 @@ function createPacer(
       const members = levelUpCast(added);
       if (stage === null || !stageShown || members.length === 0) return;
       director = withReturns(director, stage.recall(members), now());
+    },
+    occupy(homeIn) {
+      if (stage === null || !stageShown) return;
+      director = withReturns(director, homeIn, now());
     },
     setStage(next) {
       stage = next;
@@ -240,6 +251,51 @@ function createLine(pacer: Pacer, publish: MessageQueueOptions['publish']): Line
   };
 }
 
+/** The hold timer of the queue: when the head gives way, or a held head shows. */
+interface Hold {
+  dispose(): void;
+  /** Starts the timer for what the queue waits for now, unless one runs. */
+  schedule(): void;
+  /** The wait is over: a held head shows, else the next message takes the head's place. */
+  advance(): void;
+  /** Re-plans the pending hold after what it waits for has changed. */
+  reschedule(): void;
+}
+
+function createHold(line: Line, pacer: Pacer, scheduler: Scheduler): Hold {
+  let cancelHold: Cancel | null = null;
+
+  function dispose(): void {
+    cancelHold?.();
+    cancelHold = null;
+  }
+
+  function schedule(): void {
+    const [head, next] = line.messages;
+    if (cancelHold !== null || head === undefined) return;
+    const delay = line.held ? pacer.headDelay(head) : pacer.delayFor(next);
+    // advance() clears the handle (cancelling a timer that has fired does nothing).
+    if (delay !== null) cancelHold = scheduler.after(delay, advance);
+  }
+
+  function advance(): void {
+    dispose();
+    if (line.held) line.release();
+    else line.set(line.messages.slice(1));
+    schedule();
+  }
+
+  return {
+    dispose,
+    schedule,
+    advance,
+    reschedule() {
+      dispose();
+      schedule();
+    },
+  };
+}
+
 /**
  * The message window's queue. Each message shows once: the head stays at least `holdMs`, and the
  * next one waits until its scene can start (nextShowAt); the last one closes after `lastHoldMs`
@@ -250,35 +306,8 @@ function createLine(pacer: Pacer, publish: MessageQueueOptions['publish']): Line
 export function createMessageQueue(options: MessageQueueOptions): MessageQueue {
   const pacer = createPacer(options.now, options);
   const line = createLine(pacer, options.publish);
-  let cancelHold: Cancel | null = null;
+  const hold = createHold(line, pacer, options.scheduler);
   let nextId = 1;
-
-  function dispose(): void {
-    cancelHold?.();
-    cancelHold = null;
-  }
-
-  function scheduleHold(): void {
-    const [head, next] = line.messages;
-    if (cancelHold !== null || head === undefined) return;
-    const delay = line.held ? pacer.headDelay(head) : pacer.delayFor(next);
-    // advance() clears the handle (cancelling a timer that has fired does nothing).
-    if (delay !== null) cancelHold = options.scheduler.after(delay, advance);
-  }
-
-  /** The wait is over: a held head shows, else the next message takes the head's place. */
-  function advance(): void {
-    dispose();
-    if (line.held) line.release();
-    else line.set(line.messages.slice(1));
-    scheduleHold();
-  }
-
-  /** Re-plans the pending hold after what it waits for has changed. */
-  function reschedule(): void {
-    dispose();
-    scheduleHold();
-  }
 
   return {
     push(entries) {
@@ -287,32 +316,39 @@ export function createMessageQueue(options: MessageQueueOptions): MessageQueue {
       pacer.recall(added);
       line.set([...line.messages, ...added]);
       // The last one's closing gives way to the hold before the new ones.
-      reschedule();
+      hold.reschedule();
     },
     next() {
       if (line.held) return;
-      if (pacer.skipHold(line.messages[1])) advance();
-      else reschedule();
+      if (pacer.skipHold(line.messages[1])) hold.advance();
+      else hold.reschedule();
     },
-    dispose,
+    dispose() {
+      hold.dispose();
+    },
     pause() {
       pacer.setHalted(true);
-      dispose();
+      hold.dispose();
     },
     resume() {
       pacer.setHalted(false);
-      scheduleHold();
+      hold.schedule();
     },
     setHidden(hidden) {
       pacer.setHidden(hidden);
-      reschedule();
+      hold.reschedule();
     },
     setStageShown(shown) {
       pacer.setStageShown(shown);
-      reschedule();
+      hold.reschedule();
     },
     setStage(stage) {
       pacer.setStage(stage);
+    },
+    occupy(homeIn) {
+      pacer.occupy(homeIn);
+      // A head waiting for its cast, or the next message, may have to wait longer.
+      hold.reschedule();
     },
   };
 }

@@ -55,6 +55,7 @@ const {
   clearBaseline,
   setStageShown,
   setStage,
+  occupy,
 } = useGuild(demo?.guildOptions ?? liveGuildOptions(props.handoff));
 const {
   settings: soundSettings,
@@ -103,6 +104,7 @@ function onStageShown(shown: boolean): void {
         :last-active-storage="demo?.storage"
         @stage-shown="onStageShown"
         @stage="setStage"
+        @away="occupy"
         @call-started="callStarted"
         @idle-since="setIdleSince"
         @ready="demo?.markReady()"

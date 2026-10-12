@@ -15,6 +15,7 @@ import {
   type Speeches,
   type Summons,
 } from './summons';
+import type { Visit } from './visit';
 
 export interface CallsOptions {
   /** Epoch ms, for the time reported to `onActive`. */
@@ -35,11 +36,20 @@ export interface CallView {
 export interface Calls {
   /**
    * The king calls `members` at stage time `t`, or after the call playing; none while halted, nor
-   * for a null `t` (nothing is drawn: the page is hidden or the canvas not shown). True when added.
+   * for a null `t` (nothing is drawn: the page is hidden or the canvas not shown). `visit` says
+   * whether かなめ goes to the throne for a call that starts at a given time (visit.ts). The call
+   * added, or null.
    */
-  add(members: readonly MemberId[], t: number | null): boolean;
-  /** Halted (the screen is not live): the calls to come and the one playing are dropped. */
-  setHalted(halted: boolean): void;
+  add(
+    members: readonly MemberId[],
+    t: number | null,
+    visit?: (start: number) => Visit | null,
+  ): Summons | null;
+  /**
+   * Halted (the screen is not live): the calls to come and the one playing are dropped. Returns
+   * かなめ's visits dropped with them, to cut short on the stage (visit.cutVisit).
+   */
+  setHalted(halted: boolean): readonly Visit[];
   /**
    * The frame at `t` (built by `build`) with the call playing applied, and its words. First drops
    * the finished calls (and wakes the king after the last one, before his pose is built), then
@@ -60,17 +70,20 @@ export function createCalls(options: CallsOptions): Calls {
   let holds: Holds = NO_HOLDS;
   let halted = false;
   return {
-    add(members, t) {
-      if (halted || t === null || members.length === 0) return false;
-      list = addSummons(list, members, t);
-      return true;
+    add(members, t, visit) {
+      if (halted || t === null || members.length === 0) return null;
+      list = addSummons(list, members, t, visit);
+      return list.at(-1) ?? null;
     },
     setHalted(next) {
       halted = next;
-      if (halted) {
-        list = [];
-        holds = NO_HOLDS;
-      }
+      if (!halted) return [];
+      const visits = list.flatMap((summons) =>
+        summons.visit === undefined ? [] : [summons.visit],
+      );
+      list = [];
+      holds = NO_HOLDS;
+      return visits;
     },
     view(build, t) {
       const ended = endedSummons(list, t).length > 0;

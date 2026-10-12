@@ -19,6 +19,7 @@ import { hourFromQuery } from '../render/daylight';
 import { levelsOf } from '../render/levelTags';
 import { loadArt } from '../render/loadArt';
 import type { IdleSeeds, IdleSince } from '../render/idle';
+import type { HomeIn } from '../render/idleCrew';
 import { isShown, startRenderLoop, type RenderLoop, type StageParty } from '../render/loop';
 
 const props = defineProps<{
@@ -43,6 +44,11 @@ const emit = defineEmits<{
   idleSince: [since: IdleSince];
   /** A call of the king starts on the stage now (its sound rings with it, Issue #28). */
   callStarted: [];
+  /**
+   * かなめ walks to the throne to hear the king's order (Issue #87): how long until she is back
+   * (ms), for the message queue to wait for.
+   */
+  away: [homeIn: HomeIn];
   /** The stage once the loop runs, null when it stops: the message queue calls members back. */
   stage: [stage: StageRecall | null];
   /**
@@ -192,23 +198,27 @@ watch(
   },
 );
 
+/** Takes the message now in the window (once per message: receiveCue) and plays its scene. */
+function takeCue(): void {
+  cues = receiveCue(cues, props.cue);
+  playCues();
+}
+
 // Not kept for later: an order seen while the pictures load or the canvas is out of sight is past.
+// The message of the same fetch is taken first, whichever watcher runs first: a scene that needs
+// かなめ is booked before the call, so she answers where she is (Issue #87).
 watch(
   () => props.summons?.id,
   () => {
-    if (props.summons !== null) loop?.summon(props.summons.members);
+    takeCue();
+    if (props.summons === null || loop === null) return;
+    const homeIn = loop.summon(props.summons.members);
+    if (Object.keys(homeIn).length > 0) emit('away', homeIn);
   },
 );
 
-watch(
-  () => props.cue?.id,
-  () => {
-    cues = receiveCue(cues, props.cue);
-    playCues();
-  },
-  // The message in the window at mount counts too.
-  { immediate: true },
-);
+// The message in the window at mount counts too.
+watch(() => props.cue?.id, takeCue, { immediate: true });
 </script>
 
 <template>

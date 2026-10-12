@@ -129,6 +129,11 @@ export function isUnderWindow(pos: TilePos): boolean {
 export const PLACES = {
   /** Where a visitor stands in front of かなめ's counter. */
   counterFront: { col: 16, row: 10 },
+  /**
+   * Where かなめ stands to hear the king's order (Issue #87): left of the throne's front row, next to
+   * the king. As near to her counter as the right side, where the pet sleeps (decor.ts).
+   */
+  throneSide: { col: 14, row: 4 },
 } as const satisfies Record<string, TilePos>;
 
 interface GroundFill extends TileRect {
