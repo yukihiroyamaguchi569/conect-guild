@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SnapshotLoadResult } from '../adapters/snapshot';
 import { snapshot, T0 } from '../domain/fixtures.test-util';
-import { REFRESH_INTERVAL_MS } from './guildStore';
+import { createKeyValueStore, createMemoryStorage } from '../adapters/storage';
+import { createGuildStore, REFRESH_INTERVAL_MS } from './guildStore';
+import { buildFetchStatus } from './guildView';
 import { createScreenMode, endsAutoDemo, initialScreenMode, liveGuildOptions } from './screenMode';
 
 const NOT_COLLECTED: SnapshotLoadResult = { ok: false, reason: 'not-collected' };
@@ -158,5 +160,39 @@ describe('createScreenMode: the handoff to the live screen', () => {
   it('builds the live store from the handoff: its result first, a fresh baseline', () => {
     expect(liveGuildOptions(null)).toEqual({});
     expect(liveGuildOptions(COLLECTED)).toEqual({ firstResult: COLLECTED, freshBaseline: true });
+  });
+});
+
+describe('the automatic demo and the live store together', () => {
+  it('shows the error that ended the demo, then goes back to the demo on the next 204', async () => {
+    const serverError: SnapshotLoadResult = { ok: false, reason: 'http', status: 500 };
+    // One /snapshot.json for both: the watch reads the 500, the live store then a 204.
+    const load = loader([serverError, NOT_COLLECTED]);
+    const screen = createScreenMode({ search: '', loadSnapshot: load });
+    screen.notCollected();
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS);
+    expect(screen.mode.value).toBe('live');
+
+    // What GuildScreen.vue builds for the live screen.
+    const memory = createMemoryStorage();
+    const store = createGuildStore({
+      ...liveGuildOptions(screen.handoff.value),
+      loadSnapshot: load,
+      storage: createKeyValueStore(() => memory),
+    });
+    const status = () => buildFetchStatus(store.state.snapshot, store.state.failure, 0);
+    store.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(status().failure).toBe('取得失敗（サーバーがエラーを返しました）');
+    expect(status().notCollected).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS);
+    expect(status().notCollected).toBe(true);
+    // GuildScreen.vue tells App.vue, which starts the automatic demo again.
+    screen.notCollected();
+    expect(screen.mode.value).toBe('auto-demo');
+    store.stop();
+    screen.dispose();
   });
 });
