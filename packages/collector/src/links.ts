@@ -17,25 +17,36 @@ function refsIn(text: string, pattern: RegExp): IssueRef[] {
   }));
 }
 
-function sameRepoNumbers(refs: readonly IssueRef[], repo: string): number[] {
+function sameRepoNumbers(
+  refs: readonly IssueRef[],
+  repo: string,
+  existingIssues: ReadonlySet<number>,
+): number[] {
   const target = repo.toLowerCase();
   const numbers = refs
     .filter(
       (ref) => ref.owner === undefined || `${ref.owner}/${ref.name ?? ''}`.toLowerCase() === target,
     )
     .map((ref) => ref.number)
-    .filter((n) => n > 0);
+    .filter((n) => existingIssues.has(n));
   return [...new Set(numbers)].toSorted((a, b) => a - b);
 }
 
 /**
  * Issue numbers a PR points at, taken from its title and body.
- * Only references to `repo` count. If any closing keyword reference exists,
- * only those are used.
+ * Only references to `repo` that name an Issue in `existingIssues` count, as GitHub links only
+ * those (a `#99999999999999999999` in a body must not stop the collector). If any closing keyword
+ * reference exists, only those are used.
  */
-export function extractLinkedIssues(title: string, body: string | null, repo: string): number[] {
+export function extractLinkedIssues(
+  title: string,
+  body: string | null,
+  repo: string,
+  existingIssues: ReadonlySet<number>,
+): number[] {
   const text = `${title}\n${body ?? ''}`;
-  const closing = sameRepoNumbers(refsIn(text, new RegExp(CLOSING + REF, 'gi')), repo);
+  const closingRefs = refsIn(text, new RegExp(CLOSING + REF, 'gi'));
+  const closing = sameRepoNumbers(closingRefs, repo, existingIssues);
   if (closing.length > 0) return closing;
-  return sameRepoNumbers(refsIn(text, new RegExp(REF, 'g')), repo);
+  return sameRepoNumbers(refsIn(text, new RegExp(REF, 'g')), repo, existingIssues);
 }

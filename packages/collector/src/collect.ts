@@ -1,6 +1,7 @@
 import { SNAPSHOT_SCHEMA_VERSION, githubPartSchema, type GithubPart } from '@conect-guild/snapshot';
 import type { BranchPrefixRule } from '@conect-guild/snapshot/settings';
 import {
+  issueNumbersOf,
   recentCutoff,
   selectRecentPrs,
   toHistory,
@@ -26,6 +27,7 @@ export async function collectSnapshot(
 ): Promise<GithubPart> {
   const cutoff = recentCutoff(now);
   const [rawIssues, rawPrs] = await bothOrThrow(fetchIssues(gh, repo), fetchPrs(gh, repo));
+  const existingIssues = issueNumbersOf(rawIssues);
   const prs = await mapWithConcurrency(
     selectRecentPrs(rawPrs, cutoff),
     CHANGED_FILES_CONCURRENCY,
@@ -33,6 +35,7 @@ export async function collectSnapshot(
       toSnapshotPr(
         pr,
         repo,
+        existingIssues,
         pr.state === 'open' ? await fetchChangedFiles(gh, repo, pr.number) : [],
       ),
   );

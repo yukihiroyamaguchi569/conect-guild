@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { recentCutoff, selectRecentPrs, toSnapshotIssues, toSnapshotPr } from './build.ts';
+import {
+  issueNumbersOf,
+  recentCutoff,
+  selectRecentPrs,
+  toSnapshotIssues,
+  toSnapshotPr,
+} from './build.ts';
 import type { RawIssue, RawPr } from './github.ts';
 
 const NOW = new Date('2026-10-12T00:00:00.000Z');
@@ -108,9 +114,29 @@ describe('selectRecentPrs', () => {
   });
 });
 
+describe('issueNumbersOf', () => {
+  it('collects every Issue number, open or closed, but no PR number', () => {
+    const numbers = issueNumbersOf([
+      issue({ number: 1 }),
+      issue({ number: 2, state: 'closed', closed_at: '2020-01-01T00:00:00Z' }),
+      issue({ number: 3, is_pull_request: true }),
+    ]);
+    expect([...numbers].toSorted((a, b) => a - b)).toEqual([1, 2]);
+  });
+
+  it('is empty for a repository without Issues', () => {
+    expect(issueNumbersOf([]).size).toBe(0);
+  });
+});
+
 describe('toSnapshotPr', () => {
+  it('links only Issues that exist', () => {
+    const result = toSnapshotPr(pr({ body: 'Closes #7, #8' }), 'o/r', new Set([8]), []);
+    expect(result.linkedIssues).toEqual([8]);
+  });
+
   it('stores links and changed files for an open PR, never the body', () => {
-    const result = toSnapshotPr(pr({ body: 'Closes #7' }), 'o/r', ['a.md']);
+    const result = toSnapshotPr(pr({ body: 'Closes #7' }), 'o/r', new Set([1, 7]), ['a.md']);
     expect(result).toEqual({
       number: 10,
       title: 'PR (#1)',
@@ -130,7 +156,7 @@ describe('toSnapshotPr', () => {
       merged_at: '2026-10-10T00:00:00Z',
       closed_at: '2026-10-10T00:00:00Z',
     });
-    const result = toSnapshotPr(closed, 'o/r', ['a.md']);
+    const result = toSnapshotPr(closed, 'o/r', new Set([1]), ['a.md']);
     expect(result.changedFiles).toEqual([]);
     expect(result.mergedAt).toBe('2026-10-10T00:00:00.000Z');
   });
