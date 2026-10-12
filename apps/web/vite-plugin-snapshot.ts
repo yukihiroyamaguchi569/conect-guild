@@ -2,12 +2,15 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin } from 'vite';
 
-/** The only URL this plugin answers. */
+/** The only URLs this plugin answers. */
 const SNAPSHOT_ROUTE = '/snapshot.json';
+/** How the collector's last try went (Issue #74): a time, ok or not, an error kind. */
+const COLLECTOR_STATUS_ROUTE = '/collector-status.json';
 
 /** Where the collector writes the real data, relative to the web app root (docs/DESIGN.md 4.1). */
 const SNAPSHOT_DATA_DIR = '.data';
 const SNAPSHOT_FILE_NAME = 'snapshot.json';
+const COLLECTOR_STATUS_FILE_NAME = 'collector-status.json';
 
 /** The parts of node's IncomingMessage the middleware reads. */
 export interface SnapshotRequest {
@@ -54,7 +57,8 @@ async function serveSnapshot(
     body = await readSnapshotFile(filePath);
   } catch (error) {
     // No file yet: the collector has never run. 204, not 404, so the browser logs no error on
-    // every 5-second read while the page plays the demo instead (Issue #67).
+    // every 5-second read while the page plays the demo instead (Issue #67). The same for the
+    // collector's status (Issue #74).
     sendStatus(res, isMissingFile(error) ? 204 : 500);
     return;
   }
@@ -66,15 +70,12 @@ async function serveSnapshot(
 }
 
 /**
- * Connect-style middleware that answers GET/HEAD /snapshot.json from a fixed file.
+ * Connect-style middleware that answers GET/HEAD `route` from a fixed file.
  * The file path never depends on the request.
  */
-export function createSnapshotMiddleware(
-  filePath: string,
-  readSnapshotFile: ReadSnapshotFile = readFile,
-) {
+function createFileMiddleware(route: string, filePath: string, readSnapshotFile: ReadSnapshotFile) {
   return (req: SnapshotRequest, res: SnapshotResponse, next: () => void): void => {
-    if (pathnameOf(req.url) !== SNAPSHOT_ROUTE) {
+    if (pathnameOf(req.url) !== route) {
       next();
       return;
     }
@@ -87,14 +88,36 @@ export function createSnapshotMiddleware(
   };
 }
 
-/** Dev-server-only plugin: serves apps/web/.data/snapshot.json at /snapshot.json. */
+/** Answers GET/HEAD /snapshot.json from a fixed file. */
+export function createSnapshotMiddleware(
+  filePath: string,
+  readSnapshotFile: ReadSnapshotFile = readFile,
+) {
+  return createFileMiddleware(SNAPSHOT_ROUTE, filePath, readSnapshotFile);
+}
+
+/** Answers GET/HEAD /collector-status.json from a fixed file (Issue #74). */
+export function createCollectorStatusMiddleware(
+  filePath: string,
+  readSnapshotFile: ReadSnapshotFile = readFile,
+) {
+  return createFileMiddleware(COLLECTOR_STATUS_ROUTE, filePath, readSnapshotFile);
+}
+
+/**
+ * Dev-server-only plugin: serves apps/web/.data/snapshot.json at /snapshot.json and
+ * apps/web/.data/collector-status.json at /collector-status.json.
+ */
 export function snapshotPlugin(): Plugin {
   return {
     name: 'conect-guild:snapshot',
     apply: 'serve',
     configureServer(server) {
-      const filePath = path.join(server.config.root, SNAPSHOT_DATA_DIR, SNAPSHOT_FILE_NAME);
-      server.middlewares.use(createSnapshotMiddleware(filePath));
+      const dataDir = path.join(server.config.root, SNAPSHOT_DATA_DIR);
+      server.middlewares.use(createSnapshotMiddleware(path.join(dataDir, SNAPSHOT_FILE_NAME)));
+      server.middlewares.use(
+        createCollectorStatusMiddleware(path.join(dataDir, COLLECTOR_STATUS_FILE_NAME)),
+      );
     },
   };
 }
