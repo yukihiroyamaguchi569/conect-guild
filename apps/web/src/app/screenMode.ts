@@ -1,7 +1,7 @@
 import { shallowRef, type Ref } from 'vue';
 import { defaultExpectedRepo, loadSnapshot, type SnapshotLoadResult } from '../adapters/snapshot';
 import { createDemoSession, isDemoQuery, type DemoSession } from './demo';
-import { REFRESH_INTERVAL_MS } from './guildStore';
+import { REFRESH_INTERVAL_MS, type GuildStoreOptions } from './guildStore';
 import { globalScheduler, type Cancel, type Scheduler } from './scheduler';
 
 /**
@@ -26,6 +26,15 @@ export function endsAutoDemo(result: SnapshotLoadResult): boolean {
   return result.ok || result.reason !== 'not-collected';
 }
 
+/**
+ * The live store's options after the automatic demo: the read that ended it is its first result
+ * (an error is shown, not read again and maybe lost), and the first snapshot is a new baseline
+ * (an old stored one would bring a burst of events). None for the first live screen.
+ */
+export function liveGuildOptions(handoff: SnapshotLoadResult | null): GuildStoreOptions {
+  return handoff === null ? {} : { firstResult: handoff, freshBaseline: true };
+}
+
 export interface ScreenModeOptions {
   /** The page's query (`location.search`). */
   readonly search: string;
@@ -40,6 +49,8 @@ export interface ScreenModeState {
   readonly mode: Readonly<Ref<ScreenMode>>;
   /** The demo session of 'demo' and 'auto-demo'; null while live. A new one for each demo. */
   readonly demo: Readonly<Ref<DemoSession | null>>;
+  /** The read that ended the automatic demo, for the live screen after it; else null. */
+  readonly handoff: Readonly<Ref<SnapshotLoadResult | null>>;
   /** Bumped on every change of mode, so the screen is built anew (nothing carries over). */
   readonly generation: Readonly<Ref<number>>;
   /**
@@ -59,14 +70,20 @@ export function createScreenMode(options: ScreenModeOptions): ScreenModeState {
   const initial = initialScreenMode(options.search);
   const mode = shallowRef<ScreenMode>(initial);
   const demo = shallowRef<DemoSession | null>(initial === 'demo' ? createDemoSession(now) : null);
+  const handoff = shallowRef<SnapshotLoadResult | null>(null);
   const generation = shallowRef(0);
   let cancelWatch: Cancel | null = null;
   // Bumped when the watch stops, so a read in flight then cannot switch the screen.
   let watchGeneration = 0;
 
-  function switchTo(next: ScreenMode, session: DemoSession | null): void {
+  function switchTo(
+    next: ScreenMode,
+    session: DemoSession | null,
+    handed: SnapshotLoadResult | null = null,
+  ): void {
     mode.value = next;
     demo.value = session;
+    handoff.value = handed;
     generation.value += 1;
   }
 
@@ -86,7 +103,7 @@ export function createScreenMode(options: ScreenModeOptions): ScreenModeState {
         .then((result) => {
           if (started !== watchGeneration || !endsAutoDemo(result)) return;
           stopWatch();
-          switchTo('live', null);
+          switchTo('live', null, result);
         })
         .finally(() => {
           inFlight = false;
@@ -97,6 +114,7 @@ export function createScreenMode(options: ScreenModeOptions): ScreenModeState {
   return {
     mode,
     demo,
+    handoff,
     generation,
     notCollected() {
       if (mode.value !== 'live') return;

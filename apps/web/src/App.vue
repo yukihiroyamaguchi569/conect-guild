@@ -8,12 +8,17 @@ import GuildScreen from './ui/GuildScreen.vue';
  * change builds a new screen (the key), so no state of the demo reaches the live one.
  */
 const screen = createScreenMode({ search: globalThis.location.search });
-const { demo, generation } = screen;
+const { demo, handoff, generation } = screen;
 onBeforeUnmount(() => {
   screen.dispose();
 });
 </script>
 
 <template>
-  <GuildScreen :key="generation" :demo="demo" @not-collected="screen.notCollected()" />
+  <GuildScreen
+    :key="generation"
+    :demo="demo"
+    :handoff="handoff"
+    @not-collected="screen.notCollected()"
+  />
 </template>

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SnapshotLoadResult } from '../adapters/snapshot';
 import { snapshot, T0 } from '../domain/fixtures.test-util';
 import { REFRESH_INTERVAL_MS } from './guildStore';
-import { createScreenMode, endsAutoDemo, initialScreenMode } from './screenMode';
+import { createScreenMode, endsAutoDemo, initialScreenMode, liveGuildOptions } from './screenMode';
 
 const NOT_COLLECTED: SnapshotLoadResult = { ok: false, reason: 'not-collected' };
 const COLLECTED: SnapshotLoadResult = { ok: true, snapshot: snapshot({ fetchedAt: T0 }) };
@@ -136,5 +136,27 @@ describe('createScreenMode: repeats and races', () => {
     await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS);
     expect(screen.mode.value).toBe('auto-demo');
     expect(load).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createScreenMode: the handoff to the live screen', () => {
+  it('hands the read that ended the demo to the live screen', async () => {
+    const serverError: SnapshotLoadResult = { ok: false, reason: 'http', status: 500 };
+    const screen = createScreenMode({ search: '', loadSnapshot: loader([serverError]) });
+    expect(screen.handoff.value).toBeNull();
+    screen.notCollected();
+    expect(screen.handoff.value).toBeNull();
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS);
+    expect(screen.mode.value).toBe('live');
+    expect(screen.handoff.value).toEqual(serverError);
+    // The automatic demo again: nothing is handed to it.
+    screen.notCollected();
+    expect(screen.handoff.value).toBeNull();
+    screen.dispose();
+  });
+
+  it('builds the live store from the handoff: its result first, a fresh baseline', () => {
+    expect(liveGuildOptions(null)).toEqual({});
+    expect(liveGuildOptions(COLLECTED)).toEqual({ firstResult: COLLECTED, freshBaseline: true });
   });
 });

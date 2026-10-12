@@ -94,6 +94,16 @@ export interface GuildStoreOptions {
   readonly scheduler?: Scheduler;
   readonly refreshIntervalMs?: number;
   readonly messageHoldMs?: number;
+  /**
+   * The read of /snapshot.json that ended the automatic demo (Issue #67): the first refresh applies
+   * it instead of loading again, so the error or the snapshot that ended the demo is what shows.
+   */
+  readonly firstResult?: SnapshotLoadResult;
+  /**
+   * Drops the stored baseline, so the first snapshot becomes the new one without events (Issue #67:
+   * after the automatic demo, an old baseline would bring a burst of events at once).
+   */
+  readonly freshBaseline?: boolean;
 }
 
 export interface GuildStore {
@@ -219,10 +229,37 @@ function clearStoredBaseline(state: GuildState, storage: KeyValueStore): void {
     : '基準を消せませんでした（localStorage が使えません）';
 }
 
+/** Loads with `load`, after handing out `first` once when given (Issue #67). */
+function handedFirst(
+  load: () => Promise<SnapshotLoadResult>,
+  first: SnapshotLoadResult | undefined,
+): () => Promise<SnapshotLoadResult> {
+  let handed = first ?? null;
+  return () => {
+    const result = handed;
+    handed = null;
+    return result === null ? load() : Promise.resolve(result);
+  };
+}
+
+/**
+ * The store's loads. After the automatic demo (Issue #67) the read that ended it comes first, and
+ * the stored baseline is dropped, so the first snapshot counts as the first fetch (no events).
+ */
+function loaderOf(
+  options: GuildStoreOptions,
+  storage: KeyValueStore,
+): () => Promise<SnapshotLoadResult> {
+  if (options.freshBaseline === true) storage.remove(BASELINE_STORAGE_KEY);
+  return handedFirst(
+    options.loadSnapshot ?? (() => loadSnapshot({ expectedRepo: defaultExpectedRepo() })),
+    options.firstResult,
+  );
+}
+
 export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
-  const load =
-    options.loadSnapshot ?? (() => loadSnapshot({ expectedRepo: defaultExpectedRepo() }));
   const storage = options.storage ?? createKeyValueStore();
+  const load = loaderOf(options, storage);
   const now = options.now ?? Date.now;
   const scheduler = options.scheduler ?? globalScheduler;
   const state = shallowReactive<GuildState>(initialState());

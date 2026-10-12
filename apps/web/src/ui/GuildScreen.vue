@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
+import type { SnapshotLoadResult } from '../adapters/snapshot';
 import type { DemoSession } from '../app/demo';
+import { liveGuildOptions } from '../app/screenMode';
 import { useGuild } from '../app/useGuild';
 import { useNarration } from '../app/useNarration';
 import { useSound } from '../app/useSound';
@@ -21,6 +23,8 @@ const props = defineProps<{
    * screen's lifetime (App.vue builds a new screen when it changes).
    */
   demo: DemoSession | null;
+  /** The read that ended the automatic demo (Issue #67); null otherwise. */
+  handoff: SnapshotLoadResult | null;
 }>();
 const emit = defineEmits<{
   /** /snapshot.json is not there yet (204) and nothing was shown: the collector never ran. */
@@ -43,7 +47,7 @@ const {
   clearBaseline,
   setStageShown,
   setStage,
-} = useGuild(demo?.guildOptions);
+} = useGuild(demo?.guildOptions ?? liveGuildOptions(props.handoff));
 const {
   settings: soundSettings,
   toggleSound,
