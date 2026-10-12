@@ -2,7 +2,7 @@ import { chmod, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'n
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { writeFileAtomic } from './write.ts';
+import { createFileExclusive, writeFileAtomic } from './write.ts';
 
 let root = '';
 
@@ -61,5 +61,23 @@ describe('writeFileAtomic', () => {
     } finally {
       await chmod(dir, 0o700);
     }
+  });
+});
+
+describe('createFileExclusive', () => {
+  it('creates a missing file as 0600, leaving no temp file behind', async () => {
+    const target = join(root, 'a.json');
+    await createFileExclusive(target, '{"a":1}\n');
+    expect(await readFile(target, 'utf8')).toBe('{"a":1}\n');
+    expect(mode(await stat(target))).toBe(0o600);
+    expect(await readdir(root)).toEqual(['a.json']);
+  });
+
+  it('refuses a file that is already there, keeping it and leaving no temp file', async () => {
+    const target = join(root, 'a.json');
+    await writeFile(target, 'theirs');
+    await expect(createFileExclusive(target, 'mine')).rejects.toMatchObject({ code: 'EEXIST' });
+    expect(await readFile(target, 'utf8')).toBe('theirs');
+    expect(await readdir(root)).toEqual(['a.json']);
   });
 });

@@ -4,7 +4,7 @@ import { text } from 'node:stream/consumers';
 import { SETTINGS_ROOT } from '@conect-guild/snapshot/settingsFile';
 import { createGhRunner } from './gh.ts';
 import { runSettingsWrite } from './settingsWrite.ts';
-import { writeFileAtomic } from './write.ts';
+import { createFileExclusive, writeFileAtomic } from './write.ts';
 
 // Issue #79: `npm run settings:write`. Writes only guild.settings.local.json (and its .bak) at the
 // repository root. gh gets 30 seconds for the labels; past that the check warns and goes on.
@@ -19,6 +19,7 @@ process.exitCode = await runSettingsWrite(process.argv.slice(2), {
   readText: (path) => readFileSync(path, 'utf8'),
   gh: createGhRunner(AbortSignal.timeout(GH_TIMEOUT_MS)),
   writeFile: writeFileAtomic,
+  createFile: createFileExclusive,
   out: (output) => {
     process.stdout.write(output);
   },

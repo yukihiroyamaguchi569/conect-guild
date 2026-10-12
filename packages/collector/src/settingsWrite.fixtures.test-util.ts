@@ -16,6 +16,9 @@ export const SECRET_LINE = 'Secret client Ltd の見積もりの決まり';
 /** The checked-in default settings, as the writer would start from them. */
 export const DEFAULT_TEXT = readFileSync(join(SETTINGS_ROOT, DEFAULT_SETTINGS_FILE), 'utf8');
 
+/** What another process wrote to the local settings between the check and the write. */
+export const APPEARED = '{"made": "by someone else"}\n';
+
 export const FOLDERS = ['accounting', 'pr', 'planning', 'general-affairs'] as const;
 export const LABELS = ['経理', '広報', '企画', '総務'] as const;
 
@@ -61,6 +64,8 @@ export interface FakeOptions {
   readonly stdin?: string;
   readonly repoLabels?: readonly string[] | Error;
   readonly failWriteOf?: string;
+  /** A file that appears at this path after the check, before the write (another process). */
+  readonly appearsBeforeWrite?: string;
 }
 
 /** The company folders under the fake home, each with a CLAUDE.md naming its own label. */
@@ -106,6 +111,15 @@ export function fake(options: FakeOptions = {}): Fake {
     gh: fakeGh(options.repoLabels ?? [...LABELS, 'bug'], ghCalls),
     writeFile: (path, content) => {
       if (path === options.failWriteOf) return Promise.reject(new Error('EACCES'));
+      writes.push({ path, content });
+      files.set(path, content);
+      return Promise.resolve();
+    },
+    createFile: (path, content) => {
+      if (path === options.appearsBeforeWrite) files.set(path, APPEARED);
+      if (path === options.failWriteOf || files.has(path)) {
+        return Promise.reject(new Error('EEXIST'));
+      }
       writes.push({ path, content });
       files.set(path, content);
       return Promise.resolve();

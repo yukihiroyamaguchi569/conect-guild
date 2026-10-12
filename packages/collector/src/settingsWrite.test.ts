@@ -4,6 +4,7 @@ import { CollectorError } from './errors.ts';
 import { NEXT_STEPS } from './settingsReport.ts';
 import { runSettingsWrite } from './settingsWrite.ts';
 import {
+  APPEARED,
   BACKUP,
   DEFAULT_TEXT,
   fake,
@@ -150,6 +151,14 @@ describe('runSettingsWrite --write over local settings', () => {
     expect(f.files.get(LOCAL)).toBe(before);
     expect(f.output()).toContain('guild.settings.local.json を書けませんでした');
     expect(f.output()).not.toContain('EACCES');
+  });
+
+  it('never replaces local settings that appear between the check and the write', async () => {
+    const f = fake({ appearsBeforeWrite: LOCAL });
+    expect(await runSettingsWrite(['--write'], f.deps)).toBe(1);
+    expect(f.files.get(LOCAL)).toBe(APPEARED);
+    expect(f.writes).toEqual([]);
+    expect(f.output()).toContain('guild.settings.local.json を書けませんでした');
   });
 
   it('reports a failed write as an error', async () => {
@@ -329,6 +338,19 @@ describe('runSettingsWrite: any string stays a string', () => {
       expect(row).toContain(JSON.stringify(label));
     },
   );
+
+  it('escapes a control character a schema error repeats from the input', async () => {
+    const data = input();
+    const [first, second] = data.departments;
+    if (first === undefined || second === undefined) throw new Error('fixture');
+    first.label = 'x\u001b[2J\u009b';
+    second.label = first.label;
+    const f = fake({ stdin: JSON.stringify(data) });
+    expect(await runSettingsWrite(['--dry-run'], f.deps)).toBe(1);
+    expect(f.output()).toContain('label x\\u001b[2J\\u009b twice');
+    expect(f.output()).not.toContain('\u001b');
+    expect(f.output()).not.toContain('\u009b');
+  });
 
   it('shows a label with a line break on one line in the table', async () => {
     const data = input();

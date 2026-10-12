@@ -1,5 +1,5 @@
 import type { ClaudeMdFinding } from './settingsChecks.ts';
-import { quote } from './settingsText.ts';
+import { escapeControls, quote } from './settingsText.ts';
 
 /** One department as it will be written. */
 export interface DepartmentRow {
@@ -70,7 +70,9 @@ function departmentLines(report: WriteReport): string[] {
 }
 
 function listLines(title: string, items: readonly string[]): string[] {
-  return items.length === 0 ? [] : [`${title}:`, ...items.map((item) => `  - ${item}`)];
+  return items.length === 0
+    ? []
+    : [`${title}:`, ...items.map((item) => `  - ${escapeControls(item)}`)];
 }
 
 /** The table and messages for a person, one string ending in a line break. */

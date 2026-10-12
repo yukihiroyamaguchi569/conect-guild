@@ -7,7 +7,7 @@ import { loadSettingsFile } from '@conect-guild/snapshot/settingsFile';
 import { checkGuildSettings } from '@conect-guild/snapshot/settingsSchema';
 import { claudeMdMentions, prefixMatchesFolder } from './settingsChecks.ts';
 import { mergeSettings } from './settingsInput.ts';
-import { quote } from './settingsText.ts';
+import { escapeControls, quote } from './settingsText.ts';
 import { parseWriteArgs, runSettingsWrite } from './settingsWrite.ts';
 import {
   claudeMd,
@@ -16,7 +16,7 @@ import {
   input,
   LABELS,
 } from './settingsWrite.fixtures.test-util.ts';
-import { writeFileAtomic } from './write.ts';
+import { createFileExclusive, writeFileAtomic } from './write.ts';
 
 const BASE = checkGuildSettings(JSON.parse(DEFAULT_TEXT));
 
@@ -100,6 +100,10 @@ describe('claudeMdMentions', () => {
 });
 
 describe('quote', () => {
+  it('escapes controls but keeps line breaks in a message', () => {
+    expect(escapeControls('a\nb\u001b\u009b\u202e')).toBe('a\nb\\u001b\\u009b\\u202e');
+  });
+
   it('shows controls, quotes, line separators and bidi overrides as escapes', () => {
     expect(quote('a"b\n\u001b\u007f\u009b ‮')).toBe(
       '"a\\"b\\n\\u001b\\u007f\\u009b\\u2028\\u202e"',
@@ -137,6 +141,7 @@ describe('runSettingsWrite on real files', () => {
       readText: (path) => readFileSync(path, 'utf8'),
       gh: () => Promise.resolve(LABELS.map((l) => `${JSON.stringify(l)}\n`).join('')),
       writeFile: writeFileAtomic,
+      createFile: createFileExclusive,
       out: () => undefined,
     });
   }
@@ -155,6 +160,12 @@ describe('runSettingsWrite on real files', () => {
     });
     expect(loaded.file.name).toBe('guild.settings.local.json');
     expect(loaded.settings.repo).toBe('me/company');
+  });
+
+  it('creates new local settings as 0600 when there were none', async () => {
+    expect(await run(['--write'])).toBe(0);
+    expect((await stat(join(root, 'guild.settings.local.json'))).mode & 0o777).toBe(0o600);
+    expect((await readdir(root)).filter((name) => name.endsWith('.tmp'))).toEqual([]);
   });
 
   it('writes nothing on a dry run', async () => {

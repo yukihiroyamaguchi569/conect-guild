@@ -62,6 +62,8 @@ export interface SettingsWriteDeps {
   readonly gh: GhRunner;
   /** Replaces the file atomically (temp file, then rename), 0600. */
   readonly writeFile: (path: string, content: string) => Promise<void>;
+  /** Creates the file whole, 0600, failing when it already exists (never replaces one). */
+  readonly createFile: (path: string, content: string) => Promise<void>;
   readonly out: (text: string) => void;
 }
 
@@ -187,7 +189,12 @@ async function writeSettings(
   deps: SettingsWriteDeps,
 ): Promise<void> {
   const target = join(deps.root, LOCAL_SETTINGS_FILE);
-  if (overwrite) await deps.writeFile(join(deps.root, BACKUP_FILE), deps.readText(target));
+  if (!overwrite) {
+    // A file that appeared after the check is not replaced without --overwrite.
+    await deps.createFile(target, settingsJson(settings));
+    return;
+  }
+  await deps.writeFile(join(deps.root, BACKUP_FILE), deps.readText(target));
   await deps.writeFile(target, settingsJson(settings));
 }
 
