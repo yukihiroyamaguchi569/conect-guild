@@ -98,15 +98,67 @@ export const guildSettingsSchema = z
     if (settings.departments.length !== DEPARTMENT_MEMBER_IDS.length) {
       issue(['departments'], `exactly ${String(DEPARTMENT_MEMBER_IDS.length)} departments (#18)`);
     }
-    for (const label of duplicates(labels)) issue(['departments'], `label ${label} twice`);
+    // Quoted as JSON: a value with a line break or a control character stays on one line.
+    for (const label of duplicates(labels)) {
+      issue(['departments'], `label ${JSON.stringify(label)} twice`);
+    }
     for (const member of duplicates(members)) issue(['departments'], `member ${member} twice`);
-    for (const dir of duplicates(dirs)) issue(['departments'], `session dir ${dir} twice`);
+    for (const dir of duplicates(dirs)) {
+      issue(['departments'], `session dir ${JSON.stringify(dir)} twice`);
+    }
     settings.branchPrefixes.forEach((rule, i) => {
       if (!labels.includes(rule.department)) {
         issue(['branchPrefixes', i, 'department'], 'not a department label');
       }
     });
   });
+
+/**
+ * What a terminal could act on, by Unicode category: the controls (Cc: C0 with the line breaks, DEL,
+ * C1), the format characters (Cf: every bidi mark, override and isolate, zero-width characters)
+ * and the line and paragraph separators (Zl, Zp). One character at a time (no `g` flag).
+ */
+const TERMINAL_CONTROL = /^[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]$/u;
+
+/**
+ * Every character a terminal could act on as a `\\uXXXX` escape, so text from a file or an input
+ * (a label, a key) is shown as characters on its own line and cannot move the cursor, add a line
+ * or reorder one. Shared with the settings writer (packages/collector/src/settingsText.ts).
+ */
+export function escapeForTerminal(text: string): string {
+  return Array.from(text, (char) => {
+    if (!TERMINAL_CONTROL.test(char)) return char;
+    // Each UTF-16 unit (a surrogate pair for a character past U+FFFF), as JSON writes them.
+    return Array.from(
+      { length: char.length },
+      (_, i) => `\\u${char.charCodeAt(i).toString(16).padStart(4, '0')}`,
+    ).join('');
+  }).join('');
+}
+
+function pathText(path: readonly PropertyKey[]): string {
+  return path
+    .map((key, i) => {
+      if (typeof key === 'number') return `[${String(key)}]`;
+      return i === 0 ? String(key) : `.${String(key)}`;
+    })
+    .join('');
+}
+
+/**
+ * The issues in the shape of z.prettifyError (`✖ message` and `→ at path`), but with each message
+ * and path kept on its own line: a value or key from the file (an unknown key with a line break,
+ * say) is escaped, so it can never add a line that looks like another result.
+ */
+export function describeIssues(error: z.ZodError): string {
+  return error.issues
+    .map((issue) => {
+      const message = `✖ ${escapeForTerminal(issue.message)}`;
+      if (issue.path.length === 0) return message;
+      return `${message}\n  → at ${escapeForTerminal(pathText(issue.path))}`;
+    })
+    .join('\n');
+}
 
 /** The settings once checked. */
 export type GuildSettings = z.output<typeof guildSettingsSchema>;
@@ -121,7 +173,7 @@ export function checkGuildSettings(
 ): GuildSettings {
   const result = guildSettingsSchema.safeParse(raw);
   if (!result.success) {
-    throw new Error(`${source} is invalid:\n${z.prettifyError(result.error)}`);
+    throw new Error(`${source} is invalid:\n${describeIssues(result.error)}`);
   }
   return result.data;
 }

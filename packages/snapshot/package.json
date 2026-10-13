@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./settings": "./src/settings.ts",
-    "./settingsFile": "./src/settingsFile.ts"
+    "./settingsFile": "./src/settingsFile.ts",
+    "./settingsSchema": "./src/settingsSchema.ts"
   },
   "dependencies": {
     "zod": "^4.6.5"

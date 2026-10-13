@@ -2,6 +2,10 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { SessionDepartment } from '@conect-guild/snapshot';
 import { GUILD_SETTINGS } from '@conect-guild/snapshot/settings';
+import { expandHome } from './src/home.ts';
+
+// Kept here too: the settings writer imports it from src/home.ts, which loads no settings.
+export { expandHome };
 
 /** Where a company session is started: the directory MulmoTerminal records for its grid cell. */
 export interface CompanySeat {
@@ -12,12 +16,6 @@ export interface CompanySeat {
 
 const HOME = homedir();
 const MULMOTERMINAL_HOME = join(HOME, '.mulmoterminal');
-
-/** `~` and `~/...` in guild.settings.json are under the home directory; other paths are absolute. */
-export function expandHome(dir: string, home: string): string {
-  if (dir === '~') return home;
-  return dir.startsWith('~/') ? join(home, dir.slice(2)) : dir;
-}
 
 interface SessionDirSettings {
   readonly commanderSessionDir: string;
