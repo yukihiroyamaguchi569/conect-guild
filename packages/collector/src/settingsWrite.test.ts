@@ -45,7 +45,7 @@ describe('runSettingsWrite --dry-run', () => {
     const out = f.output();
     expect(out).toContain('確認（まだ書いていません）');
     expect(out).toContain('出発点: guild.settings.json');
-    expect(out).toContain('departments[1]  "広報"  "~/company/pr"  "pr/"  見つかった');
+    expect(out).toMatch(/\n {2}"広報"（departments\[1\]） +"pr\/" +見つかった +"~\/company\/pr"\n/);
     expect(out).not.toContain('上書き');
     expect(out).not.toContain('警告');
     expect(out).not.toContain(NEXT_STEPS[0]);
@@ -281,7 +281,9 @@ describe('runSettingsWrite: departments mixed up (warn and go on)', () => {
     const f = fake({ stdin: JSON.stringify(data) });
     expect(await runSettingsWrite(['--dry-run'], f.deps)).toBe(0);
     const out = f.output();
-    expect(out).toContain('"広報"  "~/company/planning"  "pr/"  見つからない');
+    expect(out).toMatch(
+      /"広報"（departments\[1\]） +"pr\/" +見つからない +"~\/company\/planning"\n/,
+    );
     expect(out).toContain(
       'departments[1]: "~/company/planning" の CLAUDE.md にラベル "広報" が見つかりません。ほかの部門とフォルダが入れ替わっていませんか？',
     );
@@ -294,7 +296,9 @@ describe('runSettingsWrite: departments mixed up (warn and go on)', () => {
     const f = fake();
     f.files.delete('/home/me/company/accounting/CLAUDE.md');
     expect(await runSettingsWrite(['--write'], f.deps)).toBe(0);
-    expect(f.output()).toContain('"経理"  "~/company/accounting"  "accounting/"  読めない');
+    expect(f.output()).toMatch(
+      /"経理"（departments\[0\]） +"accounting\/" +読めない +"~\/company\/accounting"\n/,
+    );
     expect(f.output()).toContain('の CLAUDE.md を読めません（ラベルを突き合わせられません）');
   });
 
@@ -334,7 +338,7 @@ describe('runSettingsWrite: any string stays a string', () => {
       const row = f
         .output()
         .split('\n')
-        .find((line) => line.includes('departments[0]  '));
+        .find((line) => line.includes('（departments[0]）'));
       expect(row).toContain(JSON.stringify(label));
     },
   );
@@ -419,7 +423,7 @@ describe('runSettingsWrite: bidi and other format characters', () => {
     first.label = 'a\nb\u001b[2J';
     const f = fake({ stdin: JSON.stringify(data) });
     await runSettingsWrite(['--dry-run'], f.deps);
-    expect(f.output()).toContain('departments[0]  "a\\nb\\u001b[2J"');
+    expect(f.output()).toContain('"a\\nb\\u001b[2J"（departments[0]）');
     expect(f.output()).not.toContain('\u001b');
   });
 });

@@ -56,14 +56,29 @@ function overwriteLines(report: WriteReport): string[] {
   ];
 }
 
+/**
+ * One line per department: label (with its index, to match the error messages), prefix, CLAUDE.md
+ * and the folder last. Each column but the last is padded to its longest cell (by string length,
+ * after escaping), so the next column starts at the same place on every line.
+ */
+function departmentRows(departments: readonly DepartmentRow[]): string[] {
+  const cells = departments.map((d, i) => [
+    `${quote(d.label)}（departments[${String(i)}]）`,
+    quote(d.prefix),
+    CLAUDE_MD_TEXT[d.claudeMd],
+    quote(d.sessionDir),
+  ]);
+  const widths = [0, 1, 2].map((col) => Math.max(...cells.map((row) => row[col]?.length ?? 0)));
+  return cells.map(
+    (row) => `  ${row.map((cell, col) => cell.padEnd(widths[col] ?? 0)).join('  ')}`,
+  );
+}
+
 function departmentLines(report: WriteReport): string[] {
   if (report.departments.length === 0) return [];
   return [
-    '部門（ラベル / フォルダ / 接頭辞 / フォルダの CLAUDE.md にラベル）:',
-    ...report.departments.map(
-      (d, i) =>
-        `  departments[${String(i)}]  ${quote(d.label)}  ${quote(d.sessionDir)}  ${quote(d.prefix)}  ${CLAUDE_MD_TEXT[d.claudeMd]}`,
-    ),
+    '部門（ラベル / 接頭辞 / フォルダの CLAUDE.md にラベル / フォルダ）:',
+    ...departmentRows(report.departments),
     `branchPrefixes: 入力から ${String(report.departments.length)} 行、既存から ${String(report.keptBranchPrefixes)} 行を保つ`,
     'members（名前・色）と ruleChangePaths は出発点のまま（役が部門のラベルと同じだったメンバーは、新しいラベルに合わせる）',
   ];
