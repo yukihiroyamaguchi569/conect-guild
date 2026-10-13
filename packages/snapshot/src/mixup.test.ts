@@ -89,6 +89,25 @@ describe('suspectedMixups: the 30 days', () => {
     ).toEqual([]);
   });
 
+  it('counts a merge at now, and leaves out one after now (a clock behind GitHub)', () => {
+    expect(
+      suspectedMixups(
+        times(3, () => pr(1, [2], NOW)),
+        4,
+        NOW,
+      ),
+    ).toHaveLength(1);
+    expect(
+      suspectedMixups(
+        times(3, () => pr(1, [2], NOW + 1)),
+        4,
+        NOW,
+      ),
+    ).toEqual([]);
+    const prs = [...times(3, () => pr(1, [2])), ...times(5, () => pr(1, [1], NOW + 1))];
+    expect(suspectedMixups(prs, 4, NOW)).toEqual([{ from: 1, to: 2, count: 3, total: 3 }]);
+  });
+
   it('leaves old PRs out of the total as well', () => {
     const old = NOW - MIXUP_WINDOW_MS - 1;
     const prs = [...times(3, () => pr(1, [2])), ...times(5, () => pr(1, [1], old))];

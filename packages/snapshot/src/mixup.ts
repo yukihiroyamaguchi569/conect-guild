@@ -53,7 +53,8 @@ function tally(
     Array.from({ length: departmentCount }, () => 0),
   );
   for (const pr of prs) {
-    if (now - pr.mergedAt > windowMs) continue;
+    // Within [now - windowMs, now]: a merge ahead of this clock waits for a later check.
+    if (pr.mergedAt > now || now - pr.mergedAt > windowMs) continue;
     const linked = linkedDepartment(pr);
     if (pr.branchPosition === null || linked === null) continue;
     const row = counts[pr.branchPosition];
@@ -64,7 +65,7 @@ function tally(
 
 /**
  * The suspected mix-ups, by `from`: among the PRs merged within `windowMs` before `now` (both epoch
- * ms; exactly `windowMs` ago still counts) that count for department `from`, those tied to one
+ * ms; exactly `windowMs` ago and exactly `now` still count, later than `now` does not) that count for department `from`, those tied to one
  * other department `to` are at least `minCount` and more than half. At most one `to` per `from`.
  */
 export function suspectedMixups(
