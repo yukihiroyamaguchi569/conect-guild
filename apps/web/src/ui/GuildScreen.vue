@@ -15,6 +15,7 @@ import KingBubble from './KingBubble.vue';
 import MessageWindow from './MessageWindow.vue';
 import AutoDemoBanner from './AutoDemoBanner.vue';
 import MissingLabelsBanner from './MissingLabelsBanner.vue';
+import MixupsBanner from './MixupsBanner.vue';
 import PartyStatus from './PartyStatus.vue';
 import QuestBoard from './QuestBoard.vue';
 import SoundControl from './SoundControl.vue';
@@ -39,8 +40,13 @@ const demo = props.demo;
 /** はじめる waits for a click in the demo of ?demo=1 only; the automatic one starts itself. */
 const demoWaiting = computed(() => demo !== null && !demo.auto && !demo.started.value);
 /** Department labels missing in the repository (Issue #85), read on the live screen only. */
-const missingLabels = useMissingLabels(demo === null);
+const { missing: missingLabels, mixups } = useMissingLabels(demo === null);
 const showMissingLabels = computed(() => missingLabels.value.length > 0);
+/**
+ * Departments suspected to be mixed up (Issue #94). One strip at a time: the missing labels come
+ * first, and this shows once they are fixed.
+ */
+const showMixups = computed(() => !showMissingLabels.value && mixups.value.length > 0);
 
 const {
   state,
@@ -86,13 +92,14 @@ function onStageShown(shown: boolean): void {
 </script>
 
 <template>
-  <main class="guild" :class="{ 'guild--banner': demo?.auto || showMissingLabels }">
+  <main class="guild" :class="{ 'guild--banner': demo?.auto || showMissingLabels || showMixups }">
     <AutoDemoBanner
       v-if="demo?.auto"
       class="guild__banner"
       :collector-failure="props.collectorFailure"
     />
     <MissingLabelsBanner v-if="showMissingLabels" class="guild__banner" :missing="missingLabels" />
+    <MixupsBanner v-if="showMixups" class="guild__banner" :mixups="mixups" />
     <div class="stage" :class="{ 'stage--halted': state.halted }">
       <GuildCanvas
         class="stage__art"

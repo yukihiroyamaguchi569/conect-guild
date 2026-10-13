@@ -1,4 +1,5 @@
 import { snapshotSchema, type GithubPart, type SnapshotSessions } from '@conect-guild/snapshot';
+import type { Mixup } from '@conect-guild/snapshot/mixup';
 import { COLLECTOR_CONFIG } from '../collector.config.ts';
 import { parseCliArgs } from './args.ts';
 import { collectSnapshot } from './collect.ts';
@@ -11,6 +12,7 @@ import {
   missingAfter,
   type LabelCheck,
 } from './labels.ts';
+import { mixupReport } from './mixups.ts';
 import type { SessionsReading } from './sessions.ts';
 import { collectorStatusOf, statusContent, type GithubAttempt } from './status.ts';
 
@@ -32,7 +34,7 @@ export interface RunDeps {
 type FailureKind = CollectorErrorKind | 'unexpected';
 
 type GithubResult =
-  | { readonly ok: true; readonly part: GithubPart }
+  | { readonly ok: true; readonly part: GithubPart; readonly mixups: readonly Mixup[] }
   | { readonly ok: false; readonly kind: FailureKind };
 
 export type CycleResult =
@@ -55,12 +57,12 @@ async function fetchGithub(deps: RunDeps, now: Date): Promise<GithubResult> {
   try {
     return {
       ok: true,
-      part: await collectSnapshot(
+      ...(await collectSnapshot(
         deps.gh,
         COLLECTOR_CONFIG.repo,
         now,
         COLLECTOR_CONFIG.branchPrefixes,
-      ),
+      )),
     };
   } catch (error) {
     return { ok: false, kind: errorKind(error) };
@@ -125,13 +127,16 @@ function cycleResult(github: GithubResult, write: WriteResult | null): CycleResu
 }
 
 /** One full cycle (GitHub, sessions, write). Nothing is written unless GitHub succeeds. */
-export async function collectOnce(
-  deps: RunDeps,
-): Promise<{ readonly github: CycleResult; readonly sessions: SessionsReading }> {
+export async function collectOnce(deps: RunDeps): Promise<{
+  readonly github: CycleResult;
+  readonly sessions: SessionsReading;
+  /** Issue #94: the suspected mix-ups; empty when none or GitHub failed. */
+  readonly mixups: readonly Mixup[];
+}> {
   const github = await fetchGithub(deps, deps.now());
   const sessions = await readSessionsSafely(deps);
   const write = github.ok ? await writeSnapshot(deps, github.part, sessions) : null;
-  return { github: cycleResult(github, write), sessions };
+  return { github: cycleResult(github, write), sessions, mixups: github.ok ? github.mixups : [] };
 }
 
 function prefix(deps: RunDeps): string {
@@ -166,6 +171,12 @@ function checkRepoLabels(deps: RunDeps): Promise<LabelCheck> {
 /** Positions and kinds only (Issue #85); the label names stay out of the logs. */
 function reportLabels(deps: RunDeps, check: LabelCheck): void {
   const report = labelReport(check);
+  for (const line of report.lines) deps[report.level](`${prefix(deps)} ${line}`);
+}
+
+/** Positions and counts only (Issue #94); label names, titles and branch names stay out. */
+function reportMixups(deps: RunDeps, mixups: readonly Mixup[]): void {
+  const report = mixupReport(mixups);
   for (const line of report.lines) deps[report.level](`${prefix(deps)} ${line}`);
 }
 
@@ -211,6 +222,8 @@ interface LoopState {
   missingLabels: readonly number[] | null;
   /** The last label report logged; a check is logged only when it says something new. */
   labelsLogged: string | null;
+  /** Issue #94: the suspected mix-ups of the last good fetch; empty before one. */
+  mixups: readonly Mixup[];
 }
 
 function isGithubDue(lastAttemptAt: number | null, now: number): boolean {
@@ -243,7 +256,7 @@ async function updateStatus(
   if (state.githubAttempt === null) return;
   const writeFailure = write !== null && !write.ok ? write.kind : null;
   const content = statusContent(
-    collectorStatusOf(state.githubAttempt, writeFailure, state.missingLabels),
+    collectorStatusOf(state.githubAttempt, writeFailure, state.missingLabels, state.mixups),
   );
   if (content === state.statusWritten) return;
   const written = await writeStatusSafely(deps, content);
@@ -262,8 +275,15 @@ function startGithub(deps: RunDeps, state: LoopState, now: Date): Promise<void> 
     state.githubInFlight = null;
     if (deps.signal.aborted) return;
     state.githubAttempt = { at: now, failure: result.ok ? null : result.kind };
-    if (result.ok) state.github = result.part;
     reportCycle(deps, cycleResult(result, null));
+    if (!result.ok) return;
+    state.github = result.part;
+    // A failed fetch keeps the last finding. Logged only when it changes, so nothing at the
+    // start while nothing is suspected, and `mixups ok` once when it clears.
+    const changed =
+      mixupReport(result.mixups).lines.join('\n') !== mixupReport(state.mixups).lines.join('\n');
+    state.mixups = result.mixups;
+    if (changed) reportMixups(deps, result.mixups);
   });
   state.githubInFlight = running;
   return running;
@@ -341,6 +361,7 @@ async function runLoop(deps: RunDeps): Promise<void> {
     labelsInFlight: null,
     missingLabels: null,
     labelsLogged: null,
+    mixups: [],
   };
   // A function call keeps TypeScript from narrowing `aborted` across awaits.
   const stopped = (): boolean => deps.signal.aborted;
@@ -366,9 +387,11 @@ export async function runCollector(args: readonly string[], deps: RunDeps): Prom
     const [result, labels] = await Promise.all([collectOnce(deps), checkRepoLabels(deps)]);
     reportCycle(deps, result.github);
     reportLabels(deps, labels);
+    if (result.mixups.length > 0) reportMixups(deps, result.mixups);
     deps.log(`${prefix(deps)} ${sessionsSummary(result.sessions)}`);
     const failure = result.github.ok ? null : result.github.kind;
-    const status = collectorStatusOf({ at, failure }, null, missingAfter(null, labels));
+    const missing = missingAfter(null, labels);
+    const status = collectorStatusOf({ at, failure }, null, missing, result.mixups);
     if (!(await writeStatusSafely(deps, statusContent(status)))) reportStatusNotWritten(deps);
     return result.github.ok ? 0 : 1;
   }

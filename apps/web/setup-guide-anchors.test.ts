@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { COLLECT_GUIDE_URL, MISSING_LABELS_GUIDE_URL } from './src/project.ts';
+import { COLLECT_GUIDE_URL, MISSING_LABELS_GUIDE_URL, MIXUPS_GUIDE_URL } from './src/project.ts';
 
 /** GitHub's heading anchor: lower case, punctuation dropped, each space turned into `-`. */
 function githubAnchor(heading: string): string {
@@ -26,6 +26,11 @@ describe('the banners’ links into docs/setup.md', () => {
   it.each([
     ['集め方', COLLECT_GUIDE_URL, '2-自分のリポジトリで使う'],
     ['直し方', MISSING_LABELS_GUIDE_URL, '画面の帯に部門のラベルがリポジトリにありませんと出る'],
+    [
+      '取り違えの直し方',
+      MIXUPS_GUIDE_URL,
+      '画面の帯に部門の設定が入れ替わっているかもしれませんと出る',
+    ],
   ])('%s points at a heading that exists', (_name, url, anchor) => {
     expect(anchorOf(url)).toBe(anchor);
     expect(setupGuideAnchors()).toContain(anchor);

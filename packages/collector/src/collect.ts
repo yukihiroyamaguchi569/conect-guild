@@ -1,5 +1,6 @@
 import { SNAPSHOT_SCHEMA_VERSION, githubPartSchema, type GithubPart } from '@conect-guild/snapshot';
-import type { BranchPrefixRule } from '@conect-guild/snapshot/settings';
+import type { Mixup } from '@conect-guild/snapshot/mixup';
+import { DEPARTMENT_LABELS, type BranchPrefixRule } from '@conect-guild/snapshot/settings';
 import {
   issueNumbersOf,
   recentCutoff,
@@ -11,9 +12,17 @@ import {
 import { parseOrThrow, type GhRunner } from './gh.ts';
 import { fetchChangedFiles, fetchIssues, fetchPrs } from './github.ts';
 import { mapWithConcurrency } from './limit.ts';
+import { mixupsOf } from './mixups.ts';
 
 /** At most this many `gh` processes fetch changed files at once. */
 export const CHANGED_FILES_CONCURRENCY = 4;
+
+/** The GitHub part of the snapshot, and what the same lists say about mixed-up departments. */
+export interface GithubCollected {
+  readonly part: GithubPart;
+  /** Issue #94: kept out of the snapshot; positions and counts for the status file and logs. */
+  readonly mixups: readonly Mixup[];
+}
 
 /**
  * Fetch issues and PRs of `repo` and build the validated GitHub part of the snapshot.
@@ -24,7 +33,7 @@ export async function collectSnapshot(
   repo: string,
   now: Date,
   branchPrefixes: readonly BranchPrefixRule[],
-): Promise<GithubPart> {
+): Promise<GithubCollected> {
   const cutoff = recentCutoff(now);
   // PRs first, then Issues: every Issue that exists when the PRs are read is in the Issue list
   // read after, so a link to an Issue created between the two lists is kept (Issue #73).
@@ -42,7 +51,7 @@ export async function collectSnapshot(
         pr.state === 'open' ? await fetchChangedFiles(gh, repo, pr.number) : [],
       ),
   );
-  return parseOrThrow(githubPartSchema, {
+  const part = parseOrThrow(githubPartSchema, {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     fetchedAt: now.toISOString(),
     repo,
@@ -50,4 +59,6 @@ export async function collectSnapshot(
     prs,
     history: toHistory(rawIssues, rawPrs, repo, branchPrefixes),
   });
+  const departments = DEPARTMENT_LABELS;
+  return { part, mixups: mixupsOf(rawIssues, rawPrs, repo, { branchPrefixes, departments, now }) };
 }

@@ -1,16 +1,15 @@
-import { onBeforeUnmount, onMounted, type Ref } from 'vue';
+import { onBeforeUnmount, onMounted } from 'vue';
 import { loadCollectorStatus } from '../adapters/collectorStatus';
-import type { MissingLabel } from '../domain/missingLabels';
 import { REFRESH_INTERVAL_MS } from './guildStore';
-import { createLabelWatch } from './labelWatch';
+import { createLabelWatch, type LabelWatch } from './labelWatch';
 import { globalScheduler } from './scheduler';
 
 /**
- * Issue #85: the department labels the collector found missing, for the live screen's banner.
- * Not read in a demo (`active` false): its data are fictional, and the automatic demo has a
- * banner of its own.
+ * Issue #85: the department labels the collector found missing, and the departments it suspects
+ * are mixed up (Issue #94), for the live screen's banner. Not read in a demo (`active` false): its
+ * data are fictional, and the automatic demo has a banner of its own.
  */
-export function useMissingLabels(active: boolean): Readonly<Ref<readonly MissingLabel[]>> {
+export function useMissingLabels(active: boolean): Pick<LabelWatch, 'missing' | 'mixups'> {
   const watch = createLabelWatch({
     loadStatus: () => loadCollectorStatus(),
     now: Date.now,
@@ -23,5 +22,5 @@ export function useMissingLabels(active: boolean): Readonly<Ref<readonly Missing
   onBeforeUnmount(() => {
     watch.stop();
   });
-  return watch.missing;
+  return { missing: watch.missing, mixups: watch.mixups };
 }
