@@ -51,6 +51,7 @@ http://127.0.0.1:5173 を開くだけで、架空のクエストのデモが動�
 
 - 設計: [docs/DESIGN.md](docs/DESIGN.md)
 - 自分のチームで使う（設定・収集・データの扱い）: [docs/setup.md](docs/setup.md)
+- 設定ファイルを Claude Code に作らせる: conect-guild の直下で `/guild-setup`（[docs/setup.md の 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える)）
 - 司令塔と部門の AI を GitHub で回す流儀と CLAUDE.md の雛形: [docs/orchestration.md](docs/orchestration.md)
 - 変更履歴: [docs/changes/](docs/changes/)
 
