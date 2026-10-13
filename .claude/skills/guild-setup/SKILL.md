@@ -65,7 +65,7 @@ conect-guild のリポジトリ直下で、利用者の会社の値を集め、`
   | 0 | 経理 | accounting/ | 見つかった | ~/example-company/accounting |
 
   `claudeMd` は `found` → 見つかった、`not-found` → **見つからない**、`no-file` → **読めない** と書く
-- 入力に無い値は出発点のまま保つこと: メンバーの名前・色、`ruleChangePaths`、既存の接頭辞の行（`keptBranchPrefixes` 行）。メンバーの役は、出発点で部門のラベルと同じだったものだけ新しいラベルに変わる。メンバーの名前・色は、あとで docs/setup.md の 2-2 の表を見て手で変えられる
+- 入力に無い値は出発点のまま保つこと: メンバーの名前・色、`ruleChangePaths`、既存の接頭辞の行のうち、新しいラベルのどれかを指し、接頭辞が入力と重ならないもの（`keptBranchPrefixes` 行。ラベルを変えた部門を指していた行は消える）。メンバーの役は、出発点で部門のラベルと同じだったものだけ新しいラベルに変わる。メンバーの名前・色は、あとで docs/setup.md の 2-2 の表を見て手で変えられる
 - `overwrite` が `true` なら「`guild.settings.local.json` が既にあり、書くと上書きになる」
 - **警告**（`warnings`。書くことはできる）は 1 件ずつ見出しを付けて目立たせ、意味と次にやることを添える。警告の `departments[i]` は表の `#` が i の行
   - 「ラベル … がリポジトリにありません」: そのラベルの Issue が部門の机に配られない。`gh label create` で作るか、ラベル名をそろえる

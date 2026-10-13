@@ -154,7 +154,7 @@ npm run settings:write -- --dry-run < input.json   # 書かずに、確認の表
 npm run settings:write -- --write < input.json     # 書く（guild.settings.local.json が既にあるときは --overwrite も付ける）
 ```
 
-- 入力に無い項目（`members` の名前・色、`ruleChangePaths`、`branchPrefixes` の `docs/` で始まる行など）は、いまの設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の値を保ちます
+- 入力に無い項目（`members` の名前・色、`ruleChangePaths`、`branchPrefixes` の `docs/` で始まる行など）は、いまの設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の値を保ちます。ただし `branchPrefixes` の既存の行は、入力のラベルのどれかを指すものだけを保ちます（ラベルを変えた部門を指していた行は消えます）
 - 既にある `guild.settings.local.json` を上書きするときは、前の内容を `guild.settings.local.json.bak`（git に入りません）に残します。戻すときはこのファイルを `guild.settings.local.json` に名前を変えます
 - `--json` を付けると、同じ結果を JSON で出します
 
