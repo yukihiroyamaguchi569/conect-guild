@@ -61,7 +61,9 @@ gh repo view <owner/name>   # 眺めたいリポジトリ（例: your-name/my-co
 
 ### 2-2. 設定ファイルを作って書き換える
 
-リポジトリ名・5 つのフォルダ・4 つのラベルと接頭辞を書き換えるだけなら、手で書く代わりに道具（`npm run settings:write`）でも書けます（[2-2b](#2-2b-道具で書くnpm-run-settingswrite)）。
+**Claude Code を使うなら、スキルで書けます。** conect-guild の直下で Claude Code を起動し、`/guild-setup` を実行します（「guild の設定を作って」と頼んでも使われます）。スキルが司令塔のフォルダとリポジトリを聞き、司令塔の `CLAUDE.md` の部門の表（[orchestration.md の 4 章](orchestration.md#4-司令塔の-claudemd-の雛形)の形）から値を集め、2-2b の道具で確かめた結果を確認の表と警告にして見せます。OK と答えたときだけ `guild.settings.local.json` を書きます。書けたら 2-3 に進みます。
+
+手で書くときは、下の手順に従います。リポジトリ名・5 つのフォルダ・4 つのラベルと接頭辞を書き換えるだけなら、手で書く代わりに道具（`npm run settings:write`）でも書けます（[2-2b](#2-2b-道具で書くnpm-run-settingswrite)）。
 
 **やること**
 
@@ -126,7 +128,7 @@ cp guild.settings.json guild.settings.local.json
 
 ### 2-2b. 道具で書く（`npm run settings:write`）
 
-2-2 の手作業の代わりに使えます。値だけを書いた JSON を標準入力で渡すと、検証してから `guild.settings.local.json` を書きます。対話で値を集める入口（Claude Code のスキル）はこれから用意します（[#79](https://github.com/yukihiroyamaguchi569/conect-guild/issues/79)）。
+2-2 の手作業の代わりに使えます。値だけを書いた JSON を標準入力で渡すと、検証してから `guild.settings.local.json` を書きます。2-2 の最初のスキル（`/guild-setup`）も、この道具で確かめて書きます。
 
 **やること**
 
@@ -152,7 +154,7 @@ npm run settings:write -- --dry-run < input.json   # 書かずに、確認の表
 npm run settings:write -- --write < input.json     # 書く（guild.settings.local.json が既にあるときは --overwrite も付ける）
 ```
 
-- 入力に無い項目（`members` の名前・色、`ruleChangePaths`、`branchPrefixes` の `docs/` で始まる行など）は、いまの設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の値を保ちます
+- 入力に無い項目（`members` の名前・色、`ruleChangePaths`、`branchPrefixes` の `docs/` で始まる行など）は、いまの設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の値を保ちます。ただし `branchPrefixes` の既存の行は、入力のラベルのどれかを指すものだけを保ちます（ラベルを変えた部門を指していた行は消えます）
 - 既にある `guild.settings.local.json` を上書きするときは、前の内容を `guild.settings.local.json.bak`（git に入りません）に残します。戻すときはこのファイルを `guild.settings.local.json` に名前を変えます
 - `--json` を付けると、同じ結果を JSON で出します
 

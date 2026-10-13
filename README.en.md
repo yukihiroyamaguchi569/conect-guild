@@ -51,6 +51,7 @@ To watch or film it with sound from the start, open http://127.0.0.1:5173/?demo=
 
 - Design: [docs/DESIGN.md](docs/DESIGN.md) (Japanese)
 - Using it with your own team (settings, collecting, data handling): [docs/setup.md](docs/setup.md) (Japanese)
+- Having Claude Code write your settings file: run `/guild-setup` in the conect-guild root ([docs/setup.md 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える), Japanese)
 - How the commander and department AIs work through GitHub, with CLAUDE.md templates: [docs/orchestration.md](docs/orchestration.md) (Japanese)
 - Changelog: [docs/changes/](docs/changes/) (Japanese)
 
