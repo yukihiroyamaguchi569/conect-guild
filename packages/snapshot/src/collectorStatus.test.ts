@@ -56,3 +56,53 @@ describe('collectorStatusSchema', () => {
     expect(collectorStatusSchema.safeParse(value).success).toBe(false);
   });
 });
+
+describe('collectorStatusSchema: suspected mix-ups (Issue #94)', () => {
+  it('accepts the suspected mix-ups of departments (Issue #94)', () => {
+    const mixups = [
+      { from: 1, to: 2 },
+      { from: 2, to: 1 },
+    ];
+    expect(
+      collectorStatusSchema.parse({ ok: true, attemptedAt: AT, suspectedMixups: mixups }),
+    ).toEqual({ ok: true, attemptedAt: AT, suspectedMixups: mixups });
+    const failed = {
+      ok: false,
+      attemptedAt: AT,
+      kind: 'gh-failed',
+      missingLabels: [0],
+      suspectedMixups: [{ from: 3, to: 0 }],
+    } as const;
+    expect(collectorStatusSchema.parse(failed)).toEqual(failed);
+  });
+
+  it.each([
+    ['no mix-ups', []],
+    ['a department mixed with itself', [{ from: 1, to: 1 }]],
+    ['a position past the departments', [{ from: 4, to: 0 }]],
+    ['a negative position', [{ from: 0, to: -1 }]],
+    ['a fraction', [{ from: 0.5, to: 1 }]],
+    [
+      'two for one department',
+      [
+        { from: 1, to: 2 },
+        { from: 1, to: 3 },
+      ],
+    ],
+    [
+      'out of order',
+      [
+        { from: 2, to: 1 },
+        { from: 1, to: 2 },
+      ],
+    ],
+    ['counts', [{ from: 1, to: 2, count: 3 }]],
+    ['label names', [{ from: '広報', to: '企画' }]],
+    ['no to', [{ from: 1 }]],
+    ['no array', { from: 1, to: 2 }],
+  ])('rejects suspected mix-ups with %s', (_label, suspectedMixups) => {
+    expect(
+      collectorStatusSchema.safeParse({ ok: true, attemptedAt: AT, suspectedMixups }).success,
+    ).toBe(false);
+  });
+});

@@ -164,17 +164,39 @@ export const missingLabelsSchema = z
   .min(1)
   .refine(strictlyAscending, 'ascending, no repeats');
 
+const departmentPositionSchema = z
+  .number()
+  .int()
+  .nonnegative()
+  .max(DEPARTMENT_LABELS.length - 1);
+
+/**
+ * Issue #94: the departments whose prefix's merged PRs keep tying to another department's Issues
+ * (packages/snapshot/src/mixup.ts), from the last good fetch. Positions only, no label names or
+ * counts. One `to` per `from`, in ascending `from`. Left out when there is none.
+ */
+export const suspectedMixupsSchema = z
+  .array(
+    z
+      .strictObject({ from: departmentPositionSchema, to: departmentPositionSchema })
+      .refine((m) => m.from !== m.to, 'from and to differ'),
+  )
+  .min(1)
+  .refine((mixups) => strictlyAscending(mixups.map((m) => m.from)), 'ascending from, no repeats');
+
 export const collectorStatusSchema = z.discriminatedUnion('ok', [
   z.strictObject({
     ok: z.literal(true),
     attemptedAt: isoDateTime,
     missingLabels: missingLabelsSchema.optional(),
+    suspectedMixups: suspectedMixupsSchema.optional(),
   }),
   z.strictObject({
     ok: z.literal(false),
     attemptedAt: isoDateTime,
     kind: collectorFailureKindSchema,
     missingLabels: missingLabelsSchema.optional(),
+    suspectedMixups: suspectedMixupsSchema.optional(),
   }),
 ]);
 
