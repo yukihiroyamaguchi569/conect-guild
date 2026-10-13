@@ -125,7 +125,7 @@ describe('mixupReport', () => {
     expect(report.level).toBe('error');
     expect(report.lines).toEqual([
       'mixups suspected: departments[1] と departments[2] が入れ替わっているかもしれない（直近 30 日のマージ: departments[1] の接頭辞の PR 4/5 件が departments[2] のラベルの Issue、departments[2] の接頭辞の PR 3/3 件が departments[1] のラベルの Issue）',
-      '次にやること: 設定（guild.settings.local.json、無ければ guild.settings.json）の branchPrefixes の department と departments の並び（label・sessionDir）が入れ替わっていないか確かめてください（docs/setup.md の「困ったとき」）',
+      '次にやること: 設定（guild.settings.local.json、無ければ guild.settings.json）の branchPrefixes の department が、その接頭辞のブランチを作る部門のラベルになっているか確かめてください。合っていれば、部門のフォルダの CLAUDE.md が指示するラベルと接頭辞を確かめてください（docs/setup.md の「困ったとき」）',
     ]);
   });
 

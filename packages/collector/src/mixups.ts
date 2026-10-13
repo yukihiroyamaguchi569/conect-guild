@@ -66,7 +66,7 @@ export function mixupsOf(
 const DAYS = String(MIXUP_WINDOW_MS / (24 * 60 * 60 * 1000));
 
 const MIXUPS_NEXT_STEP =
-  '次にやること: 設定（guild.settings.local.json、無ければ guild.settings.json）の branchPrefixes の department と departments の並び（label・sessionDir）が入れ替わっていないか確かめてください（docs/setup.md の「困ったとき」）';
+  '次にやること: 設定（guild.settings.local.json、無ければ guild.settings.json）の branchPrefixes の department が、その接頭辞のブランチを作る部門のラベルになっているか確かめてください。合っていれば、部門のフォルダの CLAUDE.md が指示するラベルと接頭辞を確かめてください（docs/setup.md の「困ったとき」）';
 
 function at(i: number): string {
   return `departments[${String(i)}]`;
