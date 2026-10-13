@@ -140,3 +140,62 @@ describe('createLabelWatch: stale, unchanged and stopped', () => {
     watch.stop();
   });
 });
+
+/** Issue #94: the suspected mix-ups come from the same status file. */
+describe('createLabelWatch: suspected mix-ups', () => {
+  function mixedUp(at: number = NOW): CollectorStatusRead {
+    return {
+      kind: 'status',
+      status: {
+        ok: true,
+        attemptedAt: new Date(at).toISOString(),
+        missingLabels: [0],
+        suspectedMixups: [{ from: 3, to: 1 }],
+      },
+    };
+  }
+  const ONE_WAY = [
+    {
+      kind: 'one-way',
+      from: { position: 3, label: DEPARTMENT_LABELS[3] },
+      to: { position: 1, label: DEPARTMENT_LABELS[1] },
+    },
+  ];
+
+  it('shows them next to the missing labels, and drops them once cleared', async () => {
+    const watch = watchWith(reader([mixedUp(), found(undefined)]));
+    watch.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(watch.mixups.value).toEqual(ONE_WAY);
+    expect(positions(watch)).toEqual([0]);
+    await vi.advanceTimersByTimeAsync(INTERVAL_MS);
+    expect(watch.mixups.value).toEqual([]);
+    watch.stop();
+  });
+
+  it('keeps them through an unreadable read and the same finding, and stop clears them', async () => {
+    const watch = watchWith(reader([mixedUp(), UNREADABLE, mixedUp()]));
+    watch.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const shown = watch.mixups.value;
+    await vi.advanceTimersByTimeAsync(2 * INTERVAL_MS);
+    expect(watch.mixups.value).toBe(shown);
+    watch.stop();
+    expect(watch.mixups.value).toEqual([]);
+  });
+
+  it('drops them once the status is stale, and 204 clears them', async () => {
+    const stale = watchWith(reader([mixedUp(NOW - STALE_AFTER_MS - 1)]));
+    stale.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(stale.mixups.value).toEqual([]);
+    stale.stop();
+    const absent = watchWith(reader([mixedUp(), ABSENT]));
+    absent.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(absent.mixups.value).toEqual(ONE_WAY);
+    await vi.advanceTimersByTimeAsync(INTERVAL_MS);
+    expect(absent.mixups.value).toEqual([]);
+    absent.stop();
+  });
+});

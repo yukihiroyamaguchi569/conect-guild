@@ -12,3 +12,6 @@ export const COLLECT_GUIDE_URL = `${SETUP_GUIDE_URL}#2-自分のリポジトリ�
 
 /** The part of docs/setup.md on the missing department labels (Issue #85). */
 export const MISSING_LABELS_GUIDE_URL = `${SETUP_GUIDE_URL}#画面の帯に部門のラベルがリポジトリにありませんと出る`;
+
+/** The part of docs/setup.md on the departments suspected to be mixed up (Issue #94). */
+export const MIXUPS_GUIDE_URL = `${SETUP_GUIDE_URL}#画面の帯に部門の設定が入れ替わっているかもしれませんと出る`;
