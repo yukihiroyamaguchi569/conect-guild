@@ -54,7 +54,12 @@ describe('collectSnapshot', () => {
       inFlight -= 1;
       return lines(['a.md']);
     };
-    const snapshot = await collectSnapshot(gh, REPO, new Date('2026-10-12T00:00:00.000Z'), []);
+    const { part: snapshot } = await collectSnapshot(
+      gh,
+      REPO,
+      new Date('2026-10-12T00:00:00.000Z'),
+      [],
+    );
     expect(fileCalls).toBe(OPEN_PR_COUNT);
     expect(peak).toBe(CHANGED_FILES_CONCURRENCY);
     expect(snapshot.prs.every((pr) => pr.changedFiles.length === 1)).toBe(true);
@@ -104,7 +109,7 @@ describe('collectSnapshot: order of the lists', () => {
     expect(calls).toEqual(['prs']);
     prList.resolve(lines([{ ...openPr(10), body: 'Closes #2' }]));
     issueTwoExists = true;
-    const snapshot = await run;
+    const { part: snapshot } = await run;
     expect(calls).toEqual(['prs', 'issues']);
     expect(snapshot.prs.map((pr) => pr.linkedIssues)).toEqual([[2]]);
   });

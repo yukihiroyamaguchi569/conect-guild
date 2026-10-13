@@ -14,15 +14,19 @@ export function collectorStatusOf(
   attempt: GithubAttempt,
   writeFailure: CollectorFailureKind | null,
   missingLabels: readonly number[] | null = null,
+  mixups: readonly { readonly from: number; readonly to: number }[] = [],
 ): CollectorStatus {
   const attemptedAt = attempt.at.toISOString();
   const kind = attempt.failure ?? writeFailure;
   // Issue #85: only when a check found labels missing; left out when all are there or unknown.
   const labels =
     missingLabels !== null && missingLabels.length > 0 ? { missingLabels: [...missingLabels] } : {};
+  // Issue #94: positions only (no counts), and only when a mix-up is suspected.
+  const suspected =
+    mixups.length > 0 ? { suspectedMixups: mixups.map(({ from, to }) => ({ from, to })) } : {};
   return kind === null
-    ? { ok: true, attemptedAt, ...labels }
-    : { ok: false, attemptedAt, kind, ...labels };
+    ? { ok: true, attemptedAt, ...labels, ...suspected }
+    : { ok: false, attemptedAt, kind, ...labels, ...suspected };
 }
 
 /** The file's content: one JSON object and a newline. */
