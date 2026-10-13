@@ -22,7 +22,7 @@ conect-guild のリポジトリ直下で、利用者の会社の値を集め、`
    - リポジトリ: Issue と PR で仕事を回す GitHub のリポジトリ（`owner/name`）。司令塔のフォルダが clone なら `git -C <司令塔のフォルダ> remote get-url origin` で候補を出してよいが、利用者に確かめる
 2. `<司令塔のフォルダ>/CLAUDE.md` の部門の表（[docs/orchestration.md の 4 章](../../../docs/orchestration.md#4-司令塔の-claudemd-の雛形)の雛形では「部門 | 担当 | フォルダ | Issue ラベル | ブランチの接頭辞」）から、4 つの部門の候補を表の上から順に読み取る
    - ラベル（`label`）: 「Issue ラベル」の列。GitHub のラベル名と 1 文字も違わないこと
-   - フォルダ（`sessionDir`）: 司令塔のフォルダに「フォルダ」の列をつないだパス。末尾の `/` は付けない
+   - フォルダ（`sessionDir`）: 「フォルダ」の列。`accounting/` のような相対パスなら司令塔のフォルダにつなぎ、`~` や `/` で始まるならそのまま使う。末尾の `/` は付けない
    - 接頭辞（`prefix`）: 「ブランチの接頭辞」の列（例: `accounting/`）
 3. 表が無い、部門が 4 つでない、列が読めないなど、読み取れない値は利用者に聞く。推測で埋めない
 
@@ -51,7 +51,7 @@ conect-guild のリポジトリ直下で、利用者の会社の値を集め、`
    npm run --silent settings:write -- --dry-run --json < <入力ファイル>
    ```
 
-   終了コードは 0（エラーなし）、1（エラーあり）、2（引数の誤り）。出力の JSON の項目: `ok`（エラーが無い）、`base`（入力に無い値を保つ出発点のファイル）、`overwrite`（`guild.settings.local.json` が既にある）、`repo`、`commanderSessionDir`、`departments[]`（`label`・`sessionDir`・`prefix`・`claudeMd`）、`keptBranchPrefixes`、`warnings[]`、`errors[]`
+   終了コードは 0（エラーなし）、1（エラーあり）、2（引数の誤り）。出力の JSON の項目: `mode`（`dry-run` か `write`）、`ok`（エラーが無い）、`written`（書いた）、`base`（入力に無い値を保つ出発点のファイル）、`overwrite`（`guild.settings.local.json` が既にある）、`repo`、`commanderSessionDir`、`departments[]`（`label`・`sessionDir`・`prefix`・`claudeMd`）、`keptBranchPrefixes`、`warnings[]`、`errors[]`
 
 ## 3. 確認の表を見せて OK をもらう
 
@@ -78,15 +78,16 @@ conect-guild のリポジトリ直下で、利用者の会社の値を集め、`
 
 ## 4. 書く
 
-1. `overwrite` が `false` なら、同じ入力ファイルで書く
+1. 書く直前に、同じ入力ファイルで `--dry-run --json` をもう一度実行し、結果が 3 で見せたものと同じか確かめる。違えば（その間に `guild.settings.local.json` ができた・消えた、フォルダが変わったなど）3 に戻る。入力に無い値は書くときの `guild.settings.local.json`（無ければ `guild.settings.json`）から取るので、確認から書くまでのあいだにそのファイルを手で変えたと言われたら、3 に戻る
+2. `overwrite` が `false` なら、同じ入力ファイルで書く
 
    ```bash
    npm run --silent settings:write -- --write --json < <入力ファイル>
    ```
 
-2. `overwrite` が `true` なら、先に説明する: 今の `guild.settings.local.json` を置き換える。前の内容は `guild.settings.local.json.bak` に残り、前からある `.bak` は置き換わる。戻すときは `.bak` を `guild.settings.local.json` に名前を変える。上書きの OK をもらってから `--write --overwrite --json` で書く
-3. 結果の `written` が `true` なら書けた。`false` なら `errors` を見せて止まる。別の引数を足して勝手にやり直さない（「既にあります」なら 4-2 の説明からやり直す）
-4. 入力ファイルを消す
+3. `overwrite` が `true` なら、先に説明する: 今の `guild.settings.local.json` を置き換える。前の内容は `guild.settings.local.json.bak` に残り、前からある `.bak` は置き換わる。戻すときは `.bak` を `guild.settings.local.json` に名前を変える。上書きの OK をもらってから `--write --overwrite --json` で書く
+4. 結果の `written` が `true` なら書けた。`false` なら `errors` を見せて止まる。別の引数を足して勝手にやり直さない（「既にあります」なら 4-3 の説明からやり直す）
+5. 入力ファイルを消す
 
 ## 5. 書いたあと
 
