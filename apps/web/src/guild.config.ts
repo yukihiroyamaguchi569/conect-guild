@@ -1,19 +1,18 @@
 /**
  * Guild settings for the web app: the team's values come from the repository root's
- * guild.settings.json (validated when it is imported); the seats and the time windows the domain
- * uses stay here.
+ * guild.settings.json (validated when it is imported), derived by guildFromSettings.ts (which also
+ * holds the seats); the time windows the domain uses stay here.
  */
-import { z } from 'zod';
 import {
   DEPARTMENT_LABELS,
   GUILD_SETTINGS,
   departmentLabelSchema,
-  memberIdSchema,
   type BranchPrefixRule,
   type DepartmentLabel,
   type MemberId,
   type RuleChangePath,
 } from '@conect-guild/snapshot/settings';
+import { guildFromSettings, type MemberConfig } from './guildFromSettings';
 
 export {
   DEPARTMENT_LABELS,
@@ -22,60 +21,20 @@ export {
   type MemberId,
   type RuleChangePath,
 };
+export {
+  guildFromSettings,
+  type Guild,
+  type MemberConfig,
+  type TilePos,
+} from './guildFromSettings';
 
-/** A cell on the office tile map (32 px tiles, 32 x 18; src/render/map.ts). */
-export interface TilePos {
-  readonly col: number;
-  readonly row: number;
-}
+const GUILD = guildFromSettings(GUILD_SETTINGS);
 
-export interface MemberConfig {
-  readonly id: MemberId;
-  /** Display name. */
-  readonly name: string;
-  /** Role shown next to the name. */
-  readonly role: string;
-  /** Accent colour for the name plate and speech bubble. */
-  readonly color: string;
-  /**
-   * Where the member is when at home: the tile under their feet (src/render/map.ts). Department
-   * members sit on the chair right behind their desk; render/seating.ts sinks them into it.
-   */
-  readonly seat: TilePos;
-}
+export const MEMBERS: Readonly<Record<MemberId, MemberConfig>> = GUILD.members;
 
-/** Seats for the four department desks, the reception and the throne (Issue #18 to vary them). */
-const SEATS: Readonly<Record<MemberId, TilePos>> = {
-  kaname: { col: 16, row: 7 },
-  minori: { col: 12, row: 4 },
-  hibiki: { col: 20, row: 4 },
-  hirame: { col: 11, row: 10 },
-  sasae: { col: 21, row: 10 },
-  // The throne is three tiles wide and high (cols 15-17, rows 2-4): the king sits in its middle.
-  yukihiro: { col: 16, row: 3 },
-};
-
-function memberConfig(id: MemberId): MemberConfig {
-  const { name, role, color } = GUILD_SETTINGS.members[id];
-  return { id, name, role, color, seat: SEATS[id] };
-}
-
-export const MEMBERS: Readonly<Record<MemberId, MemberConfig>> = {
-  kaname: memberConfig('kaname'),
-  minori: memberConfig('minori'),
-  hibiki: memberConfig('hibiki'),
-  hirame: memberConfig('hirame'),
-  sasae: memberConfig('sasae'),
-  yukihiro: memberConfig('yukihiro'),
-};
-
-/**
- * Department label → the member who works it. The record schema needs every label, so a label
- * the settings do not map fails here instead of yielding undefined later.
- */
-export const DEPARTMENT_MEMBER: Readonly<Record<DepartmentLabel, MemberId>> = z
-  .record(departmentLabelSchema, memberIdSchema)
-  .parse(Object.fromEntries(GUILD_SETTINGS.departments.map((d) => [d.label, d.member])));
+/** Department label → the member who works it (see guildFromSettings). */
+export const DEPARTMENT_MEMBER: Readonly<Record<DepartmentLabel, MemberId>> =
+  GUILD.departmentMember;
 
 /**
  * The member who works a department. Labels come from the settings, so they are plain strings to
@@ -91,10 +50,10 @@ export function departmentMember(label: DepartmentLabel): MemberId {
  * Branch name prefix → department, used only when a PR links no labelled Issue.
  * Checked top to bottom; the first rule whose prefix the branch starts with wins.
  */
-export const BRANCH_PREFIX_RULES: readonly BranchPrefixRule[] = GUILD_SETTINGS.branchPrefixes;
+export const BRANCH_PREFIX_RULES: readonly BranchPrefixRule[] = GUILD.branchPrefixRules;
 
 /** Paths whose change needs the president's merge (see domain/party.ts isRuleChangePath). */
-export const RULE_CHANGE_PATHS: readonly RuleChangePath[] = GUILD_SETTINGS.ruleChangePaths;
+export const RULE_CHANGE_PATHS: readonly RuleChangePath[] = GUILD.ruleChangePaths;
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
