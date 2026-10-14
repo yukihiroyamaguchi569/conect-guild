@@ -9,6 +9,7 @@ import {
   spriteRect,
   isInsideMap,
   isWalkable,
+  isWalkableIn,
   LOGICAL_HEIGHT,
   LOGICAL_WIDTH,
   MAP_COLS,
@@ -18,7 +19,9 @@ import {
   TALLEST_WINDOW_EXTENTS,
   TILE_NAMES,
   WINDOW_EXTENTS,
+  windowExtentsFor,
 } from './map';
+import { layoutFor } from './layouts/catalog';
 import { AMBIENT, OVERHEAD_TOP, SPRITE_SIZE } from './metrics';
 import { findPath } from './path';
 
@@ -301,5 +304,28 @@ describe('map: windows over the canvas (GuildScreen.vue)', () => {
 
   it('puts the bubble top over the sprite top', () => {
     expect(OVERHEAD_TOP).toBeGreaterThan(SPRITE_SIZE);
+  });
+});
+
+describe('map: the windows of each layout', () => {
+  it('lowers the quest board where the layout says (five and six departments)', () => {
+    expect(windowExtentsFor(layoutFor(4)).board.bottom).toBeCloseTo(9.216 + 31 * 10.24);
+    for (const count of [5, 6]) {
+      expect(windowExtentsFor(layoutFor(count)).board.bottom).toBeCloseTo(9.216 + 22 * 10.24);
+    }
+  });
+
+  it('lets members walk under the party window only on the tiles the layout lists', () => {
+    const six = layoutFor(6);
+    // The sales desk's seat and the way from it (layouts/largeRoom.ts SALES_DESK).
+    expect(isWalkableIn(six, { col: 26, row: 10 })).toBe(true);
+    expect(isWalkableIn(six, { col: 24, row: 11 })).toBe(true);
+    expect(isWalkableIn({ ...six, underPartyWindow: [] }, { col: 26, row: 10 })).toBe(false);
+    // Not listed, as far under the window.
+    expect(isWalkableIn(six, { col: 27, row: 10 })).toBe(false);
+    // A listed tile under another window stays out of reach.
+    expect(
+      isWalkableIn({ ...six, underPartyWindow: [{ col: 5, row: 5 }] }, { col: 5, row: 5 }),
+    ).toBe(false);
   });
 });
