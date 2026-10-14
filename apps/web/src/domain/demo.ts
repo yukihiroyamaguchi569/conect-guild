@@ -293,6 +293,8 @@ function sessionsOf(loop: number, inLoopMs: number, nowMs: number): Snapshot['se
         state: byDepartment.get(department) ?? 'idle',
       })),
     ],
+    // The demo has no guests (Issue #108).
+    guests: [],
   };
 }
 
@@ -316,5 +318,6 @@ export function demoSnapshotAt(elapsedMs: number, nowMs: number): Snapshot {
     prs: [...(previous?.prs ?? []), ...current.prs],
     history: historyUntil(loop, inLoop),
     sessions: sessionsOf(loop, inLoop, nowMs),
+    guests: [],
   };
 }

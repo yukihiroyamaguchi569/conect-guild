@@ -32,7 +32,12 @@ export interface LoadSnapshotOptions {
   readonly timeoutMs?: number;
   /** The repository the snapshot must be of; null (the default) checks none. */
   readonly expectedRepo?: string | null;
+  /** The guests the snapshot's guests must fit; defaults to {@link defaultExpectedGuests}. */
+  readonly expectedGuests?: ExpectedGuests | null;
 }
+
+/** Issue #108: the settings' guests by position, each its repository or null when it has none. */
+export type ExpectedGuests = readonly (string | null)[];
 
 const DEFAULT_SNAPSHOT_TIMEOUT_MS = 10_000;
 
@@ -54,6 +59,37 @@ export function defaultExpectedRepo(): string | null {
   return import.meta.env.DEV ? GUILD_SETTINGS.repo : null;
 }
 
+/**
+ * The real data's guests must be the settings' guests (Issue #108). The fictional sample of a
+ * build is not checked, like its repository.
+ */
+export function defaultExpectedGuests(): ExpectedGuests | null {
+  return import.meta.env.DEV ? (GUILD_SETTINGS.guests ?? []).map((g) => g.repo ?? null) : null;
+}
+
+/**
+ * True when the snapshot's guests are the expected ones: as many, and each part (when fetched) of
+ * the repository the settings give that guest.
+ */
+function guestsFit(snapshot: Snapshot, expected: ExpectedGuests): boolean {
+  if (snapshot.guests.length !== expected.length) return false;
+  return snapshot.guests.every((part, i) => part === null || part.repo === expected[i]);
+}
+
+/**
+ * The snapshot with its guests dropped when they do not fit the settings (the settings changed and
+ * the collector has not caught up). Only the guests are ignored: the rest is shown as usual.
+ */
+export function withFittingGuests(snapshot: Snapshot, expected: ExpectedGuests | null): Snapshot {
+  if (expected === null || guestsFit(snapshot, expected)) return snapshot;
+  const { sessions } = snapshot;
+  return {
+    ...snapshot,
+    guests: [],
+    sessions: sessions.status === 'ok' ? { ...sessions, guests: [] } : sessions,
+  };
+}
+
 const versionProbeSchema = z.looseObject({ schemaVersion: z.number() });
 const repoProbeSchema = z.looseObject({ repo: z.string() });
 
@@ -67,12 +103,14 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
 }
 
 /**
- * Validates already-parsed JSON, and its repository when `expectedRepo` is given. Exported for
- * tests and for callers that read JSON elsewhere.
+ * Validates already-parsed JSON, and its repository when `expectedRepo` is given. Guests that do
+ * not fit `expectedGuests` are dropped, never failing the snapshot. Exported for tests and for
+ * callers that read JSON elsewhere.
  */
 export function validateSnapshot(
   value: unknown,
   expectedRepo: string | null = null,
+  expectedGuests: ExpectedGuests | null = null,
 ): SnapshotLoadResult {
   const probe = versionProbeSchema.safeParse(value);
   if (probe.success && probe.data.schemaVersion !== SNAPSHOT_SCHEMA_VERSION) {
@@ -85,7 +123,8 @@ export function validateSnapshot(
     return { ok: false, reason: 'repo-mismatch' };
   }
   const parsed = snapshotSchema.safeParse(value);
-  return parsed.success ? { ok: true, snapshot: parsed.data } : { ok: false, reason: 'invalid' };
+  if (!parsed.success) return { ok: false, reason: 'invalid' };
+  return { ok: true, snapshot: withFittingGuests(parsed.data, expectedGuests) };
 }
 
 async function fetchText(
@@ -124,7 +163,9 @@ export async function loadSnapshot(options: LoadSnapshotOptions = {}): Promise<S
     if (!fetched.ok) return fetched;
     const json = parseJson(fetched.text);
     if (!json.ok) return { ok: false, reason: 'parse' };
-    return validateSnapshot(json.value, options.expectedRepo ?? null);
+    const expectedGuests =
+      options.expectedGuests === undefined ? defaultExpectedGuests() : options.expectedGuests;
+    return validateSnapshot(json.value, options.expectedRepo ?? null, expectedGuests);
   } finally {
     clearTimeout(timer);
   }

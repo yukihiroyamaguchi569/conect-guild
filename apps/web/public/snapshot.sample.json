@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "fetchedAt": "2026-10-12T09:00:00.000Z",
   "repo": "example-owner/example-company",
   "issues": [
@@ -116,6 +116,44 @@
       { "department": "広報", "state": "working" },
       { "department": "企画", "state": "resting" },
       { "department": "総務", "state": "idle" }
-    ]
-  }
+    ],
+    "guests": ["working", "resting"]
+  },
+  "guests": [
+    {
+      "repo": "example-visitor/potion-shop",
+      "fetchedAt": "2026-10-12T08:58:00.000Z",
+      "open": [
+        {
+          "number": 14,
+          "title": "薬草の在庫表を作る",
+          "isPr": false,
+          "createdAt": "2026-10-10T02:00:00.000Z",
+          "updatedAt": "2026-10-12T07:30:00.000Z"
+        },
+        {
+          "number": 15,
+          "title": "店の看板を描き直す",
+          "isPr": true,
+          "createdAt": "2026-10-12T06:00:00.000Z",
+          "updatedAt": "2026-10-12T08:40:00.000Z"
+        }
+      ],
+      "recent": [
+        {
+          "kind": "pr-merged",
+          "number": 13,
+          "title": "回復薬の値札を直す",
+          "at": "2026-10-11T09:00:00.000Z"
+        },
+        {
+          "kind": "issue-completed",
+          "number": 11,
+          "title": "仕入れ先の地図を描く",
+          "at": "2026-10-09T05:00:00.000Z"
+        }
+      ]
+    },
+    null
+  ]
 }

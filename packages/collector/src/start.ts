@@ -28,6 +28,7 @@ process.exitCode = await runCollector(process.argv.slice(2), {
     console.error(line);
   },
   gh: createGhRunner(controller.signal),
+  guestRepos: COLLECTOR_CONFIG.guests.repos,
   readSessions: () => readCompanySessions(controller.signal),
   writeSnapshot: (content) => writeFileAtomic(COLLECTOR_CONFIG.snapshotPath, content),
   writeStatus: (content) => writeFileAtomic(COLLECTOR_CONFIG.statusPath, content),

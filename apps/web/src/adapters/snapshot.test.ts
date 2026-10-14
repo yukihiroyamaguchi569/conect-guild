@@ -9,7 +9,7 @@ import {
 } from './snapshot';
 
 const validSnapshot = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   fetchedAt: '2026-10-12T00:00:00Z',
   repo: 'example/guild',
   issues: [
@@ -27,6 +27,7 @@ const validSnapshot = {
   history: { openedIssueCount: 1, completedIssues: [], mergedPrs: [] },
   sessions: {
     status: 'ok',
+    guests: [],
     checkedAt: '2026-10-12T00:00:05Z',
     members: [
       { department: null, state: 'working' },
@@ -36,6 +37,7 @@ const validSnapshot = {
       { department: '総務', state: 'idle' },
     ],
   },
+  guests: [],
 };
 
 function respondWith(body: string, status = 200): FetchFn {
@@ -165,9 +167,10 @@ describe('loadSnapshot: bodies', () => {
 
 describe('validateSnapshot', () => {
   it.each([
+    ['the version before guests (3)', { ...validSnapshot, schemaVersion: 3, guests: undefined }],
     ['the version before history (2)', { ...validSnapshot, schemaVersion: 2 }],
     ['the version before sessions (1)', { ...validSnapshot, schemaVersion: 1 }],
-    ['a newer version', { ...validSnapshot, schemaVersion: 4 }],
+    ['a newer version', { ...validSnapshot, schemaVersion: 5 }],
     ['version 0', { ...validSnapshot, schemaVersion: 0 }],
     ['an otherwise empty object with another version', { schemaVersion: 99 }],
   ])('reports schema-version for %s', (_label, value) => {

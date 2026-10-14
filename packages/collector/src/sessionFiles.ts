@@ -1,5 +1,5 @@
 import { createReadStream, type ReadStream } from 'node:fs';
-import type { CompanySeat } from '../collector.config.ts';
+import type { Seat } from '../collector.config.ts';
 import {
   latestCompanySessionIds,
   readSeatStates,
@@ -32,7 +32,7 @@ function assertWithin(stream: ReadStream, maxBytes: number): void {
 }
 
 export interface SessionFilePaths {
-  readonly seats: readonly CompanySeat[];
+  readonly seats: readonly Seat[];
   readonly cwdLogPath: string;
   readonly activityStatePath: string;
 }
@@ -49,7 +49,7 @@ async function* textChunks(stream: ReadStream): AsyncGenerator<string> {
 }
 
 /**
- * The company session ids from the cwd log, streamed: each line is handed over and dropped, so the
+ * The seats' session ids from the cwd log, streamed: each line is handed over and dropped, so the
  * lines of other directories are never held together. The unterminated last line counts only when
  * it is the same as at the previous read (settledLines).
  */
@@ -78,7 +78,7 @@ async function readActivityState(path: string, signal: AbortSignal | undefined):
 export type CompanySessionsReader = (signal?: AbortSignal) => Promise<SessionsReading>;
 
 /**
- * A reader of MulmoTerminal's two files that returns the company seats' states. It remembers only
+ * A reader of MulmoTerminal's two files that returns the seats' states (company and guests). It remembers only
  * the cwd log's last line as a hash and an end (settledLines), so its first read never takes an
  * unterminated last line. Never throws; an abort of `signal` ends the reading (read-failed). Both
  * files are opened read-only; MulmoTerminal's files are never written or locked.
