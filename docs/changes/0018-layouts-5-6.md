@@ -20,6 +20,7 @@
 - 設定
   - `SUPPORTED_DEPARTMENT_COUNTS` を 2〜6 にした。エラーの文言は「2 or 3 or 4 or 5 or 6 departments (#18)」
   - `npm run settings:write` も 2〜6 部門を受ける。出発点の設定（`guild.settings.json` は 4 部門）に無いたくみ・むすびは、社長の決めた名前と色で、新しいラベルを役にして足す（実装時の判断。足さないと 5・6 部門は「members.takumi: missing」でいつも止まるため）
+  - `/guild-setup` の SKILL.md と docs/setup.md（部門の数、エラーの文言の例）は、2・3 部門のときと同じく後の PR（計画の G）でまとめて直す
 - デモ: 部門の数に合わせたデモ（D1）がそのまま 5・6 部門で動く。5・6 部門目の架空の過去の実績のレベルアップの時刻は合わせていない
 - E2E: 架空の 5・6 部門の設定（`apps/web/e2e/settings/departments-5.json`・`departments-6.json`）を足し、`GUILD_E2E_DEPARTMENTS` に 5・6 を許した。`playwright.config.ts` に 5 部門（5200 番）・6 部門（5201 番）のサーバーとプロジェクトを足した。`departments.spec.ts` は、パーティ窓が詰めた行かどうかが間取りの `dense` と合うことも確かめる
 - DESIGN.md の 1 章（新しいメンバー）、3 章（layouts）、8 章（キャラ 10 体）、9 章（E2E）、10 章 9（設定の部門の数、テストの設定、設定を書く道具）を合わせた
