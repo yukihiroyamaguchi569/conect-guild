@@ -10,27 +10,27 @@
     ],
     "complete": true,
     "size": {
-      "files": 172,
-      "sloc": 8900,
-      "testSloc": 10817
+      "files": 354,
+      "sloc": 18465,
+      "testSloc": 25624
     },
     "dimensions": [
       {
         "dimension": "architecture",
         "status": "experimental",
-        "score": 99.13,
+        "score": 99.58,
         "coverage": 1,
         "metrics": [
           {
             "metric": "knip.unused_export_ratio",
-            "value": 0.0058,
+            "value": 0.0028,
             "state": "ok",
             "scale": {
               "good": 0,
               "bad": 0.2
             },
             "weight": 0.3,
-            "points": 29.13
+            "points": 29.58
           },
           {
             "metric": "knip.unused_file_ratio",
@@ -72,7 +72,7 @@
       {
         "dimension": "correctness",
         "status": "experimental",
-        "score": 68.5395,
+        "score": 60,
         "coverage": 1,
         "metrics": [
           {
@@ -89,7 +89,7 @@
           },
           {
             "metric": "oxlint.violations_per_kloc",
-            "value": 6.2921,
+            "value": 8.2859,
             "state": "ok",
             "scale": {
               "good": 0,
@@ -97,27 +97,27 @@
             },
             "weight": 0.4,
             "density": true,
-            "points": 8.5395,
+            "points": 0,
             "topContributors": [
               {
                 "file": "packages/snapshot/src/settings.test.ts",
+                "value": 10
+              },
+              {
+                "file": "packages/collector/src/settingsParts.test.ts",
                 "value": 6
               },
               {
-                "file": "apps/web/src/render/director.test.ts",
+                "file": "apps/web/src/render/summons.test.ts",
+                "value": 5
+              },
+              {
+                "file": "apps/web/src/render/visit.ts",
+                "value": 5
+              },
+              {
+                "file": "apps/web/src/render/remarks.test.ts",
                 "value": 4
-              },
-              {
-                "file": "apps/web/src/render/layers.test.ts",
-                "value": 3
-              },
-              {
-                "file": "apps/web/e2e/guild.spec.ts",
-                "value": 3
-              },
-              {
-                "file": "packages/collector/src/limit.test.ts",
-                "value": 3
               }
             ]
           }
@@ -144,7 +144,7 @@
           },
           {
             "metric": "readme-contract.readme_words",
-            "value": 359,
+            "value": 169,
             "state": "ok",
             "scale": {
               "good": 120,
@@ -184,12 +184,12 @@
       {
         "dimension": "integrity",
         "status": "experimental",
-        "score": 90.9931,
+        "score": 91.2923,
         "coverage": 1,
         "metrics": [
           {
             "metric": "suppression-scan.source_per_kloc",
-            "value": 0.1124,
+            "value": 0.0542,
             "state": "ok",
             "scale": {
               "good": 0,
@@ -197,7 +197,7 @@
             },
             "weight": 0.3,
             "density": true,
-            "points": 29.3256,
+            "points": 29.6748,
             "topContributors": [
               {
                 "file": "packages/collector/src/gh.ts",
@@ -218,14 +218,14 @@
           },
           {
             "metric": "suppression-scan.test_count",
-            "value": 0,
+            "value": 1,
             "state": "ok",
             "scale": {
               "good": 0,
               "bad": 200
             },
             "weight": 0.1,
-            "points": 10
+            "points": 9.95
           },
           {
             "metric": "config-integrity.gap_ratio",
@@ -256,52 +256,52 @@
       {
         "dimension": "readability",
         "status": "experimental",
-        "score": 85.3165,
+        "score": 79.6193,
         "coverage": 1,
         "metrics": [
           {
             "metric": "file-shape.sloc_p95",
-            "value": 274,
+            "value": 301,
             "state": "ok",
             "scale": {
               "good": 150,
               "bad": 800
             },
             "weight": 0.3,
-            "points": 24.2769,
+            "points": 23.0308,
             "topContributors": [
               {
                 "file": "apps/web/src/render/loop.ts",
-                "value": 320
+                "value": 393
               },
               {
-                "file": "apps/web/src/app/narration.ts",
-                "value": 290
+                "file": "apps/web/src/domain/demo.ts",
+                "value": 376
               },
               {
-                "file": "apps/web/src/render/idle.ts",
-                "value": 288
-              },
-              {
-                "file": "apps/web/src/render/trinkets.ts",
-                "value": 276
+                "file": "packages/collector/src/run.ts",
+                "value": 360
               },
               {
                 "file": "apps/web/src/app/guildView.ts",
-                "value": 274
+                "value": 351
+              },
+              {
+                "file": "apps/web/src/app/guildStore.ts",
+                "value": 343
               }
             ]
           },
           {
             "metric": "file-shape.max_file_sloc",
-            "value": 320,
+            "value": 393,
             "state": "ok",
             "scale": {
               "good": 300,
               "bad": 2000
             },
             "weight": 0.2,
-            "points": 19.7647
+            "points": 18.9059
           },
           {
             "metric": "file-shape.god_file_count",
@@ -316,40 +316,40 @@
           },
           {
             "metric": "jscpd.duplicated_lines_pct",
-            "value": 0.43,
+            "value": 0.98,
             "state": "ok",
             "scale": {
               "good": 0,
               "bad": 10
             },
             "weight": 0.2,
-            "points": 19.14,
+            "points": 18.04,
             "topContributors": [
               {
-                "file": "apps/web/src/render/ambient.test.ts",
-                "value": 14
+                "file": "apps/web/src/render/layouts/layout4.ts",
+                "value": 57
               },
               {
-                "file": "apps/web/src/domain/events.test.ts",
-                "value": 14
+                "file": "apps/web/src/render/murmurs.test.ts",
+                "value": 31
               },
               {
-                "file": "apps/web/src/adapters/snapshot.ts",
-                "value": 13
+                "file": "apps/web/src/render/lineBook.test.ts",
+                "value": 26
               },
               {
-                "file": "packages/collector/src/sessions.ts",
-                "value": 12
+                "file": "apps/web/e2e/departments.spec.ts",
+                "value": 24
               },
               {
-                "file": "apps/web/src/app/lastActive.test.ts",
-                "value": 10
+                "file": "apps/web/src/app/messageQueue.levelUp.test.ts",
+                "value": 21
               }
             ]
           },
           {
             "metric": "oxlint.violations_per_kloc",
-            "value": 6.2921,
+            "value": 8.2859,
             "state": "ok",
             "scale": {
               "good": 0,
@@ -357,27 +357,27 @@
             },
             "weight": 0.15,
             "density": true,
-            "points": 7.1349,
+            "points": 4.6426,
             "topContributors": [
               {
                 "file": "packages/snapshot/src/settings.test.ts",
+                "value": 10
+              },
+              {
+                "file": "packages/collector/src/settingsParts.test.ts",
                 "value": 6
               },
               {
-                "file": "apps/web/src/render/director.test.ts",
+                "file": "apps/web/src/render/summons.test.ts",
+                "value": 5
+              },
+              {
+                "file": "apps/web/src/render/visit.ts",
+                "value": 5
+              },
+              {
+                "file": "apps/web/src/render/remarks.test.ts",
                 "value": 4
-              },
-              {
-                "file": "apps/web/src/render/layers.test.ts",
-                "value": 3
-              },
-              {
-                "file": "apps/web/e2e/guild.spec.ts",
-                "value": 3
-              },
-              {
-                "file": "packages/collector/src/limit.test.ts",
-                "value": 3
               }
             ]
           }
@@ -431,12 +431,12 @@
       {
         "dimension": "test-coverage",
         "status": "experimental",
-        "score": 89.197,
+        "score": 93.64,
         "coverage": 1,
         "metrics": [
           {
             "metric": "test-presence.test_to_source_ratio",
-            "value": 1.2154,
+            "value": 1.3877,
             "state": "ok",
             "scale": {
               "good": 0.5,
@@ -447,18 +447,18 @@
           },
           {
             "metric": "coverage.line_pct",
-            "value": 77.24,
+            "value": 82.58,
             "state": "ok",
             "scale": {
               "good": 90,
               "bad": 40
             },
             "weight": 0.3,
-            "points": 22.344
+            "points": 25.548
           },
           {
             "metric": "coverage.branch_pct",
-            "value": 85.44,
+            "value": 87.61,
             "state": "ok",
             "scale": {
               "good": 85,
@@ -469,14 +469,14 @@
           },
           {
             "metric": "coverage.function_pct",
-            "value": 79.51,
+            "value": 83.64,
             "state": "ok",
             "scale": {
               "good": 90,
               "bad": 40
             },
             "weight": 0.15,
-            "points": 11.853
+            "points": 13.092
           }
         ],
         "confidence": "high",
@@ -530,27 +530,27 @@
       {
         "dimension": "ui-consistency",
         "status": "experimental",
-        "score": 60.4234,
+        "score": 52.8522,
         "coverage": 1,
         "metrics": [
           {
             "metric": "ui-token.color_cardinality",
-            "value": 19,
+            "value": 24,
             "state": "ok",
             "scale": {
               "good": 20,
               "bad": 120
             },
             "weight": 0.3,
-            "points": 30,
+            "points": 28.8,
             "topContributors": [
               {
                 "file": "apps/web/src/ui/PartyStatus.vue",
-                "value": 9
+                "value": 12
               },
               {
                 "file": "apps/web/src/ui/QuestBoard.vue",
-                "value": 7
+                "value": 9
               },
               {
                 "file": "apps/web/src/ui/KingBubble.vue",
@@ -568,26 +568,26 @@
           },
           {
             "metric": "ui-token.spacing_cardinality",
-            "value": 35,
+            "value": 44,
             "state": "ok",
             "scale": {
               "good": 10,
               "bad": 60
             },
             "weight": 0.3,
-            "points": 15,
+            "points": 9.6,
             "topContributors": [
               {
-                "file": "apps/web/src/ui/QuestBoard.vue",
-                "value": 15
-              },
-              {
                 "file": "apps/web/src/ui/PartyStatus.vue",
-                "value": 14
+                "value": 18
               },
               {
-                "file": "apps/web/src/App.vue",
-                "value": 10
+                "file": "apps/web/src/ui/QuestBoard.vue",
+                "value": 16
+              },
+              {
+                "file": "apps/web/src/ui/GuildScreen.vue",
+                "value": 13
               },
               {
                 "file": "apps/web/src/ui/MessageWindow.vue",
@@ -601,7 +601,7 @@
           },
           {
             "metric": "ui-token.inline_style_per_kloc",
-            "value": 2.2883,
+            "value": 2.7739,
             "state": "ok",
             "scale": {
               "good": 0,
@@ -609,11 +609,11 @@
             },
             "weight": 0.2,
             "density": true,
-            "points": 15.4234
+            "points": 14.4522
           },
           {
             "metric": "ui-token.style_block_ratio",
-            "value": 1,
+            "value": 0.9231,
             "state": "ok",
             "scale": {
               "good": 0,
@@ -629,57 +629,57 @@
     ],
     "metrics": {
       "suppression-scan.source_count": 1,
-      "suppression-scan.test_count": 0,
-      "suppression-scan.source_per_kloc": 0.1124,
+      "suppression-scan.test_count": 1,
+      "suppression-scan.source_per_kloc": 0.0542,
       "suppression-scan.unreasoned_source_count": 0,
       "suppression-scan.unreasoned_ratio": 0,
-      "file-shape.sloc_p95": 274,
-      "file-shape.max_file_sloc": 320,
+      "file-shape.sloc_p95": 301,
+      "file-shape.max_file_sloc": 393,
       "file-shape.god_file_count": 0,
-      "file-shape.source_file_count": 87,
-      "file-shape.source_sloc": 8900,
+      "file-shape.source_file_count": 167,
+      "file-shape.source_sloc": 18465,
       "source-mix.untyped_file_ratio": 0,
       "source-mix.untyped_sloc_ratio": 0,
       "source-mix.untyped_file_count": 0,
-      "source-mix.typed_file_count": 87,
+      "source-mix.typed_file_count": 167,
       "config-integrity.gap_ratio": 0,
       "config-integrity.gap_count": 0,
       "ci-integrity.gap_ratio": 0.3333,
       "ci-integrity.gap_count": 2,
       "ci-integrity.workflow_count": 2,
-      "oxlint.violations_per_kloc": 6.2921,
-      "oxlint.violations": 56,
+      "oxlint.violations_per_kloc": 8.2859,
+      "oxlint.violations": 153,
       "oxlint.errors_per_kloc": 0,
-      "jscpd.duplicated_lines_pct": 0.43,
-      "jscpd.clone_count": 12,
+      "jscpd.duplicated_lines_pct": 0.98,
+      "jscpd.clone_count": 49,
       "tsc.type_errors": 0,
       "tsc.type_errors_per_kloc": 0,
       "knip.unused_files": 0,
       "knip.unused_file_ratio": 0,
-      "knip.unused_export_ratio": 0.0058,
+      "knip.unused_export_ratio": 0.0028,
       "knip.unused_exports": 1,
       "knip.unused_dependencies": 0,
       "audit.critical": 0,
       "audit.high": 0,
       "audit.moderate": 0,
       "audit.low": 0,
-      "test-presence.test_to_source_ratio": 1.2154,
-      "test-presence.test_sloc": 10817,
-      "test-presence.test_file_count": 78,
-      "coverage.line_pct": 77.24,
-      "coverage.branch_pct": 85.44,
-      "coverage.function_pct": 79.51,
+      "test-presence.test_to_source_ratio": 1.3877,
+      "test-presence.test_sloc": 25624,
+      "test-presence.test_file_count": 180,
+      "coverage.line_pct": 82.58,
+      "coverage.branch_pct": 87.61,
+      "coverage.function_pct": 83.64,
       "circular.cycle_count": 0,
       "readme-contract.has_readme": 1,
-      "readme-contract.readme_words": 359,
+      "readme-contract.readme_words": 169,
       "comment-quality.marker_per_kloc": 0,
       "comment-quality.marker_count": 0,
-      "comment-quality.comment_density": 0.2244,
-      "ui-token.color_cardinality": 19,
-      "ui-token.spacing_cardinality": 35,
-      "ui-token.inline_style_per_kloc": 2.2883,
-      "ui-token.style_block_ratio": 1,
-      "ui-token.ui_file_count": 8
+      "comment-quality.comment_density": 0.2692,
+      "ui-token.color_cardinality": 24,
+      "ui-token.spacing_cardinality": 44,
+      "ui-token.inline_style_per_kloc": 2.7739,
+      "ui-token.style_block_ratio": 0.9231,
+      "ui-token.ui_file_count": 13
     },
     "findings": [
       {
@@ -703,11 +703,131 @@
         "tier": 0
       },
       {
+        "rule": "oxlint/no-shadow",
+        "severity": "warning",
+        "file": "apps/web/src/render/remarks.test.ts",
+        "line": 1,
+        "message": "'first' is already declared in the upper scope.",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/no-shadow",
+        "severity": "warning",
+        "file": "apps/web/src/render/remarks.test.ts",
+        "line": 1,
+        "message": "'first' is already declared in the upper scope.",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/render/remarks.test.ts",
+        "line": 1,
+        "message": "Function `minori` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/render/remarks.test.ts",
+        "line": 1,
+        "message": "Function `idleAt` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/domain/guests.test.ts",
+        "line": 1,
+        "message": "Function `late` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/render/trinkets.papers.test.ts",
+        "line": 1,
+        "message": "Function `look` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
         "rule": "oxlint/no-await-in-loop",
         "severity": "warning",
-        "file": "packages/collector/src/limit.ts",
+        "file": "apps/web/src/app/useNarration.test.ts",
         "line": 1,
         "message": "Unexpected `await` inside a loop.",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/domain/demoGuests.test.ts",
+        "line": 1,
+        "message": "Function `at` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/adapters/snapshot.guests.test.ts",
+        "line": 1,
+        "message": "Function `fetchFn` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/no-await-in-loop",
+        "severity": "warning",
+        "file": "apps/web/src/app/narrator.test.ts",
+        "line": 1,
+        "message": "Unexpected `await` inside a loop.",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/no-await-in-loop",
+        "severity": "warning",
+        "file": "apps/web/src/app/narrator.test.ts",
+        "line": 1,
+        "message": "Unexpected `await` inside a loop.",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/no-map-spread",
+        "severity": "warning",
+        "file": "apps/web/src/domain/demoGuests.ts",
+        "line": 1,
+        "message": "Spreading to modify object properties in `map` calls is inefficient",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/no-map-spread",
+        "severity": "warning",
+        "file": "apps/web/src/domain/demo.ts",
+        "line": 1,
+        "message": "Spreading to modify object properties in `map` calls is inefficient",
         "probe": "oxlint",
         "dimension": "correctness",
         "tier": 0
@@ -733,41 +853,11 @@
         "tier": 0
       },
       {
-        "rule": "oxlint/no-await-in-loop",
+        "rule": "oxlint/prefer-set-has",
         "severity": "warning",
-        "file": "packages/collector/src/run.test.ts",
+        "file": "apps/web/src/domain/demo.test.ts",
         "line": 1,
-        "message": "Unexpected `await` inside a loop.",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/no-await-in-loop",
-        "severity": "warning",
-        "file": "packages/collector/src/collect.test.ts",
-        "line": 1,
-        "message": "Unexpected `await` inside a loop.",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/path.test.ts",
-        "line": 1,
-        "message": "Function `walkable` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/path.test.ts",
-        "line": 1,
-        "message": "Function `walkable` does not capture any variables from its parent scope",
+        "message": "should be a `Set`, and use `.has()` to check existence or non-existence.",
         "probe": "oxlint",
         "dimension": "correctness",
         "tier": 0
@@ -795,9 +885,29 @@
       {
         "rule": "oxlint/consistent-function-scoping",
         "severity": "warning",
-        "file": "apps/web/src/render/idle.test.ts",
+        "file": "packages/collector/src/build.test.ts",
         "line": 1,
-        "message": "Function `still` does not capture any variables from its parent scope",
+        "message": "Function `states` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/no-await-in-loop",
+        "severity": "warning",
+        "file": "packages/collector/src/collect.test.ts",
+        "line": 1,
+        "message": "Unexpected `await` inside a loop.",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/adapters/collectorStatus.test.ts",
+        "line": 1,
+        "message": "Function `hanging` does not capture any variables from its parent scope",
         "probe": "oxlint",
         "dimension": "correctness",
         "tier": 0
@@ -813,159 +923,9 @@
         "tier": 0
       },
       {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/idle.ts",
-        "line": 1,
-        "message": "Function `same` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/ambient.test.ts",
-        "line": 1,
-        "message": "Function `at` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/layers.test.ts",
-        "line": 1,
-        "message": "Function `layer` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/layers.test.ts",
-        "line": 1,
-        "message": "Function `member` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/layers.test.ts",
-        "line": 1,
-        "message": "Function `names` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/prefer-set-has",
-        "severity": "warning",
-        "file": "apps/web/src/render/bubbles.test.ts",
-        "line": 1,
-        "message": "should be a `Set`, and use `.has()` to check existence or non-existence.",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/loadArt.ts",
-        "line": 1,
-        "message": "Function `load` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/director.idle.test.ts",
-        "line": 1,
-        "message": "Function `idleAt` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/director.test.ts",
-        "line": 1,
-        "message": "Function `drawnAt` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/director.test.ts",
-        "line": 1,
-        "message": "Function `member` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/director.test.ts",
-        "line": 1,
-        "message": "Function `member` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/director.test.ts",
-        "line": 1,
-        "message": "Function `member` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/src/render/trinkets.papers.test.ts",
-        "line": 1,
-        "message": "Function `look` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/e2e/guild.spec.ts",
-        "line": 1,
-        "message": "Function `release` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "apps/web/e2e/guild.spec.ts",
-        "line": 1,
-        "message": "Function `held` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
         "rule": "oxlint/no-await-in-loop",
         "severity": "warning",
-        "file": "apps/web/e2e/guild.spec.ts",
+        "file": "apps/web/vite-plugin-settings.test.ts",
         "line": 1,
         "message": "Unexpected `await` inside a loop.",
         "probe": "oxlint",
@@ -975,9 +935,9 @@
       {
         "rule": "oxlint/consistent-function-scoping",
         "severity": "warning",
-        "file": "apps/web/src/render/map.test.ts",
+        "file": "packages/collector/src/sessions.test.ts",
         "line": 1,
-        "message": "Function `byName` does not capture any variables from its parent scope",
+        "message": "Function `entry` does not capture any variables from its parent scope",
         "probe": "oxlint",
         "dimension": "correctness",
         "tier": 0
@@ -985,69 +945,19 @@
       {
         "rule": "oxlint/consistent-function-scoping",
         "severity": "warning",
-        "file": "packages/snapshot/src/settings.test.ts",
+        "file": "packages/collector/src/sessions.test.ts",
         "line": 1,
-        "message": "Function `twice` does not capture any variables from its parent scope",
+        "message": "Function `watchedFile` does not capture any variables from its parent scope",
         "probe": "oxlint",
         "dimension": "correctness",
         "tier": 0
       },
       {
-        "rule": "oxlint/consistent-function-scoping",
+        "rule": "oxlint/no-await-in-loop",
         "severity": "warning",
-        "file": "packages/snapshot/src/settings.test.ts",
+        "file": "packages/collector/src/sessions.test.ts",
         "line": 1,
-        "message": "Function `paths` does not capture any variables from its parent scope",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/no-map-spread",
-        "severity": "warning",
-        "file": "packages/snapshot/src/settings.test.ts",
-        "line": 1,
-        "message": "Spreading to modify object properties in `map` calls is inefficient",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/no-map-spread",
-        "severity": "warning",
-        "file": "packages/snapshot/src/settings.test.ts",
-        "line": 1,
-        "message": "Spreading to modify object properties in `map` calls is inefficient",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/no-map-spread",
-        "severity": "warning",
-        "file": "packages/snapshot/src/settings.test.ts",
-        "line": 1,
-        "message": "Spreading to modify object properties in `map` calls is inefficient",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/no-map-spread",
-        "severity": "warning",
-        "file": "packages/snapshot/src/settings.test.ts",
-        "line": 1,
-        "message": "Spreading to modify object properties in `map` calls is inefficient",
-        "probe": "oxlint",
-        "dimension": "correctness",
-        "tier": 0
-      },
-      {
-        "rule": "oxlint/consistent-function-scoping",
-        "severity": "warning",
-        "file": "packages/collector/src/sessionFiles.test.ts",
-        "line": 1,
-        "message": "Function `id` does not capture any variables from its parent scope",
+        "message": "Unexpected `await` inside a loop.",
         "probe": "oxlint",
         "dimension": "correctness",
         "tier": 0
@@ -1083,11 +993,21 @@
         "tier": 0
       },
       {
-        "rule": "oxlint/no-await-in-loop",
+        "rule": "oxlint/no-map-spread",
         "severity": "warning",
-        "file": "packages/collector/src/limit.test.ts",
+        "file": "apps/web/src/render/guests.ts",
         "line": 1,
-        "message": "Unexpected `await` inside a loop.",
+        "message": "Spreading to modify object properties in `map` calls is inefficient",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/no-map-spread",
+        "severity": "warning",
+        "file": "packages/collector/src/mixups.test.ts",
+        "line": 1,
+        "message": "Spreading to modify object properties in `map` calls is inefficient",
         "probe": "oxlint",
         "dimension": "correctness",
         "tier": 0
@@ -1095,11 +1015,271 @@
       {
         "rule": "oxlint/consistent-function-scoping",
         "severity": "warning",
-        "file": "packages/collector/src/gh.test.ts",
+        "file": "packages/collector/src/settingsWrite.counts.test.ts",
         "line": 1,
-        "message": "Function `gh` does not capture any variables from its parent scope",
+        "message": "Function `spare` does not capture any variables from its parent scope",
         "probe": "oxlint",
         "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/prefer-set-has",
+        "severity": "warning",
+        "file": "packages/collector/src/settingsWrite.counts.test.ts",
+        "line": 1,
+        "message": "should be a `Set`, and use `.has()` to check existence or non-existence.",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "packages/collector/src/sessionFiles.test.ts",
+        "line": 1,
+        "message": "Function `id` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/render/overheadPlace.test.ts",
+        "line": 1,
+        "message": "Function `place` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/render/overheadPlace.test.ts",
+        "line": 1,
+        "message": "Function `spotOf` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/render/overheadPlace.test.ts",
+        "line": 1,
+        "message": "Function `place` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/render/overheadPlace.test.ts",
+        "line": 1,
+        "message": "Function `spotOf` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "apps/web/src/app/guildStore.events.test.ts",
+        "line": 1,
+        "message": "Function `heads` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "oxlint/consistent-function-scoping",
+        "severity": "warning",
+        "file": "packages/collector/src/labels.test.ts",
+        "line": 1,
+        "message": "Function `ok` does not capture any variables from its parent scope",
+        "probe": "oxlint",
+        "dimension": "correctness",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/layouts/layout4.ts",
+        "line": 25,
+        "message": "14 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/layouts/layout4.ts",
+        "line": 51,
+        "message": "10 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/layouts/layout4.ts",
+        "line": 85,
+        "message": "7 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/layouts/layout4.ts",
+        "line": 108,
+        "message": "11 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/layouts/layout4.ts",
+        "line": 120,
+        "message": "7 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/layouts/layout4.ts",
+        "line": 127,
+        "message": "8 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/ui/MissingLabelsBanner.vue",
+        "line": 28,
+        "message": "18 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/ui/AutoDemoBanner.vue",
+        "line": 30,
+        "message": "18 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/summons.test.ts",
+        "line": 41,
+        "message": "9 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/murmurs.who.test.ts",
+        "line": 33,
+        "message": "12 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/murmurs.test.ts",
+        "line": 19,
+        "message": "31 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/lines.test.ts",
+        "line": 17,
+        "message": "14 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/lines.tags.test.ts",
+        "line": 164,
+        "message": "10 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/lines.scenes.test.ts",
+        "line": 50,
+        "message": "10 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/lineBook.test.ts",
+        "line": 14,
+        "message": "26 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/levelUp.banner.test.ts",
+        "line": 24,
+        "message": "14 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/idle.pet.test.ts",
+        "line": 11,
+        "message": "11 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
+        "tier": 0
+      },
+      {
+        "rule": "duplicated-block",
+        "severity": "warning",
+        "file": "apps/web/src/render/draw.ts",
+        "line": 104,
+        "message": "8 duplicated lines",
+        "probe": "jscpd",
+        "dimension": "readability",
         "tier": 0
       },
       {
@@ -1115,108 +1295,8 @@
       {
         "rule": "duplicated-block",
         "severity": "warning",
-        "file": "apps/web/src/render/ambient.test.ts",
-        "line": 273,
-        "message": "14 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "apps/web/src/domain/events.test.ts",
-        "line": 89,
-        "message": "6 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "apps/web/src/domain/events.test.ts",
-        "line": 171,
-        "message": "8 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "apps/web/src/audio/controller.test.ts",
-        "line": 54,
-        "message": "6 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "apps/web/src/app/messageQueue.test.ts",
-        "line": 337,
-        "message": "6 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "apps/web/src/app/lastActive.test.ts",
-        "line": 16,
-        "message": "10 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "apps/web/src/app/guildStore.test.ts",
-        "line": 280,
-        "message": "9 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "apps/web/src/adapters/snapshot.ts",
-        "line": 50,
-        "message": "13 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "packages/collector/src/sessions.ts",
-        "line": 131,
-        "message": "12 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "packages/collector/src/run.loop.test.ts",
-        "line": 192,
-        "message": "10 duplicated lines",
-        "probe": "jscpd",
-        "dimension": "readability",
-        "tier": 0
-      },
-      {
-        "rule": "duplicated-block",
-        "severity": "warning",
-        "file": "packages/collector/src/run.fixtures.test-util.ts",
-        "line": 76,
+        "file": "apps/web/src/render/director.idle.test.ts",
+        "line": 84,
         "message": "7 duplicated lines",
         "probe": "jscpd",
         "dimension": "readability",
@@ -1225,9 +1305,9 @@
       {
         "rule": "unused-export",
         "severity": "warning",
-        "file": "apps/web/e2e/fixtures.ts",
+        "file": "apps/web/src/render/layouts/largeRoom.ts",
         "line": 1,
-        "message": "`canvasStats` is exported but never imported",
+        "message": "`UPPER_RIGHT_DESK` is exported but never imported",
         "probe": "knip",
         "dimension": "architecture",
         "tier": 1
@@ -1235,7 +1315,17 @@
       {
         "rule": "style-block",
         "severity": "warning",
-        "file": "apps/web/src/App.vue",
+        "file": "apps/web/src/ui/AutoDemoBanner.vue",
+        "line": 1,
+        "message": "a style block, where a utility class or a token would be shared",
+        "probe": "ui-token",
+        "dimension": "ui-consistency",
+        "tier": 0
+      },
+      {
+        "rule": "style-block",
+        "severity": "warning",
+        "file": "apps/web/src/ui/DemoStart.vue",
         "line": 1,
         "message": "a style block, where a utility class or a token would be shared",
         "probe": "ui-token",
@@ -1265,6 +1355,16 @@
       {
         "rule": "style-block",
         "severity": "warning",
+        "file": "apps/web/src/ui/GuildScreen.vue",
+        "line": 1,
+        "message": "a style block, where a utility class or a token would be shared",
+        "probe": "ui-token",
+        "dimension": "ui-consistency",
+        "tier": 0
+      },
+      {
+        "rule": "style-block",
+        "severity": "warning",
         "file": "apps/web/src/ui/KingBubble.vue",
         "line": 1,
         "message": "a style block, where a utility class or a token would be shared",
@@ -1276,6 +1376,26 @@
         "rule": "style-block",
         "severity": "warning",
         "file": "apps/web/src/ui/MessageWindow.vue",
+        "line": 1,
+        "message": "a style block, where a utility class or a token would be shared",
+        "probe": "ui-token",
+        "dimension": "ui-consistency",
+        "tier": 0
+      },
+      {
+        "rule": "style-block",
+        "severity": "warning",
+        "file": "apps/web/src/ui/MissingLabelsBanner.vue",
+        "line": 1,
+        "message": "a style block, where a utility class or a token would be shared",
+        "probe": "ui-token",
+        "dimension": "ui-consistency",
+        "tier": 0
+      },
+      {
+        "rule": "style-block",
+        "severity": "warning",
+        "file": "apps/web/src/ui/MixupsBanner.vue",
         "line": 1,
         "message": "a style block, where a utility class or a token would be shared",
         "probe": "ui-token",
@@ -1448,10 +1568,10 @@
       "madge": "8.0.0"
     },
     "overall": {
-      "score": 88.1777,
+      "score": 86.3315,
       "scoredDimensions": 9,
       "comparable": false
     }
   },
-  "createdAt": "2026-10-12T06:00:45.695Z"
+  "createdAt": "2026-10-14T22:50:23.593Z"
 }

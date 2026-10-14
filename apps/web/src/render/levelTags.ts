@@ -21,7 +21,7 @@ export interface LevelTag {
 }
 
 /** How far below the feet on the seat the tag is centred: on the desk's (or counter's) front. */
-export const TAG_BELOW_FEET = 46;
+const TAG_BELOW_FEET = 46;
 
 export function levelsOf(
   rows: readonly { readonly id: MemberId; readonly level: { readonly level: number | null } }[],

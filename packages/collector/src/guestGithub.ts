@@ -47,11 +47,11 @@ export type RawGuestClosed = z.infer<typeof rawClosedSchema>;
 export const GUEST_RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** The most recently updated first; one page of at most this many items per list. */
-export const GUEST_PAGE_SIZE = 100;
+const GUEST_PAGE_SIZE = 100;
 const LIST = `sort=updated&direction=desc&per_page=${String(GUEST_PAGE_SIZE)}`;
 
 /** The start of the window, for the closed list's `since` (it filters by update time). */
-export function guestWindowStart(now: Date): Date {
+function guestWindowStart(now: Date): Date {
   return new Date(now.getTime() - GUEST_RECENT_WINDOW_MS);
 }
 

@@ -123,7 +123,7 @@ export function overlaps(a: PxRect, b: PxRect): boolean {
 }
 
 /** True when any part of a member standing on `pos` would be under a window of `layout`. */
-export function isUnderWindowIn(layout: GuildLayout, pos: TilePos): boolean {
+function isUnderWindowIn(layout: GuildLayout, pos: TilePos): boolean {
   const sprite = spriteRect(pos);
   return Object.values(cachedWindows(layout)).some((area) => overlaps(sprite, area));
 }
@@ -159,7 +159,7 @@ export function isInsideMap(pos: TilePos): boolean {
 }
 
 /** Ground tile of every cell of `layout`, row by row. */
-export function groundFor(layout: GuildLayout): TileName[][] {
+function groundFor(layout: GuildLayout): TileName[][] {
   const ground = Array.from({ length: MAP_ROWS }, () =>
     Array.from({ length: MAP_COLS }, (): TileName => 'floor'),
   );
@@ -175,7 +175,7 @@ export const GROUND: readonly (readonly TileName[])[] = groundFor(SELECTED_LAYOU
 
 const cachedGround = perLayout(groundFor);
 
-export function groundAtIn(layout: GuildLayout, pos: TilePos): TileName | null {
+function groundAtIn(layout: GuildLayout, pos: TilePos): TileName | null {
   return cachedGround(layout)[pos.row]?.[pos.col] ?? null;
 }
 

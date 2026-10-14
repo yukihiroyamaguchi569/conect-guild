@@ -8,8 +8,8 @@ import type { Mixup } from '@conect-guild/snapshot/mixup';
 import { COLLECTOR_CONFIG } from '../collector.config.ts';
 import { parseCliArgs } from './args.ts';
 import { collectSnapshot } from './collect.ts';
-import { CollectorError, errorKind, type CollectorErrorKind } from './errors.ts';
-import { parseOrThrow, type GhRunner } from './gh.ts';
+import { CollectorError, errorKind } from './errors.ts';
+import { parseOrThrow } from './gh.ts';
 import {
   createGuestLoop,
   fetchGuestsOnce,
@@ -37,47 +37,12 @@ import {
   reportStatusNotWritten,
   sessionsSummary,
 } from './report.ts';
+import type { CycleResult, FailureKind, RunDeps } from './runTypes.ts';
 import type { SessionsReading } from './sessions.ts';
 import { collectorStatusOf, statusContent, type GithubAttempt } from './status.ts';
 
-export interface RunDeps {
-  readonly now: () => Date;
-  readonly log: (line: string) => void;
-  readonly error: (line: string) => void;
-  readonly gh: GhRunner;
-  /**
-   * Issue #108: the guests of the settings by position, each its repository or null when it has
-   * none. Fixed by the settings file (collector.config.ts), like the company repository.
-   */
-  readonly guestRepos: readonly (string | null)[];
-  /** Reads the company sessions from MulmoTerminal's files. Never throws; ends on `signal`. */
-  readonly readSessions: () => Promise<SessionsReading>;
-  readonly writeSnapshot: (content: string) => Promise<void>;
-  /** Writes apps/web/.data/collector-status.json (Issue #74) atomically. */
-  readonly writeStatus: (content: string) => Promise<void>;
-  /** Waits between cycles; resolves early when `signal` aborts. */
-  readonly sleep: (ms: number) => Promise<void>;
-  readonly signal: AbortSignal;
-}
-
-type FailureKind = CollectorErrorKind | 'unexpected';
-
 type GithubResult =
   | { readonly ok: true; readonly part: GithubPart; readonly mixups: readonly Mixup[] }
-  | { readonly ok: false; readonly kind: FailureKind };
-
-export type CycleResult =
-  | {
-      readonly ok: true;
-      readonly issues: number;
-      readonly prs: number;
-      /** Counts of the history: Issues ever opened, completed Issues, merged PRs. */
-      readonly history: {
-        readonly opened: number;
-        readonly completed: number;
-        readonly merged: number;
-      };
-    }
   | { readonly ok: false; readonly kind: FailureKind };
 
 type WriteResult = { readonly ok: true } | { readonly ok: false; readonly kind: FailureKind };

@@ -27,12 +27,7 @@ export {
   type MemberId,
   type RuleChangePath,
 };
-export {
-  guildFromSettings,
-  type Guild,
-  type MemberConfig,
-  type TilePos,
-} from './guildFromSettings';
+export { type Guild, type MemberConfig, type TilePos } from './guildFromSettings';
 
 const GUILD = guildFromSettings(GUILD_SETTINGS, SELECTED_LAYOUT);
 
