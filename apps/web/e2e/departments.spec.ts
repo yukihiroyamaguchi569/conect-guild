@@ -293,3 +293,48 @@ test('the fetch status keeps every note: in the column, or on one line as the ta
   for (const note of notes.filter((n) => n.cut))
     expect(note).toEqual({ cut: true, ellipsis: 'ellipsis', whole: true });
 });
+
+/** The fetch status drawn as the ordinary window: a bottom edge, in the right-hand column or stacked. */
+async function expectOrdinaryFetch(page: Page): Promise<void> {
+  const fetch = page.getByRole('region', { name: '取得のようす' });
+  await expect(fetch).toHaveCSS('border-bottom-style', 'double');
+  await expect(fetch).not.toHaveCSS('white-space', 'nowrap');
+}
+
+test('the fetch status is the ordinary window on a narrow screen (Issue #121)', async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 700, height: 900 });
+  const { errors } = await openDemo(page, context);
+  await expect(page.getByRole('region', { name: 'パーティのようす' })).toBeVisible();
+  await expectOrdinaryFetch(page);
+  expect(errors).toEqual([]);
+});
+
+test('the fetch status goes back to the column when the screen halts (Issue #121)', async ({
+  page,
+  context,
+}) => {
+  const count = departmentCount();
+  await page.setViewportSize({ width: 1024, height: 576 });
+  // A snapshot of another repository halts the screen: no message window for the tab to sit on.
+  const snapshot = {
+    ...guestsSnapshot({
+      now: Date.now(),
+      states: ['idle', 'idle'],
+      settings: fictionalSettings(count),
+    }),
+    repo: 'example-owner/another-guild',
+  };
+  await context.route('**/snapshot.json', (route) => route.fulfill({ json: snapshot }));
+  await context.route('**/collector-status.json', (route) =>
+    route.fulfill({ status: 204, body: '' }),
+  );
+  await page.goto('/');
+  await expect(page.getByRole('alert')).toContainText('収集の対象と設定が違います');
+  await expectOrdinaryFetch(page);
+  await expect(
+    page.locator('.stage__side').getByRole('region', { name: '取得のようす' }),
+  ).toBeVisible();
+});

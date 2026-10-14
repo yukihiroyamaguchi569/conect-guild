@@ -95,6 +95,8 @@ watch(
  * the message window's top edge, so that the column ends above the sales desk's bubble.
  */
 const fetchTab = SELECTED_LAYOUT.partyWindow.fetchTab === true;
+/** Halted, there is no message window to sit on: the fetch status goes back to the column. */
+const tabbed = computed(() => fetchTab && !state.halted);
 const fetchTabStyle = {
   '--tab-max-width': `${String(FETCH_TAB.maxWidthPct)}%`,
   '--tab-height': `${String(FETCH_TAB.heightCqw)}cqw`,
@@ -181,7 +183,7 @@ function onStageShown(shown: boolean): void {
           :tight="SELECTED_LAYOUT.partyWindow.tight"
         />
         <FetchStatus
-          v-if="!fetchTab"
+          v-if="!tabbed"
           :status="fetchStatus"
           :effects-available="state.effectsAvailable"
           :baseline-notice="state.baselineNotice"
@@ -196,7 +198,7 @@ function onStageShown(shown: boolean): void {
         </FetchStatus>
       </div>
       <FetchStatus
-        v-if="fetchTab"
+        v-if="tabbed"
         class="stage__tab"
         :style="fetchTabStyle"
         tab
