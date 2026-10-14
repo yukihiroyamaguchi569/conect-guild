@@ -6,13 +6,14 @@ import {
   type GuestRecentItem,
 } from '@conect-guild/snapshot';
 import { z } from 'zod';
-import { ghApiProjected, parseOrThrow, type GhRunner } from './gh.ts';
+import { ghApiProjectedPage, parseOrThrow, type GhRunner } from './gh.ts';
 
 /**
  * Issue #108: a guest's repository, read for its open Issues and PRs and the ones finished in the
- * last 7 days (docs/DESIGN.md 4.1). Two lists of the issues endpoint (which also returns the PRs,
- * with `pull_request.merged_at`), each projected inside gh to the fields below, so bodies, labels
- * and branch names never reach the collector.
+ * last 7 days (docs/DESIGN.md 4.1). One page each of two lists of the issues endpoint (which also
+ * returns the PRs, with `pull_request.merged_at`), so a guest costs exactly two calls however big
+ * its repository is. Each is projected inside gh to the fields below, so bodies, labels and branch
+ * names never reach the collector.
  */
 
 const OPEN_PROJECTION =
@@ -45,18 +46,21 @@ export type RawGuestClosed = z.infer<typeof rawClosedSchema>;
 /** How far back the finished Issues and PRs go, as for the company (docs/DESIGN.md 4.1). */
 export const GUEST_RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
-const LIST = 'sort=created&direction=desc&per_page=100';
+/** The most recently updated first; one page of at most this many items per list. */
+export const GUEST_PAGE_SIZE = 100;
+const LIST = `sort=updated&direction=desc&per_page=${String(GUEST_PAGE_SIZE)}`;
 
 /** The start of the window, for the closed list's `since` (it filters by update time). */
 export function guestWindowStart(now: Date): Date {
   return new Date(now.getTime() - GUEST_RECENT_WINDOW_MS);
 }
 
-/** The items read last win: a list sorted by creation can repeat one when a new one shifts it. */
+/** The items read last win (a single page should not repeat one, but GitHub is not trusted). */
 function lastByNumber<T extends { readonly number: number }>(items: readonly T[]): T[] {
   return [...new Map(items.map((item) => [item.number, item])).values()];
 }
 
+/** The open items, the most recently updated first, at most one page. */
 function openItems(raw: readonly RawGuestOpen[]): GuestOpenItem[] {
   return lastByNumber(raw)
     .map((item) => ({
@@ -66,7 +70,8 @@ function openItems(raw: readonly RawGuestOpen[]): GuestOpenItem[] {
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }))
-    .toSorted((a, b) => b.number - a.number);
+    .toSorted((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || b.number - a.number)
+    .slice(0, GUEST_PAGE_SIZE);
 }
 
 /** A completed Issue or a merged PR, with when; null for anything else. */
@@ -108,7 +113,8 @@ export function buildGuestPart(
 }
 
 /**
- * Reads a guest's repository: every open Issue and PR, then the closed ones updated in the window.
+ * Reads a guest's repository: the 100 open Issues and PRs updated last, then the 100 closed ones
+ * updated last within the window (enough for the 20 recent items in all but the busiest weeks).
  * Throws a CollectorError (gh-failed or validation-failed) like the company fetch.
  */
 export async function fetchGuestGithub(
@@ -118,12 +124,12 @@ export async function fetchGuestGithub(
 ): Promise<GuestGithubPart> {
   const open = parseOrThrow(
     z.array(rawOpenSchema),
-    await ghApiProjected(gh, `repos/${repo}/issues?state=open&${LIST}`, OPEN_PROJECTION),
+    await ghApiProjectedPage(gh, `repos/${repo}/issues?state=open&${LIST}`, OPEN_PROJECTION),
   );
   const since = guestWindowStart(now).toISOString();
   const closed = parseOrThrow(
     z.array(rawClosedSchema),
-    await ghApiProjected(
+    await ghApiProjectedPage(
       gh,
       `repos/${repo}/issues?state=closed&since=${since}&${LIST}`,
       CLOSED_PROJECTION,

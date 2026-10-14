@@ -59,16 +59,18 @@ function guestGh(open: readonly unknown[], closed: readonly unknown[]) {
 }
 
 describe('fetchGuestGithub', () => {
-  it('reads two paginated, projected lists: open, then closed since the window start', async () => {
+  it('reads one projected page of each list: open, then closed since the window start', async () => {
     const { gh, calls } = guestGh([OPEN], [COMPLETED, MERGED]);
     await fetchGuestGithub(gh, REPO, NOW);
     expect(calls.map((args) => args.at(-1))).toEqual([
-      `repos/${REPO}/issues?state=open&sort=created&direction=desc&per_page=100`,
-      `repos/${REPO}/issues?state=closed&since=${WINDOW_START}&sort=created&direction=desc&per_page=100`,
+      `repos/${REPO}/issues?state=open&sort=updated&direction=desc&per_page=100`,
+      `repos/${REPO}/issues?state=closed&since=${WINDOW_START}&sort=updated&direction=desc&per_page=100`,
     ]);
     for (const args of calls) {
-      expect(args.slice(0, 3)).toEqual(['api', '--paginate', '--jq']);
-      const filter = args[3] ?? '';
+      // One page only: exactly two calls per guest, however big the repository.
+      expect(args).not.toContain('--paginate');
+      expect(args.slice(0, 2)).toEqual(['api', '--jq']);
+      const filter = args[2] ?? '';
       // Only the projected fields: never a body, labels, a branch or a user.
       expect(filter).not.toMatch(/body|labels|head|user|assignee/);
       expect(filter).toMatch(/^if type != "array"/);
@@ -160,6 +162,19 @@ describe('buildGuestPart: repeated items', () => {
       [5, '新しい題名'],
     ]);
     expect(part.recent.map((item) => item.title)).toEqual(['後の題名']);
+  });
+
+  it('keeps at most one page of open items, the most recently updated first', () => {
+    const open = Array.from({ length: 130 }, (_, i) => ({
+      ...OPEN,
+      number: i + 1,
+      updated_at: new Date(NOW.getTime() - (i % 50) * 60_000).toISOString(),
+    }));
+    const items = buildGuestPart(REPO, NOW, open, []).open;
+    expect(items).toHaveLength(100);
+    expect(items.slice(0, 3).map((item) => item.number)).toEqual([101, 51, 1]);
+    const times = items.map((item) => Date.parse(item.updatedAt));
+    expect(times).toEqual(times.toSorted((a, b) => b - a));
   });
 
   it('marks open PRs', () => {
