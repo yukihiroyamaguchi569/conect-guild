@@ -7,15 +7,38 @@ import { z } from 'zod';
 const REPO_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\/(?!\.{1,2}$)[\w.-]+$/;
 
 /**
- * The six member ids. They stay fixed: the sprites (`assets/sprites/<id>.png`), the hands and the
- * seats are keyed by them (laying out seats for another number of departments is Issue #18).
- * kaname is the 司令塔 and yukihiro the president; the other four sit at the department desks.
+ * The member ids. They stay fixed: the sprites (`assets/sprites/<id>.png`), the hands and the
+ * lines are keyed by them. kaname is the 司令塔 and yukihiro the president; the others may sit at
+ * the department desks (`departments[i].member`), and one no department names stays off stage.
  */
 export const COMMANDER_ID = 'kaname';
 export const PRESIDENT_ID = 'yukihiro';
 export const DEPARTMENT_MEMBER_IDS = ['minori', 'hibiki', 'hirame', 'sasae'] as const;
 export const memberIdSchema = z.enum([COMMANDER_ID, ...DEPARTMENT_MEMBER_IDS, PRESIDENT_ID]);
 export type MemberId = z.infer<typeof memberIdSchema>;
+export type DepartmentMemberId = (typeof DEPARTMENT_MEMBER_IDS)[number];
+
+/**
+ * A record with a value for every member id, made in the order of memberIdSchema (so a value drawn
+ * from a random source draws in that order). The one place that lists the ids by hand: the type
+ * checker asks for a new id here.
+ */
+export function byMember<V>(valueOf: (id: MemberId) => V): Record<MemberId, V> {
+  return {
+    kaname: valueOf('kaname'),
+    minori: valueOf('minori'),
+    hibiki: valueOf('hibiki'),
+    hirame: valueOf('hirame'),
+    sasae: valueOf('sasae'),
+    yukihiro: valueOf('yukihiro'),
+  };
+}
+
+/**
+ * The numbers of departments the office has a layout for (apps/web/src/render/layouts). It grows
+ * as layouts are drawn (Issue #18).
+ */
+export const SUPPORTED_DEPARTMENT_COUNTS: readonly number[] = [4];
 
 const memberSchema = z.strictObject({
   name: z.string().min(1),
@@ -82,7 +105,9 @@ function duplicates(values: readonly string[]): string[] {
 export const guildSettingsSchema = z
   .strictObject({
     repo: z.string().regex(REPO_PATTERN, 'owner/name'),
-    members: z.record(memberIdSchema, memberSchema),
+    // Only the members on stage are required (checked below): かなめ, the king and each
+    // department's member.
+    members: z.partialRecord(memberIdSchema, memberSchema),
     commanderSessionDir: sessionDirSchema,
     departments: z.array(departmentSchema).readonly(),
     branchPrefixes: z.array(branchPrefixSchema).readonly(),
@@ -95,8 +120,12 @@ export const guildSettingsSchema = z
     const issue = (path: (string | number)[], message: string): void => {
       ctx.addIssue({ code: 'custom', path, message });
     };
-    if (settings.departments.length !== DEPARTMENT_MEMBER_IDS.length) {
-      issue(['departments'], `exactly ${String(DEPARTMENT_MEMBER_IDS.length)} departments (#18)`);
+    if (!SUPPORTED_DEPARTMENT_COUNTS.includes(settings.departments.length)) {
+      const counts = SUPPORTED_DEPARTMENT_COUNTS.join(' or ');
+      issue(['departments'], `${counts} departments (#18)`);
+    }
+    for (const id of new Set<MemberId>([COMMANDER_ID, PRESIDENT_ID, ...members])) {
+      if (settings.members[id] === undefined) issue(['members', id], 'missing');
     }
     // Quoted as JSON: a value with a line break or a control character stays on one line.
     for (const label of duplicates(labels)) {
@@ -162,6 +191,16 @@ export function describeIssues(error: z.ZodError): string {
 
 /** The settings once checked. */
 export type GuildSettings = z.output<typeof guildSettingsSchema>;
+
+/** The members on stage: かなめ, the departments' members in their order, and the king. */
+export function activeMemberIds(settings: Pick<GuildSettings, 'departments'>): MemberId[] {
+  return [COMMANDER_ID, ...settings.departments.map((d) => d.member), PRESIDENT_ID];
+}
+
+/** The members with a level: かなめ, then the departments' members in their order. */
+export function levelMemberIds(settings: Pick<GuildSettings, 'departments'>): MemberId[] {
+  return [COMMANDER_ID, ...settings.departments.map((d) => d.member)];
+}
 
 /**
  * Validates the settings read from a JSON file; an invalid value stops with a message. `source`
