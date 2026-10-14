@@ -12,6 +12,10 @@ function report(departments: readonly DepartmentRow[]): WriteReport {
     commanderSessionDir: '~/company',
     departments,
     keptBranchPrefixes: 0,
+    companyKept: false,
+    guests: [],
+    guestsFrom: 'kept',
+    maxGuests: 2,
     warnings: [],
     errors: [],
   };

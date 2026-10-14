@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { text } from 'node:stream/consumers';
 import { SETTINGS_ROOT } from '@conect-guild/snapshot/settingsFile';
 import { createGhRunner } from './gh.ts';
+import { createGitRunner } from './settingsGuests.ts';
 import { isDirectoryOnDisk } from './settingsChecks.ts';
 import { runSettingsWrite } from './settingsWrite.ts';
 import { createFileExclusive, writeFileAtomic } from './write.ts';
@@ -19,6 +20,7 @@ process.exitCode = await runSettingsWrite(process.argv.slice(2), {
   isDirectory: isDirectoryOnDisk,
   readText: (path) => readFileSync(path, 'utf8'),
   gh: createGhRunner(AbortSignal.timeout(GH_TIMEOUT_MS)),
+  git: createGitRunner(),
   writeFile: writeFileAtomic,
   createFile: createFileExclusive,
   out: (output) => {
