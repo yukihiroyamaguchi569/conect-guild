@@ -1,6 +1,6 @@
 ---
 name: guild-setup
-description: conect-guild を自分の会社（司令塔のフォルダ、2〜6 の部門のフォルダ、GitHub のリポジトリ）で使うための手元の設定ファイル guild.settings.local.json を作るときに使う。「自分のリポジトリで使いたい」「guild の設定を作って」「セットアップを手伝って」と頼まれたとき。お客さん（会社の外のセッション）を「足したい」「外したい」「入れ替えたい」と頼まれたときも使い、開いているセッションの一覧から選んでもらう。値を集めて npm run settings:write で確かめ、利用者の OK をもらってから書く。
+description: conect-guild を自分の会社（司令塔のフォルダ、2〜6 の部門のフォルダ、GitHub のリポジトリ）で使うための手元の設定ファイル guild.settings.local.json を作るときに使う。「自分のリポジトリで使いたい」「guild の設定を作って」「セットアップを手伝って」と頼まれたとき。お客さん（会社の外のセッション）を「足したい」「外したい」「入れ替えたい」と頼まれたときも使い、MulmoTerminal が記録しているセッションの一覧から選んでもらう。値を集めて npm run settings:write で確かめ、利用者の OK をもらってから書く。
 ---
 
 # guild-setup
@@ -119,7 +119,7 @@ conect-guild のリポジトリ直下で、利用者の会社の値を集め、`
 
 「お客さんを足したい」「外したい」「入れ替えたい」と頼まれたときの手順。会社の値は聞かず、入力に `repo`・`commanderSessionDir`・`departments` を入れない（3 つとも無ければ、道具は出発点のまま保ち、会社のフォルダとラベルを照合し直さない。1 つだけ入れるとエラーになる）。
 
-1. 開いているセッションの一覧を出す（引数なし）
+1. MulmoTerminal が記録しているセッションの一覧を出す（引数なし）
 
    ```bash
    npm run --silent settings:list-sessions
