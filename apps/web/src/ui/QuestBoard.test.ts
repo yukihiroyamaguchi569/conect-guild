@@ -61,6 +61,6 @@ describe('QuestBoard: the お客さん section (Issue #121)', () => {
     expect(guests).toBeGreaterThan(quest);
     // Every <div> opened from the list on is closed before the section: it is the list's sibling.
     const between = html.slice(html.lastIndexOf('<div', list), guests);
-    expect(between.split('<div').length).toBe(between.split('</div>').length);
+    expect(between.split('<div')).toHaveLength(between.split('</div>').length);
   });
 });
