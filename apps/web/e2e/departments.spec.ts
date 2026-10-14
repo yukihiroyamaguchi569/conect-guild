@@ -281,4 +281,15 @@ test('the fetch status keeps every note: in the column, or on one line as the ta
     expect(await button.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   }
   await expect(fetch.getByRole('status')).toHaveAttribute('title', /取得失敗/);
+  // Some note did not fit: it ends in an ellipsis of its own text, the whole of it in the title.
+  const notes = await fetch.locator('.fetch__note, .fetch__failure').evaluateAll((elements) =>
+    elements.map((element) => ({
+      cut: element.scrollWidth > element.clientWidth,
+      ellipsis: getComputedStyle(element).textOverflow,
+      whole: (element.getAttribute('title') ?? '').startsWith(element.textContent.trim()),
+    })),
+  );
+  expect(notes.some((note) => note.cut)).toBe(true);
+  for (const note of notes.filter((n) => n.cut))
+    expect(note).toEqual({ cut: true, ellipsis: 'ellipsis', whole: true });
 });

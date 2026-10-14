@@ -37,7 +37,7 @@ describe('FetchStatus as the tab of six departments (Issue #121)', () => {
     for (const note of [
       '最終取得 12:34',
       '情報が古い',
-      'セッションの状態が古いままです',
+      'title="セッションの状態が古いままです。作業中・許可待ちは',
       'title="取得失敗（ネットワーク）"',
       'title="localStorage が使えないため、演出は出ません"',
       'title="基準を消せませんでした"',
@@ -54,5 +54,6 @@ describe('FetchStatus as the tab of six departments (Issue #121)', () => {
     expect(html).toContain('取得失敗（ネットワーク）');
     expect(html).not.toContain('title="取得失敗（ネットワーク）"');
     expect(html).not.toContain('title="基準を消せませんでした"');
+    expect(html).toContain('title="作業中・許可待ちは GitHub');
   });
 });

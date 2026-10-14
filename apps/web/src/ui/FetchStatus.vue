@@ -19,6 +19,7 @@ defineProps<{
 const emit = defineEmits<{ 'clear-baseline': [] }>();
 
 const EFFECTS_NOTE = 'localStorage が使えないため、演出は出ません';
+const SESSIONS_HINT = '作業中・許可待ちは GitHub だけでは分からないため、いまは出していません';
 </script>
 
 <template>
@@ -35,7 +36,7 @@ const EFFECTS_NOTE = 'localStorage が使えないため、演出は出ません
     <p
       v-if="status.sessions !== null"
       class="fetch__line fetch__note"
-      title="作業中・許可待ちは GitHub だけでは分からないため、いまは出していません"
+      :title="tab ? `${status.sessions}。${SESSIONS_HINT}` : SESSIONS_HINT"
     >
       {{ status.sessions }}
     </p>
@@ -149,6 +150,12 @@ const EFFECTS_NOTE = 'localStorage が使えないため、演出は出ません
 
 .fetch--tab .fetch__line:last-child {
   min-width: 0;
+}
+
+/* Block, not flex, so that the text itself (not an anonymous flex item) gets the ellipsis. */
+.fetch--tab p.fetch__note,
+.fetch--tab .fetch__failure {
+  display: block;
 }
 
 .fetch--tab .fetch__note,
