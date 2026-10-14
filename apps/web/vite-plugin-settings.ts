@@ -47,6 +47,8 @@ export const E2E_SETTINGS_FILES: Readonly<Record<string, string>> = {
   '6': 'apps/web/e2e/settings/departments-6.json',
   // Four departments and two fictional guests (Issue #108).
   guests: 'apps/web/e2e/settings/guests.json',
+  // Six departments and the same two guests, for a look at the guests by the right-hand door.
+  'guests-6': 'apps/web/e2e/settings/guests-6.json',
 };
 
 /** The fixture of the E2E department mode, checked like any settings file; it must be named. */
