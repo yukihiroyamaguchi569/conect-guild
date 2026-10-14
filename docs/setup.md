@@ -14,12 +14,12 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
 
 始める前に、次がそろっているか確かめてください。チームの動かし方（司令塔と部門の AI を GitHub でどう回すか）は [orchestration.md](orchestration.md) にまとめています。これから始めるなら、先にそちらを読んでください。
 
-- **部門は 4 つ。** 登場するのは司令塔 1・部門 4・社長 1 の 6 人で固定です。部門の数を変えられるようにする作業は [#18](https://github.com/yukihiroyamaguchi569/conect-guild/issues/18) で進めます。4 つ以外にすると、設定の検証で止まります
+- **部門は 2〜6。** 登場するのは司令塔 1・部門 2〜6・社長 1 です。部屋の机の並び（間取り）を部門の数ごとに用意しています（[#18](https://github.com/yukihiroyamaguchi569/conect-guild/issues/18)）。1 つや 7 つ以上にすると、設定の検証で止まります
 - **Issue に部門のラベルを付ける。** 巻物の担当は、Issue に付いた部門のラベルで決まります。ラベルの無い Issue は司令塔の受付に置かれます
 - **PR を Issue に結ぶ。** PR の題名か本文に `#番号`（おすすめは本文の `Closes #番号`）を書くか、部門の接頭辞で始まるブランチ名（例: `accounting/12-monthly-report`）にします。どちらも無い PR は「担当不明」として受付に置かれます
 - **Node.js 26.10 以上**（collector は Node の型除去で TypeScript をそのまま動かします）
 - **GitHub CLI（`gh`）でログイン済み**で、対象のリポジトリの Issue・PR を読めること。collector は `gh` の認証をそのまま使い、トークンを別に置きません
-- **MulmoTerminal は任意。** 無くても動きます。あれば「いま作業中」「許可待ち」と王様の呼びかけが加わります。そのときは、5 つの AI（司令塔と 4 部門）を**別々のフォルダ**で起動し、そのフォルダを設定に**文字列で完全に一致**させて書きます（別のフォルダで起動したセッションは映りません。起動したあとセッションの中で worktree に移るのは構いません。[3 章](#いま作業中許可待ちが出ない)）
+- **MulmoTerminal は任意。** 無くても動きます。あれば「いま作業中」「許可待ち」と王様の呼びかけが加わります。そのときは、司令塔と各部門の AI（4 部門なら 5 つ）を**別々のフォルダ**で起動し、そのフォルダを設定に**文字列で完全に一致**させて書きます（別のフォルダで起動したセッションは映りません。起動したあとセッションの中で worktree に移るのは構いません。[3 章](#いま作業中許可待ちが出ない)）
 
 ## 1. まずデモを見る
 
@@ -63,7 +63,7 @@ gh repo view <owner/name>   # 眺めたいリポジトリ（例: your-name/my-co
 
 **Claude Code を使うなら、スキルで書けます。** conect-guild の直下で Claude Code を起動し、`/guild-setup` を実行します（「guild の設定を作って」と頼んでも使われます）。スキルが司令塔のフォルダとリポジトリを聞き、司令塔の `CLAUDE.md` の部門の表（[orchestration.md の 4 章](orchestration.md#4-司令塔の-claudemd-の雛形)の形）から値を集め、2-2b の道具で確かめた結果を確認の表と警告にして見せます。OK と答えたときだけ `guild.settings.local.json` を書きます。書けたら 2-3 に進みます。
 
-手で書くときは、下の手順に従います。リポジトリ名・5 つのフォルダ・4 つのラベルと接頭辞を書き換えるだけなら、手で書く代わりに道具（`npm run settings:write`）でも書けます（[2-2b](#2-2b-道具で書くnpm-run-settingswrite)）。
+手で書くときは、下の手順に従います。リポジトリ名・司令塔と部門のフォルダ・部門のラベルと接頭辞を書き換えるだけなら（部門の数を変えるときも）、手で書く代わりに道具（`npm run settings:write`）でも書けます（[2-2b](#2-2b-道具で書くnpm-run-settingswrite)）。
 
 **やること**
 
@@ -84,18 +84,18 @@ cp guild.settings.json guild.settings.local.json
 3. 古い `guild.settings.local.ts` で変えていた値だけを、コピーした JSON の同じ項目に書き写します。`.ts` のブロックをそのまま貼らないでください。一重引用符、引用符の無い項目名、最後の要素の後ろの `,`、コメント、`as const satisfies` が残ると JSON として読めません（書き方は上の段落のとおり）
 4. `guild.settings.local.ts` を消して、collector と開発サーバーを起動し直します
 
-書き換える項目は次の 6 つです。
+書き換える項目は次の 6 つと、任意の `guests`（[2-5](#2-5-お客さんを足す任意)）です。
 
 | 項目 | 中身 |
 |---|---|
 | `repo` | 眺める GitHub リポジトリ（`owner/name`）。Issue と PR をここから集める |
-| `members` | 6 人の名前・役・色（`#rrggbb`）。id（`kaname` など）は絵のファイル名なので変えない。`kaname` は受付の司令塔、`yukihiro` は玉座の王、残る 4 人（`minori`・`hibiki`・`hirame`・`sasae`）が部門の机に座る |
+| `members` | メンバーの名前・役・色（`#rrggbb`）。id（`kaname` など）は絵のファイル名なので変えない。`kaname` は受付の司令塔、`yukihiro` は玉座の王。部門の机に座るのは `minori`・`hibiki`・`hirame`・`sasae`・`takumi`・`musubi` のうち `departments` の `member` に書いた人。書くのは `kaname`・`yukihiro` と部門の机に座る人だけでよい（既定の `guild.settings.json` は 4 部門なので `takumi`・`musubi` が無い。5・6 部門にするときは足す。名前の既定はたくみ〈開発、`#00897b`〉・むすび〈営業、`#ff7043`〉） |
 | `commanderSessionDir` | 司令塔のセッションを起動するフォルダ |
-| `departments` | 4 つの部門（いまはちょうど 4 つ。席が 4 つ分のため。Issue #18）。それぞれ GitHub のラベル（`label`）・担当のメンバー（`member`。部門の机に座る 4 人のどれか）・セッションを起動するフォルダ（`sessionDir`）。並び順が、Issue に部門ラベルが複数あるときの優先順になる |
+| `departments` | 2〜6 の部門。それぞれ GitHub のラベル（`label`）・担当のメンバー（`member`。部門の机に座れる 6 人のどれかで、部門どうしで重ならない）・セッションを起動するフォルダ（`sessionDir`）。並び順が、Issue に部門ラベルが複数あるときの優先順になる。部門の数に合わせた間取りに切り替わる |
 | `branchPrefixes` | ブランチ名の接頭辞（`prefix`）→ 部門のラベル（`department`）。部門ラベルの付いた Issue に結べない PR の担当を推定する。上から順に見て、ブランチ名が最初に当てはまったものを使う |
 | `ruleChangePaths` | 変えると社長の承認が要るファイル。`exact`（パスが等しい）・`suffix`（で終わる）・`prefix`（で始まる）の 3 種類で書き、glob は使えない。既定は `CLAUDE.md`・`/CLAUDE.md` で終わるもの・`.claude/agents/` で始まるもので、そのままでよければ変えない |
 
-たとえば、リポジトリ `your-name/my-company` を `~/my-company` に clone し、その下の 4 つのフォルダで部門の AI を動かすなら、次のようになります（`members` と `ruleChangePaths` は省略）。
+たとえば、リポジトリ `your-name/my-company` を `~/my-company` に clone し、その下の 4 つのフォルダで 4 つの部門の AI を動かすなら、次のようになります（`members` と `ruleChangePaths` は省略）。
 
 ```json
   "repo": "your-name/my-company",
@@ -118,7 +118,7 @@ cp guild.settings.json guild.settings.local.json
 
 - **`label` は GitHub のラベル名と 1 文字も違わないように**書きます（全角・半角、空白も含めて）
 - **`branchPrefixes` の `department` には、`departments` の `label` のどれかを書きます**
-- **フォルダ（`commanderSessionDir` と `sessionDir`）** は `~`（ホームそのもの）、`~/...`（ホームの下）、絶対パスのどれかで書き、末尾に `/` や前後の空白を付けません。MulmoTerminal が記録するパスと文字列で比べるためです。5 つはすべて別のフォルダにします。`~` とホームの絶対パスのように、書き方が違っても同じフォルダを指すものは、collector が起動時に見つけて止まります。MulmoTerminal を使わないなら、フォルダは画面の表示に関わりません（重ならない値を書いておけば足ります）
+- **フォルダ（`commanderSessionDir` と `sessionDir`）** は `~`（ホームそのもの）、`~/...`（ホームの下）、絶対パスのどれかで書き、末尾に `/` や前後の空白を付けません。MulmoTerminal が記録するパスと文字列で比べるためです。司令塔と部門のフォルダはすべて別のフォルダにします。`~` とホームの絶対パスのように、書き方が違っても同じフォルダを指すものは、collector が起動時に見つけて止まります。MulmoTerminal を使わないなら、フォルダは画面の表示に関わりません（重ならない値を書いておけば足ります）
 
 対象のリポジトリなどは、コマンドラインの引数や環境変数では変えられません。設定ファイルを書き換えてください。
 
@@ -132,7 +132,7 @@ cp guild.settings.json guild.settings.local.json
 
 **やること**
 
-値だけの JSON を作ります（例: `input.json`。置き場所はどこでも構いません）。部門は 4 つを並び順のとおりにまとめて書きます。`prefix` はその部門のブランチ名の接頭辞です。
+値だけの JSON を作ります（例: `input.json`。置き場所はどこでも構いません）。部門は 2〜6 を並び順のとおりにまとめて書きます（下は 4 部門の例）。`prefix` はその部門のブランチ名の接頭辞です。
 
 ```json
 {
@@ -154,7 +154,8 @@ npm run settings:write -- --dry-run < input.json   # 書かずに、確認の表
 npm run settings:write -- --write < input.json     # 書く（guild.settings.local.json が既にあるときは --overwrite も付ける）
 ```
 
-- 入力に無い項目（`members` の名前・色、`ruleChangePaths`、`branchPrefixes` の `docs/` で始まる行など）は、いまの設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の値を保ちます。ただし `branchPrefixes` の既存の行は、入力のラベルのどれかを指すものだけを保ちます（ラベルを変えた部門を指していた行は消えます）
+- 入力に無い項目（`members` の名前・色、`ruleChangePaths`、`branchPrefixes` の `docs/` で始まる行など）は、いまの設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の値を保ちます。ただし `branchPrefixes` の既存の行は、入力のラベルのどれかを指すものだけを保ちます（ラベルを変えた部門を指していた行は消えます）。`guests`（お客さん）も保ちます
+- i 番目の部門の担当（`member`）は、いまの設定の i 番目のままです。いまの設定より部門が多いときは、増えた部門に、どの部門も担当していないメンバーがみのり・ひびき・ひらめ・ささえ・たくみ・むすびの順で就き、役（`role`）はその部門のラベルになります。いまの設定に無いたくみ・むすびは、名前と色を既定のまま足します
 - 既にある `guild.settings.local.json` を上書きするときは、前の内容を `guild.settings.local.json.bak`（git に入りません）に残します。戻すときはこのファイルを `guild.settings.local.json` に名前を変えます
 - `--json` を付けると、同じ結果を JSON で出します
 
@@ -164,7 +165,7 @@ npm run settings:write -- --write < input.json     # 書く（guild.settings.loc
 - **エラー**（書けません）: 設定の検証に合わない、フォルダが無い、`~` を展開すると 2 つのフォルダが同じになる、`guild.settings.local.json` があるのに `--overwrite` が無い
 - **警告**（書けます）: ラベルがリポジトリに無い、GitHub にラベルを問い合わせられなかった（collector があとで照合し直します）、部門のフォルダの `CLAUDE.md` にその部門のラベルが見つからない、接頭辞とフォルダ名が違う。最後の 2 つは、部門のフォルダを取り違えたときに出ます。[orchestration.md](orchestration.md) の雛形どおりでない会社では、取り違えていなくても出ることがあります
 - 部門の `CLAUDE.md` は、ラベルの文字があるかを調べるだけで、中身を表示も保存もしません
-- 書いたら、2-3 の手順で起動し、`settings:` の行が `guild.settings.local.json` で、`ok:` の行が出ることを確かめます。`sessions=5 ok` は MulmoTerminal を使う人だけの確認です
+- 書いたら、2-3 の手順で起動し、`settings:` の行が `guild.settings.local.json` で、`ok:` の行が出ることを確かめます。`sessions=<部門の数 + 1> ok`（4 部門なら `sessions=5 ok`）は MulmoTerminal を使う人だけの確認です
 
 ### 2-3. collector と画面を起動する
 
@@ -178,7 +179,7 @@ npm run dev:all   # collector と開発サーバーを一緒に起動する。Ct
 
 **確かめること**
 
-起動から数秒で、次のような行が出ます（時刻と件数は環境で変わります）。
+起動から数秒で、次のような行が出ます（4 部門の例。時刻と件数は環境で変わります）。
 
 ```text
 [collect] [collector] settings: guild.settings.local.json
@@ -189,7 +190,7 @@ npm run dev:all   # collector と開発サーバーを一緒に起動する。Ct
 
 - `settings:` の行が `guild.settings.local.json` であること。`guild.settings.json` と出たら、手元のファイルが無いか、名前か置き場所（リポジトリ直下）が違います
 - `ok:` の行が出ること。`issues`・`prs` は画面に渡す Issue・PR の件数、`history` は経験値に数える全履歴の件数です（時刻は UTC で出ます）。`failed:` の行が出たら [3 章](#3-困ったとき) へ
-- `sessions=` の行は MulmoTerminal のセッションを読んだ結果です（`sessions=5 ok` なら 5 つとも見つかった）。MulmoTerminal を使わないなら `sessions unavailable: missing` などと出ますが、気にしなくてかまいません
+- `sessions=` の行は MulmoTerminal のセッションを読んだ結果です（司令塔と部門のうち見つかった数。4 部門で `sessions=5 ok` なら 5 つとも見つかった）。MulmoTerminal を使わないなら `sessions unavailable: missing` などと出ますが、気にしなくてかまいません
 
 collector は GitHub を 60 秒ごと、MulmoTerminal を 5 秒ごとに読みます。別々に動かしたいときは、ターミナルを 2 つ使い、`npm run collect` を先に動かしてから `npm run dev` を動かします。1 回だけ集めるなら `npm run collect:once` です。
 
@@ -207,6 +208,36 @@ collector は GitHub を 60 秒ごと、MulmoTerminal を 5 秒ごとに読み�
 これで準備は終わりです。
 
 `npm run verify`（lint・型検査・テスト）は、このリポジトリを開発するためのものです。テストは `guild.settings.local.json` を読まず、いつも conect.llc の設定（`guild.settings.json`）で動くので、手元の設定を書き換えても通ります。
+
+### 2-5. お客さんを足す（任意）
+
+会社の外のプロジェクト（自分の別のアプリなど）の AI のセッションを、「お客さん」としてギルドに来させられます。最大 2 人で、無くても構いません（既定は無し）。お客さんを画面に出すのは、#108 の画面の PR が入ってからです。それまでは、collector が集めて `apps/web/.data/snapshot.json` に入れるところまでです。
+
+**やること**
+
+`guild.settings.local.json` に `guests` を手で足します。`/guild-setup` と `npm run settings:write` はお客さんを書きません（いまの設定の `guests` をそのまま残します）。
+
+```json
+  "guests": [
+    { "name": "たびびと", "sessionDir": "~/side-project", "repo": "your-name/side-project" },
+    { "name": "ぼうけんしゃ", "sessionDir": "~/another-app" }
+  ]
+```
+
+| 項目 | 中身 |
+|---|---|
+| `name` | 画面に出す名前（1〜12 文字）。お客さんどうしで重ならない。snapshot にもログにも入れない |
+| `sessionDir` | お客さんのセッションを起動するフォルダ。書き方は会社のフォルダと同じで、文字列で完全に一致したセッションだけを読む（その下のフォルダや worktree で起動したものは映らない）。会社のフォルダとも、ほかのお客さんとも違うフォルダにする |
+| `repo` | 任意。お客さんの GitHub リポジトリ（`owner/name`）。会社の `repo` とは違うものにする（大文字と小文字は区別しない） |
+
+**集めるもの**
+
+- セッションの状態（いま作業中・許可待ち）を、会社と同じく MulmoTerminal のファイルから読みます。collector のログの `sessions=` の行に、セッションが見つかったお客さんの数が `guests=1` のように加わります
+- `repo` があれば、お客さんごとに 5 分おきに `gh` で読みます（1 人目は起動から 20 秒ほど、2 人目は 40 秒ほどで始め、会社の 60 秒ごとの取得と重ならないようにずらします）。読むのは、開いている Issue・PR（更新の新しい 100 件まで）と、直近 7 日に完了で閉じた Issue・マージした PR（新しい順に 20 件まで）で、お客さん 1 人につき 5 分に 2 回の呼び出しです。`gh` でログインしているアカウントで、そのリポジトリを読めるようにしておきます
+- お客さんの Issue・PR は題名つきで snapshot に入ります（画面に出すのは上のとおり画面の PR から。会社の Issue と同じく、公開しない前提です）。ログには番号・件数・エラーの種類だけを出し（`guests[0] github ok: open=3 recent=2`・`guests[1] github failed: gh-failed`）、名前・リポジトリ名・題名は出しません
+- お客さんの取得に失敗しても、会社の部分はそのまま集めます。そのお客さんは最後に読めたときの結果のままです
+
+`guests` を書き換えたら、`npm run dev:all` を止めて起動し直します（collector と画面は起動時に設定を読みます）。画面は、snapshot のお客さんの数や `repo` が設定と合わないとき、お客さんの分をまとめて使いません。
 
 ## 3. 困ったとき
 
@@ -282,7 +313,8 @@ collector は `[collector] guild.settings.local.json is invalid:`（読んだフ
 
 | メッセージ | 直し方 |
 |---|---|
-| `exactly 4 departments (#18)` | `departments` をちょうど 4 つにする |
+| `2 or 3 or 4 or 5 or 6 departments (#18)` | `departments` を 2〜6 にする |
+| `missing`（`members.<id>`） | 部門の `member` に書いたメンバー（または `kaname`・`yukihiro`）が `members` に無い。`members` にそのメンバーの名前・役・色を足す |
 | `not a department label`（`branchPrefixes[n].department`） | `department` を `departments` のどれかの `label` と同じ文字にする |
 | `~, ~/... or /... without a trailing / or surrounding spaces` | フォルダの書き方を直す（末尾の `/`、前後の空白を消す） |
 | `label ... twice`・`member ... twice`・`session dir ... twice` | 部門どうしでラベル・担当・フォルダが重なっている。別々にする |
@@ -312,7 +344,11 @@ MulmoTerminal を使っていても出ないときは、セッションのフォ
 
 ### 部門の数を変えたい
 
-いまは 4 つで固定です（[#18](https://github.com/yukihiroyamaguchi569/conect-guild/issues/18)）。部門が 3 つ以下なら、使わない部門にも、どの Issue にも付けないラベルと、使わないフォルダを書いておきます。5 つ以上なら、4 つにまとめたラベルで運用してください。
+部門は 2〜6 にできます。部門の数に合わせて、部屋の机の並び（間取り）とパーティの窓の行が変わります。
+
+- `/guild-setup` か `npm run settings:write`（[2-2b](#2-2b-道具で書くnpm-run-settingswrite)）なら、入力の `departments` を新しい数だけ並べます。増えた部門の担当のメンバーは道具が決め、`branchPrefixes` は入力の `prefix` から作り直します
+- 手で書くときは、`departments` の行を足すか消し、`branchPrefixes` も合わせます（消した部門のラベルを指す行は消す）。足した部門の `member` には、ほかの部門が使っていないメンバーを書き、`members` にそのメンバーが無ければ足します
+- 書き換えたら `npm run dev:all` を止めて起動し直します。レベルは部門とメンバーの対応が変わったときに基準を取り直し、その回はレベルアップを出しません
 
 ## 4. MulmoTerminal との関係・絵の差し替え・データの扱い
 
