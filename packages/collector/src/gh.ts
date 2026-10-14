@@ -72,6 +72,19 @@ export async function ghApiProjected(
   return parseJsonLines(stdout);
 }
 
+/**
+ * Like {@link ghApiProjected} but only the first page (no `--paginate`): the caller bounds the
+ * cost by `per_page` (Issue #108, the guests' lists).
+ */
+export async function ghApiProjectedPage(
+  gh: GhRunner,
+  path: string,
+  projection: string,
+): Promise<unknown[]> {
+  const stdout = await gh(['api', '--jq', projectionFilter(projection), path]);
+  return parseJsonLines(stdout);
+}
+
 /** Validate with zod; a mismatch becomes a validation-failed error. */
 export function parseOrThrow<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);

@@ -167,6 +167,7 @@ describe('buildParty: live sessions', () => {
   const now = at(T0);
   const live = (members: SnapshotSession[], checkedAt = T0): Snapshot['sessions'] => ({
     status: 'ok',
+    guests: [],
     checkedAt,
     members,
   });
@@ -229,7 +230,12 @@ describe('buildParty: live sessions', () => {
 
 describe('buildFetchStatus', () => {
   const fetchedAt = '2026-10-12T00:00:00Z';
-  const sessions: Snapshot['sessions'] = { status: 'ok', checkedAt: fetchedAt, members: [] };
+  const sessions: Snapshot['sessions'] = {
+    status: 'ok',
+    checkedAt: fetchedAt,
+    members: [],
+    guests: [],
+  };
 
   it('shows nothing before the first success', () => {
     expect(buildFetchStatus(null, null, at(fetchedAt))).toEqual({
@@ -286,7 +292,12 @@ describe('buildFetchStatus', () => {
 
 describe('buildFetchStatus: not collected yet (Issue #67)', () => {
   const fetchedAt = '2026-10-12T00:00:00Z';
-  const sessions: Snapshot['sessions'] = { status: 'ok', checkedAt: fetchedAt, members: [] };
+  const sessions: Snapshot['sessions'] = {
+    status: 'ok',
+    checkedAt: fetchedAt,
+    members: [],
+    guests: [],
+  };
 
   it('guides instead of failing while nothing was collected yet (Issue #67)', () => {
     expect(buildFetchStatus(null, 'not-collected', at(fetchedAt))).toEqual({

@@ -9,7 +9,7 @@ import { at, T0 } from './fixtures.test-util';
 import { liveStatesOf, memberOfSession } from './session';
 
 function okSessions(members: SnapshotSession[]): SnapshotSessions {
-  return { status: 'ok', checkedAt: T0, members };
+  return { status: 'ok', checkedAt: T0, members, guests: [] };
 }
 
 describe('memberOfSession', () => {
