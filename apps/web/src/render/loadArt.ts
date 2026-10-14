@@ -4,6 +4,8 @@ import kanameUrl from '../../../../assets/sprites/kaname.png';
 import minoriUrl from '../../../../assets/sprites/minori.png';
 import sasaeUrl from '../../../../assets/sprites/sasae.png';
 import yukihiroUrl from '../../../../assets/sprites/yukihiro.png';
+import guest1Url from '../../../../assets/sprites/guest1.png';
+import guest2Url from '../../../../assets/sprites/guest2.png';
 import decorUrl from '../../../../assets/decor/decor.png';
 import propsUrl from '../../../../assets/props/props.png';
 import tilesetUrl from '../../../../assets/tiles/tileset.png';
@@ -16,6 +18,7 @@ import {
   type SpriteArt,
   type TileArt,
 } from './art';
+import { createGuestArt, placeholderGuestArt, type GuestArt } from './guestArt';
 import { chooseProps, createDecorArt, decorProps, sheetProps } from './decorArt';
 import { createSpriteArt } from './spriteArt';
 import { createTileArt } from './tileArt';
@@ -100,4 +103,16 @@ export async function loadArt(): Promise<GuildArt> {
     },
     decor: decor ?? placeholderArt.decor,
   };
+}
+
+/** The guests' pictures (Issue #108), in the order of the settings' guests. */
+const GUEST_URLS = [guest1Url, guest2Url] as const;
+
+/** The guests' art; plain boxes when a picture cannot be loaded. */
+export async function loadGuestArt(): Promise<GuestArt> {
+  try {
+    return createGuestArt(await Promise.all(GUEST_URLS.map(loadImage)));
+  } catch {
+    return placeholderGuestArt;
+  }
 }

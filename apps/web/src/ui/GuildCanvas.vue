@@ -4,9 +4,11 @@ import {
   EMPTY_CUE_QUEUE,
   receiveCue,
   takeCues,
+  type GuestCue,
   type PartyRow,
   type SceneCue,
 } from '../app/guildView';
+import type { GuestView } from '../domain/guests';
 import type { KeyValueStore } from '../adapters/storage';
 import type { Summons } from '../app/guildStore';
 import type { StageRecall } from '../app/messageQueue';
@@ -17,7 +19,9 @@ import type { GuildArt } from '../render/art';
 import { bubblesOf } from '../render/bubbles';
 import { hourFromQuery } from '../render/daylight';
 import { levelsOf } from '../render/levelTags';
-import { loadArt } from '../render/loadArt';
+import type { GuestArt } from '../render/guestArt';
+import { stageGuestsOf } from '../render/guests';
+import { loadArt, loadGuestArt } from '../render/loadArt';
 import type { IdleSeeds, IdleSince } from '../render/idle';
 import type { HomeIn } from '../render/idleCrew';
 import { isShown, startRenderLoop, type RenderLoop, type StageParty } from '../render/loop';
@@ -35,6 +39,10 @@ const props = defineProps<{
   halted: boolean;
   /** Where the idle times are kept; localStorage when absent (the demo keeps them in memory). */
   lastActiveStorage?: KeyValueStore;
+  /** The guests at their spots (Issue #108). */
+  guests: readonly GuestView[];
+  /** The guest whose PR or Issue the message now in the window reports: it sparkles. */
+  sparkle: GuestCue | null;
 }>();
 
 const emit = defineEmits<{
@@ -107,10 +115,11 @@ function playCues(): void {
 /** Dev only: `?hour=21.5` fixes the time of day, to check the day and the night by hand. */
 const fixedHour = import.meta.env.DEV ? hourFromQuery(globalThis.location.search) : null;
 
-function start(element: HTMLCanvasElement, art: GuildArt): void {
+function start(element: HTMLCanvasElement, art: GuildArt, guestArt: GuestArt): void {
   const running = startRenderLoop({
     canvas: element,
     art,
+    guestArt,
     ...(fixedHour === null ? {} : { localHour: () => fixedHour }),
     idleSeeds: props.idleSeeds,
     onCallStart: () => {
@@ -125,6 +134,7 @@ function start(element: HTMLCanvasElement, art: GuildArt): void {
   stage = 'running';
   setIdleSince(lastActive.observe(props.party, Date.now()));
   running.setParty(stageParty(props.party));
+  running.setGuests(stageGuestsOf(props.guests));
   running.resize(cssWidth ?? element.clientWidth, globalThis.devicePixelRatio);
   // Messages may have reached the window while the pictures were loading.
   playCues();
@@ -148,14 +158,14 @@ function observe(element: HTMLCanvasElement): void {
 onMounted(() => {
   if (canvas.value !== null) observe(canvas.value);
   // The loop starts once the pictures are in, so the cached background has them.
-  void loadArt().then((art) => {
+  void Promise.all([loadArt(), loadGuestArt()]).then(([art, guestArt]) => {
     const element = canvas.value;
     if (unmounted || element === null) return;
     // A stage that cannot start (no 2D context, for one) leaves the windows, messages and sounds
     // going without the room; `ready` is sent either way (the demo's はじめる waits for it).
     stage = bootStage(
       () => {
-        start(element, art);
+        start(element, art, guestArt);
       },
       {
         failed: (error) => {
@@ -214,6 +224,21 @@ watch(
     if (props.summons === null || loop === null) return;
     const homeIn = loop.summon(props.summons.members);
     if (Object.keys(homeIn).length > 0) emit('away', homeIn);
+  },
+);
+
+watch(
+  () => props.guests,
+  (guests) => {
+    loop?.setGuests(stageGuestsOf(guests));
+  },
+);
+
+// A guest sparkles once per message; one seen before the stage runs is past (not kept).
+watch(
+  () => props.sparkle?.id,
+  () => {
+    if (props.sparkle !== null) loop?.sparkle(props.sparkle.guest);
   },
 );
 

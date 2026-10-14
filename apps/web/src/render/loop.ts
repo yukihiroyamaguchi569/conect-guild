@@ -19,6 +19,11 @@ import {
 import { drawAnimatedDecor } from './drawDecor';
 import { drawLightPatches, drawShade, drawWindowSun, type ShadeScratch } from './drawDaylight';
 import { drawLevelTags } from './drawLevelTags';
+import { drawGuestBodies, drawGuestOverheads } from './drawGuests';
+import { placeholderGuestArt, type GuestArt } from './guestArt';
+import type { GuestFrame, StageGuest } from './guests';
+import { createGuestStage, type GuestStage } from './guestStage';
+import { SELECTED_LAYOUT } from './layouts';
 import { drawLevelUpBanners } from './drawLevelUp';
 import {
   NO_PLACES,
@@ -29,7 +34,7 @@ import {
   type Placed,
 } from './overheadPlace';
 import { BACK_ANIMATED_DECOR, FRONT_LAYERS } from './layers';
-import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
+import { LOGICAL_HEIGHT, LOGICAL_WIDTH, WINDOW_EXTENTS } from './map';
 import { AMBIENT } from './metrics';
 import type { IdleSeeds, IdleSince } from './idle';
 import { playEvent, recallHome, type HomeIn } from './idleCrew';
@@ -87,6 +92,8 @@ export interface RenderLoopOptions {
   readonly onCallStart?: () => void;
   /** The idle spells' per-member salts, so the narration tells the same outings (Issue #30). */
   readonly idleSeeds?: IdleSeeds;
+  /** The guests' pictures (Issue #108); plain boxes when absent. */
+  readonly guestArt?: GuestArt;
 }
 
 export interface StageParty {
@@ -139,6 +146,10 @@ export interface RenderLoop {
    * walks back to their seat).
    */
   setParty(party: StageParty): void;
+  /** The guests at their spots (Issue #108), in the settings' order. */
+  setGuests(guests: readonly StageGuest[]): void;
+  /** A small sparkle over guest `index` now (its PR merged or Issue completed); dropped unseen. */
+  sparkle(index: number): void;
   /** Matches the backing store to the displayed width (CSS px) and the device pixel ratio. */
   resize(cssWidth: number, pixelRatio: number): void;
   /** Cancels the pending frame and stops listening; the loop does nothing after this. */
@@ -270,6 +281,7 @@ interface Painter {
   readonly background: HTMLCanvasElement;
   readonly front: readonly CachedFrontLayer[];
   readonly art: GuildArt;
+  readonly guestArt: GuestArt;
   /** Where the words over each head were in the frame painted last (overheadPlace.ts). */
   readonly placer: Placer;
 }
@@ -284,6 +296,7 @@ interface Moment {
   readonly murmurs: SpokenLines;
   readonly cues: DecorCues;
   readonly levels: Levels;
+  readonly guests: GuestFrame;
 }
 
 /**
@@ -301,9 +314,11 @@ function paint(painter: Painter, scale: number, moment: Moment): void {
   drawLightPatches(ctx, art, moment, light);
   drawAnimatedDecor(ctx, art, moment, BACK_ANIMATED_DECOR);
   drawActors(ctx, moment, art, painter.front);
+  drawGuestBodies(ctx, moment.guests, { guests: painter.guestArt, sprites: art.sprites });
   drawShade(ctx, painter.scratch, light, lampLights(moment.now));
   const tags = levelTags(moment.levels, DEFAULT_SEATS);
   drawLevelTags(ctx, tags);
+  drawGuestOverheads(ctx, moment.guests, WINDOW_EXTENTS.message.top);
   const placed = painter.placer.place({ ...moment, tags });
   drawOverhead(ctx, { placed, confetti: moment.frame.confetti });
   drawLevelUpBanners(ctx, { placed, confetti: moment.frame.confetti });
@@ -326,16 +341,24 @@ function createPlacer(): Placer {
 }
 
 /** The canvas, the scenery drawn once and an empty canvas for the shade. */
-function createPainter(ctx: CanvasRenderingContext2D, art: GuildArt): Painter {
+function createPainter(ctx: CanvasRenderingContext2D, art: GuildArt, guestArt: GuestArt): Painter {
   const { background, front } = cachedScenery(art);
   const image = cachedLayer(() => undefined);
   const scratch = { ctx: context2d(image), image };
-  return { ctx, scratch, background, front, art, placer: createPlacer() };
+  return { ctx, scratch, background, front, art, guestArt, placer: createPlacer() };
+}
+
+/** The guests of the layout in use (Issue #108), drawn with `art`. */
+function guestStageOf(art: GuestArt): GuestStage {
+  return createGuestStage(SELECTED_LAYOUT.guestSpots, (index) => art.hasHoldFrames(index));
 }
 
 /** The scenes and the remarks to keep: none while the canvas is out of sight (scenesShown). */
-function keepShown(cast: Cast, director: Director, cssWidth: number): Director {
-  if (!isShown(cssWidth)) cast.silence();
+function keepShown(cast: Cast, director: Director, cssWidth: number, guests: GuestStage): Director {
+  if (!isShown(cssWidth)) {
+    cast.silence();
+    guests.clearSparkles();
+  }
   return scenesShown(director, cssWidth);
 }
 
@@ -419,10 +442,33 @@ export function summonOn(
   return { director: withVisit(director, added.visit), homeIn: { kaname: added.visit.back - t } };
 }
 
+/** RenderLoop.setGuests and RenderLoop.sparkle: a sparkle nobody would see is dropped. */
+function guestControls(
+  guests: GuestStage,
+  loop: {
+    readonly schedule: Scheduler;
+    readonly paused: () => boolean;
+    readonly stageNow: () => number;
+  },
+): Pick<RenderLoop, 'setGuests' | 'sparkle'> {
+  return {
+    setGuests(next) {
+      guests.set(next);
+      loop.schedule.now();
+    },
+    sparkle(index) {
+      if (loop.paused()) return;
+      guests.sparkle(index, loop.stageNow());
+      loop.schedule.now();
+    },
+  };
+}
+
 export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
   const { canvas, art } = options;
   const { now, localHour, context } = loopSources(options);
-  const painter = createPainter(context2d(canvas), art);
+  const painter = createPainter(context2d(canvas), art, options.guestArt ?? placeholderGuestArt);
+  const guests = guestStageOf(painter.guestArt);
   const cast = createCast(art, context.random, options, talkOf(options, context));
   const visibility = options.visibility ?? documentVisibility;
   // Narrow screens hide the canvas (display: none): its width is 0 and nothing is drawn.
@@ -437,11 +483,13 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
   function draw(): void {
     const t = stageNow();
     const { calling, ...stage } = stageAt(cast, director, { t, hour: localHour(), party });
-    paint(painter, scale, { ...party, ...stage, now: t });
+    const guestNow = guests.frameAt(t);
+    paint(painter, scale, { ...party, ...stage, now: t, guests: guestNow });
     director = seenAndPruned(context, director, { t, speeches: stage.speeches });
     // A call needs no more than the ambient pace: its words and turns change every few hundred ms.
     const ambient = Object.keys(party.moods).length > 0 || ANIMATED_DECOR.length > 0 || calling;
-    follow(schedule, nextDraw({ hidden: paused(), animating: stage.animating, ambient }));
+    const animating = stage.animating || guestNow.animating;
+    follow(schedule, nextDraw({ hidden: paused(), animating, ambient }));
   }
 
   const paused = () => isPaused(visibility.isHidden(), cssWidth);
@@ -451,7 +499,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
    * draws (or not) to match.
    */
   function refresh(): void {
-    director = keepShown(cast, director, cssWidth);
+    director = keepShown(cast, director, cssWidth, guests);
     clock = withPaused(clock, paused(), now());
     schedule.refresh();
   }
@@ -480,6 +528,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
       director = cast.receive(director, party, { t: stageNow(), quiet: paused() });
       schedule.now();
     },
+    ...guestControls(guests, { schedule, paused, stageNow }),
     resize(nextCssWidth, pixelRatio) {
       cssWidth = nextCssWidth;
       scale = fitCanvas(canvas, cssWidth, pixelRatio) ?? scale;
