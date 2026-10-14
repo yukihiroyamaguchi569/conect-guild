@@ -14,6 +14,7 @@ import {
   markFeet,
   sparkleAt,
   stageGuestsOf,
+  type GuestTag,
   type StageGuest,
 } from './guests';
 import { createGuestArt } from './guestArt';
@@ -276,6 +277,28 @@ function zRect(feet: { x: number; y: number }): PxRect {
   };
 }
 
+/**
+ * How wide a tag is drawn at most (drawGuests.ts: the name in bold 10 px, the counts in bold 9 px,
+ * outlined 2 px wide): a full-width character as wide as the font, any other 0.65 of it, and the
+ * outline's 1 px on each side. fillText squeezes a tag with a maxWidth to it.
+ */
+const OUTLINE_PX = 1;
+function tagBox(tag: GuestTag): PxRect {
+  const font = tag.kind === 'name' ? 10 : 9;
+  const natural = Array.from(tag.text).reduce(
+    (sum, char) => sum + ((char.codePointAt(0) ?? 0) >= 0x2e80 ? font : font * 0.65),
+    0,
+  );
+  const width = tag.maxWidth === null ? natural : Math.min(natural, tag.maxWidth);
+  const left = { center: tag.x - width / 2, left: tag.x, right: tag.x - width }[tag.align];
+  return {
+    left: left - OUTLINE_PX,
+    right: left + width + OUTLINE_PX,
+    top: tag.y - font / 2 - OUTLINE_PX,
+    bottom: tag.y + font / 2 + OUTLINE_PX,
+  };
+}
+
 describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layout) => {
   const windows = Object.values(tallestWindowExtentsFor(layout));
   const message = tallestWindowExtentsFor(layout).message;
@@ -285,6 +308,20 @@ describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layou
     for (const area of windows) {
       expect(overlaps(questionRect(feet), area)).toBe(false);
       expect(overlaps(zRect(feet), area)).toBe(false);
+    }
+  });
+
+  it.each([0, 1])('keep the tags of guest %i clear of the board and the party window', (index) => {
+    const feet = guestFeet(layout.guestSpots[index] ?? { col: 0, row: 0 });
+    const { board, party, message } = tallestWindowExtentsFor(layout);
+    // The longest name the settings accept (12 characters) and four-digit counts.
+    const tags = guestTags(
+      guest(index, { name: 'じゅうにもじのおきゃくさ', counts: { issues: 9999, prs: 9999 } }),
+      feet,
+      message,
+    );
+    for (const tag of tags) {
+      for (const area of [board, party]) expect(overlaps(tagBox(tag), area), tag.text).toBe(false);
     }
   });
 
