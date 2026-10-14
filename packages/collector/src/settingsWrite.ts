@@ -8,21 +8,31 @@ import {
 import {
   describeIssues,
   guildSettingsSchema,
+  maxGuestsFor,
   type GuildSettings,
 } from '@conect-guild/snapshot/settingsSchema';
 import type { GhRunner } from './gh.ts';
-import { checkFolders, checkRepoLabels, type Findings } from './settingsChecks.ts';
 import {
+  checkFolders,
+  checkRepoLabels,
+  guestFolderErrors,
+  type Findings,
+} from './settingsChecks.ts';
+import { resolveGuestRepos, type GitRunner, type ResolvedGuest } from './settingsGuests.ts';
+import {
+  companyOf,
   mergeSettings,
   settingsInputSchema,
+  type CompanyInput,
   type MergedSettings,
   type SettingsInput,
 } from './settingsInput.ts';
-import { renderJson, renderText, type WriteReport } from './settingsReport.ts';
+import { renderJson, renderText, type GuestRow, type WriteReport } from './settingsReport.ts';
 
 /**
  * Issue #79: `npm run settings:write -- --dry-run | --write [--overwrite] [--json]`. Reads the
- * values from stdin as JSON, lays them over the current settings, checks them and, with --write,
+ * values from stdin as JSON (the company's, the guests' (Issue #118) or both), lays them over the
+ * current settings, checks them and, with --write,
  * writes guild.settings.local.json at the repository root. The file it writes is fixed: no
  * argument or environment variable points it anywhere else (docs/DESIGN.md 4.1).
  */
@@ -63,6 +73,8 @@ export interface SettingsWriteDeps {
   readonly isDirectory: (path: string) => boolean;
   readonly readText: (path: string) => string;
   readonly gh: GhRunner;
+  /** For a guest's repo suggestion: `git -C <folder> remote get-url origin` (Issue #118). */
+  readonly git: GitRunner;
   /** Replaces the file atomically (temp file, then rename), 0600. */
   readonly writeFile: (path: string, content: string) => Promise<void>;
   /** Creates the file whole, 0600, failing when it already exists (never replaces one). */
@@ -104,6 +116,10 @@ function emptyReport(options: WriteOptions, base: string | null, error: string):
     commanderSessionDir: null,
     departments: [],
     keptBranchPrefixes: 0,
+    companyKept: false,
+    guests: [],
+    guestsFrom: 'kept',
+    maxGuests: null,
     warnings: [],
     errors: [error],
   };
@@ -128,10 +144,15 @@ interface Checked {
 
 const NO_FINDINGS: Findings = { claudeMd: [], warnings: [], errors: [] };
 
-/** The schema, then (once the values fit it) the folders and the labels. */
+/**
+ * The schema, then (once the values fit it) the folders and the labels. Without company values in
+ * the input (Issue #118) the company's folders and labels are not checked again: they are kept as
+ * they were. The guests' folders are checked either way.
+ */
 async function checkMerged(
   merged: MergedSettings,
-  input: SettingsInput,
+  company: CompanyInput | null,
+  guestsFromInput: boolean,
   deps: SettingsWriteDeps,
 ): Promise<Checked> {
   const checked = guildSettingsSchema.safeParse(merged.raw);
@@ -139,12 +160,66 @@ async function checkMerged(
     const error = `設定の検証で止まりました:\n${describeIssues(checked.error)}`;
     return { settings: null, findings: { ...NO_FINDINGS, errors: [error] }, labelWarnings: [] };
   }
-  const prefixes = input.departments.map((d) => d.prefix);
+  const guestErrors = guestFolderErrors(checked.data, guestsFromInput, deps);
+  if (company === null) {
+    return {
+      settings: checked.data,
+      findings: { ...NO_FINDINGS, errors: guestErrors },
+      labelWarnings: [],
+    };
+  }
+  const findings = checkFolders(
+    checked.data,
+    company.departments.map((d) => d.prefix),
+    deps,
+  );
   return {
     settings: checked.data,
-    findings: checkFolders(checked.data, prefixes, deps),
+    findings: { ...findings, errors: [...findings.errors, ...guestErrors] },
     labelWarnings: await checkRepoLabels(deps.gh, checked.data),
   };
+}
+
+/** The guests as they will be written: the input's with where each repo came from, or the kept. */
+function guestRows(
+  merged: MergedSettings,
+  resolved: readonly ResolvedGuest[] | undefined,
+): GuestRow[] {
+  if (resolved !== undefined) {
+    return resolved.map(({ guest, repoFrom }) => ({
+      name: guest.name,
+      sessionDir: guest.sessionDir,
+      repo: guest.repo ?? null,
+      repoFrom,
+    }));
+  }
+  return (merged.raw.guests ?? []).map((guest) => ({
+    name: guest.name,
+    sessionDir: guest.sessionDir,
+    repo: guest.repo ?? null,
+    repoFrom: 'kept',
+  }));
+}
+
+function companyRows(company: CompanyInput | null, claudeMd: Findings['claudeMd']) {
+  return {
+    repo: company?.repo ?? null,
+    commanderSessionDir: company?.commanderSessionDir ?? null,
+    departments: (company?.departments ?? []).map((d, i) => ({
+      label: d.label,
+      sessionDir: d.sessionDir,
+      prefix: d.prefix,
+      claudeMd: claudeMd[i] ?? 'no-file',
+    })),
+    companyKept: company === null,
+  };
+}
+
+async function resolveInputGuests(
+  input: SettingsInput,
+  deps: SettingsWriteDeps,
+): Promise<ResolvedGuest[] | undefined> {
+  return input.guests === undefined ? undefined : resolveGuestRepos(input.guests, deps);
 }
 
 /** Reads, merges and checks; writes nothing. */
@@ -155,8 +230,19 @@ async function plan(options: WriteOptions, deps: SettingsWriteDeps): Promise<Pla
   if (!input.ok) {
     return { report: emptyReport(options, base.value.file.name, input.error), settings: null };
   }
-  const merged = mergeSettings(base.value.settings, input.value);
-  const { settings, findings, labelWarnings } = await checkMerged(merged, input.value, deps);
+  const company = companyOf(input.value);
+  const resolved = await resolveInputGuests(input.value, deps);
+  const merged = mergeSettings(
+    base.value.settings,
+    company,
+    resolved?.map((r) => r.guest),
+  );
+  const { settings, findings, labelWarnings } = await checkMerged(
+    merged,
+    company,
+    resolved !== undefined,
+    deps,
+  );
   const overwrite = deps.exists(join(deps.root, LOCAL_SETTINGS_FILE));
   const errors = [...findings.errors, ...refusal(options, overwrite)];
   const report: WriteReport = {
@@ -165,15 +251,11 @@ async function plan(options: WriteOptions, deps: SettingsWriteDeps): Promise<Pla
     written: false,
     base: base.value.file.name,
     overwrite,
-    repo: input.value.repo,
-    commanderSessionDir: input.value.commanderSessionDir,
-    departments: input.value.departments.map((d, i) => ({
-      label: d.label,
-      sessionDir: d.sessionDir,
-      prefix: d.prefix,
-      claudeMd: findings.claudeMd[i] ?? 'no-file',
-    })),
+    ...companyRows(company, findings.claudeMd),
     keptBranchPrefixes: merged.keptBranchPrefixes,
+    guests: guestRows(merged, resolved),
+    guestsFrom: resolved === undefined ? 'kept' : 'input',
+    maxGuests: maxGuestsFor(merged.raw.departments.length),
     warnings: [...labelWarnings, ...findings.warnings],
     errors,
   };

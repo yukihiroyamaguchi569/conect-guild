@@ -1,8 +1,9 @@
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import type { SessionDepartment } from '@conect-guild/snapshot';
 import { GUILD_SETTINGS } from '@conect-guild/snapshot/settings';
 import { expandHome } from './src/home.ts';
+import { mulmoTerminalFiles } from './src/sessionFiles.ts';
 
 // Kept here too: the settings writer imports it from src/home.ts, which loads no settings.
 export { expandHome };
@@ -21,7 +22,6 @@ export type Seat =
   | { readonly kind: 'guest'; readonly index: number; readonly cwd: string };
 
 const HOME = homedir();
-const MULMOTERMINAL_HOME = join(HOME, '.mulmoterminal');
 
 interface SessionDirSettings {
   readonly commanderSessionDir: string;
@@ -88,7 +88,6 @@ export const COLLECTOR_CONFIG = {
     intervalMs: 5_000,
     seats: sessionSeatsOf(GUILD_SETTINGS, HOME),
     // MulmoTerminal's own files. Read only: never written or locked.
-    cwdLogPath: join(MULMOTERMINAL_HOME, 'dev-terminal-cwds.json'),
-    activityStatePath: join(MULMOTERMINAL_HOME, 'activity-state.json'),
+    ...mulmoTerminalFiles(HOME),
   },
 } as const;

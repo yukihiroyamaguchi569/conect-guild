@@ -6,6 +6,11 @@ import { z } from 'zod';
  */
 const REPO_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\/(?!\.{1,2}$)[\w.-]+$/;
 
+/** True when the text is a GitHub `owner/name` as the settings take it. */
+export function isRepoName(text: string): boolean {
+  return REPO_PATTERN.test(text);
+}
+
 /**
  * The member ids. They stay fixed: the sprites (`assets/sprites/<id>.png`), the hands and the
  * lines are keyed by them. kaname is the 司令塔 and yukihiro the president; the others may sit at

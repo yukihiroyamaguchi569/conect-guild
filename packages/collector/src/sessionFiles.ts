@@ -1,8 +1,10 @@
 import { createReadStream, type ReadStream } from 'node:fs';
+import { join } from 'node:path';
 import type { Seat } from '../collector.config.ts';
 import {
   latestCompanySessionIds,
   readSeatStates,
+  sessionDirsNewestFirst,
   settledLines,
   type SessionsFailureKind,
   type SessionsReading,
@@ -31,6 +33,18 @@ function assertWithin(stream: ReadStream, maxBytes: number): void {
   if (stream.bytesRead > maxBytes) throw new TooLargeError();
 }
 
+/** MulmoTerminal's own files under `home` (docs/DESIGN.md 4.7). Read only: never written or locked. */
+export function mulmoTerminalFiles(home: string): {
+  cwdLogPath: string;
+  activityStatePath: string;
+} {
+  const dir = join(home, '.mulmoterminal');
+  return {
+    cwdLogPath: join(dir, 'dev-terminal-cwds.json'),
+    activityStatePath: join(dir, 'activity-state.json'),
+  };
+}
+
 export interface SessionFilePaths {
   readonly seats: readonly Seat[];
   readonly cwdLogPath: string;
@@ -49,22 +63,23 @@ async function* textChunks(stream: ReadStream): AsyncGenerator<string> {
 }
 
 /**
- * The seats' session ids from the cwd log, streamed: each line is handed over and dropped, so the
- * lines of other directories are never held together. The unterminated last line counts only when
- * it is the same as at the previous read (settledLines).
+ * The cwd log, streamed: each line is handed to `consume` and dropped, so the lines of other
+ * directories are never held together. The unterminated last line counts only when it is the same
+ * as at the previous read (settledLines).
  */
-async function readCwdLog(
-  paths: SessionFilePaths,
-  signal: AbortSignal | undefined,
+async function readCwdLog<T>(
+  path: string,
   tail: { last: TailMark | null },
-): Promise<ReadonlyMap<string, string>> {
-  const stream = cappedStream(paths.cwdLogPath, MAX_CWD_LOG_BYTES, signal);
+  consume: (lines: AsyncIterable<string>) => Promise<T>,
+  signal?: AbortSignal,
+): Promise<T> {
+  const stream = cappedStream(path, MAX_CWD_LOG_BYTES, signal);
   const lines = settledLines(textChunks(stream), tail.last, (next) => {
     tail.last = next;
   });
-  const ids = await latestCompanySessionIds(lines, paths.seats);
+  const result = await consume(lines);
   assertWithin(stream, MAX_CWD_LOG_BYTES);
-  return ids;
+  return result;
 }
 
 async function readActivityState(path: string, signal: AbortSignal | undefined): Promise<string> {
@@ -87,11 +102,51 @@ export function createCompanySessionsReader(paths: SessionFilePaths): CompanySes
   const tail: { last: TailMark | null } = { last: null };
   return async (signal) => {
     try {
-      const ids = await readCwdLog(paths, signal, tail);
+      const ids = await readCwdLog(
+        paths.cwdLogPath,
+        tail,
+        (lines) => latestCompanySessionIds(lines, paths.seats),
+        signal,
+      );
       const activity = await readActivityState(paths.activityStatePath, signal);
       return readSeatStates(activity, paths.seats, ids);
     } catch (error) {
       return { ok: false, kind: failureKindOf(error) };
     }
   };
+}
+
+export type SessionDirsReading =
+  | { readonly ok: true; readonly dirs: readonly string[] }
+  | { readonly ok: false; readonly kind: SessionsFailureKind };
+
+async function drain(lines: AsyncIterable<string>): Promise<void> {
+  const iterator = lines[Symbol.asyncIterator]();
+  while ((await iterator.next()).done !== true) {
+    // Each line is dropped: only the tail mark of this read is wanted.
+  }
+}
+
+/**
+ * Issue #118: the directories of the sessions in the cwd log, newest first, without `excluded`
+ * (sessionDirsNewestFirst). The log is read twice with `settle` in between, so its unterminated
+ * last line (the newest session) counts when it stayed the same, as the collector does across its
+ * cycles. Never throws. For `npm run settings:list-sessions` only: nothing is kept or logged.
+ */
+export async function readSessionDirs(
+  cwdLogPath: string,
+  excluded: ReadonlySet<string>,
+  settle: () => Promise<void>,
+): Promise<SessionDirsReading> {
+  const tail: { last: TailMark | null } = { last: null };
+  try {
+    await readCwdLog(cwdLogPath, tail, drain);
+    await settle();
+    const dirs = await readCwdLog(cwdLogPath, tail, (lines) =>
+      sessionDirsNewestFirst(lines, excluded),
+    );
+    return { ok: true, dirs };
+  } catch (error) {
+    return { ok: false, kind: failureKindOf(error) };
+  }
 }

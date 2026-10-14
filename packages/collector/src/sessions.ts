@@ -16,7 +16,8 @@ const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 /**
  * One line of dev-terminal-cwds.json: `<id> <absolute path>`. The id holds no space, so the first
  * space splits it and the rest (spaces included) is the path. Trimmed as MulmoTerminal does.
- * Private on purpose: it returns any line's id and path, and only the seats' ones may leave.
+ * Private on purpose: it returns any line's id and path, and only the seats' ones may leave (and,
+ * for the list printed by `npm run settings:list-sessions`, the other directories: Issue #118).
  */
 function parseCwdLine(line: string): { id: string; cwd: string } | null {
   const text = line.trim();
@@ -96,6 +97,30 @@ export async function latestCompanySessionIds(
       latest.set(seen.cwd, { id, line: seen.line });
   }
   return new Map([...latest].map(([cwd, { id }]) => [cwd, id]));
+}
+
+/**
+ * Issue #118: the directory of each session in the cwd log (the one of its id's last line), each
+ * directory once, newest first, without `excluded` (the company's). Only for
+ * `npm run settings:list-sessions`, which prints them to its own terminal: the collector never
+ * calls this, and the directories are never stored, logged or put in the snapshot.
+ */
+export async function sessionDirsNewestFirst(
+  lines: AsyncIterable<string> | Iterable<string>,
+  excluded: ReadonlySet<string>,
+): Promise<string[]> {
+  const lastOf = new Map<string, { cwd: string; line: number }>();
+  let line = 0;
+  for await (const text of lines) {
+    line += 1;
+    const record = parseCwdLine(text);
+    if (record !== null) lastOf.set(record.id, { cwd: record.cwd, line });
+  }
+  const newest = new Map<string, number>();
+  for (const { cwd, line: at } of lastOf.values()) {
+    if (!excluded.has(cwd)) newest.set(cwd, Math.max(newest.get(cwd) ?? 0, at));
+  }
+  return [...newest].toSorted((a, b) => b[1] - a[1]).map(([cwd]) => cwd);
 }
 
 /** One entry of activity-state.json. Extra keys are ignored; a missing or mistyped one fails. */

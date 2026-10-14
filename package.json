@@ -25,6 +25,7 @@
     "collect:once": "node packages/collector/src/main.ts --once",
     "collect": "node packages/collector/src/main.ts",
     "settings:write": "node packages/collector/src/settingsWriteMain.ts",
+    "settings:list-sessions": "node packages/collector/src/listSessionsMain.ts",
     "dev:all": "concurrently --kill-others --names collect,web --prefix-colors auto \"npm run collect\" \"npm run dev\""
   },
   "devDependencies": {
