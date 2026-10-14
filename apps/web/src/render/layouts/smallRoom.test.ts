@@ -93,22 +93,24 @@ describe('three departments', () => {
 });
 
 describe.each([LAYOUT2, LAYOUT3])('$departmentCount departments: the guests', (layout) => {
-  it('stand on the tavern carpet of the upper right, beside and in front of the round table', () => {
+  it('stand on the tavern carpet of the upper right, one behind the other, not before the table', () => {
     const table = layout.decor.find((item) => item.name === 'round-table');
     expect(table).toBeDefined();
     if (table === undefined) return;
     const carpet = { col: 19, row: 3, w: 4, h: 4 };
     expect(layout.groundFills).toContainEqual({ tile: 'floor-carpet', ...carpet });
-    const [beside, front] = layout.guestSpots;
+    const [back, front] = layout.guestSpots;
     for (const spot of layout.guestSpots) expect(contains(carpet, spot)).toBe(true);
-    expect(beside).toEqual({ col: table.col + table.w, row: table.row + table.h - 1 });
-    expect(front).toEqual({ col: table.col, row: table.row + table.h });
+    // Three rows apart: the back one's name tags end above the front one's head.
+    expect(front.row - back.row).toBe(3);
+    // Right of the table, so the front one's picture leaves the table in sight.
+    expect(front.col).toBe(table.col + table.w);
+    expect(front.row).toBe(table.row + table.h - 1);
   });
 
-  it('keeps the guests a column and a row apart, so neither name tag falls on the other', () => {
-    const [first, second] = layout.guestSpots;
-    expect(Math.abs(first.col - second.col)).toBeGreaterThanOrEqual(2);
-    expect(Math.abs(first.row - second.row)).toBeGreaterThanOrEqual(1);
+  it("puts the front guest right of the back one, so its 「?」 misses the back one's tags", () => {
+    const [back, front] = layout.guestSpots;
+    expect(front.col).toBeGreaterThan(back.col);
   });
 });
 
@@ -172,6 +174,11 @@ describe.each([
     // The library's bookcases stand under the left window of two departments.
     const left = layout.departmentCount === 3 ? [{ col: 11, row: 3 }] : [];
     expect(windowTilesIn(layout)).toEqual([...left, { col: 21, row: 3 }]);
+  });
+
+  it("keeps the play spots off the guests' tiles", () => {
+    const plays = [teaTileIn(layout), petTileIn(layout), ...windowTilesIn(layout)];
+    for (const spot of layout.guestSpots) expect(plays).not.toContainEqual(spot);
   });
 
   it('lets the lower desks chat with each other, and the upper one with nobody', () => {
