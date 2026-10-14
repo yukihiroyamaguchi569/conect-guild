@@ -89,7 +89,7 @@ cp guild.settings.json guild.settings.local.json
 | 項目 | 中身 |
 |---|---|
 | `repo` | 眺める GitHub リポジトリ（`owner/name`）。Issue と PR をここから集める |
-| `members` | メンバーの名前・役・色（`#rrggbb`）。id（`kaname` など）は絵のファイル名なので変えない。`kaname` は受付の司令塔、`yukihiro` は玉座の王。部門の机に座るのは `minori`・`hibiki`・`hirame`・`sasae`・`takumi`・`musubi` のうち `departments` の `member` に書いた人。書くのは `kaname`・`yukihiro` と部門の机に座る人だけでよい（既定の `guild.settings.json` は 4 部門なので `takumi`・`musubi` が無い。5・6 部門にするときは足す。名前の既定はたくみ〈開発、`#00897b`〉・むすび〈営業、`#ff7043`〉） |
+| `members` | メンバーの名前・役・色（`#rrggbb`）。id（`kaname` など）は絵のファイル名なので変えない。`kaname` は受付の司令塔、`yukihiro` は玉座の王。部門の机に座るのは `minori`・`hibiki`・`hirame`・`sasae`・`takumi`・`musubi` のうち `departments` の `member` に書いた人。書くのは `kaname`・`yukihiro` と部門の机に座る人だけでよい（既定の `guild.settings.json` は 4 部門なので `takumi`・`musubi` が無い。5・6 部門にするときは足す。`settings:write` が足すときは、名前と色がたくみ・`#00897b`、むすび・`#ff7043` で、役はその部門のラベルになる） |
 | `commanderSessionDir` | 司令塔のセッションを起動するフォルダ |
 | `departments` | 2〜6 の部門。それぞれ GitHub のラベル（`label`）・担当のメンバー（`member`。部門の机に座れる 6 人のどれかで、部門どうしで重ならない）・セッションを起動するフォルダ（`sessionDir`）。並び順が、Issue に部門ラベルが複数あるときの優先順になる。部門の数に合わせた間取りに切り替わる |
 | `branchPrefixes` | ブランチ名の接頭辞（`prefix`）→ 部門のラベル（`department`）。部門ラベルの付いた Issue に結べない PR の担当を推定する。上から順に見て、ブランチ名が最初に当てはまったものを使う |

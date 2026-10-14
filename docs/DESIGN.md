@@ -185,11 +185,11 @@ packages/collector ──検証して一時ファイルに書き rename──▶
              linkedIssues: number[], changedFiles: string[] }],  // changedFiles は open PR だけ。closed は []
   history: {                           // 全履歴（4.1）。番号と部門だけ
     openedIssueCount: number,          // 開かれた Issue の総数（open + closed。閉じた理由を問わない）
-    completedIssues: [{ number, departments: ("経理" | "広報" | "企画" | "総務")[] }],   // completed で閉じたもの
+    completedIssues: [{ number, departments: ("経理" | "広報" | "企画" | "総務")[] }],   // completed で閉じたもの。部門は設定の部門ラベル（4 部門の例）
     mergedPrs: [{ number, linkedIssues: number[], branchDepartment: "経理" | … | null }]
   },
   sessions: { status: "ok", checkedAt: ISO 8601,       // セッションを読んだ時刻（5 秒ごと）
-              members: [{ department: "経理" | "広報" | "企画" | "総務" | null,   // null はかなめ
+              members: [{ department: "経理" | "広報" | "企画" | "総務" | null,   // 設定の部門ラベル（4 部門の例）。null はかなめ
                           state: "awaiting-permission" | "working" | "resting" | "idle" }],
               guests: ("awaiting-permission" | "working" | "resting" | "idle")[] }   // 設定の guests の並び
           | { status: "unavailable", checkedAt: ISO 8601 },
