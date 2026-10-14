@@ -8,13 +8,15 @@ Defaults: the six members kaname..yukihiro, source-sheet.png (1024x1536, see pro
 source-sheet-poses.png (768x1536, see prompt-poses.txt) next to this script, and this script's
 directory as output. Other members: e.g. --members takumi,musubi,guest1,guest2 with
 --sheet source-sheet-new4.png --poses source-sheet-new4-poses.png (1024x1024 and 768x1024).
+The scale comes from the main sheet's tallest and widest frame; --scale-from <main sheet> takes it
+from another main sheet instead (e.g. source-sheet.png, so new members stand at the same size).
 Output: <out_dir>/<memberId>.png, seven FRAME x FRAME frames (80x80, so 560x80) side by side
 (0 = front idle, 1 = facing right, 2 = walk right 1, 3 = walk right 2, 4 = front, both hands up,
 5 = front, carrying in both arms, 6 = facing right, carrying in both arms), transparent background,
 feet on the bottom edge, centred horizontally. Optionally a 2x preview of all frames.
 
 Usage: python build_sprites.py [--members <id,id,...>] [--sheet <sheet.png>] [--poses <poses.png>]
-       [--out <out_dir>] [--preview <preview.png>]
+       [--scale-from <sheet.png>] [--out <out_dir>] [--preview <preview.png>]
 Needs Pillow only. Not a project dependency; run it from a throwaway venv.
 """
 
@@ -175,7 +177,20 @@ def shrink(rgba, size):
     return crisp
 
 
-def build(members, sheet_path, poses_path, out_dir, preview_path=None):
+def sheet_scale(boxes):
+    """One scale for every frame of a main sheet, so that its tallest and widest frames just fit."""
+    return min(MAX_H / max(height(b) for row in boxes for b in row), MAX_W / max(width(b) for row in boxes for b in row))
+
+
+def scale_of(path):
+    """The scale of another main sheet, one member per CELL-high row."""
+    with Image.open(path) as sheet:
+        rows = sheet.height // CELL
+    _, boxes = load_cells(path, [f"row {r + 1}" for r in range(rows)], SHEET_COLS)
+    return sheet_scale(boxes)
+
+
+def build(members, sheet_path, poses_path, out_dir, preview_path=None, scale_path=None):
     inputs = {sheet_path.resolve(), poses_path.resolve()}
     sprite_paths = {(out_dir / f"{m}.png").resolve() for m in members}
     if inputs & sprite_paths:
@@ -185,7 +200,7 @@ def build(members, sheet_path, poses_path, out_dir, preview_path=None):
     rows, boxes = load_cells(sheet_path, members, SHEET_COLS)
     pose_rows, pose_boxes = load_cells(poses_path, members, POSES_COLS)
     # One scale for every frame of the main sheet so all members stand at the same size.
-    scale = min(MAX_H / max(height(b) for row in boxes for b in row), MAX_W / max(width(b) for row in boxes for b in row))
+    scale = scale_of(scale_path) if scale_path else sheet_scale(boxes)
     # The poses sheet was drawn at its own size. Match each member's standing front pose
     # (pose 5, carrying) to their idle front pose (frame 0) so frames 0-3 stay exactly as they were.
     scales = [
@@ -240,7 +255,8 @@ if __name__ == "__main__":
     parser.add_argument("--members", type=member_list, default=DEFAULT_MEMBERS)
     parser.add_argument("--sheet", type=Path, default=HERE / "source-sheet.png")
     parser.add_argument("--poses", type=Path, default=HERE / "source-sheet-poses.png")
+    parser.add_argument("--scale-from", type=Path)
     parser.add_argument("--out", type=Path, default=HERE)
     parser.add_argument("--preview", type=Path)
     args = parser.parse_args()
-    build(args.members, args.sheet, args.poses, args.out, args.preview)
+    build(args.members, args.sheet, args.poses, args.out, args.preview, args.scale_from)
