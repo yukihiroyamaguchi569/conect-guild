@@ -71,7 +71,8 @@ conect-guild/
 │       │   ├── baseline.ts   localStorage に置く基準状態の型と更新規則
 │       │   ├── events.ts     基準状態と今回の snapshot の差分 → ゲームのイベント列
 │       │   ├── summons.ts    セッションの待機 → 作業中の変化 → 社長の指示（4.10）
-│       │   └── demoScript.ts / demo.ts  デモモードの台本（出来事の列）と、時刻 → 架空の snapshot（4.11）
+│       │   ├── guests.ts     設定のお客さん + snapshot → 表示の形、前回との差分 → マージ・完了の出来事（4.13、Issue #108）
+│       │   └── demoScript.ts / demo.ts / demoGuests.ts  デモモードの台本（出来事の列）と、時刻 → 架空の snapshot（4.11）。お客さんの架空の仕事は demoGuests.ts
 │       ├── adapters/
 │       │   ├── snapshot.ts   /snapshot.json を no-store で fetch して zod で検証
 │       │   ├── storage.ts    localStorage の読み書き（失敗しても例外を外に出さない）。デモ用のメモリの Storage もここ
@@ -91,6 +92,7 @@ conect-guild/
 │       │   ├── summons.ts / calls.ts  王様の呼びかけの台本（「！」「ゴニョゴニョ」→「はっ！」）と、その再生（始まりと終わりを知らせる）。4.10
 │       │   ├── lineBook.ts / lines.ts / remarks.ts / murmurs.ts / overhead.ts  メンバーのセリフの一覧、選び方と出す時刻、状態の変わり目の一言、つぶやき（どれも純粋関数）、頭上に何を出すかの優先順位。4.12
 │       │   ├── idle.ts / idleSpots.ts / idleCrew.ts  暇が長いときのうとうと・寝る・遊ぶ（Issue #23）。段階と行き先は純粋関数、idleCrew は遊びからの帰り道を台本に足す
+│       │   ├── guests.ts / guestStage.ts / guestArt.ts / drawGuests.ts  お客さんの見た目・名札・きらめき（純粋関数）、ループが持つきらめき、お客さんの絵（MemberId ではない）、描画（4.13）
 │       │   ├── art.ts        絵の差し替え境界（TileArt / SpriteArt / DecorArt）と仮の矩形
 │       │   ├── tileArt.ts / spriteArt.ts / decorArt.ts / loadArt.ts  assets/ の絵で描く実装と読み込み
 │       │   └── draw.ts / loop.ts  描画と requestAnimationFrame（動かないものはキャッシュの canvas に 1 回だけ。演出中は毎フレーム、それ以外はアンビエントだけ約 7fps、非表示の間は止める）
@@ -405,6 +407,7 @@ X と note の動画を撮るため、架空のクエストで一連の演出を
 - **はじめる**: デモは「▶ はじめる」の窓から始まる。押すまでは台本の頭（掲示板は空）で止まる。押したクリックでブラウザが AudioContext を動かせるようになる（既存の「最初のクリックかキー操作で音が出る」仕組み）。台本の時計は押した時刻から数える。Canvas の絵の読み込みが終わるまでボタンは押せず「じゅんびちゅう…」と出し、Canvas が隠れる狭い画面（760px 以下）では「がめんを ひろげてください」と出して押せない。その間に押されても台本を始めない（読み込み中や Canvas が隠れている間に来た王様の呼びかけは捨てる決まり（4.10）なので、頭の呼びかけと効果音が欠けるため。統合レビューの指摘）。判定は app/demo.ts の `demoBlock`。Canvas が始められなかったとき（2D の描画が無いなど）も、エラーを出してから準備完了を知らせ、演出の合図は捨てる（app/stageBoot.ts）。窓・メッセージ・音だけでデモは進む
 - **撮影の邪魔をしない**: snapshot の `fetchedAt` とセッションの `checkedAt` はいつも今なので、「情報が古い」「セッションの状態が古いままです」は出ない。取得の窓は「基準を消す」の代わりに「デモ（架空のデータ）」と出す（窓の高さは変わらない）
 - 取得はデモだけ 1 秒ごと（ふだんは 5 秒）。台本の出来事を遅れなく拾うため
+- **お客さん（Issue #108）**: 設定にお客さんがいるときだけ、デモにも出す（いなければ今までと同じ）。名前は設定から、仕事は架空（`domain/demoGuests.ts`）。1 周のうち、1 人目は 35 秒まで作業中で PR がマージされ、2 人目は 15 秒まで許可待ち、50 秒まで作業中で Issue が完了する。`repo` の無いお客さんはセッションの状態だけ
 
 ### 4.12 メンバーのセリフ（Issue #47。render/lineBook.ts、render/lines.ts、render/remarks.ts、render/murmurs.ts、render/overhead.ts）
 
@@ -466,6 +469,19 @@ X と note の動画を撮るため、架空のクエストで一連の演出を
 - レベルアップ（4.6、Issue #19）の「LEVEL UP」の文字は頭上の優先順位に入れず、いちばん上に描く。その人の頭上に言葉の吹き出し（呼びかけの言葉かセリフ）があれば、描いた吹き出しの上端（`overheadPlace.wordsTop`。叫びのトゲと、物の横に置いた位置も含む）のさらに上に出す（クリアの直後にレベルアップが来て、クリアのセリフと重なるため）。レベルアップ自体のセリフはない
 - デモモード（4.11）でも実データと同じ経路でセリフが出る（E2E で確かめる）
 
+### 4.13 お客さん（Issue #108。domain/guests.ts、render/guests.ts、render/drawGuests.ts）
+
+設定に名指しした会社の外のプロジェクト（最大 2 人。4.1）を、ギルドに来たお客さんとして見せる。社長の判断（2026-10-14）で、セッションの状態に加え、リポジトリの Issue・PR を題名つきで見せる。
+
+- **誰を出すか**: 設定の `guests` の並び。名前は設定から、状態とリポジトリは snapshot から番号で引く。snapshot のお客さんの分が設定と合わずに捨てられたとき（4.2）は、お客さんは待機（うとうと）で、件数も掲示板の中身も出さない。設定にいないお客さん（build のダミーの snapshot にはいる）は読まない
+- **状態**: セッションの状態をそのまま使う。メンバーと同じく、セッションが読めない・古い（`SESSION_STALE_AFTER_MS`）ときは待機にする
+- **席と見た目**: 間取りの `guestSpots`（2・3 部門は酒場のテーブルのあいだ、4 部門は地図テーブルの前と横）に立ち、歩かない。メンバーの演出・遊び・呼びかけには加わらない。絵は 1 人目が `assets/sprites/guest1.png`（旅の剣士）、2 人目が `guest2.png`（旅の魔法使い）。読めなければ単色の箱。許可待ちは「?」の吹き出し（メンバーと同じ形の小さな正方形）を頭の横に、作業中は腕を前に出したコマで巻物を読み（1px の上下）、休憩中と待機中はうたた寝（うなずきと「Z」。メンバーの `IDLE` の値）。2 人目は 0.7 秒遅れて動く。夜の暗さはメンバーと同じくかかり、記号と名札は暗さの上に描く
+- **重なりを避ける**: お客さんの場所は掲示板の真下なので、「?」と「Z」はメンバーより低く（「?」は頭の横、「Z」は頭のすぐ上から）出し、掲示板がいちばん伸びたとき（31cqw）の下端にかからないようにした。どの間取りでも記号が窓にかからず、名札がメッセージ窓より上にあることを vitest で確かめる
+- **名札**: 足元に名前（「Lv N」と同じ太字 10px・同じ薄さ）と、その下に開いている数「Issue n / PR m」（9px）。2 行目がメッセージ窓にかかる場所（4 部門の 1 人目）では、名前を足の左、件数を右に 1 行で並べる。`repo` が無い・まだ取れていないお客さんは名前だけ。描くのは `fillText` だけ
+- **掲示板**: 部門のクエストの下に「お客さん」の欄を足し、お客さんごとに名前と、開いている Issue・PR のうち更新の新しい 3 件（番号・PR の印・題名）、残りは「ほか n 件」。開いているものが無ければ「ひらいている Issue・PR は ない」。お客さんがいなければ欄ごと出さない。題名は Vue のテキスト補間だけで出す
+- **出来事**: snapshot ごとに、お客さんの `recent`（マージした PR・完了した Issue）に前回なかったものがあれば、メッセージ窓に「<名前> の PR #12「題名」がマージされた」「<名前> の Issue #5「題名」が完了した」を古い順に足す。窓に出た瞬間にそのお客さんの頭の上で小さなきらめき（紙吹雪の半分の速さ・14 粒・1.6 秒）。メンバーの演出は動かさず、効果音も無い。前回の記録はメモリにだけ持つ（localStorage に題名を残さないため）。ページを開いて最初の snapshot は基準にするだけで知らせない。お客さんを初めて取れたとき、`repo` が変わったときも基準にするだけ。お客さんの分が捨てられている間は前の記録を残し、戻ったときにまとめて知らせない
+- **止める**: きらめきは舞台の時計に乗り、ページが非表示の間や Canvas が隠れている間に来たものは捨てる。halted の間はメッセージ窓と一緒に止まる
+
 ## 5. 公開範囲
 
 - 実データ（`apps/web/.data/snapshot.json`）は Vite の `public/` に置かない。`.gitignore` で除き、パーミッションは 0600
@@ -487,6 +503,8 @@ X と note の動画を撮るため、架空のクエストで一連の演出を
 | M4 | 遊び | 効果音、昼夜、累積の経験値とレベル（集計の持ち方を設計してから）、レベルアップの演出、ペット（トイプードル） |
 
 M1 まで行けば「本物の Issue が掲示板に出て、クローズでクリアのメッセージが出る」ところまで見られる。かなめの受け渡しなどの演出は M2 から。
+
+M4 の後に足したもの: 部門の数 2〜6（Issue #18）と、お客さん（Issue #108。設定・collector・snapshot v4 の 4.1・4.2、画面の 4.13）。
 
 ## 7. 依存の方針（具体）
 
@@ -534,7 +552,7 @@ M1 まで行けば「本物の Issue が掲示板に出て、クローズでク�
   - `.madgerc` は JSON で書く（コメント可）。先頭が `{` でないと INI として読まれるので、コメントは括弧の中に書く
   - scoria の実行結果で `complete: true` と「probes not scored」に circular が無いことを確かめる。原因は madge の依存（filing-cabinet・precinct）にあり、上流で直れば `.madgerc` は要らなくなる
 - 画面の E2E は Playwright（Issue #34）。`npm run test:e2e` で動かし、遅いので verify には入れない。CI は verify と並行の別ジョブ e2e で、ブラウザを Playwright の版ごとにキャッシュして `npx playwright install --with-deps chromium` で入れ、失敗時はレポートを artifact に残す
-  - 設定は `apps/web/playwright.config.ts`、テストは `apps/web/e2e/`。開発サーバーは 5196 番（`--strictPort`、host は vite.config.ts の 127.0.0.1）で、`--mode e2e` を付けて立て（手元の `guild.settings.local.json` があっても `guild.settings.json` を使うため。10 章 9）、既に動いているサーバーは使わない。chromium だけ、headless、retries は CI だけ 1。テストは 1 本ずつ順に動かす（アプリの 5 秒ごとの再取得を実時間で待つので、負荷で遅れないように）。部門の数を変えた E2E（`e2e/departments.spec.ts`、Issue #18）だけは、5197 番（2 部門）・5198 番（3 部門）の別のサーバーで動かし、デモで部屋・パーティの行数・窓と席の重なりを確かめる
+  - 設定は `apps/web/playwright.config.ts`、テストは `apps/web/e2e/`。開発サーバーは 5196 番（`--strictPort`、host は vite.config.ts の 127.0.0.1）で、`--mode e2e` を付けて立て（手元の `guild.settings.local.json` があっても `guild.settings.json` を使うため。10 章 9）、既に動いているサーバーは使わない。chromium だけ、headless、retries は CI だけ 1。テストは 1 本ずつ順に動かす（アプリの 5 秒ごとの再取得を実時間で待つので、負荷で遅れないように）。部門の数を変えた E2E（`e2e/departments.spec.ts`、Issue #18）だけは、5197 番（2 部門）・5198 番（3 部門）の別のサーバーで動かし、デモで部屋・パーティの行数・窓と席の重なりを確かめる。お客さんの E2E（`e2e/guests.spec.ts`、Issue #108）は 5206 番の別のサーバーで、架空のお客さん 2 人の設定（`e2e/settings/guests.json`、4 部門）と架空の snapshot（`e2e/guestsSnapshot.ts`）を使い、お客さんの絵が席に描かれること（`drawImage` を記録して位置を見る）、名札と件数、掲示板のお客さんの欄、マージの知らせを確かめる
   - データはダミーだけで、`apps/web/.data` には一切触れない（collector の実データを上書きしたり消したりしないため）。`/snapshot.json` は Playwright の `context.route` が全部横取りし、`public/snapshot.sample.json` を guild.settings.json の repo と固定した時刻に合わせたものを返す。テスト中の中身の差し替え（Issue を閉じる、別のリポジトリ）は route が返す値を変えて行う。横取りの印のヘッダーが無い `/snapshot.json` の応答（開発サーバーから来たもの）がページに 1 件でも届いたら、そのテストを落とす。これで `.data` に実データがあっても画面やレポートには出ない
   - 時刻は `page.clock.setFixedTime` で固定する（タイマーは動かし、5 秒ごとの再取得はそのまま）。音は AudioContext をページ内で偽物に差し替える
   - 確かめること: パーティの窓に Lv・ゲージ・内訳が出て、右の列が高くならない（Issue #19）、開いて console・ページのエラーが無い、掲示板・パーティ・メッセージ窓・取得のようすに値が出る、Canvas に部屋が描かれる（単色でない）、`?hour=12` と `?hour=21.5` で明るさが違う、「音を出す」と音量の切り替え（再読み込み後も残る）、「基準を消す」、760px 未満で窓が縦に積まれ Canvas が隠れる、別のリポジトリの snapshot で止まる、Issue を閉じると「クリアした！」が出る、メッセージ窓のクリックで次へ進み最後に閉じる、`?demo=1` で架空の題名と効果音が出て `/snapshot.json` を一度も取りに行かず localStorage に何も残さない（このテストだけは共通の横取りを使わず、`/snapshot*.json` へのリクエストがあれば落とす）
@@ -558,7 +576,7 @@ M1 まで行けば「本物の Issue が掲示板に出て、クローズでク�
      - どちらを読むか: `guild.settings.local.json` があればそれ、無ければ `guild.settings.json`。判定は `packages/snapshot/src/settingsFile.ts` の 1 か所。引数・環境変数では変えられない（4.1）。検証は同じ schema（`settings.ts`）で、どちらを読んでも同じにかかる。エラーの文言は、画面からはどちらを読んだか分からないので両方の名前を出す
      - collector: `src/main.ts` が判定し、Node の `module.registerHooks` の resolve で、`settings.ts` が読む `guild.settings.json` を `guild.settings.local.json` に向けてから、残り（`src/start.ts`）を動的 import する。静的 import は評価の前にすべて解決されるので、先に hook を入れてから読み込む必要がある。`snapshot.json` の schema（部門ラベル）も同じ設定から作られるので、モジュールごと差し替える
      - 画面: `apps/web/vite-plugin-settings.ts` が、開発サーバーの既定のモード（`vite`・`npm run dev`。`command === 'serve'` かつ `mode === 'development'`）のときだけ、同じ import を `guild.settings.local.json` に向ける。判定は起動時に 1 回で、ファイルを足した・消したら開発サーバーを起動し直す
-     - テストは常に `guild.settings.json`: vitest はリポジトリ直下の `vitest.config.ts` で動き、このプラグインを読まない。型検査は `guild.settings.json` だけを見る。build はモードが production なので向けない（ダミーの snapshot.sample.json と組む）。E2E は `--mode e2e` で向けない。例外は部門の数を変えた E2E（Issue #18）だけで、テスト専用の `--mode e2e-departments` と環境変数 `GUILD_E2E_DEPARTMENTS`（2 か 3）で、`apps/web/e2e/settings/` の架空の設定を読む。環境変数はこの決まったファイルから選ぶだけで、パスは指せない。`npm run dev`・build・collector はこのモードを使わない。ESLint と Prettier は `guild.settings.local.json` を対象から外す（どの tsconfig にも入らず、書式は人それぞれのため）。モードで変えられるのは「既定に戻す」向きだけで、別のファイルや値を指すことはできない
+     - テストは常に `guild.settings.json`: vitest はリポジトリ直下の `vitest.config.ts` で動き、このプラグインを読まない。型検査は `guild.settings.json` だけを見る。build はモードが production なので向けない（ダミーの snapshot.sample.json と組む）。E2E は `--mode e2e` で向けない。例外は部門の数を変えた E2E（Issue #18）だけで、テスト専用の `--mode e2e-departments` と環境変数 `GUILD_E2E_DEPARTMENTS`（2・3、またはお客さんの `guests`。Issue #108）で、`apps/web/e2e/settings/` の架空の設定を読む。環境変数はこの決まったファイルから選ぶだけで、パスは指せない。`npm run dev`・build・collector はこのモードを使わない。ESLint と Prettier は `guild.settings.local.json` を対象から外す（どの tsconfig にも入らず、書式は人それぞれのため）。モードで変えられるのは「既定に戻す」向きだけで、別のファイルや値を指すことはできない
    - **設定ファイルを JSON にする（Issue #89）**: `guild.settings.json`（既定）と `guild.settings.local.json`（手元、gitignore）にした。#79（セットアップの方法）の検討で、設定が TS だと、道具（ウィザードやスキル）が外から来た文字を起動時に実行されるファイルに書くことになり zod の検証より先に実行される、道具が既存の設定を実行せずに読み戻せず手で直した値を消してしまう、の 2 つが分かったため（社長の判断）。どちらを読むかの決まり（上の #76 の項）は変えない
      - 読み方: collector の `src/main.ts` と開発サーバーの `vite-plugin-settings.ts` は、起動時に `settingsFile.ts` の `loadSettingsFile` で選んだファイルを fs で読み、`JSON.parse` してから schema で検証する。実行はしない。合わなければ読んだファイルの名前を挙げて止まる。そのあと `settings.ts` の `import … from 'guild.settings.json' with { type: 'json' }` を、#76 と同じ hook・プラグインで手元のファイルに向ける。JSON の import は値を読むだけでコードを実行しない
      - schema は `packages/snapshot/src/settingsSchema.ts` に分けた。collector が設定を読み込む前に検証するため（`settings.ts` を import すると、その時点で設定を読んでしまう）。`settings.ts` は schema を re-export し、読み込んだ設定と部門ラベルを出す
