@@ -6,6 +6,7 @@
     ".": "./src/index.ts",
     "./mixup": "./src/mixup.ts",
     "./settings": "./src/settings.ts",
+    "./settings.fixtures": "./src/settings.fixtures.test-util.ts",
     "./settingsFile": "./src/settingsFile.ts",
     "./settingsSchema": "./src/settingsSchema.ts"
   },
