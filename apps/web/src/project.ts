@@ -5,7 +5,7 @@
 const PROJECT_REPO_URL = 'https://github.com/yukihiroyamaguchi569/conect-guild';
 
 /** docs/setup.md on GitHub: the dev server does not serve docs/. */
-export const SETUP_GUIDE_URL = `${PROJECT_REPO_URL}/blob/main/docs/setup.md`;
+const SETUP_GUIDE_URL = `${PROJECT_REPO_URL}/blob/main/docs/setup.md`;
 
 /** The chapter of docs/setup.md on collecting the team's own repository (Issue #97). */
 export const COLLECT_GUIDE_URL = `${SETUP_GUIDE_URL}#2-自分のリポジトリで使う`;

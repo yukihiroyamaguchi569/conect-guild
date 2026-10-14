@@ -68,7 +68,7 @@ export function petTile(): TilePos | null {
 }
 
 /** True when a member at `tile` turns left (flipped) to face the pet in `layout`. */
-export function turnsToPetIn(layout: GuildLayout, tile: TilePos): boolean {
+function turnsToPetIn(layout: GuildLayout, tile: TilePos): boolean {
   const pet = decorAt(layout, PET_DECOR);
   return pet !== null && pet.col < tile.col;
 }
@@ -118,14 +118,14 @@ export interface Crew {
 }
 
 /** Who `id` chats with: the member at the desk theirs names (GuildLayout.desks[].chatWith). */
-export function chatPartnerIn(layout: GuildLayout, crew: Crew, id: MemberId): MemberId | null {
+function chatPartnerIn(layout: GuildLayout, crew: Crew, id: MemberId): MemberId | null {
   const desk = layout.desks[crew.departmentMembers.indexOf(id)];
   if (desk?.chatWith === undefined) return null;
   return crew.departmentMembers[desk.chatWith] ?? null;
 }
 
 /** Beside the partner's seat, on the side the member comes from. */
-export function chatTileIn(layout: GuildLayout, crew: Crew, id: MemberId): TilePos | null {
+function chatTileIn(layout: GuildLayout, crew: Crew, id: MemberId): TilePos | null {
   const partner = chatPartnerIn(layout, crew, id);
   if (partner === null) return null;
   const seat = crew.seats[partner];

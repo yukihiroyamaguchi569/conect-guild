@@ -10,6 +10,8 @@ import {
   snapshot,
   T0,
 } from '../domain/fixtures.test-util';
+import { faceColors, HAIR_COLORS } from '../domain/faceColor';
+import { MEMBERS } from '../guild.config';
 import {
   buildBoard,
   buildFetchStatus,
@@ -95,6 +97,15 @@ describe('buildParty', () => {
       'ささえ',
       'ゆきひろ',
     ]);
+  });
+
+  it('fills each face with the hair colour, not the settings colour (Issue #120)', () => {
+    const rows = buildParty(snapshot(), now);
+    for (const row of rows) {
+      expect(row.face).toEqual(faceColors(row.id));
+      expect(row.face.fill).toBe(HAIR_COLORS[row.id]);
+      expect(row.face.fill).not.toBe(MEMBERS[row.id].color);
+    }
   });
 
   it('labels each department state in Japanese, with recent rewards', () => {

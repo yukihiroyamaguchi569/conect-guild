@@ -111,7 +111,7 @@ export interface CanvasStats {
 }
 
 /** Samples the canvas pixels (every 7th, to stay quick on large canvases). */
-export function canvasStats(canvas: Locator): Promise<CanvasStats> {
+function canvasStats(canvas: Locator): Promise<CanvasStats> {
   return canvas.evaluate((element) => {
     if (!(element instanceof HTMLCanvasElement)) throw new Error('not a canvas');
     const context = element.getContext('2d');

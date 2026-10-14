@@ -1,6 +1,6 @@
 import type { SnapshotSession } from '@conect-guild/snapshot';
 import type { GhRunner } from './gh.ts';
-import type { RunDeps } from './run.ts';
+import type { RunDeps } from './runTypes.ts';
 import type { SessionsReading } from './sessions.ts';
 
 /** Shared fakes for the run tests. Titles, bodies and branch names are the secrets to keep out. */

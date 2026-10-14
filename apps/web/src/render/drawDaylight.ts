@@ -14,7 +14,7 @@ import { patchAt } from './trinkets';
  */
 
 /** The window tiles of `layout`, lit by the sun. */
-export function windowObjectsFor(layout: GuildLayout): readonly MapObject[] {
+function windowObjectsFor(layout: GuildLayout): readonly MapObject[] {
   return layout.objects.filter((object) => object.tile === 'window');
 }
 

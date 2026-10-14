@@ -6,10 +6,12 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { checkGuildSettings } from '@conect-guild/snapshot/settingsSchema';
+import type { MemberId } from '@conect-guild/snapshot/settings';
 import { drawnLevels, installCanvasTextRecorder } from './canvasText.ts';
 import { installFakeAudio } from './fakeAudio.ts';
 import { waitForRoom } from './fixtures.ts';
 import { DEMO_TITLES } from '../src/domain/demoScript.ts';
+import { faceColors } from '../src/domain/faceColor.ts';
 import { layoutFor } from '../src/render/layouts/catalog.ts';
 import type { TilePos } from '../src/render/layouts/types.ts';
 import {
@@ -97,6 +99,35 @@ test('the demo plays in the office of this many departments', async ({ page, con
   // Its member takes the quest up.
   await expect(rows.nth(1)).toContainText('作業中');
 
+  expect(snapshotRequests).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+/** `#rrggbb` as the browser computes a CSS colour: `rgb(r, g, b)`. */
+function cssRgb(hex: string): string {
+  const channels = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16));
+  return `rgb(${channels.join(', ')})`;
+}
+
+test('each face in the party window is filled with the hair colour (Issue #120)', async ({
+  page,
+  context,
+}) => {
+  const settings = fictionalSettings(departmentCount());
+  const { errors, snapshotRequests } = await openDemo(page, context);
+  const ids: MemberId[] = [
+    'kaname',
+    ...settings.departments.map((department) => department.member),
+    'yukihiro',
+  ];
+  const rows = page.getByRole('region', { name: 'パーティのようす' }).getByRole('listitem');
+  await expect(rows).toHaveCount(ids.length);
+  for (const [i, id] of ids.entries()) {
+    const { fill, ink } = faceColors(id);
+    const face = rows.nth(i).locator('.member__face');
+    await expect(face).toHaveCSS('background-color', cssRgb(fill));
+    await expect(face).toHaveCSS('color', cssRgb(ink));
+  }
   expect(snapshotRequests).toEqual([]);
   expect(errors).toEqual([]);
 });

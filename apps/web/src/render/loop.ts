@@ -6,44 +6,23 @@ import type { GuildArt } from './art';
 import type { Bubbles } from './bubbles';
 import { RUNNING_CLOCK, stageTime, withPaused, type StageClock } from './clock';
 import type { Random } from './confetti';
-import { EMPTY_DIRECTOR, prune, type Director, type StageFrame } from './director';
-import { daylightAt, hourOf, lampLights } from './daylight';
+import { EMPTY_DIRECTOR, prune, type Director } from './director';
+import { hourOf } from './daylight';
 import { ANIMATED_DECOR } from './animatedDecor';
-import {
-  drawActors,
-  drawFrontLayer,
-  drawOverhead,
-  drawStatic,
-  type CachedFrontLayer,
-} from './draw';
-import { drawAnimatedDecor } from './drawDecor';
-import { drawLightPatches, drawShade, drawWindowSun, type ShadeScratch } from './drawDaylight';
-import { drawLevelTags } from './drawLevelTags';
-import { drawGuestBodies, drawGuestOverheads } from './drawGuests';
 import { placeholderGuestArt, type GuestArt } from './guestArt';
-import type { GuestFrame, StageGuest } from './guests';
+import type { StageGuest } from './guests';
 import { createGuestStage, guestControls, type GuestStage } from './guestStage';
 import { SELECTED_LAYOUT } from './layouts';
-import { drawLevelUpBanners } from './drawLevelUp';
-import {
-  NO_PLACES,
-  overheadsOf,
-  rememberPlaces,
-  type OverheadStage,
-  type PlaceMemory,
-  type Placed,
-} from './overheadPlace';
-import { BACK_ANIMATED_DECOR, FRONT_LAYERS } from './layers';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
 import { AMBIENT } from './metrics';
 import type { IdleSeeds, IdleSince } from './idle';
 import { playEvent, recallHome, type HomeIn } from './idleCrew';
-import { levelTags, type Levels } from './levelTags';
-import { createLinePicker, seenLines, type LinePicker, type SpokenLines } from './lines';
+import type { Levels } from './levelTags';
+import { createLinePicker, seenLines, type LinePicker } from './lines';
 import { createCast, stageAt, talkOf, type Cast } from './cast';
+import { context2d, createPainter, paint, type Painter } from './painter';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
 import type { Speeches } from './summons';
-import type { DecorCues } from './trinkets';
 import { visitFor, withVisit } from './visit';
 
 /**
@@ -156,38 +135,6 @@ export interface RenderLoop {
   stop(): void;
 }
 
-function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
-  const ctx = canvas.getContext('2d');
-  if (ctx === null) throw new Error('2D canvas is not available');
-  return ctx;
-}
-
-function cachedLayer(draw: (ctx: CanvasRenderingContext2D) => void): HTMLCanvasElement {
-  const layer = document.createElement('canvas');
-  layer.width = LOGICAL_WIDTH;
-  layer.height = LOGICAL_HEIGHT;
-  draw(context2d(layer));
-  return layer;
-}
-
-/** Everything that never moves, drawn once: the background and each front layer. */
-function cachedScenery(art: GuildArt): {
-  background: HTMLCanvasElement;
-  front: CachedFrontLayer[];
-} {
-  const background = cachedLayer((ctx) => {
-    drawStatic(ctx, art);
-  });
-  const front = FRONT_LAYERS.map((layer) => ({
-    depth: layer.depth,
-    layer,
-    image: cachedLayer((ctx) => {
-      drawFrontLayer(ctx, art, layer);
-    }),
-  }));
-  return { background, front };
-}
-
 /** False while narrow screens hide the canvas (display: none gives it no width). */
 export function isShown(cssWidth: number): boolean {
   return cssWidth > 0;
@@ -272,80 +219,6 @@ function fitCanvas(canvas: HTMLCanvasElement, cssWidth: number, pixelRatio: numb
   canvas.width = width;
   canvas.height = Math.round((width * LOGICAL_HEIGHT) / LOGICAL_WIDTH);
   return width / LOGICAL_WIDTH;
-}
-
-interface Painter {
-  readonly ctx: CanvasRenderingContext2D;
-  /** A logical-size canvas for the shade of the night. */
-  readonly scratch: ShadeScratch;
-  readonly background: HTMLCanvasElement;
-  readonly front: readonly CachedFrontLayer[];
-  readonly art: GuildArt;
-  readonly guestArt: GuestArt;
-  /** Where the words over each head were in the frame painted last (overheadPlace.ts). */
-  readonly placer: Placer;
-}
-
-interface Moment {
-  readonly now: number;
-  readonly hour: number;
-  readonly frame: StageFrame;
-  readonly bubbles: Bubbles;
-  readonly speeches: Speeches;
-  readonly remarks: SpokenLines;
-  readonly murmurs: SpokenLines;
-  readonly cues: DecorCues;
-  readonly levels: Levels;
-  readonly guests: GuestFrame;
-}
-
-/**
- * One frame: the cached background with the sun in the windows and the light patches, the moving
- * things, the members between the cached front layers (desks, the counter, the throne's arms),
- * the shade of the time of day with the lamps' light, and the bubbles and confetti on top.
- */
-function paint(painter: Painter, scale: number, moment: Moment): void {
-  const { ctx, art } = painter;
-  const light = daylightAt(moment.hour);
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(painter.background, 0, 0);
-  drawWindowSun(ctx, art, light);
-  drawLightPatches(ctx, art, moment, light);
-  drawAnimatedDecor(ctx, art, moment, BACK_ANIMATED_DECOR);
-  drawActors(ctx, moment, art, painter.front);
-  drawGuestBodies(ctx, moment.guests, { guests: painter.guestArt, sprites: art.sprites });
-  drawShade(ctx, painter.scratch, light, lampLights(moment.now));
-  const tags = levelTags(moment.levels, DEFAULT_SEATS);
-  drawLevelTags(ctx, tags);
-  drawGuestOverheads(ctx, moment.guests);
-  const placed = painter.placer.place({ ...moment, tags });
-  drawOverhead(ctx, { placed, confetti: moment.frame.confetti });
-  drawLevelUpBanners(ctx, { placed, confetti: moment.frame.confetti });
-}
-
-/** Places what is over the heads, keeping each line's spot from the frame painted before. */
-interface Placer {
-  place(stage: OverheadStage): Placed[];
-}
-
-function createPlacer(): Placer {
-  let places: PlaceMemory = NO_PLACES;
-  return {
-    place(stage) {
-      const placed = overheadsOf(stage, places);
-      places = rememberPlaces(placed);
-      return placed;
-    },
-  };
-}
-
-/** The canvas, the scenery drawn once and an empty canvas for the shade. */
-function createPainter(ctx: CanvasRenderingContext2D, art: GuildArt, guestArt: GuestArt): Painter {
-  const { background, front } = cachedScenery(art);
-  const image = cachedLayer(() => undefined);
-  const scratch = { ctx: context2d(image), image };
-  return { ctx, scratch, background, front, art, guestArt, placer: createPlacer() };
 }
 
 /** The painter, the guests of the layout in use (Issue #108) and the members' cast. */

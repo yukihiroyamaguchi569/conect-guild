@@ -16,7 +16,7 @@ import { countXp, levelOf, MAX_LEVEL, NO_XP } from './xp';
  */
 
 /** Members who may have a level: every id but the king's. */
-export const levelMemberSchema = memberIdSchema.exclude([PRESIDENT_ID]);
+const levelMemberSchema = memberIdSchema.exclude([PRESIDENT_ID]);
 export type LevelMember = z.infer<typeof levelMemberSchema>;
 
 const isLevelMember = (id: MemberId): id is LevelMember => id !== PRESIDENT_ID;

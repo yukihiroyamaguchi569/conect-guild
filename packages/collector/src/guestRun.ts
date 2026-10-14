@@ -2,7 +2,7 @@ import type { GuestGithubPart } from '@conect-guild/snapshot';
 import { errorKind } from './errors.ts';
 import { fetchGuestGithub } from './guestGithub.ts';
 import { prefix } from './report.ts';
-import type { RunDeps } from './run.ts';
+import type { RunDeps } from './runTypes.ts';
 
 /**
  * Issue #108: fetching the guests' repositories, apart from the company fetch. A guest is named

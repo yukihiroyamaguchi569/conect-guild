@@ -1,7 +1,7 @@
 import type { Mixup } from '@conect-guild/snapshot/mixup';
 import { labelReport, type LabelCheck } from './labels.ts';
 import { mixupReport } from './mixups.ts';
-import type { CycleResult, RunDeps } from './run.ts';
+import type { CycleResult, RunDeps } from './runTypes.ts';
 import type { SessionsReading } from './sessions.ts';
 
 /**
