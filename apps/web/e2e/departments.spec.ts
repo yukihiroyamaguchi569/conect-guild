@@ -264,21 +264,24 @@ test('the fetch status keeps every note: in the column, or on one line as the ta
   expect((await fetch.getAttribute('class'))?.includes('fetch--tab')).toBe(tabArea !== undefined);
   if (tabArea === undefined) return;
 
-  // Six: one line inside the modelled tab, every line's box within the tab's height.
+  // Six: one line inside the modelled tab, every box in it within the tab's height.
   expectWithin(await logicalBox(page, fetch), tabArea);
-  const lines = await fetch.evaluate((element) => {
+  const boxes = await fetch.evaluate((element) => {
     const outer = element.getBoundingClientRect();
-    return [...element.children].map((child) => {
-      const box = child.getBoundingClientRect();
-      return box.top >= outer.top - 0.5 && box.bottom <= outer.bottom + 0.5;
-    });
+    return [...element.querySelectorAll('*')]
+      .map((child) => child.getBoundingClientRect())
+      .filter((box) => box.height > 0)
+      .map((box) => box.top >= outer.top - 0.5 && box.bottom <= outer.bottom + 0.5);
   });
-  expect(lines.length).toBeGreaterThanOrEqual(4);
-  expect(lines.every(Boolean)).toBe(true);
-  // The buttons are whole; the notes give way to an ellipsis, their text in the tooltip.
-  for (const name of ['基準を消す', /音を/]) {
+  expect(boxes.length).toBeGreaterThanOrEqual(8);
+  expect(boxes.every(Boolean)).toBe(true);
+  // The buttons are whole and inside the tab; the notes give way to an ellipsis, their text in
+  // the tooltip.
+  const tabBox = await logicalBox(page, fetch);
+  for (const name of ['基準を消す', /音を/, /音量/]) {
     const button = fetch.getByRole('button', { name });
     expect(await button.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    expectWithin(await logicalBox(page, button), tabBox);
   }
   await expect(fetch.getByRole('status')).toHaveAttribute('title', /取得失敗/);
   // Some note did not fit: it ends in an ellipsis of its own text, the whole of it in the title.

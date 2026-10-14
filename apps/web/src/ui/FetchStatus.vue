@@ -152,8 +152,12 @@ const SESSIONS_HINT = '作業中・許可待ちは GitHub だけでは分から�
     margin-top: 0;
   }
 
+  /*
+   * The controls' line lends its items to the tab, so that the buttons keep their size and only
+   * the baseline notice among them gives way.
+   */
   .fetch--tab .fetch__line:last-child {
-    min-width: 0;
+    display: contents;
   }
 
   /* Block, not flex, so that the text itself (not an anonymous flex item) gets the ellipsis. */
