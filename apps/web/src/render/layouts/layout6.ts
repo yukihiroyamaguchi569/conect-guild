@@ -1,19 +1,16 @@
 import {
-  LOWER_DESK_DECOR,
-  LOWER_DESK_OBJECTS,
   SALES_DESK,
-  UPPER_DESK_DECOR,
-  UPPER_DESK_OBJECTS,
   UPPER_DESKS,
+  UPPER_RIGHT_DESK,
   WORKSHOP_BOARD_MAX_CQW,
   WORKSHOP_DESK,
 } from './largeRoom';
 import {
   lowerDesks,
-  SMALL_ROOM_DECOR,
+  roomWith,
   SMALL_ROOM_GROUND,
-  SMALL_ROOM_OBJECTS,
   SMALL_ROOM_SEATS,
+  UPPER_LEFT_DESK,
 } from './smallRoom';
 import type { GuildLayout } from './types';
 
@@ -25,20 +22,13 @@ import type { GuildLayout } from './types';
 export const LAYOUT6: GuildLayout = {
   departmentCount: 6,
   groundFills: SMALL_ROOM_GROUND,
-  objects: [
-    ...SMALL_ROOM_OBJECTS,
-    ...UPPER_DESK_OBJECTS,
-    ...LOWER_DESK_OBJECTS,
-    ...WORKSHOP_DESK.objects,
-    ...SALES_DESK.objects,
-  ],
-  decor: [
-    ...SMALL_ROOM_DECOR,
-    ...UPPER_DESK_DECOR,
-    ...LOWER_DESK_DECOR,
-    ...WORKSHOP_DESK.decor,
-    ...SALES_DESK.decor,
-  ],
+  ...roomWith({
+    upperLeft: UPPER_LEFT_DESK,
+    upperRight: UPPER_RIGHT_DESK,
+    lowerLeftEnd: WORKSHOP_DESK,
+    lowerRightEnd: SALES_DESK,
+    hourglassOnCounter: true,
+  }),
   desks: [
     ...UPPER_DESKS,
     ...lowerDesks(2),

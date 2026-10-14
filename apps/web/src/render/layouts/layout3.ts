@@ -1,11 +1,11 @@
 import {
-  LOWER_ROW,
+  FILES_CORNER,
   lowerDesks,
-  SMALL_ROOM_DECOR,
+  MAP_CORNER,
+  roomWith,
   SMALL_ROOM_GROUND,
-  SMALL_ROOM_OBJECTS,
   SMALL_ROOM_SEATS,
-  TAVERN_DECOR,
+  TAVERN,
   TAVERN_GUEST_SPOTS,
   UPPER_LEFT_DESK,
 } from './smallRoom';
@@ -18,8 +18,13 @@ import type { GuildLayout } from './types';
 export const LAYOUT3: GuildLayout = {
   departmentCount: 3,
   groundFills: SMALL_ROOM_GROUND,
-  objects: [...SMALL_ROOM_OBJECTS, ...UPPER_LEFT_DESK.objects, ...LOWER_ROW.objects],
-  decor: [...SMALL_ROOM_DECOR, ...UPPER_LEFT_DESK.decor, ...LOWER_ROW.decor, ...TAVERN_DECOR],
+  ...roomWith({
+    upperLeft: UPPER_LEFT_DESK,
+    upperRight: TAVERN,
+    lowerLeftEnd: MAP_CORNER,
+    lowerRightEnd: FILES_CORNER,
+    hourglassOnCounter: false,
+  }),
   // Upper row first, then the lower row left to right. The upper desk has no one to chat with
   // (chats go both ways); the lower ones chat across the counter as in layout4.
   desks: [UPPER_LEFT_DESK.desk, ...lowerDesks(1)],

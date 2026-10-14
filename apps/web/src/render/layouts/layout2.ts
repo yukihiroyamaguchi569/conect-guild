@@ -1,14 +1,15 @@
 import {
-  LOWER_ROW,
+  FILES_CORNER,
+  LIBRARY,
   lowerDesks,
-  SMALL_ROOM_DECOR,
+  MAP_CORNER,
+  roomWith,
   SMALL_ROOM_GROUND,
-  SMALL_ROOM_OBJECTS,
   SMALL_ROOM_SEATS,
-  TAVERN_DECOR,
+  TAVERN,
   TAVERN_GUEST_SPOTS,
 } from './smallRoom';
-import { place, rect, solid, type GuildLayout } from './types';
+import type { GuildLayout } from './types';
 
 /**
  * Two departments (Issue #18): the two lower desks of layout4, the tavern in the upper right and a
@@ -17,22 +18,13 @@ import { place, rect, solid, type GuildLayout } from './types';
 export const LAYOUT2: GuildLayout = {
   departmentCount: 2,
   groundFills: SMALL_ROOM_GROUND,
-  objects: [
-    ...SMALL_ROOM_OBJECTS,
-    ...LOWER_ROW.objects,
-    // The library: two bookcases against the back wall, under the left window and the board
-    solid('shelf', rect(10, 3, 2, 3)),
-    solid('shelf', rect(12, 3, 2, 3)),
-  ],
-  decor: [
-    ...SMALL_ROOM_DECOR,
-    ...LOWER_ROW.decor,
-    ...TAVERN_DECOR,
-    // A reading bench in front of the bookcases, books and scrolls, the cat asleep on the carpet
-    place('bench', 10, 6),
-    place('book-pile', 12, 6),
-    place('sleeping-cat', 13, 6),
-  ],
+  ...roomWith({
+    upperLeft: LIBRARY,
+    upperRight: TAVERN,
+    lowerLeftEnd: MAP_CORNER,
+    lowerRightEnd: FILES_CORNER,
+    hourglassOnCounter: false,
+  }),
   desks: lowerDesks(0),
   ...SMALL_ROOM_SEATS,
   guestSpots: TAVERN_GUEST_SPOTS,

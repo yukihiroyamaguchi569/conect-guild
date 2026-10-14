@@ -1,19 +1,10 @@
 import { UPPER_LEFT_DESK, type DeskCorner } from './smallRoom';
-import {
-  flat,
-  place,
-  rect,
-  solid,
-  type DecorPlacement,
-  type Desk,
-  type MapObject,
-  type TilePos,
-} from './types';
+import { flat, place, rect, solid, type DecorPlacement, type Desk, type TilePos } from './types';
 
 /**
- * What the offices of five and six departments add to the room of smallRoom.ts and its upper left
- * desk (Issue #18): layout4's upper right desk, the two lower desks where layout4 has them (企画
- * and 総務), the desks beside them on the lower carpets, and the guests at the door.
+ * The desks of the offices of four departments and more in the room of smallRoom.ts (Issue #18):
+ * layout4's upper right desk, the desks of the lower ends beside the lower desks (the workshop and
+ * the sales desk), and the round table of the guest of five departments.
  */
 
 /** layout4's upper right (広報) desk, with its easel, megaphone, book, flyers and mugs. */
@@ -29,52 +20,10 @@ export const UPPER_RIGHT_DESK: DeskCorner & { readonly desk: Desk } = {
   desk: { seat: { col: 20, row: 4 }, side: 'upper', things: ['megaphone'], chatWith: 0 },
 };
 
-/** Both upper desks of layout4; the hourglass stands on かなめ's counter. */
-export const UPPER_DESK_OBJECTS: readonly MapObject[] = [
-  ...UPPER_LEFT_DESK.objects,
-  ...UPPER_RIGHT_DESK.objects,
-];
-export const UPPER_DESK_DECOR: readonly DecorPlacement[] = [
-  ...UPPER_LEFT_DESK.decor,
-  ...UPPER_RIGHT_DESK.decor,
-  place('hourglass', 17, 8),
-];
-
 /** The upper desks chat across the throne, as in layout4. */
 export const UPPER_DESKS: readonly [Desk, Desk] = [
   { ...UPPER_LEFT_DESK.desk, chatWith: 1 },
   UPPER_RIGHT_DESK.desk,
-];
-
-/** The lower desks of layout4. */
-export const LOWER_DESK_OBJECTS: readonly MapObject[] = [
-  flat('chair', rect(11, 9, 1, 2)),
-  solid('desk', rect(9, 11, 4, 2)),
-  flat('chair', rect(21, 9, 1, 2)),
-  solid('desk', rect(20, 11, 4, 2)),
-  // Left of the message window, as in layout4
-  solid('crate', rect(2, 14, 1, 1)),
-];
-
-export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
-  // The left wall's banner flutters for the lower desks (render/trinkets.ts)
-  place('banner', 0, 14),
-  // Lower left desk
-  place('globe', 9, 11),
-  place('model', 10, 11),
-  place('blueprint-rolls', 11, 11),
-  place('lantern', 12, 11),
-  // Lower right desk (the hourglass stands on the counter: UPPER_DESK_DECOR)
-  place('inkwell', 20, 11),
-  place('file-stack', 21, 11),
-  place('scroll-pile', 22, 11),
-  place('toolbox', 23, 11),
-  place('sacks', 22, 10),
-  place('barrel', 30, 11),
-  // Left of the message window, as in layout4
-  place('barrel-pair', 1, 14),
-  place('sacks', 2, 15),
-  place('barrel-small', 2, 16),
 ];
 
 /**
