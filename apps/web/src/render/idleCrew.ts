@@ -1,4 +1,4 @@
-import type { MemberId } from '../guild.config';
+import { ACTIVE_MEMBER_IDS, type MemberId } from '../guild.config';
 import type { Random } from './confetti';
 import type { GuildEvent } from '../domain/events';
 import { inScene, scheduleEvent, sendHome, type Director } from './director';
@@ -49,14 +49,8 @@ export interface IdleCrewOptions {
   readonly onActive: ((ids: readonly MemberId[], at: number) => void) | undefined;
 }
 
-const MEMBER_IDS: readonly MemberId[] = [
-  'kaname',
-  'minori',
-  'hibiki',
-  'hirame',
-  'sasae',
-  'yukihiro',
-];
+/** The members on stage (the settings' departments, かなめ and the king). */
+const MEMBER_IDS: readonly MemberId[] = ACTIVE_MEMBER_IDS;
 
 export function createIdleCrew(options: IdleCrewOptions): IdleCrew {
   const { wallNow, onActive } = options;

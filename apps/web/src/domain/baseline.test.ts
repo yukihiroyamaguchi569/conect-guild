@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { BASELINE_SCHEMA_VERSION, parseBaseline, repoFingerprint, toBaseline } from './baseline';
+import {
+  BASELINE_SCHEMA_VERSION,
+  CREW_FINGERPRINT,
+  parseBaseline,
+  repoFingerprint,
+  toBaseline,
+} from './baseline';
 import { T0, closedIssue, issue, mergedPr, pr, snapshot } from './fixtures.test-util';
 
 const sample = snapshot({
@@ -25,6 +31,7 @@ describe('toBaseline', () => {
         { number: 4, state: 'closed', mergedAt: T0 },
       ],
       levels: { kaname: 1, minori: 1, hibiki: 1, hirame: 1, sasae: 1 },
+      crew: CREW_FINGERPRINT,
     });
   });
 

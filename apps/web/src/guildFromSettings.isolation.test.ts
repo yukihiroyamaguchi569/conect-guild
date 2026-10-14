@@ -14,4 +14,12 @@ describe('guildFromSettings without the real settings', () => {
       Object.fromEntries(settings.departments.map((d) => [d.label, d.member])),
     );
   });
+
+  it('seats the members from the layout for the number of departments (Issue #18)', async () => {
+    const { guildFromSettings } = await import('./guildFromSettings');
+    const { LAYOUT4 } = await import('./render/layouts/layout4');
+    const members = guildFromSettings(makeSettings(4)).members;
+    expect(members.minori.seat).toEqual(LAYOUT4.desks[0]?.seat);
+    expect(members.kaname.seat).toEqual(LAYOUT4.commanderSeat);
+  });
 });

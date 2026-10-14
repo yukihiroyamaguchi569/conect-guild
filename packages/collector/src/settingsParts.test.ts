@@ -44,15 +44,17 @@ describe('parseWriteArgs', () => {
 
 describe('mergeSettings', () => {
   it('lets a role follow its label only where it was the old label', () => {
+    const { hibiki } = BASE.members;
+    if (hibiki === undefined) throw new Error('guild.settings.json lacks hibiki');
     const base = {
       ...BASE,
-      members: { ...BASE.members, hibiki: { ...BASE.members.hibiki, role: '広報とSNS' } },
+      members: { ...BASE.members, hibiki: { ...hibiki, role: '広報とSNS' } },
     };
     const data = input();
     data.departments = data.departments.map((d, i) => ({ ...d, label: `${LABELS[i] ?? ''}部` }));
     const { raw } = mergeSettings(base, data);
-    expect(raw.members.minori.role).toBe('経理部');
-    expect(raw.members.hibiki.role).toBe('広報とSNS');
+    expect(raw.members.minori?.role).toBe('経理部');
+    expect(raw.members.hibiki?.role).toBe('広報とSNS');
     expect(raw.members.kaname).toEqual(BASE.members.kaname);
   });
 

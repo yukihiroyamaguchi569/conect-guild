@@ -16,8 +16,10 @@ describe('guildFromSettings (made-up settings, not guild.settings.json)', () => 
     for (const [id, member] of Object.entries(guild.members)) {
       expect(member.id).toBe(id);
     }
-    expect(guild.members.minori).toMatchObject(settings.members.minori);
-    expect(guild.members.yukihiro).toMatchObject(settings.members.yukihiro);
+    const { minori, yukihiro } = settings.members;
+    if (minori === undefined || yukihiro === undefined) throw new Error('fixture lacks members');
+    expect(guild.members.minori).toMatchObject(minori);
+    expect(guild.members.yukihiro).toMatchObject(yukihiro);
   });
 
   it('keeps the seats, which do not come from the settings', () => {

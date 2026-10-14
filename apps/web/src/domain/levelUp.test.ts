@@ -95,17 +95,32 @@ describe('the baseline keeps the levels', () => {
     expect(parseBaseline(versionTwo(withHistory(T0, {})))).toBeNull();
   });
 
-  it('rejects levels out of range, a level for the king and a missing member', () => {
+  it('rejects levels out of range and a level for the king', () => {
     const base = toBaseline(withHistory(T0, {}));
     for (const levels of [
       { ...ALL_ONE, minori: 0 },
       { ...ALL_ONE, minori: 100 },
       { ...ALL_ONE, minori: 2.5 },
       { ...ALL_ONE, yukihiro: 1 },
-      { kaname: 1, minori: 1, hibiki: 1, hirame: 1 },
+      { ...ALL_ONE, neko: 1 },
     ]) {
       expect(parseBaseline({ ...base, levels })).toBeNull();
     }
+  });
+
+  it('reads a baseline that lacks a member (one with no desk then, Issue #18)', () => {
+    const base = toBaseline(withHistory(T0, {}));
+    const levels = { kaname: 1, minori: 1, hibiki: 1, hirame: 1 };
+    expect(parseBaseline({ ...base, levels, crew: '00000000' })?.levels).toEqual(levels);
+    expect(parseBaseline({ ...base, levels, crew: undefined })?.levels).toEqual(levels);
+  });
+
+  it('rejects a baseline of the mapping in use that lacks a member (as before #18)', () => {
+    const base = toBaseline(withHistory(T0, {}));
+    expect(
+      parseBaseline({ ...base, levels: { kaname: 1, minori: 1, hibiki: 1, hirame: 1 } }),
+    ).toBeNull();
+    expect(parseBaseline({ ...base, levels: {} })).toBeNull();
   });
 });
 

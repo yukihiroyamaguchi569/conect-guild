@@ -1,10 +1,13 @@
 /**
  * Guild settings for the web app: the team's values come from the repository root's
- * guild.settings.json (validated when it is imported), derived by guildFromSettings.ts (which also
- * holds the seats); the time windows the domain uses stay here.
+ * guild.settings.json (validated when it is imported), derived by guildFromSettings.ts with the
+ * office layout for its number of departments (render/layouts, which gives the seats); the time
+ * windows the domain uses stay here.
  */
 import {
+  ACTIVE_MEMBER_IDS,
   DEPARTMENT_LABELS,
+  LEVEL_MEMBER_IDS,
   GUILD_SETTINGS,
   departmentLabelSchema,
   type BranchPrefixRule,
@@ -13,9 +16,12 @@ import {
   type RuleChangePath,
 } from '@conect-guild/snapshot/settings';
 import { guildFromSettings, type MemberConfig } from './guildFromSettings';
+import { SELECTED_LAYOUT } from './render/layouts';
 
 export {
+  ACTIVE_MEMBER_IDS,
   DEPARTMENT_LABELS,
+  LEVEL_MEMBER_IDS,
   departmentLabelSchema,
   type DepartmentLabel,
   type MemberId,
@@ -28,13 +34,18 @@ export {
   type TilePos,
 } from './guildFromSettings';
 
-const GUILD = guildFromSettings(GUILD_SETTINGS);
+const GUILD = guildFromSettings(GUILD_SETTINGS, SELECTED_LAYOUT);
 
 export const MEMBERS: Readonly<Record<MemberId, MemberConfig>> = GUILD.members;
 
 /** Department label → the member who works it (see guildFromSettings). */
 export const DEPARTMENT_MEMBER: Readonly<Record<DepartmentLabel, MemberId>> =
   GUILD.departmentMember;
+
+/** The departments' members in the settings' order: `departments[i]` sits at desk i. */
+export const DEPARTMENT_MEMBERS: readonly MemberId[] = GUILD_SETTINGS.departments.map(
+  (d) => d.member,
+);
 
 /**
  * The member who works a department. Labels come from the settings, so they are plain strings to

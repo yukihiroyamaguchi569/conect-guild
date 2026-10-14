@@ -1,4 +1,5 @@
 import type { Snapshot } from '@conect-guild/snapshot';
+import { byMember, COMMANDER_ID, PRESIDENT_ID } from '@conect-guild/snapshot/settings';
 import { departmentMember, type MemberId } from '../guild.config';
 import { countXp, levelOf, NO_XP, type XpTally } from '../domain/xp';
 
@@ -45,16 +46,12 @@ export function buildPartyLevels(
   snapshot: Pick<Snapshot, 'issues' | 'history'>,
 ): Readonly<Record<MemberId, PartyLevel>> {
   const xp = countXp(snapshot);
-  // Member ids are fixed (guild.settings.json); every department label has a tally below.
+  // Every member gets a level (one off stage keeps noneYet); each department label has a tally below.
   const noneYet = partyLevel(NO_XP, departmentBreakdown);
-  const levels: Record<MemberId, PartyLevel> = {
-    kaname: partyLevel(xp.kaname, kanameBreakdown),
-    minori: noneYet,
-    hibiki: noneYet,
-    hirame: noneYet,
-    sasae: noneYet,
-    yukihiro: KING_LEVEL,
-  };
+  const levels: Record<MemberId, PartyLevel> = byMember((id) => {
+    if (id === COMMANDER_ID) return partyLevel(xp.kaname, kanameBreakdown);
+    return id === PRESIDENT_ID ? KING_LEVEL : noneYet;
+  });
   for (const [department, tally] of xp.departments) {
     levels[departmentMember(department)] = partyLevel(tally, departmentBreakdown);
   }

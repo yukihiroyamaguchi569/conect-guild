@@ -1,12 +1,13 @@
 import type { Snapshot } from '@conect-guild/snapshot';
-import {
-  COMMANDER_ID,
-  DEPARTMENT_MEMBER_IDS,
-  memberIdSchema,
-  PRESIDENT_ID,
-} from '@conect-guild/snapshot/settings';
+import { COMMANDER_ID, memberIdSchema, PRESIDENT_ID } from '@conect-guild/snapshot/settings';
 import { z } from 'zod';
-import { DEPARTMENT_LABELS, DEPARTMENT_MEMBER, type DepartmentLabel } from '../guild.config';
+import {
+  DEPARTMENT_LABELS,
+  DEPARTMENT_MEMBER,
+  LEVEL_MEMBER_IDS,
+  type DepartmentLabel,
+  type MemberId,
+} from '../guild.config';
 import { countXp, levelOf, MAX_LEVEL, NO_XP } from './xp';
 
 /**
@@ -14,21 +15,26 @@ import { countXp, levelOf, MAX_LEVEL, NO_XP } from './xp';
  * went up since. Pure. The king has no level, so he is never in here.
  */
 
-/** Members with a level: かなめ and the four department members. */
+/** Members who may have a level: every id but the king's. */
 export const levelMemberSchema = memberIdSchema.exclude([PRESIDENT_ID]);
 export type LevelMember = z.infer<typeof levelMemberSchema>;
 
-/** Every member with a level, かなめ first, then the department members in their fixed order. */
-export const LEVEL_MEMBERS: readonly LevelMember[] = [COMMANDER_ID, ...DEPARTMENT_MEMBER_IDS];
+const isLevelMember = (id: MemberId): id is LevelMember => id !== PRESIDENT_ID;
 
-/** Each member's level: numbers only, as the baseline keeps them. */
-export const memberLevelsSchema = z.record(
+/** The members with a level now, かなめ first, then the departments' members in their order. */
+export const LEVEL_MEMBERS: readonly LevelMember[] = LEVEL_MEMBER_IDS.filter(isLevelMember);
+
+/**
+ * Each member's level: numbers only, as the baseline keeps them. Only the members with a desk (and
+ * かなめ) are in it, so it may lack one: a member added to the settings later has no level before.
+ */
+export const memberLevelsSchema = z.partialRecord(
   levelMemberSchema,
   z.number().int().min(1).max(MAX_LEVEL),
 );
 export type MemberLevels = z.infer<typeof memberLevelsSchema>;
 
-/** Each member's level from the snapshot's history (domain/xp.ts); 1 for a member with no desk. */
+/** The level of each member in LEVEL_MEMBERS from the snapshot's history (domain/xp.ts). */
 export function memberLevels(snapshot: Pick<Snapshot, 'issues' | 'history'>): MemberLevels {
   const xp = countXp(snapshot);
   const levelOfMember = (member: LevelMember): number => {
@@ -37,13 +43,9 @@ export function memberLevels(snapshot: Pick<Snapshot, 'issues' | 'history'>): Me
     const tally = department === null ? NO_XP : (xp.departments.get(department) ?? NO_XP);
     return levelOf(tally.xp).level;
   };
-  return {
-    kaname: levelOfMember('kaname'),
-    minori: levelOfMember('minori'),
-    hibiki: levelOfMember('hibiki'),
-    hirame: levelOfMember('hirame'),
-    sasae: levelOfMember('sasae'),
-  };
+  const levels: MemberLevels = {};
+  for (const member of LEVEL_MEMBERS) levels[member] = levelOfMember(member);
+  return levels;
 }
 
 export interface LevelUp {
@@ -59,11 +61,15 @@ function departmentOf(member: LevelMember): DepartmentLabel | null {
 }
 
 /**
- * Members whose level is higher than in `before`, in LEVEL_MEMBERS' order. A level that went down (a label moved, an Issue reopened) tells nothing.
+ * Members whose level is higher than in `before`, in LEVEL_MEMBERS' order. A level that went down
+ * (a label moved, an Issue reopened) tells nothing, and neither does a member `before` lacks (newly
+ * added to the settings: no fanfare for the level they arrive with).
  */
 export function levelUps(before: MemberLevels, after: MemberLevels): LevelUp[] {
-  return LEVEL_MEMBERS.filter((member) => after[member] > before[member]).map((member) => ({
-    department: departmentOf(member),
-    level: after[member],
-  }));
+  return LEVEL_MEMBERS.flatMap((member) => {
+    const was = before[member];
+    const level = after[member];
+    if (was === undefined || level === undefined || level <= was) return [];
+    return [{ department: departmentOf(member), level }];
+  });
 }

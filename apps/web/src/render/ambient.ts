@@ -1,5 +1,6 @@
 import type { DecorName } from '../../../../assets/decor/decor';
 import type { MemberState } from '../domain/party';
+import { byMember } from '@conect-guild/snapshot/settings';
 import type { MemberId } from '../guild.config';
 import type { Random } from './confetti';
 import { AMBIENT } from './metrics';
@@ -67,14 +68,7 @@ function drawSeed(random: Random): AmbientSeed {
 }
 
 export function createAmbientSeeds(random: Random): AmbientSeeds {
-  return {
-    kaname: drawSeed(random),
-    minori: drawSeed(random),
-    hibiki: drawSeed(random),
-    hirame: drawSeed(random),
-    sasae: drawSeed(random),
-    yukihiro: drawSeed(random),
-  };
+  return byMember(() => drawSeed(random));
 }
 
 /** An item handled in front of the member, centred at `offset` from the feet. */

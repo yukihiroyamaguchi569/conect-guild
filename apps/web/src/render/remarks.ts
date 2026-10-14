@@ -1,4 +1,4 @@
-import type { MemberId } from '../guild.config';
+import { LEVEL_MEMBER_IDS, type MemberId } from '../guild.config';
 import type { BubbleKind, Bubbles } from './bubbles';
 import type { Random } from './confetti';
 import { inScene, isAtSeat, type Director } from './director';
@@ -30,7 +30,7 @@ const SCENE_OF: Readonly<Record<BubbleKind, LineScene>> = {
 };
 
 /** The order the members are taken in, as the party window (the king has no waiting bubble). */
-const ORDER: readonly MemberId[] = ['kaname', 'minori', 'hibiki', 'hirame', 'sasae'];
+const ORDER: readonly MemberId[] = LEVEL_MEMBER_IDS;
 
 export interface WaitingChange {
   readonly id: MemberId;

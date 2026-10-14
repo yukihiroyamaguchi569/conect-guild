@@ -1,6 +1,8 @@
 import { ANIMATED_DECOR, STILL_DECOR, type AnimatedDecor } from './animatedDecor';
 import type { DecorPlacement } from './decor';
-import { contains, MAP_OBJECTS, type MapObject, type PxRect, type TileName } from './map';
+import { SELECTED_LAYOUT } from './layouts';
+import type { GuildLayout } from './layouts/types';
+import { contains, type MapObject, type PxRect, type TileName } from './map';
 import { TILE_SIZE } from './metrics';
 
 /**
@@ -64,18 +66,33 @@ function throneParts(object: MapObject): FrontPart[] {
   return [{ object, clips }];
 }
 
-/** The front piece a small thing stands on, if any (its top-left cell is on the piece). */
-function standsOn(item: DecorPlacement): MapObject | undefined {
-  return MAP_OBJECTS.find((object) => isFront(object) && contains(object, item));
+/** The things of a layout, still and moving, that the layers share out. */
+export interface LayerDecor {
+  readonly still: readonly DecorPlacement[];
+  readonly animated: readonly AnimatedDecor[];
 }
 
-function buildLayers(): FrontLayer[] {
-  const objects = MAP_OBJECTS.filter(isFront);
-  const parts = MAP_OBJECTS.flatMap(throneParts);
+/** The furniture of a layout drawn behind and in front of the members. */
+export interface Layers {
+  /** Back to front. */
+  readonly front: readonly FrontLayer[];
+  /** The background: furniture and things not in a front layer (the throne is there whole). */
+  readonly backObjects: readonly MapObject[];
+  readonly backStill: readonly DecorPlacement[];
+  readonly backAnimated: readonly AnimatedDecor[];
+}
+
+/** The layers of `layout` with its things (animatedDecor.ts). */
+export function layersFor(layout: GuildLayout, decor: LayerDecor): Layers {
+  /** The front piece a small thing stands on, if any (its top-left cell is on the piece). */
+  const standsOn = (item: DecorPlacement): MapObject | undefined =>
+    layout.objects.find((object) => isFront(object) && contains(object, item));
+  const objects = layout.objects.filter(isFront);
+  const parts = layout.objects.flatMap(throneParts);
   const depths = [...new Set([...objects, ...parts.map((p) => p.object)].map(bottomOf))].toSorted(
     (a, b) => a - b,
   );
-  return depths.map((depth) => {
+  const front = depths.map((depth) => {
     const here = objects.filter((o) => bottomOf(o) === depth);
     const on = (item: DecorPlacement) => {
       const base = standsOn(item);
@@ -85,23 +102,30 @@ function buildLayers(): FrontLayer[] {
       depth,
       objects: here,
       parts: parts.filter((p) => bottomOf(p.object) === depth),
-      still: STILL_DECOR.filter(on),
-      animated: ANIMATED_DECOR.filter((a) => on(a.placement)),
+      still: decor.still.filter(on),
+      animated: decor.animated.filter((a) => on(a.placement)),
     };
   });
+  return {
+    front,
+    backObjects: layout.objects.filter((o) => !isFront(o)),
+    backStill: decor.still.filter((item) => standsOn(item) === undefined),
+    backAnimated: decor.animated.filter((item) => standsOn(item.placement) === undefined),
+  };
 }
 
+const SELECTED_LAYERS = layersFor(SELECTED_LAYOUT, {
+  still: STILL_DECOR,
+  animated: ANIMATED_DECOR,
+});
+
 /** Back to front. */
-export const FRONT_LAYERS: readonly FrontLayer[] = buildLayers();
+export const FRONT_LAYERS: readonly FrontLayer[] = SELECTED_LAYERS.front;
 
 /** The background: furniture and things not in a front layer (the throne is there whole). */
-export const BACK_OBJECTS: readonly MapObject[] = MAP_OBJECTS.filter((o) => !isFront(o));
-export const BACK_STILL_DECOR: readonly DecorPlacement[] = STILL_DECOR.filter(
-  (item) => standsOn(item) === undefined,
-);
-export const BACK_ANIMATED_DECOR: readonly AnimatedDecor[] = ANIMATED_DECOR.filter(
-  (item) => standsOn(item.placement) === undefined,
-);
+export const BACK_OBJECTS: readonly MapObject[] = SELECTED_LAYERS.backObjects;
+export const BACK_STILL_DECOR: readonly DecorPlacement[] = SELECTED_LAYERS.backStill;
+export const BACK_ANIMATED_DECOR: readonly AnimatedDecor[] = SELECTED_LAYERS.backAnimated;
 
 export type DrawStep<T, L> =
   | { readonly kind: 'member'; readonly member: T }

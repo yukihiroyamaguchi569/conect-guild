@@ -1,3 +1,5 @@
+import { SELECTED_LAYOUT } from './layouts';
+
 /**
  * Every size of the drawing in one place (contract with assets/tiles and assets/sprites):
  * 32 x 18 tiles of 32 px (logical 1024 x 576), members drawn from 80 x 80 frames.
@@ -246,15 +248,16 @@ export const DAYLIGHT = {
 
 /**
  * かなめ tosses the scroll to a near desk now and then instead of walking it over (toss.ts, Issue
- * #12). A desk is near when its seat is at most `maxTiles` tiles from hers in a straight line (with
- * the seats of 2026-10-12, 経理 and 広報 at 5 tiles behind the counter; 企画 and 総務 at 5.8 in front
- * of it are walked to); for a near desk she tosses with chance `share`. She raises the scroll for
+ * #12). A desk is near when its seat is at most `maxTiles` tiles from hers in a straight line; the
+ * distance belongs to the office layout (GuildLayout.toss, render/layouts: in the four-department
+ * office 経理 and 広報 at 5 tiles behind the counter are near, 企画 and 総務 at 5.8 in front of it
+ * are walked to). For a near desk she tosses with chance `share`. She raises the scroll for
  * `windUpMs`, it flies `flightMs` on an arc whose middle is `arcPx` over the higher of her hands
  * and the member's, and she watches `watchMs` more after the catch. Times are ms, distances
  * logical px.
  */
 export const TOSS = {
-  maxTiles: 5.5,
+  maxTiles: SELECTED_LAYOUT.toss.maxTiles,
   share: 0.4,
   windUpMs: 700,
   flightMs: 900,

@@ -16,7 +16,7 @@ describe('makeSettings', () => {
     expect(new Set(settings.departments.map((d) => d.member)).size).toBe(labels.length);
     for (const d of settings.departments) {
       expect(Object.keys(settings.members)).toContain(d.member);
-      expect(settings.members[d.member].role).toBe(d.label);
+      expect(settings.members[d.member]?.role).toBe(d.label);
     }
     expect(settings.branchPrefixes).toHaveLength(labels.length * 2);
     for (const rule of settings.branchPrefixes) expect(labels).toContain(rule.department);

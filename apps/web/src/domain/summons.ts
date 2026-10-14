@@ -1,5 +1,5 @@
 import type { SessionState, SnapshotSessions } from '@conect-guild/snapshot';
-import { SESSION_STALE_AFTER_MS, type MemberId } from '../guild.config';
+import { LEVEL_MEMBER_IDS, SESSION_STALE_AFTER_MS, type MemberId } from '../guild.config';
 import { memberOfSession } from './session';
 
 /**
@@ -36,7 +36,7 @@ export function readSessions(
 const WAITING: ReadonlySet<SessionState> = new Set<SessionState>(['resting', 'idle']);
 
 /** The order the summoned are listed in: かなめ, then the departments, as the party window. */
-const ORDER: readonly MemberId[] = ['kaname', 'minori', 'hibiki', 'hirame', 'sasae'];
+const ORDER: readonly MemberId[] = LEVEL_MEMBER_IDS;
 
 /**
  * Members whose session went from waiting (resting / idle) to working between `previous` and

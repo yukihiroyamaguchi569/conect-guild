@@ -49,7 +49,7 @@ function membersFollowingLabels(
   base.departments.forEach((before, i) => {
     const label = departments[i]?.label;
     const member = members[before.member];
-    if (label !== undefined && member.role === before.label) {
+    if (label !== undefined && member?.role === before.label) {
       members[before.member] = { ...member, role: label };
     }
   });

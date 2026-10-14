@@ -1,7 +1,9 @@
 import type { GuildArt } from './art';
 import { isUnshaded, type Daylight, type LampLight, type Rgb } from './daylight';
 import { FLOOR_PATCH_DECOR } from './decor';
-import { LOGICAL_HEIGHT, LOGICAL_WIDTH, MAP_OBJECTS } from './map';
+import { SELECTED_LAYOUT } from './layouts';
+import type { GuildLayout, MapObject } from './layouts/types';
+import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
 import { DAYLIGHT, TILE_SIZE } from './metrics';
 import { patchAt } from './trinkets';
 
@@ -10,7 +12,12 @@ import { patchAt } from './trinkets';
  * the canvas, so they are never shaded. Logical px.
  */
 
-const WINDOWS = MAP_OBJECTS.filter((object) => object.tile === 'window');
+/** The window tiles of `layout`, lit by the sun. */
+export function windowObjectsFor(layout: GuildLayout): readonly MapObject[] {
+  return layout.objects.filter((object) => object.tile === 'window');
+}
+
+const WINDOWS = windowObjectsFor(SELECTED_LAYOUT);
 
 const rgb = ({ r, g, b }: Rgb): string =>
   `rgb(${String(Math.round(r))}, ${String(Math.round(g))}, ${String(Math.round(b))})`;

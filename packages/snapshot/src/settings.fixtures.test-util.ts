@@ -1,12 +1,10 @@
-import type { DEPARTMENT_MEMBER_IDS, GuildSettings } from './settingsSchema.ts';
+import type { DepartmentMemberId, GuildSettings } from './settingsSchema.ts';
 
 /**
  * Test-only settings that do not depend on the repository's guild.settings.json: a fictional
  * company with a chosen number of departments. Imports only the schema's types, so the real
  * settings are never read. Labels, folders and the repository are made up.
  */
-
-type DepartmentMemberId = (typeof DEPARTMENT_MEMBER_IDS)[number];
 
 /** Fictional departments, in the order the builder hands them out. */
 const FICTIONAL_DEPARTMENTS = [
@@ -34,8 +32,8 @@ export const FICTIONAL_GUESTS = [
 
 /**
  * Settings with the first `departmentCount` fictional departments, two branch prefixes each, and
- * the given fields replaced. Not parsed here: the schema still requires exactly four departments
- * until Issue #18, and tests for other counts check the schema themselves.
+ * the given fields replaced. Not parsed here: the schema accepts only SUPPORTED_DEPARTMENT_COUNTS
+ * (four until the layouts of Issue #18), and tests for other counts check the schema themselves.
  */
 export function makeSettings(
   departmentCount: number,

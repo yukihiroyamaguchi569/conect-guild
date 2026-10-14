@@ -2,13 +2,24 @@ import { z } from 'zod';
 // Data only: the JSON is parsed, never run. When guild.settings.local.json exists, the collector
 // (src/settingsHook.ts) and the dev server (vite-plugin-settings.ts) send this import there.
 import RAW_SETTINGS from '../../../guild.settings.json' with { type: 'json' };
-import { checkGuildSettings } from './settingsSchema.ts';
+import {
+  activeMemberIds,
+  checkGuildSettings,
+  levelMemberIds,
+  type MemberId,
+} from './settingsSchema.ts';
 
 // The schema has no settings in it, so the collector can check a file before importing this.
 export * from './settingsSchema.ts';
 
 /** Validated when this module is first imported: the collector and the web app stop at start. */
 export const GUILD_SETTINGS = checkGuildSettings(RAW_SETTINGS);
+
+/** The members on stage: かなめ, the departments' members in their order, and the king. */
+export const ACTIVE_MEMBER_IDS: readonly MemberId[] = activeMemberIds(GUILD_SETTINGS);
+
+/** The members with a level: かなめ and the departments' members (the king has none). */
+export const LEVEL_MEMBER_IDS: readonly MemberId[] = levelMemberIds(GUILD_SETTINGS);
 
 /** Department labels in the fixed order (an Issue with several labels goes to the first one). */
 export const DEPARTMENT_LABELS = GUILD_SETTINGS.departments.map((d) => d.label);

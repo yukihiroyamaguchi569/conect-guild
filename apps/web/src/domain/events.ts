@@ -1,7 +1,7 @@
 import type { Snapshot, SnapshotIssue, SnapshotPr } from '@conect-guild/snapshot';
 import { EVENT_GAP_LIMIT_MS, type DepartmentLabel } from '../guild.config';
 import { repoFingerprint, toBaseline, type Baseline } from './baseline';
-import { levelUps, type MemberLevels } from './levelUp';
+import { levelUps } from './levelUp';
 import { assignPr, indexIssues, type IssueIndex } from './party';
 import { pickDepartment } from './quest';
 
@@ -113,10 +113,13 @@ function collectEvents(baseline: Baseline, snapshot: Snapshot, index: IssueIndex
 
 /**
  * One event per member whose level went up (two or more levels at once are one event), after the
- * other events of the diff so the window reads 「クリアした！」 before 「あがった！」.
+ * other events of the diff so the window reads 「クリアした！」 before 「あがった！」. None when the
+ * department → member mapping is not the one the stored levels were counted with (changed, or
+ * unknown in a baseline stored before it was kept): the levels start again from the new baseline.
  */
-function levelUpEvents(before: MemberLevels, after: MemberLevels): GuildEvent[] {
-  return levelUps(before, after).map(({ department, level }) => ({
+function levelUpEvents(before: Baseline, after: Baseline): GuildEvent[] {
+  if (before.crew !== after.crew) return [];
+  return levelUps(before.levels, after.levels).map(({ department, level }) => ({
     id: `level-up:${department ?? 'kaname'}#${String(level)}`,
     kind: 'level-up',
     number: level,
@@ -132,6 +135,7 @@ function levelUpEvents(before: MemberLevels, after: MemberLevels): GuildEvent[] 
  *   the level-ups (the levels are counted afresh from the whole history, so none is missed)
  * - otherwise: opened / merged / closed events, each at most once, then the level-ups, then store
  *   the snapshot
+ * The level-ups are told only while the department → member mapping stays the same (Issue #18).
  * Call it only after a successful fetch; a failed fetch must leave the baseline alone.
  */
 export function diffSnapshot(
@@ -149,11 +153,11 @@ export function diffSnapshot(
   if (gap <= 0) return { events: [], baselineUpdate: { action: 'keep' }, notice: null };
   if (gap > gapLimitMs) {
     const notice: DiffNotice = { kind: 'gap-unrecoverable', message: GAP_NOTICE_MESSAGE };
-    return { events: levelUpEvents(baseline.levels, next.levels), baselineUpdate: replace, notice };
+    return { events: levelUpEvents(baseline, next), baselineUpdate: replace, notice };
   }
   const events = [
     ...collectEvents(baseline, snapshot, indexIssues(snapshot.issues)),
-    ...levelUpEvents(baseline.levels, next.levels),
+    ...levelUpEvents(baseline, next),
   ];
   return { events, baselineUpdate: replace, notice: null };
 }

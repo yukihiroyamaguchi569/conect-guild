@@ -1,0 +1,162 @@
+ground 0: wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top wall-top
+ground 1: wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall
+ground 2: wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall
+ground 3: wall floor floor floor floor floor floor floor floor floor floor-carpet floor-carpet floor-carpet floor-carpet floor floor floor floor floor floor-carpet floor-carpet floor-carpet floor-carpet floor floor floor floor floor floor floor floor wall
+ground 4: wall floor floor floor floor floor floor floor floor floor floor-carpet floor-carpet floor-carpet floor-carpet floor floor floor floor floor floor-carpet floor-carpet floor-carpet floor-carpet floor floor floor floor floor floor floor floor wall
+ground 5: wall floor floor floor floor floor floor floor floor floor floor-carpet floor-carpet floor-carpet floor-carpet floor rug-red rug-red rug-red floor floor-carpet floor-carpet floor-carpet floor-carpet floor floor floor floor floor floor floor floor wall
+ground 6: wall floor floor floor floor floor floor floor floor floor floor-carpet floor-carpet floor-carpet floor-carpet floor rug-red rug-red rug-red floor floor-carpet floor-carpet floor-carpet floor-carpet floor floor floor floor floor floor floor floor wall
+ground 7: wall floor floor floor floor floor floor floor floor floor floor floor floor floor floor rug-red rug-red rug-red floor floor floor floor floor floor floor floor floor floor floor floor floor wall
+ground 8: wall floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor wall
+ground 9: wall floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor wall
+ground 10: wall floor floor floor floor floor floor floor floor floor floor floor floor rug-red rug-red rug-red rug-red rug-red rug-red rug-red floor floor floor floor floor floor floor floor floor floor floor wall
+ground 11: wall floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet rug-red rug-red rug-red rug-red rug-red rug-red rug-red floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor wall
+ground 12: wall floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet rug-red rug-red rug-red rug-red rug-red rug-red rug-red floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor wall
+ground 13: wall floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor floor floor floor floor floor floor floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor-carpet floor wall
+ground 14: wall floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor
+ground 15: wall floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor
+ground 16: wall floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor floor
+ground 17: wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall wall
+object window 10,1 2x2 solid=false
+object window 21,1 2x2 solid=false
+object board 12,1 3x2 solid=true
+object throne 15,2 3x3 solid=true
+object counter-left 13,8 1x2 solid=true
+object counter-mid 14,8 5x2 solid=true
+object counter-right 19,8 1x2 solid=true
+object door 30,14 2x3 solid=false
+object chair 12,3 1x2 solid=false
+object desk 10,5 4x2 solid=true
+object chair 20,3 1x2 solid=false
+object desk 19,5 4x2 solid=true
+object plant 22,7 1x1 solid=true
+object shelf 1,10 2x3 solid=true
+object chair 11,9 1x2 solid=false
+object desk 9,11 4x2 solid=true
+object chair 21,9 1x2 solid=false
+object desk 20,11 4x2 solid=true
+object crate 2,14 1x1 solid=true
+decor sconce 15,1 1x1 solid=true
+decor sconce 17,1 1x1 solid=true
+decor banner 18,1 1x2 solid=true
+decor poster-cat 19,1 1x1 solid=true
+decor poster-stripes 19,2 1x1 solid=true
+decor plant-hanging 20,1 1x1 solid=true
+decor sconce 0,11 1x1 solid=true
+decor banner 0,14 1x2 solid=true
+decor key-board 31,12 1x1 solid=true
+decor lantern 31,13 1x1 solid=true
+decor safe 10,3 1x2 solid=true
+decor candlestick 10,5 1x1 solid=true
+decor abacus 11,5 1x1 solid=true
+decor ledger-stack 12,5 1x1 solid=true
+decor coin-pile 13,5 1x1 solid=true
+decor plant-small 14,3 1x1 solid=true
+decor easel 22,3 1x2 solid=true
+decor megaphone 19,5 1x1 solid=true
+decor open-book 20,5 1x1 solid=true
+decor flyers 21,5 1x1 solid=true
+decor mugs 22,5 1x1 solid=true
+decor sleeping-poodle 18,3 1x1 solid=true
+decor jar 14,8 1x1 solid=true
+decor flower-vase 18,8 1x1 solid=true
+decor pillar-lamp 11,7 1x2 solid=true
+decor pillar-lamp 21,7 1x2 solid=true
+decor plant-tall 10,7 1x2 solid=true
+decor book-pile-tall 10,9 1x1 solid=true
+decor plant-large 22,8 1x2 solid=true
+decor sacks 22,10 1x1 solid=true
+decor map-table 3,11 3x2 solid=true
+decor stool 6,12 1x1 solid=true
+decor globe 9,11 1x1 solid=true
+decor model 10,11 1x1 solid=true
+decor blueprint-rolls 11,11 1x1 solid=true
+decor lantern 12,11 1x1 solid=true
+decor inkwell 20,11 1x1 solid=true
+decor file-stack 21,11 1x1 solid=true
+decor hourglass 22,11 1x1 solid=true
+decor toolbox 23,11 1x1 solid=true
+decor file-cabinet 26,11 2x2 solid=true
+decor crate-stack 28,11 2x2 solid=true
+decor barrel 30,11 1x2 solid=true
+decor light-patch 14,13 2x2 solid=false
+decor light-patch 24,13 2x2 solid=false
+decor barrel-pair 1,14 1x2 solid=true
+decor sacks 2,15 1x1 solid=true
+decor barrel-small 2,16 1x1 solid=true
+decor barrel-small 29,14 1x1 solid=true
+decor plant-large 29,15 1x2 solid=true
+seat kaname 16,7
+seat minori 12,4
+seat hibiki 20,4
+seat hirame 11,10
+seat sasae 21,10
+seat yukihiro 16,3
+member kaname 16,7
+member minori 12,4
+member hibiki 20,4
+member hirame 11,10
+member sasae 21,10
+member yukihiro 16,3
+place counterFront 16,10
+place throneSide 14,4
+window board {"left":12.288,"top":9.216,"right":309.248,"bottom":326.656}
+window party {"left":760.8320000000001,"top":9.216,"right":1012.7360000000001,"bottom":340}
+window message {"left":100.352,"top":464.83199999999994,"right":923.648,"bottom":565.0559999999999}
+tallest board {"left":12.288,"top":9.216,"right":309.248,"bottom":326.656}
+tallest party {"left":760.8320000000001,"top":9.216,"right":1012.7360000000001,"bottom":373}
+tallest message {"left":100.352,"top":464.83199999999994,"right":923.648,"bottom":565.0559999999999}
+toss maxTiles 5.5
+sink 16,3 26
+sink 13,7 30
+sink 14,7 30
+sink 15,7 30
+sink 16,7 30
+sink 17,7 30
+sink 18,7 30
+sink 19,7 30
+sink 12,4 36
+sink 20,4 36
+sink 11,10 36
+sink 21,10 36
+play kaname tea 21,4 partner=null path=16,7 17,7 18,7 18,6 18,5 18,4 19,4 20,4 21,4
+play kaname pet 19,3 partner=null path=16,7 17,7 18,7 18,6 18,5 18,4 19,4 19,3
+play kaname window 11,3 partner=null path=16,7 15,7 14,7 14,6 14,5 14,4 13,4 12,4 11,4 11,3
+play minori tea 21,4 partner=null path=12,4 13,4 14,4 14,5 15,5 16,5 17,5 18,5 18,4 19,4 20,4 21,4
+play minori pet 19,3 partner=null path=12,4 13,4 14,4 14,5 15,5 16,5 17,5 18,5 18,4 19,4 19,3
+play minori window 11,3 partner=null path=12,4 11,4 11,3
+play minori chat 19,4 partner=hibiki path=12,4 13,4 14,4 14,5 15,5 16,5 17,5 18,5 18,4 19,4
+play hibiki tea 21,4 partner=null path=20,4 21,4
+play hibiki pet 19,3 partner=null path=20,4 19,4 19,3
+play hibiki window 21,3 partner=null path=20,4 21,4 21,3
+play hibiki chat 13,4 partner=minori path=20,4 19,4 18,4 18,5 17,5 16,5 15,5 14,5 14,4 13,4
+play hirame tea 21,4 partner=null path=11,10 12,10 12,9 12,8 12,7 13,7 14,7 15,7 16,7 17,7 18,7 18,6 18,5 18,4 19,4 20,4 21,4
+play hirame pet 19,3 partner=null path=11,10 12,10 12,9 12,8 12,7 13,7 14,7 15,7 16,7 17,7 18,7 18,6 18,5 18,4 19,4 19,3
+play hirame window 11,3 partner=null path=11,10 12,10 12,9 12,8 12,7 13,7 14,7 14,6 14,5 14,4 13,4 12,4 11,4 11,3
+play hirame chat 20,10 partner=sasae path=11,10 12,10 13,10 14,10 15,10 16,10 17,10 18,10 19,10 20,10
+play sasae tea 21,4 partner=null path=21,10 20,10 20,9 20,8 20,7 19,7 18,7 18,6 18,5 18,4 19,4 20,4 21,4
+play sasae pet 19,3 partner=null path=21,10 20,10 20,9 20,8 20,7 19,7 18,7 18,6 18,5 18,4 19,4 19,3
+play sasae window 21,3 partner=null path=21,10 20,10 20,9 20,8 20,7 19,7 18,7 18,6 18,5 18,4 19,4 20,4 21,4 21,3
+play sasae chat 12,10 partner=hirame path=21,10 20,10 19,10 18,10 17,10 16,10 15,10 14,10 13,10 12,10
+layer 160 objects= parts=1 still= animated=
+layer 224 objects=10,5 4x2|19,5 4x2 parts=0 still=ledger-stack,open-book,flyers,mugs animated=candlestick,abacus,coin-pile,megaphone
+layer 320 objects=13,8 1x2|14,8 5x2|19,8 1x2 parts=0 still=jar,flower-vase animated=
+layer 416 objects=9,11 4x2|20,11 4x2 parts=0 still=model,blueprint-rolls,inkwell,toolbox animated=globe,lantern,file-stack,hourglass
+back window,window,board,throne,door,chair,chair,plant,shelf,chair,chair,crate
+still poster-cat@19,1,plant-hanging@20,1,poster-stripes@19,2,plant-small@14,3,safe@10,3,easel@22,3,ledger-stack@12,5,open-book@20,5,flyers@21,5,mugs@22,5,jar@14,8,flower-vase@18,8,plant-tall@10,7,book-pile-tall@10,9,plant-large@22,8,sacks@22,10,model@10,11,blueprint-rolls@11,11,inkwell@20,11,toolbox@23,11,key-board@31,12,map-table@3,11,stool@6,12,file-cabinet@26,11,crate-stack@28,11,barrel@30,11,barrel-small@29,14,barrel-pair@1,14,sacks@2,15,barrel-small@2,16,plant-large@29,15
+animated sconce@15,1 flame phase=0 trigger=null
+animated sconce@17,1 flame phase=377 trigger=null
+animated banner@18,1 flutter phase=754 trigger={"kind":"cleared","members":["kaname","minori","hibiki"]}
+animated sconce@0,11 flame phase=1131 trigger=null
+animated banner@0,14 flutter phase=1508 trigger={"kind":"cleared","members":["hirame","sasae"]}
+animated lantern@31,13 flame phase=1885 trigger=null
+animated candlestick@10,5 flame phase=2262 trigger=null
+animated abacus@11,5 glint phase=2639 trigger={"kind":"working","member":"minori"}
+animated coin-pile@13,5 glint phase=3016 trigger={"kind":"working","member":"minori"}
+animated megaphone@19,5 notes phase=3393 trigger={"kind":"working","member":"hibiki"}
+animated sleeping-poodle@18,3 breath phase=3770 trigger=null
+animated pillar-lamp@11,7 flame phase=4147 trigger=null
+animated pillar-lamp@21,7 flame phase=4524 trigger=null
+animated globe@9,11 spin phase=4901 trigger={"kind":"working","member":"hirame"}
+animated lantern@12,11 flame phase=5278 trigger=null
+animated file-stack@21,11 papers phase=5655 trigger={"kind":"working","member":"sasae"}
+animated hourglass@22,11 sand phase=6032 trigger={"kind":"awaiting-president"}

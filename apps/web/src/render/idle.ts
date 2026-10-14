@@ -1,5 +1,6 @@
 import type { MemberState } from '../domain/party';
-import type { MemberId, TilePos } from '../guild.config';
+import { byMember } from '@conect-guild/snapshot/settings';
+import { ACTIVE_MEMBER_IDS, type MemberId, type TilePos } from '../guild.config';
 import type { Random } from './confetti';
 import { IDLE } from './metrics';
 import { MS_PER_TILE, poseOnSegment, walkSegment, type MoveFrame, type Segment } from './motion';
@@ -37,14 +38,7 @@ export type IdleSeeds = Readonly<Record<MemberId, number>>;
 
 export function createIdleSeeds(random: Random): IdleSeeds {
   const salt = () => Math.floor(random() * 2 ** 31);
-  return {
-    kaname: salt(),
-    minori: salt(),
-    hibiki: salt(),
-    hirame: salt(),
-    sasae: salt(),
-    yukihiro: salt(),
-  };
+  return byMember(() => salt());
 }
 
 /** A number in [0, 1) fixed for each (salt, cycle, draw): looks random, is the same every frame. */
@@ -85,14 +79,8 @@ export function plannedOuting(id: MemberId, salt: number, cycle: number): Outing
   return { spot, out, back: walkSegment(reversed(spot.path), out.end + stay) };
 }
 
-const MEMBER_ORDER: readonly MemberId[] = [
-  'kaname',
-  'minori',
-  'hibiki',
-  'hirame',
-  'sasae',
-  'yukihiro',
-];
+/** The members on stage, かなめ first, then the departments in their order, then the king. */
+const MEMBER_ORDER: readonly MemberId[] = ACTIVE_MEMBER_IDS;
 
 const keyOf = (tile: TilePos): string => `${String(tile.col)},${String(tile.row)}`;
 

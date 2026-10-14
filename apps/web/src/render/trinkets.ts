@@ -1,6 +1,9 @@
 import type { DecorName } from '../../../../assets/decor/decor';
-import type { MemberId } from '../guild.config';
+import { COMMANDER_ID } from '@conect-guild/snapshot/settings';
+import { DEPARTMENT_MEMBERS, type MemberId } from '../guild.config';
 import { decorPose, type AmbientMoods } from './ambient';
+import { SELECTED_LAYOUT } from './layouts';
+import type { GuildLayout } from './layouts/types';
 import { CONFETTI, TRINKETS } from './metrics';
 import type { Point } from './path';
 
@@ -64,7 +67,7 @@ export function decorCuesOf(
 ): DecorCues {
   const seated = new Set(members.filter((m) => m.atSeat).map((m) => m.id));
   const working = new Set<MemberId>();
-  for (const id of ['minori', 'hibiki', 'hirame', 'sasae'] as const) {
+  for (const id of DEPARTMENT_MEMBERS) {
     if (moods[id] === 'desk-work' && seated.has(id)) working.add(id);
   }
   // Only the confetti flying now: one still to come must not stop a banner already fluttering.
@@ -81,36 +84,63 @@ export function decorCuesOf(
   };
 }
 
-/** The banner on the back wall is for the upper side (and かなめ), the one on the left wall for the lower. */
-const UPPER_SIDE: readonly MemberId[] = ['kaname', 'minori', 'hibiki'];
-const LOWER_SIDE: readonly MemberId[] = ['hirame', 'sasae'];
+/** Whose work moves each department's thing, and whose cleared quests flutter each banner. */
+export interface TriggerTable {
+  readonly things: ReadonlyMap<DecorName, MemberId>;
+  /** The back wall's banner: かなめ and the upper desks. */
+  readonly upper: readonly MemberId[];
+  /** The left wall's banner: the lower desks. */
+  readonly lower: readonly MemberId[];
+}
+
 /** Rows above this are the back wall. */
 const BACK_WALL_ROWS = 3;
 
-/** Whose work moves each department's thing. */
-const DEPARTMENT_THINGS: Readonly<Partial<Record<DecorName, MemberId>>> = {
-  abacus: 'minori',
-  'coin-pile': 'minori',
-  megaphone: 'hibiki',
-  globe: 'hirame',
-  'file-stack': 'sasae',
-};
+/** The triggers of `layout` with `departmentMembers[i]` at desk i. */
+export function triggerTableFor(
+  layout: GuildLayout,
+  departmentMembers: readonly MemberId[],
+): TriggerTable {
+  const desks = layout.desks.flatMap((desk, i) => {
+    const member = departmentMembers[i];
+    return member === undefined ? [] : [{ desk, member }];
+  });
+  const side = (name: GuildLayout['desks'][number]['side']): MemberId[] =>
+    desks.filter(({ desk }) => desk.side === name).map(({ member }) => member);
+  return {
+    things: new Map(
+      desks.flatMap(({ desk, member }) => desk.things.map((thing) => [thing, member] as const)),
+    ),
+    upper: [COMMANDER_ID, ...side('upper')],
+    lower: side('lower'),
+  };
+}
 
-/** The trigger of a thing that moves only sometimes; null for one that always moves. */
-export function triggerOf(placement: {
-  readonly name: DecorName;
-  readonly row: number;
-}): DecorTrigger | null {
-  const member = DEPARTMENT_THINGS[placement.name];
+const SELECTED_TRIGGERS = triggerTableFor(SELECTED_LAYOUT, DEPARTMENT_MEMBERS);
+
+/** The trigger of a thing that moves only sometimes in `table`; null for one that always moves. */
+export function triggerIn(
+  table: TriggerTable,
+  placement: { readonly name: DecorName; readonly row: number },
+): DecorTrigger | null {
+  const member = table.things.get(placement.name);
   if (member !== undefined) return { kind: 'working', member };
   if (placement.name === 'hourglass') return { kind: 'awaiting-president' };
   if (placement.name === 'banner') {
     return {
       kind: 'cleared',
-      members: placement.row < BACK_WALL_ROWS ? UPPER_SIDE : LOWER_SIDE,
+      members: placement.row < BACK_WALL_ROWS ? table.upper : table.lower,
     };
   }
   return null;
+}
+
+/** triggerIn the selected layout. */
+export function triggerOf(placement: {
+  readonly name: DecorName;
+  readonly row: number;
+}): DecorTrigger | null {
+  return triggerIn(SELECTED_TRIGGERS, placement);
 }
 
 /**
