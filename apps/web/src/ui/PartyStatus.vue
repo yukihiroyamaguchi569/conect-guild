@@ -24,7 +24,7 @@ defineProps<{
         :class="`member--${row.state}`"
         :title="row.tooltip ?? undefined"
       >
-        <span class="member__face" :style="{ background: row.color }">{{
+        <span class="member__face" :style="{ background: row.face.fill, color: row.face.ink }">{{
           row.name.charAt(0)
         }}</span>
         <span class="member__name">
@@ -115,7 +115,6 @@ defineProps<{
   border: 0.1em solid #fff;
   font-weight: 700;
   font-size: 0.95em;
-  text-shadow: 0 0.05em 0.1em rgb(0 0 0 / 60%);
 }
 
 .member__name {

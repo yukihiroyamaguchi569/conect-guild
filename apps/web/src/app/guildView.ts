@@ -8,6 +8,7 @@ import {
   type MemberId,
 } from '../guild.config';
 import type { GuildEvent } from '../domain/events';
+import { faceColors, type FaceColors } from '../domain/faceColor';
 import { isSnapshotStale } from '../domain/freshness';
 import type { GuestItem, GuestView } from '../domain/guests';
 import {
@@ -102,7 +103,8 @@ export interface PartyRow {
   readonly id: MemberId;
   readonly name: string;
   readonly role: string;
-  readonly color: string;
+  /** The face icon: filled with the member's hair colour (Issue #120). */
+  readonly face: FaceColors;
   readonly state: MemberState;
   readonly stateLabel: string;
   /** Tooltip text (title attribute); null when there is nothing to explain. */
@@ -144,7 +146,13 @@ function row(
   member: MemberConfig,
   view: Pick<PartyRow, 'state' | 'stateLabel' | 'tooltip' | 'rewards'>,
 ): PartyRowBase {
-  return { id: member.id, name: member.name, role: member.role, color: member.color, ...view };
+  return {
+    id: member.id,
+    name: member.name,
+    role: member.role,
+    face: faceColors(member.id),
+    ...view,
+  };
 }
 
 /** Tooltips of the live states: they come from the session, not from GitHub. */
