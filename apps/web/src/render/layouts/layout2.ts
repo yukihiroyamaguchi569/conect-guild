@@ -1,4 +1,5 @@
 import {
+  LOWER_ROW,
   lowerDesks,
   SMALL_ROOM_DECOR,
   SMALL_ROOM_GROUND,
@@ -18,12 +19,14 @@ export const LAYOUT2: GuildLayout = {
   groundFills: SMALL_ROOM_GROUND,
   objects: [
     ...SMALL_ROOM_OBJECTS,
+    ...LOWER_ROW.objects,
     // The library: two bookcases against the back wall, under the left window and the board
     solid('shelf', rect(10, 3, 2, 3)),
     solid('shelf', rect(12, 3, 2, 3)),
   ],
   decor: [
     ...SMALL_ROOM_DECOR,
+    ...LOWER_ROW.decor,
     ...TAVERN_DECOR,
     // A reading bench in front of the bookcases, books and scrolls, the cat asleep on the carpet
     place('bench', 10, 6),

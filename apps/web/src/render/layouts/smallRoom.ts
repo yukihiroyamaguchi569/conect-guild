@@ -13,11 +13,11 @@ import {
 } from './types';
 
 /**
- * What the offices of two and three departments share (Issue #18): the room of layout4 with its
- * two lower desks, throne, counter, windows and door where they are, so the office feels the same
- * whatever the number of departments, and a tavern for the guests in the upper right where layout4
- * has the 広報 desk. layout2.ts and layout3.ts add the upper left (a library, or layout4's 経理
- * desk).
+ * The room the offices other than layout4 are built in (Issue #18): layout4's walls, carpets,
+ * throne, counter, windows and door where they are, so the office feels the same whatever the
+ * number of departments, and the pieces they pick from (layout4's upper left and lower desks, the
+ * tavern). layout2.ts adds the lower desks, a library and the tavern; layout3.ts the upper left
+ * desk, the lower desks and the tavern.
  */
 
 /** The back wall, the side walls, the doorway, the carpets and the red rugs, as in layout4. */
@@ -37,7 +37,7 @@ export const SMALL_ROOM_GROUND: readonly GroundFill[] = [
   { tile: 'floor', ...rect(30, 14, 2, 3) },
 ];
 
-/** As in layout4: the windows, the quest board, the throne, the counter, the door, the lower desks. */
+/** As in layout4: the windows, the quest board, the throne, the counter, the door, a plant. */
 export const SMALL_ROOM_OBJECTS: readonly MapObject[] = [
   flat('window', rect(10, 1, 2, 2)),
   flat('window', rect(21, 1, 2, 2)),
@@ -48,17 +48,9 @@ export const SMALL_ROOM_OBJECTS: readonly MapObject[] = [
   solid('counter-right', rect(19, 8, 1, 2)),
   flat('door', rect(30, 14, 2, 3)),
   solid('plant', rect(22, 7, 1, 1)),
-  // Lower left desk (layout4's 企画)
-  solid('shelf', rect(1, 10, 2, 3)),
-  flat('chair', rect(11, 9, 1, 2)),
-  solid('desk', rect(9, 11, 4, 2)),
-  // Lower right desk (layout4's 総務)
-  flat('chair', rect(21, 9, 1, 2)),
-  solid('desk', rect(20, 11, 4, 2)),
-  solid('crate', rect(2, 14, 1, 1)),
 ];
 
-/** The walls, the counter and the hall, the lower desks' things and corners, as in layout4. */
+/** As in layout4: the walls, the pet by the throne, the counter, the hall, beside the door. */
 export const SMALL_ROOM_DECOR: readonly DecorPlacement[] = [
   place('sconce', 15, 1),
   place('sconce', 17, 1),
@@ -67,8 +59,6 @@ export const SMALL_ROOM_DECOR: readonly DecorPlacement[] = [
   place('poster-stripes', 19, 2),
   place('plant-hanging', 20, 1),
   place('sconce', 0, 11),
-  // The lower desks' cleared quests flutter the left wall's banner (render/trinkets.ts)
-  place('banner', 0, 14),
   place('key-board', 31, 12),
   place('lantern', 31, 13),
   place('plant-small', 14, 3),
@@ -81,31 +71,70 @@ export const SMALL_ROOM_DECOR: readonly DecorPlacement[] = [
   place('plant-tall', 10, 7),
   place('book-pile-tall', 10, 9),
   place('plant-large', 22, 8),
-  place('sacks', 22, 10),
-  // Lower left desk
-  place('map-table', 3, 11),
-  place('stool', 6, 12),
-  place('globe', 9, 11),
-  place('model', 10, 11),
-  place('blueprint-rolls', 11, 11),
-  place('lantern', 12, 11),
-  // Lower right desk (the hourglass turns while the king's approval is awaited)
-  place('inkwell', 20, 11),
-  place('file-stack', 21, 11),
-  place('hourglass', 22, 11),
-  place('toolbox', 23, 11),
-  place('file-cabinet', 26, 11),
-  place('crate-stack', 28, 11),
-  place('barrel', 30, 11),
   place('light-patch', 14, 13),
   place('light-patch', 24, 13),
-  // Corners beside the message window
-  place('barrel-pair', 1, 14),
-  place('sacks', 2, 15),
-  place('barrel-small', 2, 16),
+  // Beside the message window, by the door
   place('barrel-small', 29, 14),
   place('plant-large', 29, 15),
 ];
+
+/** A desk with its furniture and things. */
+export interface DeskCorner {
+  readonly objects: readonly MapObject[];
+  readonly decor: readonly DecorPlacement[];
+}
+
+/** layout4's upper left (経理) desk, with its safe, abacus, ledgers and coins. */
+export const UPPER_LEFT_DESK: DeskCorner & { readonly desk: Desk } = {
+  objects: [flat('chair', rect(12, 3, 1, 2)), solid('desk', rect(10, 5, 4, 2))],
+  decor: [
+    place('safe', 10, 3),
+    place('candlestick', 10, 5),
+    place('abacus', 11, 5),
+    place('ledger-stack', 12, 5),
+    place('coin-pile', 13, 5),
+  ],
+  desk: { seat: { col: 12, row: 4 }, side: 'upper', things: ['abacus', 'coin-pile'] },
+};
+
+/**
+ * layout4's lower row: the 企画 and 総務 desks with their things, the bookcase and map table of
+ * the left corner, the files and crates of the right, and the barrels beside the message window.
+ */
+export const LOWER_ROW: DeskCorner = {
+  objects: [
+    solid('shelf', rect(1, 10, 2, 3)),
+    flat('chair', rect(11, 9, 1, 2)),
+    solid('desk', rect(9, 11, 4, 2)),
+    flat('chair', rect(21, 9, 1, 2)),
+    solid('desk', rect(20, 11, 4, 2)),
+    solid('crate', rect(2, 14, 1, 1)),
+  ],
+  decor: [
+    // The lower desks' cleared quests flutter the left wall's banner (render/trinkets.ts)
+    place('banner', 0, 14),
+    place('sacks', 22, 10),
+    // Lower left desk
+    place('map-table', 3, 11),
+    place('stool', 6, 12),
+    place('globe', 9, 11),
+    place('model', 10, 11),
+    place('blueprint-rolls', 11, 11),
+    place('lantern', 12, 11),
+    // Lower right desk (the hourglass turns while the king's approval is awaited)
+    place('inkwell', 20, 11),
+    place('file-stack', 21, 11),
+    place('hourglass', 22, 11),
+    place('toolbox', 23, 11),
+    place('file-cabinet', 26, 11),
+    place('crate-stack', 28, 11),
+    place('barrel', 30, 11),
+    // Left of the message window
+    place('barrel-pair', 1, 14),
+    place('sacks', 2, 15),
+    place('barrel-small', 2, 16),
+  ],
+};
 
 /**
  * The tavern in the upper right (Issue #18), where layout4 has the 広報 desk: a round table with

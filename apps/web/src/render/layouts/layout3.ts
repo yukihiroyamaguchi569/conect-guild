@@ -1,4 +1,5 @@
 import {
+  LOWER_ROW,
   lowerDesks,
   SMALL_ROOM_DECOR,
   SMALL_ROOM_GROUND,
@@ -6,8 +7,9 @@ import {
   SMALL_ROOM_SEATS,
   TAVERN_DECOR,
   TAVERN_GUEST_SPOTS,
+  UPPER_LEFT_DESK,
 } from './smallRoom';
-import { flat, place, rect, solid, type GuildLayout } from './types';
+import type { GuildLayout } from './types';
 
 /**
  * Three departments (Issue #18): the two lower desks of layout4, its upper left (経理) desk with
@@ -16,27 +18,11 @@ import { flat, place, rect, solid, type GuildLayout } from './types';
 export const LAYOUT3: GuildLayout = {
   departmentCount: 3,
   groundFills: SMALL_ROOM_GROUND,
-  objects: [
-    ...SMALL_ROOM_OBJECTS,
-    // Upper left desk, as in layout4
-    flat('chair', rect(12, 3, 1, 2)),
-    solid('desk', rect(10, 5, 4, 2)),
-  ],
-  decor: [
-    ...SMALL_ROOM_DECOR,
-    ...TAVERN_DECOR,
-    place('safe', 10, 3),
-    place('candlestick', 10, 5),
-    place('abacus', 11, 5),
-    place('ledger-stack', 12, 5),
-    place('coin-pile', 13, 5),
-  ],
+  objects: [...SMALL_ROOM_OBJECTS, ...UPPER_LEFT_DESK.objects, ...LOWER_ROW.objects],
+  decor: [...SMALL_ROOM_DECOR, ...UPPER_LEFT_DESK.decor, ...LOWER_ROW.decor, ...TAVERN_DECOR],
   // Upper row first, then the lower row left to right. The upper desk has no one to chat with
   // (chats go both ways); the lower ones chat across the counter as in layout4.
-  desks: [
-    { seat: { col: 12, row: 4 }, side: 'upper', things: ['abacus', 'coin-pile'] },
-    ...lowerDesks(1),
-  ],
+  desks: [UPPER_LEFT_DESK.desk, ...lowerDesks(1)],
   ...SMALL_ROOM_SEATS,
   guestSpots: TAVERN_GUEST_SPOTS,
   // Five rows: one row (38.0 px) less than layout4 (284.5 px against 322.4 px in the demo at
