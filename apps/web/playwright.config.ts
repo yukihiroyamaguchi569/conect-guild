@@ -23,6 +23,10 @@ const DEPARTMENTS_SPEC = /departments\.spec\.ts/;
 const GUESTS_PORT = PORT + 10;
 const GUESTS_URL = `http://127.0.0.1:${String(GUESTS_PORT)}`;
 const GUESTS_SPEC = /guests\.spec\.ts/;
+/** The one guest of five departments (seven on stage): settings guests-5, guestsFive.spec.ts. */
+const GUESTS_FIVE_PORT = GUESTS_PORT + 1;
+const GUESTS_FIVE_URL = `http://127.0.0.1:${String(GUESTS_FIVE_PORT)}`;
+const GUESTS_FIVE_SPEC = /guestsFive\.spec\.ts/;
 
 export default defineConfig({
   testDir: './e2e',
@@ -45,7 +49,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: [DEPARTMENTS_SPEC, GUESTS_SPEC],
+      testIgnore: [DEPARTMENTS_SPEC, GUESTS_SPEC, GUESTS_FIVE_SPEC],
       use: { ...devices['Desktop Chrome'] },
     },
     ...OTHER_COUNTS.map((count) => ({
@@ -58,6 +62,11 @@ export default defineConfig({
       name: 'guests',
       testMatch: GUESTS_SPEC,
       use: { ...devices['Desktop Chrome'], baseURL: GUESTS_URL },
+    },
+    {
+      name: 'guests-5',
+      testMatch: GUESTS_FIVE_SPEC,
+      use: { ...devices['Desktop Chrome'], baseURL: GUESTS_FIVE_URL },
     },
   ],
   webServer: [
@@ -83,6 +92,14 @@ export default defineConfig({
       cwd: import.meta.dirname,
       env: { GUILD_E2E_DEPARTMENTS: 'guests' },
       url: GUESTS_URL,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      command: `npx vite --port ${String(GUESTS_FIVE_PORT)} --strictPort --mode e2e-departments`,
+      cwd: import.meta.dirname,
+      env: { GUILD_E2E_DEPARTMENTS: 'guests-5' },
+      url: GUESTS_FIVE_URL,
       reuseExistingServer: false,
       timeout: 60_000,
     },
