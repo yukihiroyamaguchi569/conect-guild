@@ -1,0 +1,46 @@
+{
+  "takumi": {
+    "raiseTop": 67,
+    "carryFront": {
+      "up": 30,
+      "x": 40
+    },
+    "carrySide": {
+      "up": 32,
+      "forward": 12
+    }
+  },
+  "musubi": {
+    "raiseTop": 72,
+    "carryFront": {
+      "up": 34,
+      "x": 42
+    },
+    "carrySide": {
+      "up": 36,
+      "forward": 16
+    }
+  },
+  "guest1": {
+    "raiseTop": 70,
+    "carryFront": {
+      "up": 32,
+      "x": 41
+    },
+    "carrySide": {
+      "up": 32,
+      "forward": 18
+    }
+  },
+  "guest2": {
+    "raiseTop": 70,
+    "carryFront": {
+      "up": 33,
+      "x": 41
+    },
+    "carrySide": {
+      "up": 36,
+      "forward": 18
+    }
+  }
+}
