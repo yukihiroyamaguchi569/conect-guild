@@ -43,6 +43,8 @@ const props = defineProps<{
   lastActiveStorage?: KeyValueStore;
   /** The guests at their spots (Issue #108). */
   guests: readonly GuestView[];
+  /** How many guests the settings have: only their pictures are loaded. */
+  guestCount: number;
   /** The guest whose PR or Issue the message now in the window reports: it sparkles. */
   sparkle: GuestCue | null;
 }>();
@@ -164,7 +166,7 @@ function observe(element: HTMLCanvasElement): void {
 onMounted(() => {
   if (canvas.value !== null) observe(canvas.value);
   // The loop starts once the pictures are in, so the cached background has them.
-  void Promise.all([loadArt(), loadGuestArt()]).then(([art, guestArt]) => {
+  void Promise.all([loadArt(), loadGuestArt(props.guestCount)]).then(([art, guestArt]) => {
     const element = canvas.value;
     if (unmounted || element === null) return;
     // A stage that cannot start (no 2D context, for one) leaves the windows, messages and sounds

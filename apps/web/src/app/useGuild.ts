@@ -73,6 +73,7 @@ export function useGuild(options: GuildStoreOptions = {}) {
     cue,
     summons,
     guests,
+    guestCount: store.guests.length,
     guestBoard,
     sparkle,
     nextMessage: () => {

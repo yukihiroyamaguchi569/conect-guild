@@ -108,10 +108,18 @@ export async function loadArt(): Promise<GuildArt> {
 /** The guests' pictures (Issue #108), in the order of the settings' guests. */
 const GUEST_URLS = [guest1Url, guest2Url] as const;
 
-/** The guests' art; a plain box for a guest whose picture cannot be loaded (the other keeps its). */
-export async function loadGuestArt(): Promise<GuestArt> {
+/** The pictures of the first `count` guests: none without guests, so nothing more is fetched. */
+export function guestArtUrls(count: number): readonly string[] {
+  return GUEST_URLS.slice(0, count);
+}
+
+/**
+ * The art of the settings' `count` guests; a plain box for a guest whose picture cannot be loaded
+ * (the other keeps its).
+ */
+export async function loadGuestArt(count: number): Promise<GuestArt> {
   const sheets = await Promise.all(
-    GUEST_URLS.map(async (url) => {
+    guestArtUrls(count).map(async (url) => {
       try {
         return await loadImage(url);
       } catch {

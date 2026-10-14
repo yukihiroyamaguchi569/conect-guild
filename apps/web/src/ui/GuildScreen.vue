@@ -58,6 +58,7 @@ const {
   cue,
   summons,
   guests,
+  guestCount,
   guestBoard,
   sparkle,
   nextMessage,
@@ -112,6 +113,7 @@ function onStageShown(shown: boolean): void {
         :summons="summons"
         :halted="state.halted"
         :guests="guests"
+        :guest-count="guestCount"
         :sparkle="sparkle"
         :last-active-storage="demo?.storage"
         @stage-shown="onStageShown"
