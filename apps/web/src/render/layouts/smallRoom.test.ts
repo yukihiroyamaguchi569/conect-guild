@@ -7,6 +7,7 @@ import { LAYOUT2 } from './layout2';
 import { LAYOUT3 } from './layout3';
 import { LAYOUT4 } from './layout4';
 import { seatsFor } from './seats';
+import { TAVERN_GUEST_SPOTS } from './smallRoom';
 import {
   isFloorPatch,
   MAP_COLS,
@@ -99,7 +100,8 @@ describe.each([LAYOUT2, LAYOUT3])('$departmentCount departments: the guests', (l
     if (table === undefined) return;
     const carpet = { col: 19, row: 3, w: 4, h: 4 };
     expect(layout.groundFills).toContainEqual({ tile: 'floor-carpet', ...carpet });
-    const [back, front] = layout.guestSpots;
+    const [back, front] = TAVERN_GUEST_SPOTS;
+    expect(layout.guestSpots).toBe(TAVERN_GUEST_SPOTS);
     for (const spot of layout.guestSpots) expect(contains(carpet, spot)).toBe(true);
     // Three rows apart: the back one's name tags end above the front one's head.
     expect(front.row - back.row).toBe(3);
@@ -109,7 +111,7 @@ describe.each([LAYOUT2, LAYOUT3])('$departmentCount departments: the guests', (l
   });
 
   it("puts the front guest right of the back one, so its 「?」 misses the back one's tags", () => {
-    const [back, front] = layout.guestSpots;
+    const [back, front] = TAVERN_GUEST_SPOTS;
     expect(front.col).toBeGreaterThan(back.col);
   });
 });

@@ -47,11 +47,10 @@ function drawTags(ctx: CanvasRenderingContext2D, tags: readonly GuestTag[]): voi
   for (const tag of tags) {
     ctx.font = tag.kind === 'name' ? 'bold 10px sans-serif' : 'bold 9px sans-serif';
     ctx.textAlign = tag.align;
-    const maxWidth = tag.maxWidth ?? undefined;
     ctx.fillStyle = RIM_COLOR;
-    for (const [dx, dy] of RIM_OFFSETS) ctx.fillText(tag.text, tag.x + dx, tag.y + dy, maxWidth);
+    for (const [dx, dy] of RIM_OFFSETS) ctx.fillText(tag.text, tag.x + dx, tag.y + dy);
     ctx.fillStyle = tag.kind === 'name' ? '#ffe9a8' : '#d8ecff';
-    ctx.fillText(tag.text, tag.x, tag.y, maxWidth);
+    ctx.fillText(tag.text, tag.x, tag.y);
   }
   ctx.restore();
 }

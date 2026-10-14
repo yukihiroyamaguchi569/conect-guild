@@ -31,11 +31,6 @@
       "role": "細工",
       "color": "#00897b"
     },
-    "musubi": {
-      "name": "むすび",
-      "role": "使節",
-      "color": "#ff7043"
-    },
     "yukihiro": {
       "name": "ゆきひろ",
       "role": "社長",
@@ -68,11 +63,6 @@
       "label": "細工",
       "member": "takumi",
       "sessionDir": "~/example-guild/craft"
-    },
-    {
-      "label": "使節",
-      "member": "musubi",
-      "sessionDir": "~/example-guild/envoy"
     }
   ],
   "branchPrefixes": [
@@ -95,10 +85,6 @@
     {
       "prefix": "craft/",
       "department": "細工"
-    },
-    {
-      "prefix": "envoy/",
-      "department": "使節"
     }
   ],
   "ruleChangePaths": [
@@ -116,11 +102,6 @@
       "name": "たびびと",
       "sessionDir": "~/example-visitor",
       "repo": "example-visitor/potion-shop"
-    },
-    {
-      "name": "ぼうけんしゃ",
-      "sessionDir": "/srv/example-wanderer",
-      "repo": "example-wanderer/map-maker"
     }
   ]
 }

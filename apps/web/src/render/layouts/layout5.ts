@@ -1,5 +1,5 @@
 import {
-  DOOR_GUEST_SPOTS,
+  ALLEY_GUEST_SPOT,
   LOWER_DESK_DECOR,
   LOWER_DESK_OBJECTS,
   LOWER_RIGHT_STORAGE,
@@ -44,7 +44,7 @@ export const LAYOUT5: GuildLayout = {
     { seat: WORKSHOP_DESK.seat, side: 'lower', things: [] },
   ],
   ...SMALL_ROOM_SEATS,
-  guestSpots: DOOR_GUEST_SPOTS,
+  guestSpots: [ALLEY_GUEST_SPOT],
   boardMaxCqw: WORKSHOP_BOARD_MAX_CQW,
   // Seven packed rows: the column ends 49.2 px above layout4's (273.3 px against 322.4 px in the
   // demo at 1024 px, Chrome, 2026-10-14). Taken off layout4's 340 and 372.5 px and rounded up.

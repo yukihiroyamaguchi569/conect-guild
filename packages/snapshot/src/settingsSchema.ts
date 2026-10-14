@@ -121,6 +121,21 @@ const guestSchema = z.strictObject({
 
 /** At most two guests (Issue #108, the president's decision). */
 export const MAX_GUESTS = 2;
+
+/**
+ * At most seven on stage: かなめ, the departments' members and the guests; the king is not counted
+ * (the president's decision, 2026-10-15).
+ */
+export const MAX_ON_STAGE = 7;
+
+/**
+ * How many guests `departmentCount` departments leave room for: two with two to four departments,
+ * one with five, none with six. The settings check, so the collector, the screen and
+ * `settings:write` all keep to it.
+ */
+export function maxGuestsFor(departmentCount: number): number {
+  return Math.max(0, Math.min(MAX_GUESTS, MAX_ON_STAGE - 1 - departmentCount));
+}
 export type GuildGuest = z.output<typeof guestSchema>;
 
 function duplicates(values: readonly string[]): string[] {
@@ -135,14 +150,20 @@ interface GuestCheckInput {
 }
 
 /**
- * Issue #108: guests differ from each other by name and folder, and from the company by folder
- * and repository (GitHub names compare without case). Issues name a guest by its position only.
+ * Issue #108: no more guests than the departments leave room for (maxGuestsFor); guests differ
+ * from each other by name and folder, and from the company by folder and repository (GitHub names
+ * compare without case). Issues name a guest by its position only.
  */
 function checkGuests(
   settings: GuestCheckInput,
   issue: (path: (string | number)[], message: string) => void,
 ): void {
   const guests = settings.guests ?? [];
+  const count = settings.departments.length;
+  const max = maxGuestsFor(count);
+  if (guests.length > max) {
+    issue(['guests'], `at most ${String(max)} guests with ${String(count)} departments (#108)`);
+  }
   const companyDirs = new Set([
     settings.commanderSessionDir,
     ...settings.departments.map((d) => d.sessionDir),

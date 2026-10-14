@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { DEFAULT_SETTINGS_FILE, SETTINGS_ROOT } from '@conect-guild/snapshot/settingsFile';
 import { createServer, type ViteDevServer } from 'vite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { checkGuildSettings } from '@conect-guild/snapshot/settingsSchema';
+import { checkGuildSettings, maxGuestsFor } from '@conect-guild/snapshot/settingsSchema';
 import {
   E2E_DEPARTMENTS_ENV,
   E2E_DEPARTMENTS_MODE,
@@ -138,12 +138,12 @@ describe('the E2E department mode (Issue #18, test only)', () => {
         JSON.parse(readFileSync(join(SETTINGS_ROOT, path), 'utf8')),
       );
       const real = checkGuildSettings(JSON.parse(VALID));
-      // The guests' fixtures (Issue #108) are of four, two, three and six departments.
+      // The guests' fixtures (Issue #108) are of four, two, three and five departments.
       const guestFixtures: Readonly<Record<string, number>> = {
         guests: 4,
         'guests-2': 2,
         'guests-3': 3,
-        'guests-6': 6,
+        'guests-5': 5,
       };
       const departments = guestFixtures[count] ?? Number(count);
       expect(settings.departments).toHaveLength(departments);
@@ -158,14 +158,17 @@ describe('the E2E department mode (Issue #18, test only)', () => {
 });
 
 describe('the E2E fixtures with guests (Issue #108, test only)', () => {
-  it.each(['guests', 'guests-2', 'guests-3', 'guests-6'])(
-    'has two fictional guests in the %s fixture (Issue #108)',
+  it.each(['guests', 'guests-2', 'guests-3', 'guests-5'])(
+    'has as many fictional guests in the %s fixture as its departments leave room for (Issue #108)',
     (key) => {
       const path = E2E_SETTINGS_FILES[key] ?? '';
       const settings = checkGuildSettings(
         JSON.parse(readFileSync(join(SETTINGS_ROOT, path), 'utf8')),
       );
-      expect(settings.guests?.map((g) => g.repo?.startsWith('example-'))).toEqual([true, true]);
+      const max = maxGuestsFor(settings.departments.length);
+      expect(settings.guests?.map((g) => g.repo?.startsWith('example-'))).toEqual(
+        Array.from({ length: max }, () => true),
+      );
     },
   );
 });

@@ -95,8 +95,11 @@ export interface GuildLayout {
   };
   /** By the door: the seat of a member no department names (never drawn). */
   readonly offstage: TilePos;
-  /** Where the two guests stand. */
-  readonly guestSpots: readonly [TilePos, TilePos];
+  /**
+   * Where the guests stand, one per guest the departments leave room for (settings maxGuestsFor:
+   * two with two to four departments, one with five, none with six).
+   */
+  readonly guestSpots: readonly TilePos[];
   /** How far down the right-hand column (party window) reaches, logical px (render/map.ts). */
   readonly partyWindow: {
     /** Measured with a failure line: walking keeps clear of it. */

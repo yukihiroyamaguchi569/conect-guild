@@ -24,14 +24,8 @@ import { DEFAULT_SEATS } from './scenes';
 import { createGuestStage } from './guestStage';
 import { LAYOUTS } from './layouts';
 import type { GuildLayout } from './layouts/types';
-import {
-  LOGICAL_HEIGHT,
-  LOGICAL_WIDTH,
-  overlaps,
-  spriteRect,
-  tallestWindowExtentsFor,
-  type PxRect,
-} from './map';
+import type { Point } from './path';
+import { overlaps, spriteRect, tallestWindowExtentsFor, type PxRect } from './map';
 import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
 
 const fixed: Random = () => 0.5;
@@ -113,7 +107,6 @@ describe('guestTags', () => {
         align: 'center',
         x: 100,
         y: 400 + GUEST.nameBelowFeet,
-        maxWidth: null,
       },
     ]);
   });
@@ -140,7 +133,6 @@ describe('guestTags', () => {
         align: 'right',
         x: 100 - GUEST.tagGap,
         y: 400 + GUEST.nameBelowFeet,
-        maxWidth: null,
       },
       {
         text: 'Issue 0 / PR 2',
@@ -148,34 +140,12 @@ describe('guestTags', () => {
         align: 'left',
         x: 100 + GUEST.tagGap,
         y: 400 + GUEST.nameBelowFeet,
-        maxWidth: null,
       },
     ]);
   });
 
   it('writes the counts as Issue n / PR m', () => {
     expect(countText({ issues: 12, prs: 0 })).toBe('Issue 12 / PR 0');
-  });
-});
-
-describe('guestTags beside the message window', () => {
-  it('keeps both lines in the span beside the window for a guest standing next to it', () => {
-    const window = { left: 100, right: 900, top: 380, bottom: 560 };
-    const right = guestTags(
-      guest(0, { counts: { issues: 1, prs: 1 } }),
-      { x: 960, y: 400 },
-      window,
-    );
-    const span = {
-      x: (900 + GUEST.tagGap + LOGICAL_WIDTH - GUEST.tagGap) / 2,
-      maxWidth: LOGICAL_WIDTH - 900 - 2 * GUEST.tagGap,
-    };
-    expect(right.map(({ align, x, maxWidth }) => ({ align, x, maxWidth }))).toEqual([
-      { align: 'center', ...span },
-      { align: 'center', ...span },
-    ]);
-    const left = guestTags(guest(0), { x: 60, y: 400 }, window);
-    expect(left).toMatchObject([{ x: 50, maxWidth: 100 - 2 * GUEST.tagGap }]);
   });
 });
 
@@ -285,7 +255,7 @@ function zRect(feet: { x: number; y: number }): PxRect {
 /**
  * How wide a tag is drawn at most (drawGuests.ts: the name in bold 10 px, the counts in bold 9 px,
  * with a 1 px dark rim filled around it): a full-width character as wide as the font, any other 0.65 of it, and the
- * outline's 1 px on each side. fillText squeezes a tag with a maxWidth to it.
+ * outline's 1 px on each side.
  */
 const OUTLINE_PX = 1;
 function tagBox(tag: GuestTag): PxRect {
@@ -294,7 +264,7 @@ function tagBox(tag: GuestTag): PxRect {
     (sum, char) => sum + ((char.codePointAt(0) ?? 0) >= 0x2e80 ? font : font * 0.65),
     0,
   );
-  const width = tag.maxWidth === null ? natural : Math.min(natural, tag.maxWidth);
+  const width = natural;
   const left = { center: tag.x - width / 2, left: tag.x, right: tag.x - width }[tag.align];
   return {
     left: left - OUTLINE_PX,
@@ -323,38 +293,34 @@ function bodyRect(spot: { col: number; row: number }): PxRect {
   return { left: frame.left + 8, right: frame.left + 71, top: frame.top + 6, bottom: frame.bottom };
 }
 
-/** Guest `index`'s tags in `layout`, with a six-character name as the fictional guests have. */
-function ordinaryTags(layout: GuildLayout, index: number): GuestTag[] {
+/** The tags of a guest at `feet` in `layout`, with a six-character name as the fictional guests have. */
+function ordinaryTags(layout: GuildLayout, index: number, feet: Point): GuestTag[] {
   return guestTags(
     guest(index, { name: 'ぼうけんしゃ', counts: { issues: 99, prs: 99 } }),
-    guestFeet(layout.guestSpots[index] ?? { col: 0, row: 0 }),
+    feet,
     tallestWindowExtentsFor(layout).message,
   );
 }
 
-/** The texts of guest `index`'s tags that fall on the other guest's figure in `layout`. */
-function tagsOnOtherGuest(layout: GuildLayout, index: 0 | 1): string[] {
-  const other = bodyRect(layout.guestSpots[index === 0 ? 1 : 0]);
-  return ordinaryTags(layout, index)
-    .filter((tag) => overlaps(tagBox(tag), other))
-    .map((tag) => tag.text);
-}
+/**
+ * Every guest spot of every layout (5 departments have one, 6 none: the seven on stage, settings),
+ * with its index and feet.
+ */
+const SPOTS = Object.entries(LAYOUTS).flatMap(([count, layout]) =>
+  layout.guestSpots.map((spot, index) => ({ count, layout, spot, index, feet: guestFeet(spot) })),
+);
 
-describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layout) => {
-  const windows = Object.values(tallestWindowExtentsFor(layout));
-  const message = tallestWindowExtentsFor(layout).message;
+describe.each(SPOTS)('guest $index of layout $count', ({ layout, spot, index, feet }) => {
+  const { board, party, message } = tallestWindowExtentsFor(layout);
 
-  it.each([0, 1])('keep the marks of guest %i clear of the windows', (index) => {
-    const feet = guestFeet(layout.guestSpots[index] ?? { col: 0, row: 0 });
-    for (const area of windows) {
+  it('keeps its marks clear of the windows', () => {
+    for (const area of [board, party, message]) {
       expect(overlaps(questionRect(feet), area)).toBe(false);
       expect(overlaps(zRect(feet), area)).toBe(false);
     }
   });
 
-  it.each([0, 1])('keep the tags of guest %i clear of the board and the party window', (index) => {
-    const feet = guestFeet(layout.guestSpots[index] ?? { col: 0, row: 0 });
-    const { board, party, message } = tallestWindowExtentsFor(layout);
+  it('keeps its tags clear of the board and the party window', () => {
     // The longest name the settings accept (12 characters) and four-digit counts.
     const tags = guestTags(
       guest(index, { name: 'じゅうにもじのおきゃくさ', counts: { issues: 9999, prs: 9999 } }),
@@ -366,19 +332,18 @@ describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layou
     }
   });
 
-  it.each([0, 1])('keep the tags of guest %i off the red rug and the desks', (index) => {
+  it('keeps its tags off the red rug and the desks', () => {
     const rugs = layout.groundFills.filter((fill) => fill.tile === 'rug-red').map(tilePx);
     const desks = layout.objects.filter((object) => object.tile === 'desk').map(tilePx);
-    for (const tag of ordinaryTags(layout, index)) {
+    for (const tag of ordinaryTags(layout, index, feet)) {
       for (const area of [...rugs, ...desks]) {
         expect(overlaps(tagBox(tag), area), tag.text).toBe(false);
       }
     }
   });
 
-  it.each([0, 1])('keep guest %i and its 「?」 off the 「Lv N」 of every desk', (index) => {
-    const spot = layout.guestSpots[index] ?? { col: 0, row: 0 };
-    const mark = questionRect(guestFeet(spot));
+  it('keeps itself and its 「?」 off the 「Lv N」 of every desk', () => {
+    const mark = questionRect(feet);
     for (const desk of layout.desks) {
       const [tag] = levelTags({ minori: 99 }, { ...DEFAULT_SEATS, minori: desk.seat });
       if (tag === undefined) throw new Error('no tag');
@@ -387,32 +352,20 @@ describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layou
     }
   });
 
-  it('keep the tags of guest 0 off the other guest', () => {
-    expect(tagsOnOtherGuest(layout, 0)).toEqual([]);
+  it('keeps its tags off the other guest', () => {
+    const others = layout.guestSpots.filter((_, i) => i !== index).map(bodyRect);
+    for (const tag of ordinaryTags(layout, index, feet)) {
+      for (const other of others) expect(overlaps(tagBox(tag), other), tag.text).toBe(false);
+    }
   });
 
-  it('keep the tags of guest 1 off the other guest', () => {
-    expect(tagsOnOtherGuest(layout, 1)).toEqual([]);
-  });
-
-  it.each([0, 1])('keep the tags of guest %i above the message window', (index) => {
-    const feet = guestFeet(layout.guestSpots[index] ?? { col: 0, row: 0 });
+  it('keeps its tags above the message window', () => {
     const tags = guestTags(
       guest(index, { name: '十二文字のながいおきゃくさん', counts: { issues: 100, prs: 100 } }),
       feet,
       message,
     );
-    for (const tag of tags) {
-      // Over the window: above its top. Beside it: within the span between it and the canvas edge.
-      if (tag.maxWidth === null) {
-        expect(tag.y + 5).toBeLessThanOrEqual(message.top);
-      } else {
-        const [left, right] = [tag.x - tag.maxWidth / 2, tag.x + tag.maxWidth / 2];
-        const clear = left >= message.right || right <= message.left;
-        expect(clear && left >= 0 && right <= LOGICAL_WIDTH).toBe(true);
-        expect(tag.y + 5).toBeLessThanOrEqual(LOGICAL_HEIGHT);
-      }
-    }
+    for (const tag of tags) expect(tag.y + 5).toBeLessThanOrEqual(message.top);
   });
 });
 

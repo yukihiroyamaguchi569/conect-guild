@@ -132,12 +132,8 @@ export const SALES_DESK: DeskCorner & {
 };
 
 /**
- * The guests wait near the door: one in front of the right end of the 総務 desk, clear of its
- * 「Lv N」 and of the desk right of it (the sales desk of six departments), its tags on one line
- * above the message window; and one in the doorway, its tags beside the window. Apart enough that
- * neither's tags reach the other.
+ * The one guest of five departments (seven on stage with かなめ): in front of the right end of the
+ * 総務 desk, clear of its 「Lv N」, its tags on one line above the
+ * message window. Six departments leave no room for a guest.
  */
-export const DOOR_GUEST_SPOTS: readonly [TilePos, TilePos] = [
-  { col: 23, row: 13 },
-  { col: 30, row: 14 },
-];
+export const ALLEY_GUEST_SPOT: TilePos = { col: 23, row: 13 };

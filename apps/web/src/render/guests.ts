@@ -9,7 +9,7 @@ import {
 } from './confetti';
 import { CONFETTI, IDLE } from './metrics';
 import type { SpriteFrame } from './motion';
-import { LOGICAL_WIDTH, type PxRect } from './map';
+import type { PxRect } from './map';
 import { tileToPoint, type Point } from './path';
 
 /**
@@ -114,11 +114,6 @@ export interface GuestTag {
   readonly align: 'center' | 'left' | 'right';
   readonly x: number;
   readonly y: number;
-  /**
-   * The widest the text may be drawn (fillText squeezes it to fit); null for its natural width.
-   * Set only beside the message window, where the room to the canvas edge is narrow.
-   */
-  readonly maxWidth: number | null;
 }
 
 /** 「Issue 2 / PR 1」: what is open in the guest's repository. */
@@ -127,44 +122,20 @@ export function countText(counts: NonNullable<StageGuest['counts']>): string {
 }
 
 /**
- * The free span beside the message window that a guest standing next to it (the right-hand door of
- * layouts 5 and 6) writes in, keeping `tagGap` from the window and from the canvas edge; null for a
- * guest over the window.
- */
-function besideWindow(
-  feet: Point,
-  messageWindow: PxRect,
-): { readonly x: number; readonly width: number } | null {
-  const gap = GUEST.tagGap;
-  const span = (left: number, right: number) => ({ x: (left + right) / 2, width: right - left });
-  if (feet.x >= messageWindow.right) return span(messageWindow.right + gap, LOGICAL_WIDTH - gap);
-  if (feet.x <= messageWindow.left) return span(gap, messageWindow.left - gap);
-  return null;
-}
-
-/**
  * The name under the feet and the counts under it. When the counts would reach below the top of
- * `messageWindow`, they go on the name's line instead: the name left of the feet,
- * the counts right. A guest beside the window keeps both lines in the free span next to it,
- * squeezed to its width.
+ * `messageWindow`, they go on the name's line instead: the name left of the feet, the counts right.
  */
 export function guestTags(guest: StageGuest, feet: Point, messageWindow: PxRect): GuestTag[] {
   const { x } = feet;
   const nameY = feet.y + GUEST.nameBelowFeet;
-  const beside = besideWindow(feet, messageWindow);
-  const column = beside === null ? { x, maxWidth: null } : { x: beside.x, maxWidth: beside.width };
-  const name = { text: guest.name, kind: 'name', maxWidth: column.maxWidth } as const;
-  if (guest.counts === null) return [{ ...name, align: 'center', x: column.x, y: nameY }];
-  const count = {
-    text: countText(guest.counts),
-    kind: 'count',
-    maxWidth: column.maxWidth,
-  } as const;
+  const name = { text: guest.name, kind: 'name' } as const;
+  if (guest.counts === null) return [{ ...name, align: 'center', x, y: nameY }];
+  const count = { text: countText(guest.counts), kind: 'count' } as const;
   const below = nameY + GUEST.countBelowName;
-  if (beside !== null || below + GUEST.countBelowName / 2 <= messageWindow.top) {
+  if (below + GUEST.countBelowName / 2 <= messageWindow.top) {
     return [
-      { ...name, align: 'center', x: column.x, y: nameY },
-      { ...count, align: 'center', x: column.x, y: below },
+      { ...name, align: 'center', x, y: nameY },
+      { ...count, align: 'center', x, y: below },
     ];
   }
   return [
