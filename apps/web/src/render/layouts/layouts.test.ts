@@ -15,6 +15,7 @@ import { findPath, tileToPoint } from '../path';
 import { DEFAULT_SEATS } from '../scenes';
 import { seatSinkFor } from '../seating';
 import { LAYOUTS } from './index';
+import { LAYOUT5 } from './layout5';
 import { TILE_SIZE } from '../metrics';
 import type { GuildLayout, TilePos } from './types';
 
@@ -203,5 +204,20 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: d
     expect(listed.length > 0).toBe(layout.departmentCount === 6);
     const { party } = windowExtentsFor(layout);
     for (const tile of listed) expect(overlaps(spriteRect(tile), party), keyOf(tile)).toBe(true);
+  });
+});
+
+describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () => {
+  const [spot] = LAYOUT5.guestSpots;
+  const desk = LAYOUT5.objects.find(
+    (object) => object.tile === 'desk' && contains(object, { col: 21, row: 11 }),
+  );
+  if (spot === undefined || desk === undefined) throw new Error('no 総務 desk or guest spot');
+
+  it('stands the guest on the lower right carpet, past the 総務 desk, on its front row', () => {
+    expect(LAYOUT5.desks[3]?.seat).toEqual({ col: 21, row: 10 });
+    expect(spot.col).toBeGreaterThan(desk.col + desk.w);
+    expect(spot.row).toBe(desk.row + desk.h - 1);
+    expect(groundAt(LAYOUT5, spot)).toBe('floor-carpet');
   });
 });

@@ -369,6 +369,26 @@ describe.each(SPOTS)('guest $index of layout $count', ({ layout, spot, index, fe
   });
 });
 
+describe('the guest of five departments right of 総務 (Issue #122)', () => {
+  it('keeps its picture, 「?」 and 「Z」 off the furniture', () => {
+    const layout = LAYOUTS[5];
+    const [spot] = layout?.guestSpots ?? [];
+    if (layout === undefined || spot === undefined) throw new Error('no guest spot of five');
+    const feet = guestFeet(spot);
+    const furniture = [
+      ...layout.objects.map((object) => ({ ...object, label: object.tile })),
+      ...layout.decor.filter((item) => item.solid).map((item) => ({ ...item, label: item.name })),
+    ];
+    for (const thing of furniture) {
+      const area = tilePx(thing);
+      const at = `${thing.label}@${String(thing.col)},${String(thing.row)}`;
+      expect(overlaps(bodyRect(spot), area), at).toBe(false);
+      expect(overlaps(questionRect(feet), area), at).toBe(false);
+      expect(overlaps(zRect(feet), area), at).toBe(false);
+    }
+  });
+});
+
 describe('createGuestArt', () => {
   const sheet: ImageBitmap = { width: 560, height: 80, close: () => undefined };
   const short: ImageBitmap = { width: 320, height: 80, close: () => undefined };
