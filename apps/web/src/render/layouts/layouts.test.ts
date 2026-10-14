@@ -220,4 +220,35 @@ describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () =
     expect(spot.row).toBe(desk.row + desk.h - 1);
     expect(groundAt(LAYOUT5, spot)).toBe('floor-carpet');
   });
+
+  it('puts the tavern’s round table on the carpet in front of the guest on the right', () => {
+    const tables = LAYOUT5.decor.filter((item) => item.name === 'round-table');
+    expect(tables).toHaveLength(1);
+    const [table] = tables;
+    if (table === undefined) return;
+    expect(table.col).toBeGreaterThan(spot.col);
+    // Its picture is on the lower half of its tiles: the lower row in front of the guest's feet.
+    expect(table.row + table.h - 1).toBe(spot.row + 1);
+    for (let col = table.col; col < table.col + table.w; col += 1) {
+      for (let row = table.row; row < table.row + table.h; row += 1) {
+        expect(groundAt(LAYOUT5, { col, row }), keyOf({ col, row })).toBe('floor-carpet');
+      }
+    }
+    // Clear of the windows as drawn: its picture is not hidden under the message window.
+    const box = {
+      left: table.col * TILE_SIZE,
+      top: table.row * TILE_SIZE,
+      right: (table.col + table.w) * TILE_SIZE,
+      bottom: (table.row + table.h) * TILE_SIZE,
+    };
+    for (const area of Object.values(windowExtentsFor(LAYOUT5))) {
+      expect(overlaps(box, area)).toBe(false);
+    }
+  });
+
+  it('keeps the alley beside the 総務 desk free (col 24)', () => {
+    for (let row = desk.row; row <= spot.row + 1; row += 1) {
+      expect(isWalkableIn(LAYOUT5, { col: desk.col + desk.w, row })).toBe(true);
+    }
+  });
 });

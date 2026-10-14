@@ -1,7 +1,7 @@
 import {
+  GUEST_TABLE,
   LOWER_DESK_DECOR,
   LOWER_DESK_OBJECTS,
-  LOWER_RIGHT_STORAGE,
   RIGHT_OF_SASAE_GUEST_SPOT,
   UPPER_DESK_DECOR,
   UPPER_DESK_OBJECTS,
@@ -20,8 +20,8 @@ import type { GuildLayout } from './types';
 
 /**
  * Five departments (Issue #18): the four desks of layout4 and a fifth, the workshop desk, left of
- * the 企画 desk on the lower left carpet. The files of layout4 move to the
- * right end of the lower right carpet, its crates go: the guest stands right of 総務 (Issue #122).
+ * the 企画 desk on the lower left carpet. Right of 総務, where layout4 has its files and crates, the
+ * guest stands by the tavern's round table (Issue #122).
  */
 export const LAYOUT5: GuildLayout = {
   departmentCount: 5,
@@ -36,7 +36,7 @@ export const LAYOUT5: GuildLayout = {
     ...SMALL_ROOM_DECOR,
     ...UPPER_DESK_DECOR,
     ...LOWER_DESK_DECOR,
-    ...LOWER_RIGHT_STORAGE,
+    GUEST_TABLE,
     ...WORKSHOP_DESK.decor,
   ],
   desks: [
