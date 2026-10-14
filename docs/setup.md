@@ -18,8 +18,9 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
 - **Issue に部門のラベルを付ける。** 巻物の担当は、Issue に付いた部門のラベルで決まります。ラベルの無い Issue は司令塔の受付に置かれます
 - **PR を Issue に結ぶ。** PR の題名か本文に `#番号`（おすすめは本文の `Closes #番号`）を書くか、部門の接頭辞で始まるブランチ名（例: `accounting/12-monthly-report`）にします。どちらも無い PR は「担当不明」として受付に置かれます
 - **Node.js 26.10 以上**（collector は Node の型除去で TypeScript をそのまま動かします）
-- **GitHub CLI（`gh`）でログイン済み**で、対象のリポジトリの Issue・PR を読めること。collector は `gh` の認証をそのまま使い、トークンを別に置きません
-- **MulmoTerminal は任意。** 無くても動きます。あれば「いま作業中」「許可待ち」と王様の呼びかけが加わります。そのときは、司令塔と各部門の AI（4 部門なら 5 つ）を**別々のフォルダ**で起動し、そのフォルダを設定に**文字列で完全に一致**させて書きます（別のフォルダで起動したセッションは映りません。起動したあとセッションの中で worktree に移るのは構いません。[3 章](#いま作業中許可待ちが出ない)）
+- **Claude Code から GitHub CLI（`gh`）で GitHub を使っていること。** 対象のリポジトリの Issue・PR を `gh` で読めることが前提です。collector は `gh` の認証をそのまま使い、トークンを別に置きません。確かめ方: 会社のリポジトリの直下で起動した Claude Code に `gh issue list` を実行させ、Issue の一覧が出れば何もしなくてよい（出なければ [3 章](#gh-issue-list-が動かない)）
+- **司令塔 1 と部門の数のセッション（4 部門なら 5 つ）を並べて開ける端末アプリ。** [MulmoTerminal](https://github.com/receptron/mulmoterminal) を勧めます。cmux などほかの端末アプリでも使えます。Issue・PR の表示はどの端末でも動きますが、「いま作業中」「許可待ち」などセッションの状態と王様の呼びかけは MulmoTerminal のときだけ出ます。MulmoTerminal を使うときは、司令塔と各部門の AI を**別々のフォルダ**で起動し、そのフォルダを設定に**文字列で完全に一致**させて書きます（別のフォルダで起動したセッションは映りません。起動したあとセッションの中で worktree に移るのは構いません。[3 章](#いま作業中許可待ちが出ない)）
+- **ほかのエージェント（Codex など）でも**、Issue・PR の表示は動きます。設定のスキル（`/guild-setup`）、部門の `CLAUDE.md` にラベルがあるかの確認（2-2b）、セッションの状態の表示は、Claude Code（状態の表示は MulmoTerminal も）向けに作っています
 
 ## 1. まずデモを見る
 
@@ -61,7 +62,7 @@ gh repo view <owner/name>   # 眺めたいリポジトリ（例: your-name/my-co
 
 ### 2-2. 設定ファイルを作って書き換える
 
-**Claude Code を使うなら、スキルで書けます。** conect-guild の直下で Claude Code を起動し、`/guild-setup` を実行します（「guild の設定を作って」と頼んでも使われます）。スキルが司令塔のフォルダとリポジトリを聞き、司令塔の `CLAUDE.md` の部門の表（[orchestration.md の 4 章](orchestration.md#4-司令塔の-claudemd-の雛形)の形）から値を集め、2-2b の道具で確かめた結果を確認の表と警告にして見せます。OK と答えたときだけ `guild.settings.local.json` を書きます。書けたら 2-3 に進みます。
+**Claude Code を使うなら、スキルで書けます。** conect-guild の直下で Claude Code を起動し、`/guild-setup` を実行します（「guild の設定を作って」と頼んでも使われます）。スキルが聞くのは、あなたの会社の GitHub リポジトリ（conect-guild 自身ではありません）と司令塔のフォルダの 2 つだけです。部門（ラベル・司令塔の下のフォルダ・接頭辞）は司令塔の `CLAUDE.md` の部門の表（[orchestration.md の 4 章](orchestration.md#4-司令塔の-claudemd-の雛形)の形）から読み、読めないときは雛形の 4 部門を規定値にして、確認の表に出します。違うところだけ直してください。ラベルがリポジトリにあるかはスキルが `gh label list` で確かめ、2-2b の道具で確かめた結果とあわせて確認の表と警告にして見せます。OK と答えたときだけ `guild.settings.local.json` を書きます。書けたら 2-3 に進みます。
 
 手で書くときは、下の手順に従います。リポジトリ名・司令塔と部門のフォルダ・部門のラベルと接頭辞を書き換えるだけなら（部門の数を変えるときも）、手で書く代わりに道具（`npm run settings:write`）でも書けます（[2-2b](#2-2b-道具で書くnpm-run-settingswrite)）。
 
@@ -163,7 +164,7 @@ npm run settings:write -- --write < input.json     # 書く（guild.settings.loc
 
 - 確認の表で、部門ごとのラベル・接頭辞と、そのフォルダの `CLAUDE.md` にラベルが見つかったか、フォルダを見ます
 - **エラー**（書けません）: 設定の検証に合わない、フォルダが無い、`~` を展開すると 2 つのフォルダが同じになる、`guild.settings.local.json` があるのに `--overwrite` が無い
-- **警告**（書けます）: ラベルがリポジトリに無い、GitHub にラベルを問い合わせられなかった（collector があとで照合し直します）、部門のフォルダの `CLAUDE.md` にその部門のラベルが見つからない、接頭辞とフォルダ名が違う。最後の 2 つは、部門のフォルダを取り違えたときに出ます。[orchestration.md](orchestration.md) の雛形どおりでない会社では、取り違えていなくても出ることがあります
+- **警告**（書けます）: ラベルがリポジトリに無い、GitHub にラベルを問い合わせられなかった（collector があとで照合し直します。道具は `npm run` の中から `gh` を呼ぶので、Claude Code の sandbox の中で動かすとこの警告になります）、部門のフォルダの `CLAUDE.md` にその部門のラベルが見つからない、接頭辞とフォルダ名が違う。最後の 2 つは、部門のフォルダを取り違えたときに出ます。[orchestration.md](orchestration.md) の雛形どおりでない会社では、取り違えていなくても出ることがあります
 - 部門の `CLAUDE.md` は、ラベルの文字があるかを調べるだけで、中身を表示も保存もしません
 - 書いたら、2-3 の手順で起動し、`settings:` の行が `guild.settings.local.json` で、`ok:` の行が出ることを確かめます。`sessions=<部門の数 + 1> ok`（4 部門なら `sessions=5 ok`）は MulmoTerminal を使う人だけの確認です
 
@@ -264,6 +265,15 @@ gh repo view <owner/name>      # repo に書いたリポジトリを読めるか
 ```
 
 読めなければ、読めるリポジトリに `repo` を書き換えるか、読めるアカウントで `gh auth login` します。`repo` を書き換えたときは、collector を止めて起動し直してください（設定は起動時に読みます）。
+
+### `gh issue list` が動かない
+
+0 章の確かめ方で、Claude Code に `gh issue list` を実行させて一覧が出なかったときです。
+
+- **証明書のエラー（`x509` など）が出る**: Claude Code の sandbox が原因です。sandbox の中では `gh` が証明書を確かめられません。`~/.claude/settings.json` の sandbox の `excludedCommands` に `"gh *"` を入れると、`gh` で始まるコマンドが sandbox の外で動きます（[公式の説明](https://code.claude.com/docs/en/sandboxing.md)）
+- **ログインしていない**（`gh auth status` がエラーになる）: `gh auth login` でログインします
+
+`excludedCommands` が効くのは、`gh` で始まるコマンドを単独で実行したときだけです。`cd … && gh …` のように前に別のコマンドを付けたものや、`npm run …` の中から呼ばれる `gh` は sandbox の中に残り、同じエラーになります。
 
 ### 帯が「デモ表示中（架空のデータ）。データを集めると…」のまま変わらない
 
