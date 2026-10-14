@@ -27,19 +27,30 @@ export function drawGuestBodies(
 /** The ink of the 「?」, as over a member waiting for a permission (draw.ts BUBBLE_GLYPHS). */
 const QUESTION = { text: '?', color: '#1a56b0', voice: 'glyph', chars: 1 } as const;
 
+/** The dark rim around each tag: the text filled 1 px off in four directions, under the text. */
+const RIM_OFFSETS = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+] as const;
+const RIM_COLOR = '#2a1608';
+
+/**
+ * The name and the counts come from the settings and the snapshot, so they are drawn with
+ * fillText only (CLAUDE.md): the rim is the same text filled dark around it, not strokeText.
+ */
 function drawTags(ctx: CanvasRenderingContext2D, tags: readonly GuestTag[]): void {
   ctx.save();
   ctx.globalAlpha = LEVEL_TAG_ALPHA;
   ctx.textBaseline = 'middle';
-  ctx.lineWidth = 2;
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#2a1608';
   for (const tag of tags) {
     ctx.font = tag.kind === 'name' ? 'bold 10px sans-serif' : 'bold 9px sans-serif';
-    ctx.fillStyle = tag.kind === 'name' ? '#ffe9a8' : '#d8ecff';
     ctx.textAlign = tag.align;
     const maxWidth = tag.maxWidth ?? undefined;
-    ctx.strokeText(tag.text, tag.x, tag.y, maxWidth);
+    ctx.fillStyle = RIM_COLOR;
+    for (const [dx, dy] of RIM_OFFSETS) ctx.fillText(tag.text, tag.x + dx, tag.y + dy, maxWidth);
+    ctx.fillStyle = tag.kind === 'name' ? '#ffe9a8' : '#d8ecff';
     ctx.fillText(tag.text, tag.x, tag.y, maxWidth);
   }
   ctx.restore();

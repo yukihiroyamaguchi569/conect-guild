@@ -281,7 +281,7 @@ function zRect(feet: { x: number; y: number }): PxRect {
 
 /**
  * How wide a tag is drawn at most (drawGuests.ts: the name in bold 10 px, the counts in bold 9 px,
- * outlined 2 px wide): a full-width character as wide as the font, any other 0.65 of it, and the
+ * with a 1 px dark rim filled around it): a full-width character as wide as the font, any other 0.65 of it, and the
  * outline's 1 px on each side. fillText squeezes a tag with a maxWidth to it.
  */
 const OUTLINE_PX = 1;

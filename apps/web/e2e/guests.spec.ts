@@ -2,7 +2,7 @@
 // server reads the fictional settings e2e/settings/guests.json (four departments, two guests).
 // /snapshot.json is the fictional guestsSnapshot, served by the route of fixtures.ts.
 import { drawnImages, installCanvasImageRecorder } from './canvasImages.ts';
-import { drawnTexts, installCanvasTextRecorder } from './canvasText.ts';
+import { drawnTexts, installCanvasTextRecorder, strokedTexts } from './canvasText.ts';
 import { expect, test, waitForRoom } from './fixtures.ts';
 import { FIRST_GUEST_OPEN, guestsSnapshot, SECOND_GUEST_OPEN } from './guestsSnapshot.ts';
 import { NOW } from './sampleSnapshot.ts';
@@ -58,6 +58,11 @@ test('the guests stand at their spots with their names and counts', async ({ pag
   );
   // The second guest waits for a permission: the 「?」 over her.
   expect(texts).toContain('?');
+  // Strings from the settings and the snapshot are drawn with fillText only (CLAUDE.md).
+  const stroked = await strokedTexts(page);
+  for (const text of ['たびびと', 'Issue 3 / PR 1', 'ぼうけんしゃ', 'Issue 0 / PR 1']) {
+    expect(stroked).not.toContain(text);
+  }
 });
 
 test('a guest’s merged PR is told in the message window', async ({ page, snapshotServer }) => {
