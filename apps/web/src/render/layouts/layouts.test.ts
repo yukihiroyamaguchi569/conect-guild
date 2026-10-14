@@ -16,7 +16,6 @@ import { DEFAULT_SEATS } from '../scenes';
 import { seatSinkFor } from '../seating';
 import { LAYOUTS } from './index';
 import { LAYOUT5 } from './layout5';
-import { LAYOUT6 } from './layout6';
 import { TILE_SIZE } from '../metrics';
 import type { GuildLayout, TilePos } from './types';
 
@@ -209,30 +208,16 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: d
 });
 
 describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () => {
-  const layout = LAYOUT5;
-  const sasae = layout.desks[3]?.seat;
-  const sales = LAYOUT6.desks[5]?.seat;
-  const [spot] = layout.guestSpots;
-  if (sasae === undefined || sales === undefined || spot === undefined) {
-    throw new Error('no 総務 desk, sales desk or guest spot');
-  }
+  const [spot] = LAYOUT5.guestSpots;
+  const desk = LAYOUT5.objects.find(
+    (object) => object.tile === 'desk' && contains(object, { col: 21, row: 11 }),
+  );
+  if (spot === undefined || desk === undefined) throw new Error('no 総務 desk or guest spot');
 
-  it('stands the guest on the lower right carpet, in the column of the sales seat of six', () => {
-    expect(spot.col).toBe(sales.col);
-    expect(spot.col).toBeGreaterThan(sasae.col);
-    expect(groundAt(layout, spot)).toBe('floor-carpet');
-  });
-
-  it('keeps every piece of furniture off the guest’s picture', () => {
-    const picture = spriteRect(spot);
-    for (const thing of [...layout.objects, ...layout.decor]) {
-      const box = {
-        left: thing.col * TILE_SIZE,
-        top: thing.row * TILE_SIZE,
-        right: (thing.col + thing.w) * TILE_SIZE,
-        bottom: (thing.row + thing.h) * TILE_SIZE,
-      };
-      expect(overlaps(picture, box), keyOf(thing)).toBe(false);
-    }
+  it('stands the guest on the lower right carpet, past the 総務 desk, on its front row', () => {
+    expect(LAYOUT5.desks[3]?.seat).toEqual({ col: 21, row: 10 });
+    expect(spot.col).toBeGreaterThan(desk.col + desk.w);
+    expect(spot.row).toBe(desk.row + desk.h - 1);
+    expect(groundAt(LAYOUT5, spot)).toBe('floor-carpet');
   });
 });

@@ -133,8 +133,9 @@ export const SALES_DESK: DeskCorner & {
 
 /**
  * The one guest of five departments (seven on stage with かなめ, Issue #122): on the lower right
- * carpet right of the 総務 desk, in the column of layout6's sales seat. It stands on the desk's
- * front row rather than level with the seat (row 10), where the party window would cover it; its
- * tags fit on two lines above the message window. Six departments leave no room for a guest.
+ * carpet right of the 総務 desk, past the alley beside it (col 24). It stands on the desk's front
+ * row rather than level with the seat (row 10), where the party window would cover it; its tags
+ * fit on two lines above the message window, its 「?」 clear of the files further right. Six
+ * departments leave no room for a guest.
  */
-export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 26, row: 12 };
+export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 25, row: 12 };
