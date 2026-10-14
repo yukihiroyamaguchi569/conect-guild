@@ -132,6 +132,11 @@ describe('buildGuestPart: the 7-day window', () => {
     expect(recent.map((item) => item.number)).toEqual([1]);
   });
 
+  it('keeps a time past now (the collector clock behind GitHub), like the company window', () => {
+    const ahead = { ...COMPLETED, closed_at: new Date(NOW.getTime() + 60_000).toISOString() };
+    expect(buildGuestPart(REPO, NOW, [], [ahead]).recent).toHaveLength(1);
+  });
+
   it('keeps the 20 newest, newest first, the higher number first on a tie', () => {
     const closed = Array.from({ length: 25 }, (_, i) => ({
       ...COMPLETED,
