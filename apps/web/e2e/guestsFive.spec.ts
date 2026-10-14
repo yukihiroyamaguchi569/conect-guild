@@ -50,6 +50,13 @@ test('the one guest stands at its spot, clear of the windows, with no name or co
     .poll(async () => (await drawnImages(page, 'guest1')).map((image) => image.dx))
     .toContain(feet.x - SPRITE / 2);
   expect(await drawnImages(page, 'guest2')).toEqual([]);
+  // The round table in front of it, drawn half a tile left and 24 px above its cells
+  // (decorPoint, Issue #122).
+  const table = layout.decor.find((item) => item.name === 'round-table');
+  if (table === undefined) throw new Error('no round table');
+  expect(await drawnImages(page, 'decor')).toContainEqual(
+    expect.objectContaining({ dx: table.col * 32 - 16, dy: table.row * 32 - 24 }),
+  );
   // No name or counts under it (Issue #122).
   const texts = await drawnTexts(page);
   for (const text of ['たびびと', 'Issue 3 / PR 1']) expect(texts).not.toContain(text);

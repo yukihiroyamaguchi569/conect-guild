@@ -1,10 +1,11 @@
 import type { GuildArt } from './art';
 import { isUnshaded, type Daylight, type LampLight, type Rgb } from './daylight';
 import { FLOOR_PATCH_DECOR } from './decor';
+import { decorPoint } from './decorPoint';
 import { SELECTED_LAYOUT } from './layouts';
 import type { GuildLayout, MapObject } from './layouts/types';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
-import { DAYLIGHT, TILE_SIZE } from './metrics';
+import { DAYLIGHT } from './metrics';
 import { patchAt } from './trinkets';
 
 /**
@@ -44,7 +45,8 @@ export function drawLightPatches(
   ctx.save();
   ctx.globalAlpha = alpha;
   for (const item of FLOOR_PATCH_DECOR) {
-    art.decor.drawDecor(ctx, item.name, item.col * TILE_SIZE + dx, item.row * TILE_SIZE);
+    const at = decorPoint(item);
+    art.decor.drawDecor(ctx, item.name, at.x + dx, at.y);
   }
   ctx.restore();
 }

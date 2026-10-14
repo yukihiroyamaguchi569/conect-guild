@@ -79,12 +79,17 @@ export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
 
 /**
  * The tavern's round table (with its stools, as in layout2 and layout3) in front of layout5's
- * guest (Issue #122). Its picture fills the lower 38 px of its 2 x 2 tiles (assets/decor/decor.png),
- * so it is drawn 24 px higher than its tiles: its top is then 2 px under the guest's feet, and the
- * guest (drawn after the furniture) never covers it. A tile higher, the guest would. It takes the
- * place of layout4's files and crates; layout6 has the sales desk there instead.
+ * guest (Issue #122). Its picture fills x 6–57 and the lower 38 px of its 2 x 2 tiles
+ * (assets/decor/decor.png), so it is drawn half a tile left and 24 px higher than its tiles: its
+ * middle is then under the guest's feet and its top 2 px under them, and the guest (drawn after
+ * the furniture) never covers it. Its cells stay right of the alley (col 24). It takes the place
+ * of layout4's files and crates; layout6 has the sales desk there instead.
  */
-export const GUEST_TABLE: DecorPlacement = { ...place('round-table', 25, 12), dy: -24 };
+export const GUEST_TABLE: DecorPlacement = {
+  ...place('round-table', 25, 12),
+  dx: -16,
+  dy: -24,
+};
 
 /**
  * The quest board's max-height (cqw) with the workshop desk: the board then ends above the bubble

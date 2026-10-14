@@ -212,14 +212,15 @@ function tilePx(area: { col: number; row: number; w: number; h: number }): PxRec
 
 /**
  * Where the round table's picture is: x 6–57 and y 26–63 of its 64 px tiles (assets/decor/decor.png,
- * measured 2026-10-15), moved by its `dy`.
+ * measured 2026-10-15), moved by its `dx` and `dy`.
  */
 function drawnPx(table: DecorPlacement): PxRect {
   const tiles = tilePx(table);
+  const dx = table.dx ?? 0;
   const dy = table.dy ?? 0;
   return {
-    left: tiles.left + 6,
-    right: tiles.left + 58,
+    left: tiles.left + 6 + dx,
+    right: tiles.left + 58 + dx,
     top: tiles.top + 26 + dy,
     bottom: tiles.bottom + dy,
   };
@@ -272,20 +273,35 @@ describe('the guest of five departments right of 総務 (Issue #122)', () => {
     const [spot] = layout?.guestSpots ?? [];
     if (layout === undefined || spot === undefined) throw new Error('no guest spot of five');
     const feet = guestFeet(spot);
+    // Each piece's cells, and for a placed thing its tiles moved as drawn (its dx and dy).
     const furniture = [
-      ...layout.objects.map((object) => ({ ...object, label: object.tile })),
-      ...layout.decor.filter((item) => item.solid).map((item) => ({ ...item, label: item.name })),
+      ...layout.objects.map((object) => ({ area: tilePx(object), label: object.tile })),
+      ...layout.decor
+        .filter((item) => item.solid)
+        .flatMap((item) => {
+          const cells = tilePx(item);
+          const dx = item.dx ?? 0;
+          const dy = item.dy ?? 0;
+          const drawn = {
+            left: cells.left + dx,
+            right: cells.right + dx,
+            top: cells.top + dy,
+            bottom: cells.bottom + dy,
+          };
+          // The round table's tiles moved up reach its empty top: its picture is what counts.
+          const picture = item.name === 'round-table' ? drawnPx(item) : drawn;
+          return [cells, picture].map((area) => ({ area, label: item.name }));
+        }),
     ];
-    for (const thing of furniture) {
-      const area = tilePx(thing);
-      const at = `${thing.label}@${String(thing.col)},${String(thing.row)}`;
+    for (const { area, label } of furniture) {
+      const at = `${label}@${String(area.left)},${String(area.top)}`;
       expect(overlaps(bodyRect(spot), area), at).toBe(false);
       expect(overlaps(questionRect(feet), area), at).toBe(false);
       expect(overlaps(zRect(feet), area), at).toBe(false);
     }
   });
 
-  it('has the round table drawn right under its feet, not under its picture', () => {
+  it('has the round table drawn centred right under its feet, not under its picture', () => {
     const layout = LAYOUTS[5];
     const [spot] = layout?.guestSpots ?? [];
     if (layout === undefined || spot === undefined) throw new Error('no guest spot of five');
@@ -295,8 +311,8 @@ describe('the guest of five departments right of 総務 (Issue #122)', () => {
       const drawn = drawnPx(table);
       expect(drawn.top).toBeGreaterThanOrEqual(bodyRect(spot).bottom);
       expect(drawn.top - guestFeet(spot).y).toBeLessThanOrEqual(2);
-      expect(drawn.left).toBeLessThan(guestFeet(spot).x);
-      expect(drawn.right).toBeGreaterThan(guestFeet(spot).x);
+      // Centred under the feet (within a pixel).
+      expect(Math.abs((drawn.left + drawn.right) / 2 - guestFeet(spot).x)).toBeLessThanOrEqual(1);
     }
   });
 });

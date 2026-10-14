@@ -62,9 +62,11 @@ export interface DecorPlacement extends TileRect {
   /** True when members cannot walk on its cells. */
   readonly solid: boolean;
   /**
-   * Logical px its picture is drawn below its tiles (negative: above). Its cells stay where they
-   * are. Only layout5's round table uses it, to stand right at the guest's feet (Issue #122).
+   * Logical px its picture is drawn right of and below its tiles (negative: left, above). Its
+   * cells stay where they are. Only layout5's round table uses them, to stand centred right at
+   * the guest's feet (Issue #122).
    */
+  readonly dx?: number;
   readonly dy?: number;
 }
 
