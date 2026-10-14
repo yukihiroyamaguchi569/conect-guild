@@ -329,6 +329,30 @@ describe('map: the windows of each layout', () => {
     ).toBe(false);
   });
 
+  it('keeps a listed tile under the fetch tab out of reach too', () => {
+    // A party window reaching down to the tab: a tile under both is still not walkable.
+    const six = layoutFor(6);
+    const tall = { ...six.partyWindow, bottom: 470, tallestBottom: 470 };
+    const underBoth = { col: 26, row: 14 };
+    const layout = { ...six, partyWindow: tall, underPartyWindow: [underBoth] };
+    const { party, tab } = windowExtentsFor(layout);
+    if (tab === undefined) throw new Error('no tab');
+    expect(overlaps(spriteRect(underBoth), party)).toBe(true);
+    expect(overlaps(spriteRect(underBoth), tab)).toBe(true);
+    expect(isWalkableIn(layout, underBoth)).toBe(false);
+  });
+
+  it('puts no tile under the fetch tab alone: the message window covers it too', () => {
+    const { tab, message } = windowExtentsFor(layoutFor(6));
+    if (tab === undefined) throw new Error('no tab');
+    for (let row = 0; row < MAP_ROWS; row += 1) {
+      for (let col = 0; col < MAP_COLS; col += 1) {
+        const sprite = spriteRect({ col, row });
+        if (overlaps(sprite, tab)) expect(overlaps(sprite, message)).toBe(true);
+      }
+    }
+  });
+
   it('puts the fetch tab on the message window’s top edge in six departments only', () => {
     for (const count of [2, 3, 4, 5])
       expect(windowExtentsFor(layoutFor(count)).tab).toBeUndefined();

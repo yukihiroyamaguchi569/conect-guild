@@ -229,12 +229,13 @@ export function isPartyExceptionIn(layout: GuildLayout, pos: TilePos): boolean {
   );
 }
 
-/** A listed tile under the party window and no other window. */
+/** A listed tile under the party window and no other window (the fetch tab included). */
 function isOnlyUnderPartyIn(layout: GuildLayout, pos: TilePos): boolean {
   if (!isPartyExceptionIn(layout, pos)) return false;
-  const { board, message } = cachedWindows(layout);
   const sprite = spriteRect(pos);
-  return !overlaps(sprite, board) && !overlaps(sprite, message);
+  return Object.entries(cachedWindows(layout)).every(
+    ([name, area]) => name === 'party' || !overlaps(sprite, area),
+  );
 }
 
 /** isWalkableIn the selected layout. */
