@@ -22,7 +22,7 @@ import { drawLevelTags } from './drawLevelTags';
 import { drawGuestBodies, drawGuestOverheads } from './drawGuests';
 import { placeholderGuestArt, type GuestArt } from './guestArt';
 import type { GuestFrame, StageGuest } from './guests';
-import { createGuestStage, type GuestStage } from './guestStage';
+import { createGuestStage, guestControls, type GuestStage } from './guestStage';
 import { SELECTED_LAYOUT } from './layouts';
 import { drawLevelUpBanners } from './drawLevelUp';
 import {
@@ -348,9 +348,17 @@ function createPainter(ctx: CanvasRenderingContext2D, art: GuildArt, guestArt: G
   return { ctx, scratch, background, front, art, guestArt, placer: createPlacer() };
 }
 
-/** The guests of the layout in use (Issue #108), drawn with `art`. */
-function guestStageOf(art: GuestArt): GuestStage {
-  return createGuestStage(SELECTED_LAYOUT.guestSpots, (index) => art.hasHoldFrames(index));
+/** The painter, the guests of the layout in use (Issue #108) and the members' cast. */
+function stageOf(
+  options: RenderLoopOptions,
+  context: ReturnType<typeof loopSources>['context'],
+): { readonly painter: Painter; readonly guests: GuestStage; readonly cast: Cast } {
+  const { canvas, art } = options;
+  const painter = createPainter(context2d(canvas), art, options.guestArt ?? placeholderGuestArt);
+  const guestArt = painter.guestArt;
+  const guests = createGuestStage(SELECTED_LAYOUT.guestSpots, (i) => guestArt.hasHoldFrames(i));
+  const cast = createCast(art, context.random, options, talkOf(options, context));
+  return { painter, guests, cast };
 }
 
 /** The scenes and the remarks to keep: none while the canvas is out of sight (scenesShown). */
@@ -409,6 +417,7 @@ function loopSources(options: RenderLoopOptions) {
     now: options.now ?? (() => performance.now()),
     localHour: options.localHour ?? (() => hourOf(new Date())),
     context,
+    visibility: options.visibility ?? documentVisibility,
   };
 }
 
@@ -442,35 +451,39 @@ export function summonOn(
   return { director: withVisit(director, added.visit), homeIn: { kaname: added.visit.back - t } };
 }
 
-/** RenderLoop.setGuests and RenderLoop.sparkle: a sparkle nobody would see is dropped. */
-function guestControls(
-  guests: GuestStage,
-  loop: {
-    readonly schedule: Scheduler;
-    readonly paused: () => boolean;
-    readonly stageNow: () => number;
-  },
-): Pick<RenderLoop, 'setGuests' | 'sparkle'> {
+/** What paintAt needs: the members' and the guests' stages, the party and the time. */
+interface PaintInput {
+  readonly cast: Cast;
+  readonly director: Director;
+  readonly guests: GuestStage;
+  readonly party: StageParty;
+  readonly t: number;
+  readonly hour: number;
+}
+
+/**
+ * Paints the frame at `t`; returns the speeches heard and how soon the next frame is needed
+ * (nextDraw without `hidden`).
+ */
+function paintAt(
+  painter: Painter,
+  scale: number,
+  { cast, director, guests, party, t, hour }: PaintInput,
+): { readonly speeches: Speeches; readonly pace: { animating: boolean; ambient: boolean } } {
+  const { calling, ...stage } = stageAt(cast, director, { t, hour, party });
+  const guestNow = guests.frameAt(t);
+  paint(painter, scale, { ...party, ...stage, now: t, guests: guestNow });
+  // A call needs no more than the ambient pace: its words and turns change every few hundred ms.
+  const ambient = Object.keys(party.moods).length > 0 || ANIMATED_DECOR.length > 0 || calling;
   return {
-    setGuests(next) {
-      guests.set(next);
-      loop.schedule.now();
-    },
-    sparkle(index) {
-      if (loop.paused()) return;
-      guests.sparkle(index, loop.stageNow());
-      loop.schedule.now();
-    },
+    speeches: stage.speeches,
+    pace: { animating: stage.animating || guestNow.animating, ambient },
   };
 }
 
 export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
-  const { canvas, art } = options;
-  const { now, localHour, context } = loopSources(options);
-  const painter = createPainter(context2d(canvas), art, options.guestArt ?? placeholderGuestArt);
-  const guests = guestStageOf(painter.guestArt);
-  const cast = createCast(art, context.random, options, talkOf(options, context));
-  const visibility = options.visibility ?? documentVisibility;
+  const { now, localHour, context, visibility } = loopSources(options);
+  const { painter, guests, cast } = stageOf(options, context);
   // Narrow screens hide the canvas (display: none): its width is 0 and nothing is drawn.
   let cssWidth = 1;
   let director: Director = EMPTY_DIRECTOR;
@@ -482,14 +495,9 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
 
   function draw(): void {
     const t = stageNow();
-    const { calling, ...stage } = stageAt(cast, director, { t, hour: localHour(), party });
-    const guestNow = guests.frameAt(t);
-    paint(painter, scale, { ...party, ...stage, now: t, guests: guestNow });
-    director = seenAndPruned(context, director, { t, speeches: stage.speeches });
-    // A call needs no more than the ambient pace: its words and turns change every few hundred ms.
-    const ambient = Object.keys(party.moods).length > 0 || ANIMATED_DECOR.length > 0 || calling;
-    const animating = stage.animating || guestNow.animating;
-    follow(schedule, nextDraw({ hidden: paused(), animating, ambient }));
+    const drawn = paintAt(painter, scale, { cast, director, guests, party, t, hour: localHour() });
+    director = seenAndPruned(context, director, { t, speeches: drawn.speeches });
+    follow(schedule, nextDraw({ hidden: paused(), ...drawn.pace }));
   }
 
   const paused = () => isPaused(visibility.isHidden(), cssWidth);
@@ -532,7 +540,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
     ...guestControls(guests, { schedule, paused, stageNow }),
     resize(nextCssWidth, pixelRatio) {
       cssWidth = nextCssWidth;
-      scale = fitCanvas(canvas, cssWidth, pixelRatio) ?? scale;
+      scale = fitCanvas(options.canvas, cssWidth, pixelRatio) ?? scale;
       refresh();
     },
     stop() {

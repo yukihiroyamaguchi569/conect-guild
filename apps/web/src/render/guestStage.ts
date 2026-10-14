@@ -54,3 +54,28 @@ export function createGuestStage(
     },
   };
 }
+
+/** RenderLoop.setGuests and RenderLoop.sparkle: a sparkle nobody would see is dropped. */
+export function guestControls(
+  guests: GuestStage,
+  loop: {
+    readonly schedule: { now(): void };
+    readonly paused: () => boolean;
+    readonly stageNow: () => number;
+  },
+): {
+  setGuests(next: readonly StageGuest[]): void;
+  sparkle(index: number): void;
+} {
+  return {
+    setGuests(next) {
+      guests.set(next);
+      loop.schedule.now();
+    },
+    sparkle(index) {
+      if (loop.paused()) return;
+      guests.sparkle(index, loop.stageNow());
+      loop.schedule.now();
+    },
+  };
+}
