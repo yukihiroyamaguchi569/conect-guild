@@ -136,6 +136,15 @@ describe('guestEvents', () => {
     ]);
   });
 
+  it('reports an Issue completed again after it was reopened', () => {
+    const { baseline } = guestEvents(null, first);
+    const again = { ...recent('issue-completed', 5), at: minutesAfter(T0, 30) };
+    const next = [part({ recent: [again, recent('pr-merged', 12)] }), null];
+    expect(guestEvents(baseline, next).events).toEqual([
+      { guest: 0, kind: 'issue-completed', number: 5, title: '架空の完了 5' },
+    ]);
+  });
+
   it('reports nothing for the same snapshot twice, nor for items that fell off the list', () => {
     const { baseline } = guestEvents(null, first);
     expect(guestEvents(baseline, first).events).toEqual([]);

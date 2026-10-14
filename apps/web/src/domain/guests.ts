@@ -99,12 +99,14 @@ export type GuestBaseline = readonly (GuestSeen | null)[];
 
 export interface GuestSeen {
   readonly repo: string;
-  /** `kind:number` of the finished items seen. */
+  /**
+   * `kind:number:at` of the finished items seen. The time counts: an Issue reopened and completed
+   * again is finished anew.
+   */
   readonly finished: ReadonlySet<string>;
 }
 
-const keyOf = (item: Pick<GuestRecentItem, 'kind' | 'number'>): string =>
-  `${item.kind}:${String(item.number)}`;
+const keyOf = (item: GuestRecentItem): string => `${item.kind}:${String(item.number)}:${item.at}`;
 
 function seenOf(part: GuestGithubPart): GuestSeen {
   return { repo: part.repo, finished: new Set(part.recent.map(keyOf)) };
