@@ -8,6 +8,7 @@ import { useGuild } from '../app/useGuild';
 import { useMissingLabels } from '../app/useMissingLabels';
 import { useNarration } from '../app/useNarration';
 import { useSound } from '../app/useSound';
+import { SELECTED_LAYOUT } from '../render/layouts';
 import DemoStart from './DemoStart.vue';
 import FetchStatus from './FetchStatus.vue';
 import GuildCanvas from './GuildCanvas.vue';
@@ -148,7 +149,12 @@ function onStageShown(shown: boolean): void {
         />
       </template>
       <div class="stage__side">
-        <PartyStatus v-if="!state.halted" class="stage__party" :rows="party" />
+        <PartyStatus
+          v-if="!state.halted"
+          class="stage__party"
+          :rows="party"
+          :dense="SELECTED_LAYOUT.partyWindow.dense"
+        />
         <FetchStatus
           :status="fetchStatus"
           :effects-available="state.effectsAvailable"

@@ -103,6 +103,8 @@ export interface GuildLayout {
     readonly bottom: number;
     /** With every rare note: seats and their bubbles keep clear of it. */
     readonly tallestBottom: number;
+    /** The rows are packed (ui/PartyStatus.vue `dense`) so that seven or eight of them fit. */
+    readonly dense?: boolean;
   };
   readonly toss: {
     /** かなめ tosses to a desk whose seat is at most this many tiles from hers (render/toss.ts). */
