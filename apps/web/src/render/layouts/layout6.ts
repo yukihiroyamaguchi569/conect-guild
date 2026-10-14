@@ -5,14 +5,16 @@ import {
   DOOR_GUEST_SPOTS,
   LOWER_DESK_DECOR,
   LOWER_DESK_OBJECTS,
-  lowerDesks,
+  UPPER_DESK_DECOR,
+  UPPER_DESK_OBJECTS,
+  UPPER_DESKS,
 } from './largeRoom';
 import {
+  lowerDesks,
   SMALL_ROOM_DECOR,
   SMALL_ROOM_GROUND,
   SMALL_ROOM_OBJECTS,
   SMALL_ROOM_SEATS,
-  UPPER_DESKS,
 } from './smallRoom';
 import { flat, place, rect, solid, type GuildLayout } from './types';
 
@@ -22,9 +24,10 @@ import { flat, place, rect, solid, type GuildLayout } from './types';
  */
 export const LAYOUT6: GuildLayout = {
   departmentCount: 6,
-  groundFills: [...SMALL_ROOM_GROUND, { tile: 'floor-carpet', ...rect(20, 11, 10, 3) }],
+  groundFills: SMALL_ROOM_GROUND,
   objects: [
     ...SMALL_ROOM_OBJECTS,
+    ...UPPER_DESK_OBJECTS,
     ...LOWER_DESK_OBJECTS,
     ...CORNER_DESK_OBJECTS,
     flat('chair', rect(16, 10, 1, 2)),
@@ -32,6 +35,7 @@ export const LAYOUT6: GuildLayout = {
   ],
   decor: [
     ...SMALL_ROOM_DECOR,
+    ...UPPER_DESK_DECOR,
     ...LOWER_DESK_DECOR,
     ...CORNER_DESK_DECOR,
     // The middle desk
@@ -41,7 +45,7 @@ export const LAYOUT6: GuildLayout = {
   ],
   desks: [
     ...UPPER_DESKS,
-    ...lowerDesks(2, 3),
+    ...lowerDesks(2),
     { seat: CORNER_SEAT, side: 'lower', things: [], chatWith: 5 },
     { seat: { col: 16, row: 11 }, side: 'lower', things: [], chatWith: 4 },
   ],

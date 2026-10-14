@@ -81,7 +81,7 @@ conect-guild/
 │       ├── render/           Canvas（M2）。純粋な部分は vitest で守る
 │       │   ├── metrics.ts    大きさと動きの速さの一元管理（タイル 32px、キャラのコマ 80px、論理解像度 1024×576）
 │       │   ├── map.ts        32×18 マスの地図、家具、窓に隠れる範囲、歩けるマス
-│       │   ├── layouts/      部門の数ごとに手で作る間取り（Issue #18）。床・家具・小物・机（席・上段か下段・部門の小物・おしゃべりの相手）・かなめと王様の席・カウンター前などの場所・舞台裏（扉のそば）・お客さんの場所 2 つ・パーティ窓の下端・投げる距離。`layoutFor(部門の数)` で選ぶ。2〜6 部門（layout2〜layout6。2・3 部門は smallRoom.ts の共通部分に、下段左の酒場とお客さんの場所を持つ。5・6 部門は smallRoom.ts の共通部分に largeRoom.ts の下段の机・左下の隅の机・扉のそばのお客さんの場所を足す）。設定の `SUPPORTED_DEPARTMENT_COUNTS` と一緒にある。5・6 部門ではパーティ窓の行を詰める（`partyWindow.dense`、ui/PartyStatus.vue）。map.ts などの作る関数は間取りを受け取り、これまでの名前の export は選んだ間取りから作る
+│       │   ├── layouts/      部門の数ごとに手で作る間取り（Issue #18）。床・家具・小物・机（席・上段か下段・部門の小物・おしゃべりの相手）・かなめと王様の席・カウンター前などの場所・舞台裏（扉のそば）・お客さんの場所 2 つ・パーティ窓の下端・投げる距離。`layoutFor(部門の数)` で選ぶ。2〜6 部門（layout2〜layout6。2・3 部門は smallRoom.ts の部屋の外枠に、下段の 2 つの机と上段右の酒場とお客さんの場所を足す。5・6 部門は smallRoom.ts の部屋の外枠と上段左の机に、largeRoom.ts の上段右の机・下段の机・左下の隅の机・扉のそばのお客さんの場所を足す）。設定の `SUPPORTED_DEPARTMENT_COUNTS` と一緒にある。5・6 部門ではパーティ窓の行を詰める（`partyWindow.dense`、ui/PartyStatus.vue）。map.ts などの作る関数は間取りを受け取り、これまでの名前の export は選んだ間取りから作る
 │       │   ├── decor.ts      小物の配置（壁・机・カウンター・床）を選んだ間取りから引く。床の小物は歩けないマス。map.ts が読むので render のほかのファイルは layouts/ だけを import する（動く・動かないの振り分けは animatedDecor.ts）
 │       │   ├── path.ts       タイル ↔ 論理座標、通路の経路探索（BFS）
 │       │   ├── scenes.ts     イベント → 演出の台本（受け渡し・宝箱・紙吹雪）
