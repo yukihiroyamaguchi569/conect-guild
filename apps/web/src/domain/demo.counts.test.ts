@@ -93,7 +93,7 @@ describe('laneDepartments for other counts', () => {
 });
 
 describe('demoSnapshotAt for other counts', () => {
-  it.each([2, 3])(
+  it.each([2, 3, 5, 6])(
     'uses only the %i departments given, a session each and one for かなめ',
     (count) => {
       const labels = labelsOf(count);
@@ -109,7 +109,7 @@ describe('demoSnapshotAt for other counts', () => {
     },
   );
 
-  it.each([2, 3])('clears two quests a loop with %i departments', (count) => {
+  it.each([2, 3, 5, 6])('clears two quests a loop with %i departments', (count) => {
     const labels = labelsOf(count);
     const before = demoSnapshotAt(0, NOW, labels).history;
     const after = demoSnapshotAt(DEMO_LOOP_MS - 1, NOW + DEMO_LOOP_MS - 1, labels).history;
