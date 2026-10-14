@@ -132,10 +132,12 @@ export const SALES_DESK: DeskCorner & {
 };
 
 /**
- * The guests wait by the door, beside the right end of the message window: one just inside, in
- * front of the crates, and one in the doorway.
+ * The guests wait near the door: one in front of the right end of the 総務 desk, clear of its
+ * 「Lv N」 and of the desk right of it (the sales desk of six departments), its tags on one line
+ * above the message window; and one in the doorway, its tags beside the window. Apart enough that
+ * neither's tags reach the other.
  */
 export const DOOR_GUEST_SPOTS: readonly [TilePos, TilePos] = [
-  { col: 28, row: 13 },
+  { col: 23, row: 13 },
   { col: 30, row: 14 },
 ];

@@ -18,6 +18,9 @@ import {
   type StageGuest,
 } from './guests';
 import { createGuestArt } from './guestArt';
+import { levelTags } from './levelTags';
+import { tagBox as levelTagBox } from './overhead';
+import { DEFAULT_SEATS } from './scenes';
 import { createGuestStage } from './guestStage';
 import { LAYOUTS } from './layouts';
 import type { GuildLayout } from './layouts/types';
@@ -373,10 +376,18 @@ describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layou
     }
   });
 
-  // Not yet for the first guest of 5 and 6 departments: by the door its counts go on the name
-  // line, right of the feet, and run onto the second guest (to be settled with the president).
-  const doorKnown = _count === '5' || _count === '6';
-  it.skipIf(doorKnown)('keep the tags of guest 0 off the other guest', () => {
+  it.each([0, 1])('keep guest %i and its 「?」 off the 「Lv N」 of every desk', (index) => {
+    const spot = layout.guestSpots[index] ?? { col: 0, row: 0 };
+    const mark = questionRect(guestFeet(spot));
+    for (const desk of layout.desks) {
+      const [tag] = levelTags({ minori: 99 }, { ...DEFAULT_SEATS, minori: desk.seat });
+      if (tag === undefined) throw new Error('no tag');
+      expect(overlaps(bodyRect(spot), levelTagBox(tag))).toBe(false);
+      expect(overlaps(mark, levelTagBox(tag))).toBe(false);
+    }
+  });
+
+  it('keep the tags of guest 0 off the other guest', () => {
     expect(tagsOnOtherGuest(layout, 0)).toEqual([]);
   });
 
