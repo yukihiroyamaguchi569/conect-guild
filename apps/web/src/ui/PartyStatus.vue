@@ -29,7 +29,7 @@ defineProps<{
         <span class="member__face" :style="{ background: row.face.fill, color: row.face.ink }">{{
           row.name.charAt(0)
         }}</span>
-        <span class="member__name">
+        <span class="member__name" :title="`${row.name} ${row.role}`">
           {{ row.name }}<small class="member__role">{{ row.role }}</small>
         </span>
         <span class="member__level" :title="row.level.detail">
@@ -140,6 +140,18 @@ defineProps<{
   border: 0.1em solid #fff;
   font-weight: 700;
   font-size: 0.95em;
+}
+
+/*
+ * Names, roles and states from the settings may be long: one line each, cut with an ellipsis, so
+ * that a row never grows past the column the layouts measured (render/layouts partyWindow).
+ */
+.member__name,
+.member__state {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .member__name {
