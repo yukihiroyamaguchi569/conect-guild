@@ -1,9 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { contains, isWalkableIn, overlaps, spriteRect, tallestWindowExtentsFor } from '../map';
-import { bubbleBox } from '../overhead';
+import { maxGuestsFor } from '@conect-guild/snapshot/settingsSchema';
+import {
+  contains,
+  isPartyExceptionIn,
+  isWalkableIn,
+  overlaps,
+  spriteRect,
+  tallestWindowExtentsFor,
+  windowExtentsFor,
+} from '../map';
+import { levelTags } from '../levelTags';
+import { bubbleBox, tagBox } from '../overhead';
 import { findPath, tileToPoint } from '../path';
+import { DEFAULT_SEATS } from '../scenes';
 import { seatSinkFor } from '../seating';
 import { LAYOUTS } from './index';
+import { LAYOUT5 } from './layout5';
+import { TILE_SIZE } from '../metrics';
 import type { GuildLayout, TilePos } from './types';
 
 /**
@@ -26,9 +39,20 @@ const walkerSeats = (layout: GuildLayout): TilePos[] => [
 ];
 const allSeats = (layout: GuildLayout): TilePos[] => [...walkerSeats(layout), layout.kingSeat];
 
+/**
+ * The windows at their tallest that must keep clear of `pos`: all but the party window on the
+ * tiles the layout lets it cover (layout6's sales desk, the president's decision 2026-10-15).
+ */
+function windowsOver(layout: GuildLayout, pos: TilePos) {
+  const { party, ...others } = tallestWindowExtentsFor(layout);
+  return isPartyExceptionIn(layout, pos)
+    ? Object.values(others)
+    : [...Object.values(others), party];
+}
+
 function underWindow(layout: GuildLayout, pos: TilePos): boolean {
   const sprite = spriteRect(pos);
-  return Object.values(tallestWindowExtentsFor(layout)).some((area) => overlaps(sprite, area));
+  return windowsOver(layout, pos).some((area) => overlaps(sprite, area));
 }
 
 describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: seats', (layout) => {
@@ -60,7 +84,6 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: s
   });
 
   it('keeps the bubble over every seat clear of the windows at their tallest', () => {
-    const windows = Object.values(tallestWindowExtentsFor(layout));
     const sinks = seatSinkFor(layout);
     for (const seat of allSeats(layout)) {
       const feet = tileToPoint(seat);
@@ -72,8 +95,27 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: s
           'right',
           0,
         );
-        for (const area of windows) expect(overlaps(box, area)).toBe(false);
+        for (const area of windowsOver(layout, seat)) expect(overlaps(box, area)).toBe(false);
       }
+    }
+  });
+
+  it('puts the 「Lv N」 of every desk on its front, clear of the windows at their tallest', () => {
+    const windows = Object.values(tallestWindowExtentsFor(layout));
+    for (const desk of layout.desks) {
+      const [tag] = levelTags({ minori: 99 }, { ...DEFAULT_SEATS, minori: desk.seat });
+      if (tag === undefined) throw new Error('no tag');
+      const box = tagBox(tag);
+      const front = layout.objects.filter(
+        (object) =>
+          object.tile === 'desk' &&
+          box.left >= object.col * TILE_SIZE &&
+          box.right <= (object.col + object.w) * TILE_SIZE &&
+          box.top >= object.row * TILE_SIZE &&
+          box.bottom <= (object.row + object.h) * TILE_SIZE,
+      );
+      expect(front, keyOf(desk.seat)).toHaveLength(1);
+      for (const area of windows) expect(overlaps(box, area), keyOf(desk.seat)).toBe(false);
     }
   });
 });
@@ -83,9 +125,13 @@ describe.each(Object.values(LAYOUTS))(
   (layout) => {
     const walkable = (pos: TilePos): boolean => isWalkableIn(layout, pos);
 
-    it('stands the guests on two walkable tiles, clear of the windows, reachable from the door', () => {
-      const [first, second] = layout.guestSpots;
-      expect(keyOf(first)).not.toBe(keyOf(second));
+    it('has a spot for each guest the departments leave room for (seven on stage)', () => {
+      expect(layout.guestSpots).toHaveLength(maxGuestsFor(layout.departmentCount));
+      const keys = layout.guestSpots.map(keyOf);
+      expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    it('stands the guests on walkable tiles, clear of the windows, reachable from the door', () => {
       expect(walkable(layout.offstage)).toBe(true);
       const seats = new Set(allSeats(layout).map(keyOf));
       for (const spot of layout.guestSpots) {
@@ -132,3 +178,46 @@ describe.each(Object.values(LAYOUTS))(
     });
   },
 );
+
+describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: desks', (layout) => {
+  // As drawn, not at the tallest: layout4's 総務 desk is under the party window's rare notes.
+  it('keeps every desk clear of the windows and off the red rug', () => {
+    const windows = Object.values(windowExtentsFor(layout));
+    for (const desk of layout.objects.filter((object) => object.tile === 'desk')) {
+      const box = {
+        left: desk.col * TILE_SIZE,
+        top: desk.row * TILE_SIZE,
+        right: (desk.col + desk.w) * TILE_SIZE,
+        bottom: (desk.row + desk.h) * TILE_SIZE,
+      };
+      for (const area of windows) expect(overlaps(box, area), keyOf(desk)).toBe(false);
+      for (let col = desk.col; col < desk.col + desk.w; col += 1) {
+        for (let row = desk.row; row < desk.row + desk.h; row += 1) {
+          expect(groundAt(layout, { col, row }), keyOf(desk)).not.toBe('rug-red');
+        }
+      }
+    }
+  });
+
+  it('lets the party window cover only tiles it does cover, and only in six departments', () => {
+    const listed = layout.underPartyWindow ?? [];
+    expect(listed.length > 0).toBe(layout.departmentCount === 6);
+    const { party } = windowExtentsFor(layout);
+    for (const tile of listed) expect(overlaps(spriteRect(tile), party), keyOf(tile)).toBe(true);
+  });
+});
+
+describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () => {
+  const [spot] = LAYOUT5.guestSpots;
+  const desk = LAYOUT5.objects.find(
+    (object) => object.tile === 'desk' && contains(object, { col: 21, row: 11 }),
+  );
+  if (spot === undefined || desk === undefined) throw new Error('no 総務 desk or guest spot');
+
+  it('stands the guest on the lower right carpet, past the 総務 desk, on its front row', () => {
+    expect(LAYOUT5.desks[3]?.seat).toEqual({ col: 21, row: 10 });
+    expect(spot.col).toBeGreaterThan(desk.col + desk.w);
+    expect(spot.row).toBe(desk.row + desk.h - 1);
+    expect(groundAt(LAYOUT5, spot)).toBe('floor-carpet');
+  });
+});

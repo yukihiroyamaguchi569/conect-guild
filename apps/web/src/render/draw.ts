@@ -73,7 +73,7 @@ const IDLE_GLYPHS: Readonly<Record<'…' | '♪', Glyph>> = {
 };
 
 /** A "Z" rising from over the head and fading as it goes (`rise` 0 to 1), in detail pixels. */
-function drawSleepZ(ctx: CanvasRenderingContext2D, rise: number, feet: Point): void {
+export function drawSleepZ(ctx: CanvasRenderingContext2D, rise: number, feet: Point): void {
   ctx.save();
   ctx.translate(Math.round(feet.x), Math.round(feet.y - OVERHEAD_OFFSET));
   ctx.scale(DETAIL_SCALE, DETAIL_SCALE);

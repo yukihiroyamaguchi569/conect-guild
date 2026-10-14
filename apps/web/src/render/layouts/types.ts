@@ -95,15 +95,32 @@ export interface GuildLayout {
   };
   /** By the door: the seat of a member no department names (never drawn). */
   readonly offstage: TilePos;
-  /** Where the two guests stand. */
-  readonly guestSpots: readonly [TilePos, TilePos];
+  /**
+   * Where the guests stand, one per guest the departments leave room for (settings maxGuestsFor:
+   * two with two to four departments, one with five, none with six).
+   */
+  readonly guestSpots: readonly TilePos[];
   /** How far down the right-hand column (party window) reaches, logical px (render/map.ts). */
   readonly partyWindow: {
     /** Measured with a failure line: walking keeps clear of it. */
     readonly bottom: number;
     /** With every rare note: seats and their bubbles keep clear of it. */
     readonly tallestBottom: number;
+    /** The rows are packed (ui/PartyStatus.vue `dense`) so that seven or eight of them fit. */
+    readonly dense?: boolean;
   };
+  /**
+   * The quest board's max-height in cqw (GuildScreen.vue; it scrolls beyond), when lower than
+   * BOARD_MAX_CQW (render/map.ts): five and six departments seat a member further left on the lower
+   * row, under where a taller board would reach (the president's decision, 2026-10-15).
+   */
+  readonly boardMaxCqw?: number;
+  /**
+   * Tiles where the party window may cover the top of a member's frame and the bubble over the
+   * head: layout6's sales desk right of 総務 and the way from it (the president accepted it,
+   * 2026-10-15). Nowhere else does anything that matters go under a window.
+   */
+  readonly underPartyWindow?: readonly TilePos[];
   readonly toss: {
     /** かなめ tosses to a desk whose seat is at most this many tiles from hers (render/toss.ts). */
     readonly maxTiles: number;

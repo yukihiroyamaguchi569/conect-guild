@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FICTIONAL_GUESTS, FICTIONAL_REPO, makeSettings } from './settings.fixtures.test-util.ts';
-import { describeIssues, guildSettingsSchema } from './settingsSchema.ts';
+import { describeIssues, guildSettingsSchema, maxGuestsFor } from './settingsSchema.ts';
 
 /** Issue #108: the guests of the settings. */
 
@@ -55,6 +55,29 @@ describe('guildSettingsSchema guests', () => {
     );
     expect(issuesOf(withGuests([{ ...VISITOR, repo: 'no-slash' }]))).toMatch(/guests\[0\]\.repo/);
   });
+});
+
+describe('guildSettingsSchema guests: seven on stage (the president, 2026-10-15)', () => {
+  const extra = { name: 'みっつめ', sessionDir: '~/example-third' };
+  const guestsUpTo = (n: number) => [VISITOR, WANDERER, extra].slice(0, n);
+
+  it('leaves room for two guests with two to four departments, one with five, none with six', () => {
+    expect([2, 3, 4, 5, 6].map(maxGuestsFor)).toEqual([2, 2, 2, 1, 0]);
+  });
+
+  it.each([2, 3, 4, 5, 6])(
+    'accepts exactly the limit with %i departments, not one more',
+    (count) => {
+      const max = maxGuestsFor(count);
+      const settings = (n: number): unknown => ({ ...makeSettings(count), guests: guestsUpTo(n) });
+      expect(issuesOf(settings(max))).toBe('');
+      const over = issuesOf(settings(max + 1));
+      expect(over).toMatch(/at guests/);
+      if (max < 2) {
+        expect(over).toContain(`at most ${String(max)} guests with ${String(count)} departments`);
+      }
+    },
+  );
 });
 
 describe('guildSettingsSchema guests against each other and the company', () => {

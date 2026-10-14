@@ -12,7 +12,14 @@ import { waitForRoom } from './fixtures.ts';
 import { DEMO_TITLES } from '../src/domain/demoScript.ts';
 import { layoutFor } from '../src/render/layouts/catalog.ts';
 import type { TilePos } from '../src/render/layouts/types.ts';
-import { overlaps, spriteRect, windowExtentsFor, type PxRect } from '../src/render/map.ts';
+import {
+  BOARD_MAX_CQW,
+  isPartyExceptionIn,
+  overlaps,
+  spriteRect,
+  windowExtentsFor,
+  type PxRect,
+} from '../src/render/map.ts';
 
 /** The department count of this project (playwright.config.ts metadata). */
 function departmentCount(): number {
@@ -115,11 +122,25 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
     party: { ...party, bottom: fetch.bottom },
     message: await logicalBox(page, page.getByRole('region', { name: 'メッセージ' })),
   };
-  // The right-hand column ends above the layout's measured bottom (render/layouts).
+  // The right-hand column ends above the layout's measured bottom (render/layouts), its rows
+  // packed for seven or eight of them (five and six departments).
   expect(measured.party.bottom).toBeLessThanOrEqual(layout.partyWindow.bottom);
+  const partyClass = await page
+    .getByRole('region', { name: 'パーティのようす' })
+    .getAttribute('class');
+  expect(partyClass?.includes('party--dense')).toBe(layout.partyWindow.dense === true);
+
+  const modelled = windowExtentsFor(layout);
+  // The quest board scrolls from the layout's max-height on (five and six departments: lower).
+  const maxHeight = await page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .evaluate((board) => getComputedStyle(board).maxHeight);
+  expect(Number.parseFloat(maxHeight)).toBeCloseTo(
+    (layout.boardMaxCqw ?? BOARD_MAX_CQW) * 10.24,
+    0,
+  );
 
   // Nobody's seat and no guest spot is under a window as it is drawn, nor as the layout models it.
-  const modelled = windowExtentsFor(layout);
   const spots: TilePos[] = [
     layout.commanderSeat,
     layout.kingSeat,
@@ -127,7 +148,11 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
     ...layout.guestSpots,
   ];
   for (const spot of spots) {
-    for (const area of [...Object.values(measured), ...Object.values(modelled)]) {
+    // The party window may cover the tiles the layout lists (layout6's sales desk).
+    const areas = isPartyExceptionIn(layout, spot)
+      ? [measured.board, measured.message, modelled.board, modelled.message]
+      : [...Object.values(measured), ...Object.values(modelled)];
+    for (const area of areas) {
       expect(overlaps(spriteRect(spot), area), `${String(spot.col)},${String(spot.row)}`).toBe(
         false,
       );

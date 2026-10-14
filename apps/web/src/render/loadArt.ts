@@ -2,8 +2,12 @@ import hibikiUrl from '../../../../assets/sprites/hibiki.png';
 import hirameUrl from '../../../../assets/sprites/hirame.png';
 import kanameUrl from '../../../../assets/sprites/kaname.png';
 import minoriUrl from '../../../../assets/sprites/minori.png';
+import musubiUrl from '../../../../assets/sprites/musubi.png';
 import sasaeUrl from '../../../../assets/sprites/sasae.png';
+import takumiUrl from '../../../../assets/sprites/takumi.png';
 import yukihiroUrl from '../../../../assets/sprites/yukihiro.png';
+import guest1Url from '../../../../assets/sprites/guest1.png';
+import guest2Url from '../../../../assets/sprites/guest2.png';
 import decorUrl from '../../../../assets/decor/decor.png';
 import propsUrl from '../../../../assets/props/props.png';
 import tilesetUrl from '../../../../assets/tiles/tileset.png';
@@ -16,6 +20,7 @@ import {
   type SpriteArt,
   type TileArt,
 } from './art';
+import { createGuestArt, type GuestArt } from './guestArt';
 import { chooseProps, createDecorArt, decorProps, sheetProps } from './decorArt';
 import { createSpriteArt } from './spriteArt';
 import { createTileArt } from './tileArt';
@@ -33,6 +38,8 @@ const SPRITE_URLS: Readonly<Record<MemberId, string>> = {
   hibiki: hibikiUrl,
   hirame: hirameUrl,
   sasae: sasaeUrl,
+  takumi: takumiUrl,
+  musubi: musubiUrl,
   yukihiro: yukihiroUrl,
 };
 
@@ -54,15 +61,17 @@ async function loadTiles(): Promise<TileArt> {
 async function loadSprites(): Promise<SpriteArt> {
   const load = (id: MemberId) => loadImage(SPRITE_URLS[id]);
   try {
-    const [kaname, minori, hibiki, hirame, sasae, yukihiro] = await Promise.all([
+    const [kaname, minori, hibiki, hirame, sasae, takumi, musubi, yukihiro] = await Promise.all([
       load('kaname'),
       load('minori'),
       load('hibiki'),
       load('hirame'),
       load('sasae'),
+      load('takumi'),
+      load('musubi'),
       load('yukihiro'),
     ]);
-    const sheets = { kaname, minori, hibiki, hirame, sasae, yukihiro };
+    const sheets = { kaname, minori, hibiki, hirame, sasae, takumi, musubi, yukihiro };
     return createSpriteArt(sheets, drawPlaceholderProp);
   } catch {
     return placeholderArt.sprites;
@@ -100,4 +109,29 @@ export async function loadArt(): Promise<GuildArt> {
     },
     decor: decor ?? placeholderArt.decor,
   };
+}
+
+/** The guests' pictures (Issue #108), in the order of the settings' guests. */
+const GUEST_URLS = [guest1Url, guest2Url] as const;
+
+/** The pictures of the first `count` guests: none without guests, so nothing more is fetched. */
+export function guestArtUrls(count: number): readonly string[] {
+  return GUEST_URLS.slice(0, count);
+}
+
+/**
+ * The art of the settings' `count` guests; a plain box for a guest whose picture cannot be loaded
+ * (the other keeps its).
+ */
+export async function loadGuestArt(count: number): Promise<GuestArt> {
+  const sheets = await Promise.all(
+    guestArtUrls(count).map(async (url) => {
+      try {
+        return await loadImage(url);
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return createGuestArt(sheets);
 }

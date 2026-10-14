@@ -20,7 +20,7 @@ The demo mode with made-up data.
 
 ## Features
 
-- **The guild hall on a Canvas**: Kaname at the reception desk, the four department members at their desks and the king on his throne, all moving a little even when nothing is happening
+- **The guild hall on a Canvas**: Kaname at the reception desk, the department members (two to six) at their desks and the king on his throne, all moving a little even when nothing is happening
 - **Scrolls, chests and clears**: when an Issue opens, Kaname carries the scroll to the member's desk (and sometimes just tosses it to a nearby one). When a PR is merged, the member brings a treasure chest to the reception desk. When an Issue is closed, 「クリアした！」 (quest cleared!) appears with confetti
 - **Party status**: working, awaiting review, awaiting approval and so on, taken from GitHub Issues and PRs. If you use MulmoTerminal, live 「いま作業中」 (working now) and 「許可待ち」 (waiting for permission) are added within a few seconds
 - **Sound effects**: chiptune-style beeps generated with Web Audio. Muted by default, with three volume levels
@@ -32,7 +32,7 @@ The demo mode with made-up data.
 - **Lines**: members say a short line when a scroll is handed over, a chest is delivered, or a quest is cleared
 - **Demo mode**: plays a loop of scripted, fictional quests
 
-The number of departments is fixed at four (one commander, four departments and the president: six members). What your team needs to use it is listed under 「使える条件」 (requirements) in [docs/setup.md](docs/setup.md#0-使える条件) (Japanese).
+You can have two to six departments (one commander, two to six departments and the president). What your team needs to use it is listed under 「使える条件」 (requirements) in [docs/setup.md](docs/setup.md#0-使える条件) (Japanese).
 
 ## Try the demo
 

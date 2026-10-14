@@ -44,13 +44,18 @@ interface MeasuredHands {
   readonly carrySide: HandPosition;
 }
 
-/** Measured on assets/sprites/<memberId>.png, frames 4–6 (2026-10-12). */
+/**
+ * Measured on assets/sprites/<memberId>.png, frames 4–6 (2026-10-12; takumi and musubi by
+ * assets/sprites/measure_hands.py, assets/sprites/hands-new4.json, 2026-10-14).
+ */
 const MEASURED: Readonly<Record<MemberId, MeasuredHands>> = {
   kaname: { raiseTop: 69, carryFront: { up: 32, x: 40 }, carrySide: { up: 31, forward: 15 } },
   minori: { raiseTop: 71, carryFront: { up: 31, x: 39 }, carrySide: { up: 33, forward: 14 } },
   hibiki: { raiseTop: 70, carryFront: { up: 34, x: 41 }, carrySide: { up: 35, forward: 21 } },
   hirame: { raiseTop: 74, carryFront: { up: 33, x: 40 }, carrySide: { up: 33, forward: 14 } },
   sasae: { raiseTop: 72, carryFront: { up: 32, x: 39 }, carrySide: { up: 32, forward: 16 } },
+  takumi: { raiseTop: 67, carryFront: { up: 30, x: 40 }, carrySide: { up: 32, forward: 12 } },
+  musubi: { raiseTop: 72, carryFront: { up: 34, x: 42 }, carrySide: { up: 36, forward: 16 } },
   yukihiro: { raiseTop: 75, carryFront: { up: 34, x: 40 }, carrySide: { up: 32, forward: 15 } },
 };
 
@@ -72,6 +77,8 @@ export const HANDS: Readonly<Record<MemberId, Readonly<Record<HoldFrame, HandPos
   hibiki: handsOf(MEASURED.hibiki),
   hirame: handsOf(MEASURED.hirame),
   sasae: handsOf(MEASURED.sasae),
+  takumi: handsOf(MEASURED.takumi),
+  musubi: handsOf(MEASURED.musubi),
   yukihiro: handsOf(MEASURED.yukihiro),
 };
 

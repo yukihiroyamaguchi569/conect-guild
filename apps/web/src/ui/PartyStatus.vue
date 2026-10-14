@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import type { PartyRow } from '../app/guildView';
 
-defineProps<{ rows: readonly PartyRow[] }>();
+defineProps<{
+  rows: readonly PartyRow[];
+  /** Packed rows, so that seven or eight fit (the layouts of five and six departments). */
+  dense?: boolean;
+}>();
 </script>
 
 <template>
-  <section class="rpg-window party" aria-label="パーティのようす">
+  <section
+    class="rpg-window party"
+    :class="{ 'party--dense': dense }"
+    aria-label="パーティのようす"
+  >
     <h2 class="rpg-window__title">パーティのようす</h2>
     <p v-if="rows.length === 0" class="party__empty">よみこみちゅう…</p>
     <ul class="party__rows">
@@ -76,6 +84,21 @@ defineProps<{ rows: readonly PartyRow[] }>();
 
 .member + .member {
   margin-top: 0.2em;
+}
+
+/* Seven or eight rows (render/layouts partyWindow.dense): smaller type and gaps, same layout. */
+.party--dense .rpg-window__title {
+  margin-bottom: 0.2em;
+}
+
+.party--dense .member {
+  padding: 0.06em 0.35em;
+  font-size: 0.92em;
+  line-height: 1.15;
+}
+
+.party--dense .member + .member {
+  margin-top: 0.14em;
 }
 
 .member[title] {

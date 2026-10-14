@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   DEPARTMENT_MEMBER_IDS,
   SUPPORTED_DEPARTMENT_COUNTS,
+  type DepartmentMemberId,
   type GuildSettings,
 } from '@conect-guild/snapshot/settingsSchema';
 
@@ -61,10 +62,22 @@ function membersByPosition(base: GuildSettings, count: number): string[] {
 }
 
 /**
+ * The names and colours the president chose for the members of the fifth and sixth departments
+ * (Issue #18, 2026-10-14). guild.settings.json has four departments and so neither of them: a
+ * fifth or sixth department starting from it gets them, with its label as the role.
+ */
+const NEW_MEMBERS: Readonly<Partial<Record<DepartmentMemberId, { name: string; color: string }>>> =
+  {
+    takumi: { name: 'たくみ', color: '#00897b' },
+    musubi: { name: 'むすび', color: '#ff7043' },
+  };
+
+/**
  * The members with each department member's role following its new label, but only where the
  * role was the old label (as in guild.settings.json). A role written by hand is kept. A member
  * that had no department in the starting settings takes its new label: its role named none of
- * them. A member the starting settings do not have stays missing (the schema then names it).
+ * them. A member the starting settings do not have is added from NEW_MEMBERS when it is there,
+ * else stays missing (the schema then names it).
  */
 function membersFollowingLabels(
   base: GuildSettings,
@@ -74,8 +87,13 @@ function membersFollowingLabels(
   departments.forEach(({ label, member: id }, i) => {
     const before = base.departments[i];
     const parsed = DEPARTMENT_MEMBER_IDS.find((known) => known === id);
-    const member = parsed === undefined ? undefined : members[parsed];
-    if (parsed === undefined || member === undefined) return;
+    if (parsed === undefined) return;
+    const member = members[parsed];
+    if (member === undefined) {
+      const added = NEW_MEMBERS[parsed];
+      if (added !== undefined) members[parsed] = { ...added, role: label };
+      return;
+    }
     if (before === undefined || member.role === before.label) {
       members[parsed] = { ...member, role: label };
     }

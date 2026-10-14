@@ -41,13 +41,13 @@ describe('guildSettingsSchema members (Issue #18)', () => {
 });
 
 describe('guildSettingsSchema department counts (Issue #18)', () => {
-  const COUNTS_MESSAGE = 'departments: 2 or 3 or 4 departments (#18)';
+  const COUNTS_MESSAGE = 'departments: 2 or 3 or 4 or 5 or 6 departments (#18)';
 
-  it('supports two to four departments for now', () => {
-    expect(SUPPORTED_DEPARTMENT_COUNTS).toEqual([2, 3, 4]);
+  it('supports two to six departments', () => {
+    expect(SUPPORTED_DEPARTMENT_COUNTS).toEqual([2, 3, 4, 5, 6]);
   });
 
-  it.each([2, 3, 4])('accepts %i departments', (count) => {
+  it.each([2, 3, 4, 5, 6])('accepts %i departments', (count) => {
     expect(problems(makeSettings(count))).toEqual([]);
   });
 
@@ -61,12 +61,18 @@ describe('guildSettingsSchema department counts (Issue #18)', () => {
     expect(problems(makeSettings(1))).toEqual([COUNTS_MESSAGE]);
   });
 
-  it('rejects five departments', () => {
-    const four = makeSettings(4);
+  it('rejects seven departments', () => {
+    const six = makeSettings(6);
     const extra = { label: '予備', member: 'minori', sessionDir: '~/example-guild/spare' } as const;
-    expect(problems({ ...four, departments: [...four.departments, extra] })).toContain(
+    expect(problems({ ...six, departments: [...six.departments, extra] })).toContain(
       COUNTS_MESSAGE,
     );
+  });
+
+  it('needs the new members only when a fifth or sixth department names them', () => {
+    expect(problems(without(without(makeSettings(4), 'takumi'), 'musubi'))).toEqual([]);
+    expect(problems(without(makeSettings(5), 'musubi'))).toEqual([]);
+    expect(problems(without(makeSettings(6), 'musubi'))).toEqual(['members.musubi: missing']);
   });
 
   it('rejects no department', () => {

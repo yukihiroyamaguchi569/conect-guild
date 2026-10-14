@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { MemberId } from '../guild.config';
+import { memberIdSchema } from '@conect-guild/snapshot/settings';
 import { HANDS, hasHoldFrames, heldLook, holdFrameOf } from './hands';
 import { HOLD, OVERHEAD_OFFSET, SPRITE_SIZE } from './metrics';
 import { carry, heldItemPoint, raise, type MoveFrame, type Pose } from './motion';
@@ -75,11 +75,14 @@ describe('heldLook with the holding frames', () => {
     expect(HANDS.minori[5]).toEqual({ up: 31, forward: -1 });
     expect(HANDS.hibiki[6]).toEqual({ up: 35, forward: 21 });
     expect(HANDS.yukihiro[6]).toEqual({ up: 32, forward: 15 });
+    // たくみ and むすび: assets/sprites/hands-new4.json (2026-10-14).
+    expect(HANDS.takumi[4].up - HOLD.raisedItemHalfPx).toBe(67);
+    expect(HANDS.musubi[5]).toEqual({ up: 34, forward: 2 });
+    expect(HANDS.takumi[6]).toEqual({ up: 32, forward: 12 });
   });
 
   it('reads each member’s own hand table', () => {
-    const ids: readonly MemberId[] = ['kaname', 'minori', 'hibiki', 'hirame', 'sasae', 'yukihiro'];
-    for (const id of ids) {
+    for (const id of memberIdSchema.options) {
       for (const frame of [4, 5, 6] as const) {
         expect(HANDS[id][frame].up).toBeGreaterThan(0);
         expect(HANDS[id][frame].up).toBeLessThanOrEqual(OVERHEAD_OFFSET + HOLD.raisedItemHalfPx);
@@ -88,7 +91,8 @@ describe('heldLook with the holding frames', () => {
       expect(HANDS[id][4].up).toBeGreaterThan(2 * HANDS[id][5].up);
       // The front frames hold the item about the middle; frame 6 well forward.
       expect(HANDS[id][4].forward).toBe(0);
-      expect(Math.abs(HANDS[id][5].forward)).toBeLessThanOrEqual(1);
+      // (むすび's arms hold it 2 px right of the middle.)
+      expect(Math.abs(HANDS[id][5].forward)).toBeLessThanOrEqual(2);
       expect(HANDS[id][6].forward).toBeGreaterThan(10);
     }
   });
