@@ -119,29 +119,32 @@ function newItems(seen: GuestSeen | null, part: GuestGithubPart): GuestRecentIte
 }
 
 /**
- * The events of the guests between the last baseline and `guests` (a snapshot's), and the next
- * baseline. The first snapshot (`previous` null), a guest seen for the first time and a guest
- * whose repository changed only set the baseline: no events. A guest whose part is missing (not
- * fetched yet, or dropped) keeps what was seen, so it does not come back with a burst. The
- * baseline is kept in memory only: a reload starts afresh.
+ * The events of the guests between the last baseline and `guests` (a snapshot's), oldest first
+ * across the guests, and the next baseline. The first snapshot (`previous` null), a guest seen for
+ * the first time and a guest whose repository changed only set the baseline: no events. A guest
+ * whose part is missing (not fetched yet, or dropped) forgets what was seen, so when it comes back
+ * it only sets the baseline again instead of reporting the gap in a burst. The baseline is kept in
+ * memory only: a reload starts afresh.
  */
 export function guestEvents(
   previous: GuestBaseline | null,
   guests: Snapshot['guests'],
 ): { readonly events: GuestEvent[]; readonly baseline: GuestBaseline } {
   const count = Math.max(guests.length, previous?.length ?? 0);
-  const events: GuestEvent[] = [];
+  const found: { readonly at: number; readonly event: GuestEvent }[] = [];
   const baseline = Array.from({ length: count }, (_, guest): GuestSeen | null => {
-    const seen = previous?.[guest] ?? null;
     const part = guests[guest] ?? null;
-    if (part === null) return seen;
+    if (part === null) return null;
     if (previous !== null) {
-      for (const item of newItems(seen, part)) {
-        events.push({ guest, kind: item.kind, number: item.number, title: item.title });
+      for (const item of newItems(previous[guest] ?? null, part)) {
+        const event = { guest, kind: item.kind, number: item.number, title: item.title };
+        found.push({ at: Date.parse(item.at), event });
       }
     }
     return seenOf(part);
   });
+  // A stable sort: items of the same time keep each guest's order, the first guest first.
+  const events = found.toSorted((a, b) => a.at - b.at).map(({ event }) => event);
   return { events, baseline };
 }
 

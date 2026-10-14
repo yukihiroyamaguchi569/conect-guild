@@ -175,12 +175,36 @@ describe('guestEvents of a guest seen anew', () => {
     expect(guestEvents(after.baseline, next).events.map((e) => e.number)).toEqual([100]);
   });
 
-  it('keeps what was seen while the guests are dropped, so they come back without a burst', () => {
+  it('forgets what was seen while the guests are dropped, so they come back without a burst', () => {
     const { baseline } = guestEvents(null, first);
     const dropped = guestEvents(baseline, []);
     expect(dropped.events).toEqual([]);
-    expect(dropped.baseline).toEqual(baseline);
-    expect(guestEvents(dropped.baseline, first).events).toEqual([]);
+    expect(dropped.baseline).toEqual([null, null]);
+    // What was finished while dropped is not reported on the way back, only taken as the baseline.
+    const back = [part({ recent: [recent('pr-merged', 15), ...(first[0]?.recent ?? [])] }), null];
+    const returned = guestEvents(dropped.baseline, back);
+    expect(returned.events).toEqual([]);
+    const next = [part({ recent: [recent('pr-merged', 16), ...(back[0]?.recent ?? [])] }), null];
+    expect(guestEvents(returned.baseline, next).events.map((e) => e.number)).toEqual([16]);
+  });
+
+  it('orders the events of both guests by when they were finished, oldest first', () => {
+    const second = part({ repo: 'example-visitor/second-app' });
+    const base = guestEvents(null, [part(), second]).baseline;
+    const late = (kind: GuestRecentItem['kind'], n: number, minutes: number) => ({
+      ...recent(kind, n),
+      at: minutesAfter(T0, minutes),
+    });
+    const next = [
+      part({ recent: [late('pr-merged', 2, 30), late('pr-merged', 1, 10)] }),
+      { ...second, recent: [late('issue-completed', 4, 40), late('issue-completed', 3, 20)] },
+    ];
+    expect(guestEvents(base, next).events.map((e) => [e.guest, e.number])).toEqual([
+      [0, 1],
+      [1, 3],
+      [0, 2],
+      [1, 4],
+    ]);
   });
 
   it('numbers the events by the guest they belong to', () => {
