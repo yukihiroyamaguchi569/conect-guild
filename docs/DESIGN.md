@@ -42,7 +42,7 @@ GitHub 上の部門ラベル（`経理` など）とは対応表で結び、Issu
 2. **依存は最小限。** 本体の実行時依存は Vue と zod（外部入力の検証。型は schema から推論する）の 2 つだけ。Canvas はブラウザ標準の機能なので追加なし。PixiJS などの描画ライブラリは入れない
 3. **ブラウザから外部へ通信しない。** GitHub API はブラウザから呼ばず、ローカルの収集スクリプトが `gh` CLI で取って JSON に落とす。ブラウザはその JSON を読むだけ。トークンをフロントに置かない（`gh` の認証をそのまま使う）
 4. **待ち受けを増やさない。** 立てるサーバーは Vite の開発サーバーだけで、`127.0.0.1` に固定する（`vite.config.ts` の `server.host` と、設定ファイルを読めなかったときのために `apps/web` の dev スクリプトの `--host 127.0.0.1`。それ以外の `--host` は使わない）。独自の HTTP/WS サーバーは作らない。安全性調査（2026-10-12）で pixtuoid がいちばん安全だった理由と同じ
-5. **会話の中身に触れない。** 読むのは Issue・PR の番号・題名・ラベル・状態・日時・ブランチ名と、open PR の変更ファイルのパスだけ。PR の題名と本文は対応 Issue の番号を拾うためだけに読み、本文は保存しない。セッションの状態（M3）は hooks を足さず、MulmoTerminal が書くファイルから会社の 5 セッションの行だけを読み、部門と状態（作業中・許可待ちなど）だけを残す。会話・ツールの入力・会社以外のセッションのパスや ID は読まず、保存もログもしない（4.7）
+5. **会話の中身に触れない。** 読むのは Issue・PR の番号・題名・ラベル・状態・日時・ブランチ名と、open PR の変更ファイルのパスだけ。PR の題名と本文は対応 Issue の番号を拾うためだけに読み、本文は保存しない。セッションの状態（M3）は hooks を足さず、MulmoTerminal が書くファイルから会社の 5 セッションと、設定に名指ししたお客さん（最大 2 人。Issue #108）のフォルダの行だけを読み、部門（お客さんは設定の並びの番号）と状態（作業中・許可待ちなど）だけを残す。会話・ツールの入力・それ以外のセッションのパスや ID は読まず、保存もログもしない（4.7）。お客さんのリポジトリからは、開いている Issue・PR と直近 7 日に完了・マージしたものの番号・題名・日時だけを読む（4.1）。お客さんの題名も会社の題名と同じく `apps/web/.data/` の snapshot にだけ置き、ログには出さない
 6. **ロジックは純粋関数に。** Issue → クエスト、状態の導出、最近の成果の計算は副作用のない関数にして vitest で守る。UI（Vue / Canvas）には判定を書かない
 7. **実データは配信物に入れない。** Issue の題名には取引先の名前が入るので、画面は手元で見るもの。実データは `apps/web/public/` に置かず、ビルドにも入れない（5 章の「公開範囲」）。GitHub Pages などに載せない
 8. **外部の文字列は文字として描く。** Issue・PR の題名やラベルは外部入力なので、Vue のテキスト補間（`{{ }}`）か Canvas の `fillText` だけで描く。`v-html`、`innerHTML` などの HTML への直接挿入、外部 URL の画像・フォント・スクリプトの読み込みは使わない（画面にスクリプトを差し込まれると、手元の snapshot を外へ送られる）
@@ -122,7 +122,7 @@ conect-guild/
 
 ```
 GitHub（設定ファイルに固定したリポジトリの Issue / PR）    MulmoTerminal のファイル（~/.mulmoterminal/、読むだけ）
-   │  gh api（execFile で引数配列。gh の認証を使う。60 秒ごと）          │  会社の 5 セッションの行だけ（5 秒ごと、4.7）
+   │  gh api（execFile で引数配列。gh の認証を使う。60 秒ごと）          │  会社の 5 セッションとお客さんの行だけ（5 秒ごと、4.7）
    ▼                                                                      ▼
 packages/collector ──検証して一時ファイルに書き rename──▶ apps/web/.data/snapshot.json（0600、gitignore）
                                                               │  開発時だけ: Vite の自作プラグインが
@@ -161,13 +161,20 @@ packages/collector ──検証して一時ファイルに書き rename──▶
   - 30 日をマージの日時（`merged_at`）で測るのは、collector が PR から取っている日時が `merged_at` と `closed_at` だけで取得を増やさずに済み、マージ済みの PR は結び付きが確定した成果物で、経験値の履歴（`history.mergedPrs`）と同じ範囲になるため。open の PR と、マージせずに閉じた PR は数えない（実装時の判断）
   - 疑う条件: 部門 i の数える PR のうち、別の 1 部門 j のラベルのものが 3 件以上（`MIXUP_MIN_COUNT`）で、かつ半分を超える（ちょうど半分は疑わない）。少ない件数での誤報を避けるため（社長の判断、2026-10-13）。過半数なので、1 つの i に j は 1 つまで
   - 知らせ方: 状態ファイル（4.1 の Issue #74）に添字の組だけを `suspectedMixups: [{ from: i, to: j }]`（`from` の昇順・重複なし・1 つ以上。無ければ項目ごと書かない。件数とラベル名は入れない）で足す。取得や検証に失敗したら、同じ collector の中で最後に成功した取得の結果を残す。前の状態ファイルからは読み戻さないので、起動し直した直後や `--once` で取得に失敗したときは書かない（#85 のラベルの照合と同じ。前のプロセスの結果を引き継がない）。`--once` でも、取得に成功すれば書く。ログは結果が変わったときだけ出し、添字と件数だけにする。i→j と j→i の両方があれば `mixups suspected: departments[1] と departments[2] が入れ替わっているかもしれない（直近 30 日のマージ: departments[1] の接頭辞の PR 3/4 件が departments[2] のラベルの Issue、…）`、片方だけなら `mixups suspected: departments[3] の接頭辞の PR 3/4 件が departments[0] のラベルの Issue に結び付いている（直近 30 日のマージ）`。続けて次にやることの行を出す。疑いが消えたら `mixups ok` を 1 回出す（起動して何も疑わないときは出さない）
-- **ログ**: 出すのは件数・時刻・エラーの種類だけ（履歴は `history: opened=… completed=… merged=…` の件数だけ）。題名・本文・ブランチ名・パス・セッション ID はログに出さない。`failed: gh-failed` の次の行には、次にやること「次にやること: guild.settings.local.json（無ければ guild.settings.json）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください」を出す（Issue #74）。リポジトリ名もログに出さない方針なので、`<owner/name>` は書いたまま出す。セッションの行（`sessions=5 ok` / `sessions unavailable: parse-failed`）は 5 秒ごとには出さず、変わったときだけ出す
+- **お客さん（Issue #108）**: 設定の `guests`（任意、最大 2 人。`name`（1〜12 文字）・`sessionDir`・`repo`（任意））に名指しした、会社の外のプロジェクト。名前はほかのお客さんと重ならず、フォルダは会社のフォルダとも互いにも違い、`repo` は会社の `repo` と違う（大文字と小文字を区別せずに比べる。設定の検証で確かめ、`settings:write` は出発点の設定の `guests` をそのまま残して、新しい会社の値と合わせて確かめ直す）。セッションは会社と同じく完全一致で読む（4.7）。`repo` があるお客さんは、リポジトリを次のとおり読む（`packages/collector/src/guestGithub.ts`・`guestRun.ts`）
+  - 読むもの: Issue の一覧（PR も混ざり、`pull_request.merged_at` が載る。2026-10-14 に公開リポジトリで確かめた）を 2 回。開いているもの（`state=open`、作成日の新しい順）は番号・題名・PR かどうか・作成と更新の日時、閉じたもの（`state=closed&since=<7 日前>`、同じ順。`since` は更新日時で絞るので、7 日以内に閉じたものは必ず入る）は番号・題名・閉じた理由・閉じた日時・マージの日時・PR かどうか。`--paginate --jq` でこれらだけに絞り、行ごとに zod で検証する（本文・ラベル・ブランチ名は gh の段階で落とす）
+  - snapshot に入れるもの: 開いている Issue・PR の全部（番号の大きい順）と、直近 7 日（ちょうど 7 日前を含む）に completed で閉じた Issue とマージした PR（日時はマージの日時。not planned・重複・理由なしで閉じた Issue と、マージせずに閉じた PR は入れない）。新しい順に最大 20 件。ページのずれで同じものを 2 回読んだら後で読んだ方を使う
+  - 間隔: お客さんごとに 5 分おき（`collector.config.ts` の `guests.intervalMs`）。最初の取得は起動から 20 秒 ×（番号 + 1）後（`guests.offsetMs`。お客さん 0 は 20 秒、1 は 40 秒）で、会社の 60 秒ごとの取得とも互いとも重ならない。裏で走らせ、5 秒の周期も会社の取得も待たせない（起動直後の最初の 1 回も待たない）。前の取得が終わるまで次を始めない。`--once` では会社の取得と並べて 1 回ずつ取る
+  - API の呼び出し回数: お客さん 1 人につき 5 分に 2 回（それぞれ 100 件ごとに 1 回増える）。2 人で約 24 回/時で、会社の約 360 回/時に比べて小さい
+  - 失敗したとき: お客さんごとに最後に成功した取得の結果を持ち、取得や検証に失敗しても前の結果を残す（一度も成功していなければ null）。お客さんの失敗は会社の部分・状態ファイル（Issue #74）・snapshot の書き込み・`--once` の終了コードに影響しない
+  - ログ: お客さんを番号で書く（`guests[0] github ok: open=3 recent=2`・`guests[1] github failed: gh-failed`）。`--once` では最後に件数をまとめる（`guests: 2 ok`・`guests: 1 ok, 1 failed`）。名前・リポジトリ名・題名は出さない
+- **ログ**: 出すのは件数・時刻・エラーの種類だけ（履歴は `history: opened=… completed=… merged=…` の件数だけ）。題名・本文・ブランチ名・パス・セッション ID はログに出さない。`failed: gh-failed` の次の行には、次にやること「次にやること: guild.settings.local.json（無ければ guild.settings.json）の repo を gh のアカウントで読めるか、gh repo view <owner/name> で確かめてください」を出す（Issue #74）。リポジトリ名もログに出さない方針なので、`<owner/name>` は書いたまま出す。セッションの行（`sessions=5 ok` / `sessions unavailable: parse-failed`）は 5 秒ごとには出さず、変わったときだけ出す。お客さんがいるときは、セッションのあるお客さんの数を足す（`sessions=5 ok guests=1`）
 
 ### 4.2 snapshot.json の中身
 
 ```
 {
-  schemaVersion: 3,
+  schemaVersion: 4,
   fetchedAt: ISO 8601,                 // GitHub を取った時刻（60 秒ごと）
   repo: "owner/name",
   issues: [{ number, title, labels: string[], state, createdAt, updatedAt, closedAt | null }],
@@ -180,8 +187,15 @@ packages/collector ──検証して一時ファイルに書き rename──▶
   },
   sessions: { status: "ok", checkedAt: ISO 8601,       // セッションを読んだ時刻（5 秒ごと）
               members: [{ department: "経理" | "広報" | "企画" | "総務" | null,   // null はかなめ
-                          state: "awaiting-permission" | "working" | "resting" | "idle" }] }
-          | { status: "unavailable", checkedAt: ISO 8601 }
+                          state: "awaiting-permission" | "working" | "resting" | "idle" }],
+              guests: ("awaiting-permission" | "working" | "resting" | "idle")[] }   // 設定の guests の並び
+          | { status: "unavailable", checkedAt: ISO 8601 },
+  guests: ({                           // お客さんのリポジトリ（4.1）。設定の guests の並び
+    repo: "owner/name",
+    fetchedAt: ISO 8601,               // そのお客さんを最後に取れた時刻（5 分ごと）
+    open:   [{ number, title, isPr, createdAt, updatedAt }],
+    recent: [{ kind: "issue-completed" | "pr-merged", number, title, at }]   // 直近 7 日、最大 20 件
+  } | null)[]                          // null は repo が無いか、まだ取れていない
 }
 ```
 
@@ -189,7 +203,9 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 
 `history` には題名・部門以外のラベル・ブランチ名・日時を入れない（経験値を数えるのに日時は要らない）。番号は一覧の中で重ならず、completed の Issue の数は開かれた Issue の総数を超えない（schema で確かめる）。いまの規模で 1 件 30〜60 バイト × 約 300 件 ≒ 15 KB 増える。
 
-`schemaVersion` は M3 で 2 に上げた（`sessions` を足したため）。Issue #19 で 3 に上げた（`history` を足したため）。古い版の snapshot（古い collector が書いたもの）は、画面が「収集スクリプトを更新してください」で止める。
+お客さん（Issue #108）の名前とフォルダは snapshot に入れない（画面は設定から番号で引く）。`guests` と `sessions.guests` は設定の `guests` と同じ数・同じ並びで、`sessions` が `ok` なら両方の数が同じ（schema で確かめる）。開発時の画面は、数か `repo` が読み込んだ設定と合わない（設定を変えた直後など）ときはお客さんの分だけを無視し、ほかは今までどおり出す（止めない）。build のダミーは照合しない。
+
+`schemaVersion` は M3 で 2 に上げた（`sessions` を足したため）。Issue #19 で 3 に上げた（`history` を足したため）。Issue #108 で 4 に上げた（お客さんを足したため）。古い版の snapshot（古い collector が書いたもの）は、画面が「収集スクリプトを更新してください」で止める。
 
 ### 4.3 画面の取得と表示
 
@@ -280,14 +296,14 @@ M3 からは、セッションの状態（4.7）を混ぜる。優先順位は �
 - `~/.mulmoterminal/dev-terminal-cwds.json`: 名前は .json だが中身は行ログ。1 行が `<セッション ID> <絶対パス>`。グリッドのセルが接続したとき、新しい ID か cwd が変わったときに追記される。同じ ID が何度も出たら最後の行が正
 - `~/.mulmoterminal/activity-state.json`: `{ "<ID>": { working, waiting, event } }`。作業中か待ちのセッションだけが残り、暇なセッションは消える。時刻は持たない
 
-**会社以外を捨てる**
+**会社とお客さん以外を捨てる**
 
-- 会社の 5 セッションの起動ディレクトリを読み込んだ設定ファイル（`guild.settings.local.json`、無ければ `guild.settings.json`）の `commanderSessionDir` と `departments[].sessionDir` に固定する。既定（`guild.settings.json`）は `~/conect-management`（かなめ）、その下の `accounting`（経理）・`pr`（広報）・`planning`（企画）・`general-affairs`（総務）。`~/` はホームの下を表し、ホームは `os.homedir()` で決める。引数・環境変数では変えない。設定の検証（collector と画面に共通）で、`~`・`~/...`・絶対パスのどれかで、前後の空白・制御文字・末尾の `/`・空や `.`・`..` の区切りが無く、5 つの文字列が互いに違うことを確かめる。`~` とホームの絶対パスのように展開すると同じになる重複は、collector だけが起動時にホームを展開してから調べて止まる（画面はセッションの起動ディレクトリを使わない）
-- 行ログは 1 行ずつストリームで読み、パスが 5 つに**完全一致する行だけ**を残す（末尾の `/`、子ディレクトリ、worktree は当たらない）。それ以外の行はその場で比べて捨て、変数にためず、保存も、件数を含めてログもしない。会社の ID が後で別のパスの行に出たら、その ID は会社の候補から外す（ID の最後の行が正）
+- 会社の 5 セッションの起動ディレクトリを読み込んだ設定ファイル（`guild.settings.local.json`、無ければ `guild.settings.json`）の `commanderSessionDir` と `departments[].sessionDir` に固定する。既定（`guild.settings.json`）は `~/conect-management`（かなめ）、その下の `accounting`（経理）・`pr`（広報）・`planning`（企画）・`general-affairs`（総務）。`~/` はホームの下を表し、ホームは `os.homedir()` で決める。引数・環境変数では変えない。設定の検証（collector と画面に共通）で、`~`・`~/...`・絶対パスのどれかで、前後の空白・制御文字・末尾の `/`・空や `.`・`..` の区切りが無く、5 つの文字列が互いに違うことを確かめる。設定に名指ししたお客さん（`guests[].sessionDir`、最大 2 つ。Issue #108）も同じ決まりで読み、会社の 5 つとも互いとも違うことを確かめる`~` とホームの絶対パスのように展開すると同じになる重複は、collector だけが起動時にホームを展開してから調べて止まる（画面はセッションの起動ディレクトリを使わない）
+- 行ログは 1 行ずつストリームで読み、パスが 5 つ（お客さんがいればその分も）に**完全一致する行だけ**を残す（末尾の `/`、子ディレクトリ、worktree は当たらない）。お客さんのフォルダの下の別のフォルダや、名指ししていないプロジェクトの行も今までどおり捨てる。それ以外の行はその場で比べて捨て、変数にためず、保存も、件数を含めてログもしない。会社の ID が後で別のパスの行に出たら、その ID は会社の候補から外す（ID の最後の行が正）
 - パスごとに、残った候補のうち最後の行の ID を今のセッションとする。行は MulmoTerminal と同じく前後の空白を落とし、最初の空白で ID とパスに分ける（パスの中の空白はそのまま）。ID が UUID の形でない行、空行、壊れた行は飛ばす
 - 末尾の行（直後に改行が無い行）は書きかけかもしれない（MulmoTerminal は `\n<ID> <パス>` と行頭に改行を付けて追記するので、部門の行が会社のルートまでで途切れるとかなめの行に見える）。前回の周期でも同じ内容が同じ位置で末尾にあったときだけ使い、それ以外はその行を除いて決める。collector が覚えるのは末尾の行のハッシュと終わりの位置だけで、内容は持たない。新しいセッションの反映は最大 1 周期（5 秒）遅れる。`--once` では末尾の行を使わない
 - activity-state.json からは、その ID のキーだけを引く。ほかのキーは見ない（壊れていても関係ない）。全体が JSON のオブジェクトであることと、会社のエントリの形（`working`・`waiting` が真偽値、`event` が文字列か null）を zod で確かめる
-- snapshot に入れるのは部門（かなめは null）と状態だけ。ID とパスは入れない
+- snapshot に入れるのは部門（かなめは null）と状態だけ。お客さんは設定の並びの順に状態だけ（`sessions.guests`）。ID・パス・お客さんの名前は入れない
 
 **状態の規則**（上から最初に当たったもの）
 
@@ -456,6 +472,7 @@ X と note の動画を撮るため、架空のクエストで一連の演出を
 - `vite build` と CI は `apps/web/public/snapshot.sample.json`（架空の題名のダミー）だけを使う。プラグインは開発時だけ有効なので、ビルドに実データは入らない
 - `dist/` は配布しない（GitHub Pages などに載せない）
 - localStorage には題名を残さない（4.4）
+- お客さんのリポジトリの題名（Issue #108）も、会社の題名と同じく `apps/web/.data/snapshot.json` にだけ置く。ログ・状態ファイル・`public/` には入れない。`snapshot.sample.json` のお客さんは架空のもの
 - 実データを消すときは `apps/web/.data/` を消し、ブラウザの localStorage の基準を消す（画面に「基準を消す」ボタンを置く）
 
 ## 6. 段階（小さく出して育てる）
