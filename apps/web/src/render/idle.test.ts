@@ -22,13 +22,24 @@ import { tileToPoint } from './path';
 import { DEFAULT_SEATS } from './scenes';
 
 const MIN = 60_000;
-const IDS: readonly MemberId[] = ['kaname', 'minori', 'hibiki', 'hirame', 'sasae', 'yukihiro'];
+const IDS: readonly MemberId[] = [
+  'kaname',
+  'minori',
+  'hibiki',
+  'hirame',
+  'sasae',
+  'takumi',
+  'musubi',
+  'yukihiro',
+];
 const SEEDS: IdleSeeds = {
   kaname: 11,
   minori: 222,
   hibiki: 3_333,
   hirame: 44_444,
   sasae: 555_555,
+  takumi: 77_777_777,
+  musubi: 888_888_888,
   yukihiro: 6_666_666,
 };
 /** The start of a play cycle far from zero, like a real epoch time. */
@@ -113,7 +124,7 @@ describe('idleHash and createIdleSeeds', () => {
       calls += 1;
       return 0.5;
     });
-    expect(calls).toBe(6);
+    expect(calls).toBe(8);
     expect(Object.keys(seeds)).toHaveLength(IDS.length);
     expect(Object.keys(seeds)).toEqual(expect.arrayContaining([...IDS]));
     expect(seeds.minori).toBe(2 ** 30);

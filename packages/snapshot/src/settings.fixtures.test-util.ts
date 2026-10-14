@@ -12,6 +12,8 @@ const FICTIONAL_DEPARTMENTS = [
   { member: 'hibiki', label: '鍛冶', dir: 'smithy' },
   { member: 'hirame', label: '占術', dir: 'oracle' },
   { member: 'sasae', label: '交易', dir: 'trade' },
+  { member: 'takumi', label: '細工', dir: 'craft' },
+  { member: 'musubi', label: '使節', dir: 'envoy' },
 ] as const satisfies readonly {
   readonly member: DepartmentMemberId;
   readonly label: string;
@@ -52,6 +54,8 @@ export function makeSettings(
       hibiki: { name: 'テスト二', role: '鍛冶', color: '#881111' },
       hirame: { name: 'テスト三', role: '占術', color: '#111188' },
       sasae: { name: 'テスト四', role: '交易', color: '#886611' },
+      takumi: { name: 'テスト五', role: '細工', color: '#118888' },
+      musubi: { name: 'テスト六', role: '使節', color: '#aa5522' },
       yukihiro: { name: 'テスト王', role: '社長', color: '#661188' },
     },
     commanderSessionDir: FICTIONAL_ROOT,
