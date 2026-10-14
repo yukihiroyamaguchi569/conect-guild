@@ -14,6 +14,11 @@ import type { GuildLayout, TilePos } from './types';
 
 const keyOf = (pos: TilePos): string => `${String(pos.col)},${String(pos.row)}`;
 
+/** The ground under `pos`: the last fill that covers it (later fills win). */
+function groundAt(layout: GuildLayout, pos: TilePos): string | undefined {
+  return layout.groundFills.findLast((fill) => contains(fill, pos))?.tile;
+}
+
 /** The seats of those who walk: かなめ and each desk (the king never leaves the throne). */
 const walkerSeats = (layout: GuildLayout): TilePos[] => [
   layout.commanderSeat,
@@ -88,6 +93,14 @@ describe.each(Object.values(LAYOUTS))(
         expect(underWindow(layout, spot)).toBe(false);
         expect(seats.has(keyOf(spot))).toBe(false);
         expect(findPath(layout.offstage, spot, walkable)).not.toBeNull();
+      }
+    });
+
+    it('stands no guest on the red rug, nor next to it (the picture is wider than a tile)', () => {
+      for (const spot of layout.guestSpots) {
+        for (const col of [spot.col - 1, spot.col, spot.col + 1]) {
+          expect(groundAt(layout, { col, row: spot.row }), keyOf(spot)).not.toBe('rug-red');
+        }
       }
     });
 
