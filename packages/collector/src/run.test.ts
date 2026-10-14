@@ -34,6 +34,7 @@ describe('collectOnce', () => {
       github: { ok: true, issues: 1, prs: 2, history: { opened: 3, completed: 1, merged: 1 } },
       sessions: SESSIONS_OK,
       mixups: [],
+      guests: [],
     });
     expect(deps.writes).toHaveLength(1);
     const snapshot = snapshotSchema.parse(JSON.parse(deps.writes[0] ?? ''));

@@ -1,10 +1,26 @@
-import { snapshotSchema, type GithubPart, type SnapshotSessions } from '@conect-guild/snapshot';
+import {
+  snapshotSchema,
+  type GithubPart,
+  type GuestGithubPart,
+  type SnapshotSessions,
+} from '@conect-guild/snapshot';
 import type { Mixup } from '@conect-guild/snapshot/mixup';
 import { COLLECTOR_CONFIG } from '../collector.config.ts';
 import { parseCliArgs } from './args.ts';
 import { collectSnapshot } from './collect.ts';
 import { CollectorError, errorKind, type CollectorErrorKind } from './errors.ts';
 import { parseOrThrow, type GhRunner } from './gh.ts';
+import {
+  createGuestLoop,
+  fetchGuestsOnce,
+  guestParts,
+  guestsSummary,
+  reportGuest,
+  settleGuestFetches,
+  startDueGuestFetches,
+  type GuestLoop,
+  type GuestResult,
+} from './guestRun.ts';
 import {
   checkLabels,
   isLabelCheckDue,
@@ -100,17 +116,18 @@ function toSnapshotSessions(reading: SessionsReading, checkedAt: Date): Snapshot
 }
 
 /**
- * Validates the whole snapshot (the last good GitHub part + this reading of the sessions) and
- * writes it atomically. A failed sessions reading never stops the GitHub part from being written.
+ * Validates the whole snapshot (the last good GitHub part + this reading of the sessions + the
+ * guests' last good parts) and writes it atomically. A failed sessions reading never stops the
+ * GitHub part from being written; the guest parts were validated when fetched (guestGithub.ts).
  */
 async function writeSnapshot(
   deps: RunDeps,
   github: GithubPart,
   reading: SessionsReading,
+  guests: readonly (GuestGithubPart | null)[],
 ): Promise<WriteResult> {
   try {
     const sessions = toSnapshotSessions(reading, deps.now());
-    const guests = deps.guestRepos.map(() => null);
     const snapshot = parseOrThrow(snapshotSchema, { ...github, sessions, guests });
     const content = `${JSON.stringify(snapshot, null, 2)}\n`;
     try {
@@ -140,17 +157,29 @@ function cycleResult(github: GithubResult, write: WriteResult | null): CycleResu
   };
 }
 
-/** One full cycle (GitHub, sessions, write). Nothing is written unless GitHub succeeds. */
+/**
+ * One full cycle (GitHub and the guests side by side, sessions, write). Nothing is written unless
+ * the company's GitHub succeeds; a guest that fails is written as null.
+ */
 export async function collectOnce(deps: RunDeps): Promise<{
   readonly github: CycleResult;
   readonly sessions: SessionsReading;
   /** Issue #94: the suspected mix-ups; empty when none or GitHub failed. */
   readonly mixups: readonly Mixup[];
+  /** Issue #108: each guest's fetch, null for a guest without a repository. */
+  readonly guests: readonly (GuestResult | null)[];
 }> {
-  const github = await fetchGithub(deps, deps.now());
+  const now = deps.now();
+  const [github, guests] = await Promise.all([fetchGithub(deps, now), fetchGuestsOnce(deps, now)]);
   const sessions = await readSessionsSafely(deps);
-  const write = github.ok ? await writeSnapshot(deps, github.part, sessions) : null;
-  return { github: cycleResult(github, write), sessions, mixups: github.ok ? github.mixups : [] };
+  const parts = guests.map((result) => (result?.ok === true ? result.part : null));
+  const write = github.ok ? await writeSnapshot(deps, github.part, sessions, parts) : null;
+  return {
+    github: cycleResult(github, write),
+    sessions,
+    mixups: github.ok ? github.mixups : [],
+    guests,
+  };
 }
 
 function checkRepoLabels(deps: RunDeps): Promise<LabelCheck> {
@@ -190,6 +219,8 @@ interface LoopState {
   labelsLogged: string | null;
   /** Issue #94: the suspected mix-ups of the last good fetch; empty before one. */
   mixups: readonly Mixup[];
+  /** Issue #108: the guests' fetches and their last good parts. */
+  readonly guests: GuestLoop;
 }
 
 function isGithubDue(lastAttemptAt: number | null, now: number): boolean {
@@ -292,10 +323,14 @@ async function tick(deps: RunDeps, state: LoopState): Promise<void> {
     const running = startGithub(deps, state, now);
     if (first) await running;
   }
+  startDueGuestFetches(deps, state.guests, now, COLLECTOR_CONFIG.guests);
   if (stopped()) return;
   const reading = await readSessionsSafely(deps);
   if (stopped()) return;
-  const write = state.github === null ? null : await writeSnapshot(deps, state.github, reading);
+  const write =
+    state.github === null
+      ? null
+      : await writeSnapshot(deps, state.github, reading, guestParts(state.guests));
   reportWrite(deps, state, write);
   reportSessions(deps, state, reading);
   // After the snapshot, so the page never reads a success before the file it is about.
@@ -314,6 +349,7 @@ export function nextTickAt(scheduledAt: number, now: number, intervalMs: number)
 
 /** Collect until the signal aborts. Failures are retried on the next tick. */
 async function runLoop(deps: RunDeps): Promise<void> {
+  let scheduledAt = deps.now().getTime();
   const state: LoopState = {
     github: null,
     githubAttemptAt: null,
@@ -328,10 +364,10 @@ async function runLoop(deps: RunDeps): Promise<void> {
     missingLabels: null,
     labelsLogged: null,
     mixups: [],
+    guests: createGuestLoop(deps.guestRepos, scheduledAt),
   };
   // A function call keeps TypeScript from narrowing `aborted` across awaits.
   const stopped = (): boolean => deps.signal.aborted;
-  let scheduledAt = deps.now().getTime();
   while (!stopped()) {
     await tick(deps, state);
     // An interrupt during a tick ends quietly instead of reporting the killed gh.
@@ -343,6 +379,16 @@ async function runLoop(deps: RunDeps): Promise<void> {
   // No gh process outlives the loop.
   await state.githubInFlight;
   await state.labelsInFlight;
+  await settleGuestFetches(state.guests);
+}
+
+/** `--once`: a line per guest with a repository, then the count (Issue #108). */
+function reportGuests(deps: RunDeps, results: readonly (GuestResult | null)[]): void {
+  results.forEach((result, index) => {
+    if (result !== null) reportGuest(deps, index, result);
+  });
+  const summary = guestsSummary(results);
+  if (summary !== null) deps.log(`${prefix(deps)} ${summary}`);
 }
 
 /** Entry logic of the collector. Resolves with the process exit code. */
@@ -355,6 +401,7 @@ export async function runCollector(args: readonly string[], deps: RunDeps): Prom
     reportLabels(deps, labels);
     if (result.mixups.length > 0) reportMixups(deps, result.mixups);
     deps.log(`${prefix(deps)} ${sessionsSummary(result.sessions)}`);
+    reportGuests(deps, result.guests);
     const failure = result.github.ok ? null : result.github.kind;
     const missing = missingAfter(null, labels);
     const status = collectorStatusOf({ at, failure }, null, missing, result.mixups);

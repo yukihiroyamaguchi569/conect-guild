@@ -63,17 +63,24 @@ const OUTPUTS: Record<string, unknown[][]> = {
   ],
 };
 
+/**
+ * A gh that answers each path from the first key it contains: `outputs` (say a guest's
+ * `repos/<guest>/issues?state=open`, Issue #108) before the company's. `overrides` replace the
+ * answer of a key with a text or a failure.
+ */
 export function fakeGh(
   overrides: Record<string, string | Error> = {},
+  outputs: Record<string, unknown[][]> = {},
 ): GhRunner & { calls: string[] } {
   const calls: string[] = [];
+  const all = { ...outputs, ...OUTPUTS };
   const gh = (args: readonly string[]): Promise<string> => {
     const path = args.at(-1) ?? '';
     calls.push(path);
-    const key = Object.keys(OUTPUTS).find((k) => path.includes(k)) ?? 'missing';
+    const key = Object.keys(all).find((k) => path.includes(k)) ?? 'missing';
     const override = overrides[key];
     if (override instanceof Error) return Promise.reject(override);
-    const pages = OUTPUTS[key] ?? [];
+    const pages = all[key] ?? [];
     // gh --paginate --jq prints the lines of every page one after another.
     const stdout = pages
       .flat()
