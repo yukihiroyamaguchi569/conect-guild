@@ -43,6 +43,11 @@ export interface DeskCorner {
   readonly decor: readonly DecorPlacement[];
 }
 
+/** A corner's desk: its furniture and things, and where its member sits (`chatWith` is derived). */
+export interface CornerDesk extends DeskCorner {
+  readonly desk: Omit<Desk, 'chatWith'>;
+}
+
 /** The corners that change with the number of departments (Issue #123). */
 export interface RoomCorners {
   readonly upperLeft: DeskCorner;
@@ -165,7 +170,7 @@ export function roomWith(corners: RoomCorners): DeskCorner {
 }
 
 /** layout4's upper left (経理) desk, with its safe, abacus, ledgers and coins. */
-export const UPPER_LEFT_DESK: DeskCorner & { readonly desk: Desk } = {
+export const UPPER_LEFT_DESK: CornerDesk = {
   objects: [flat('chair', rect(12, 3, 1, 2)), solid('desk', rect(10, 5, 4, 2))],
   decor: [
     place('safe', 10, 3),
@@ -213,22 +218,29 @@ export const MAP_CORNER: DeskCorner = {
   decor: [place('map-table', 3, 11), place('stool', 6, 12)],
 };
 
+/** The guests of four departments, in front of the map table and beside its stool (Issue #108). */
+export const MAP_CORNER_GUEST_SPOTS: readonly [TilePos, TilePos] = [
+  { col: 4, row: 13 },
+  { col: 7, row: 12 },
+];
+
 /** layout4's lower right corner, right of the 総務 desk: the files and the crates. */
 export const FILES_CORNER: DeskCorner = {
   objects: [],
   decor: [place('file-cabinet', 26, 11), place('crate-stack', 28, 11)],
 };
 
-/**
- * The lower desks, at layout4's 企画 and 総務, when the left one is `desks[first]`: the left and
- * right chat across the counter.
- */
-export function lowerDesks(first: number): readonly [Desk, Desk] {
-  return [
-    { seat: { col: 11, row: 10 }, side: 'lower', things: ['globe'], chatWith: first + 1 },
-    { seat: { col: 21, row: 10 }, side: 'lower', things: ['file-stack'], chatWith: first },
-  ];
-}
+/** Where the members of the lower desks (layout4's 企画 and 総務) sit; roomWith has the desks. */
+export const LOWER_LEFT_SEAT: Omit<Desk, 'chatWith'> = {
+  seat: { col: 11, row: 10 },
+  side: 'lower',
+  things: ['globe'],
+};
+export const LOWER_RIGHT_SEAT: Omit<Desk, 'chatWith'> = {
+  seat: { col: 21, row: 10 },
+  side: 'lower',
+  things: ['file-stack'],
+};
 
 /** Where かなめ, the king and the scenes' places are: as in layout4. */
 export const SMALL_ROOM_SEATS = {

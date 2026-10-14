@@ -1,5 +1,5 @@
-import { UPPER_LEFT_DESK, type DeskCorner } from './smallRoom';
-import { flat, place, rect, solid, type DecorPlacement, type Desk, type TilePos } from './types';
+import type { CornerDesk, DeskCorner } from './smallRoom';
+import { flat, place, rect, solid, type DecorPlacement, type TilePos } from './types';
 
 /**
  * The desks of the offices of four departments and more in the room of smallRoom.ts (Issue #18):
@@ -8,7 +8,7 @@ import { flat, place, rect, solid, type DecorPlacement, type Desk, type TilePos 
  */
 
 /** layout4's upper right (広報) desk, with its easel, megaphone, book, flyers and mugs. */
-export const UPPER_RIGHT_DESK: DeskCorner & { readonly desk: Desk } = {
+export const UPPER_RIGHT_DESK: CornerDesk = {
   objects: [flat('chair', rect(20, 3, 1, 2)), solid('desk', rect(19, 5, 4, 2))],
   decor: [
     place('easel', 22, 3),
@@ -17,14 +17,8 @@ export const UPPER_RIGHT_DESK: DeskCorner & { readonly desk: Desk } = {
     place('flyers', 21, 5),
     place('mugs', 22, 5),
   ],
-  desk: { seat: { col: 20, row: 4 }, side: 'upper', things: ['megaphone'], chatWith: 0 },
+  desk: { seat: { col: 20, row: 4 }, side: 'upper', things: ['megaphone'] },
 };
-
-/** The upper desks chat across the throne, as in layout4. */
-export const UPPER_DESKS: readonly [Desk, Desk] = [
-  { ...UPPER_LEFT_DESK.desk, chatWith: 1 },
-  UPPER_RIGHT_DESK.desk,
-];
 
 /**
  * The tavern's round table (with its stools, as in layout2 and layout3) in front of layout5's
@@ -40,6 +34,9 @@ export const GUEST_TABLE: DecorPlacement = {
   dy: -24,
 };
 
+/** The guest of five departments behind its round table, where layout4 has its files. */
+export const GUEST_TABLE_CORNER: DeskCorner = { objects: [], decor: [GUEST_TABLE] };
+
 /**
  * The quest board's max-height (cqw) with the workshop desk: the board then ends above the bubble
  * over its seat (logical 234.5 px against 240 px) and scrolls sooner (31cqw elsewhere).
@@ -50,7 +47,7 @@ export const WORKSHOP_BOARD_MAX_CQW = 22;
  * The workshop desk (たくみ, 開発) on the lower left carpet, left of the 企画 desk and like it:
  * the member on the chair behind it, tools and scrolls on it, a barrel in the corner.
  */
-export const WORKSHOP_DESK: DeskCorner & { readonly seat: TilePos } = {
+export const WORKSHOP_DESK: CornerDesk = {
   objects: [flat('chair', rect(6, 9, 1, 2)), solid('desk', rect(4, 11, 4, 2))],
   decor: [
     place('candlestick', 4, 11),
@@ -59,17 +56,14 @@ export const WORKSHOP_DESK: DeskCorner & { readonly seat: TilePos } = {
     place('book-pile', 7, 11),
     place('barrel', 1, 11),
   ],
-  seat: { col: 6, row: 10 },
+  desk: { seat: { col: 6, row: 10 }, side: 'lower', things: [] },
 };
 
 /**
  * The sales desk (むすび, 営業) on the lower right carpet, right of the 総務 desk and mirroring
  * it: letters, a ledger and mugs for the visitors.
  */
-export const SALES_DESK: DeskCorner & {
-  readonly seat: TilePos;
-  readonly underPartyWindow: readonly TilePos[];
-} = {
+export const SALES_DESK: CornerDesk & { readonly underPartyWindow: readonly TilePos[] } = {
   objects: [flat('chair', rect(26, 9, 1, 2)), solid('desk', rect(25, 11, 4, 2))],
   decor: [
     place('open-book', 25, 11),
@@ -77,7 +71,7 @@ export const SALES_DESK: DeskCorner & {
     place('flyers', 27, 11),
     place('mugs', 28, 11),
   ],
-  seat: { col: 26, row: 10 },
+  desk: { seat: { col: 26, row: 10 }, side: 'lower', things: [] },
   // Every tile right of col 22 down to row 11 is under the party window of six departments (bottom
   // 316 px): the seat and the way from it to the alley between the desks (col 24, row 12).
   underPartyWindow: [
