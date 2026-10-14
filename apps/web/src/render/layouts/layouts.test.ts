@@ -270,6 +270,16 @@ const RULE_1: readonly Place[] = [
   'lowerRightEnd',
 ];
 
+/** The order of `departments[i]`'s desks: the upper row, then the lower row, then its ends. */
+const READING_ORDER: readonly Place[] = [
+  'upperLeft',
+  'upperRight',
+  'lowerLeft',
+  'lowerRight',
+  'lowerLeftEnd',
+  'lowerRightEnd',
+];
+
 /** The desk place nearest to `pos` (by the seats of the six desks). */
 function nearestPlace(pos: TilePos): Place {
   const distance = (place: Place): number =>
@@ -288,6 +298,14 @@ describe.each(Object.values(LAYOUTS))(
     it('fills the desk places in order: lower left and right, upper left and right, the ends', () => {
       const wanted = RULE_1.slice(0, count).map((place) => PLACE_DESKS[place].seat);
       expect(sortedKeys(layout.desks.map((desk) => desk.seat))).toEqual(sortedKeys(wanted));
+    });
+
+    it('seats the departments upper row first, left to right, as before Issue #123', () => {
+      const filled = RULE_1.slice(0, count);
+      const wanted = READING_ORDER.filter((place) => filled.includes(place));
+      expect(layout.desks.map((desk) => keyOf(desk.seat))).toEqual(
+        wanted.map((place) => keyOf(PLACE_DESKS[place].seat)),
+      );
     });
 
     it('stands the guests at the next desk place (two departments: the upper right tavern)', () => {

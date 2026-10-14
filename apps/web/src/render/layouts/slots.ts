@@ -46,7 +46,7 @@ export const FILL_ORDER = [
 ] as const;
 export type Place = (typeof FILL_ORDER)[number];
 /** The places that change with the number of departments: the lower desks stand in every office. */
-export type CornerPlace = Exclude<Place, 'lowerLeft' | 'lowerRight'>;
+type CornerPlace = Exclude<Place, 'lowerLeft' | 'lowerRight'>;
 
 /** Where the guests stand in a place, and the round table before them. */
 interface GuestsCorner extends DeskCorner {
@@ -60,7 +60,7 @@ interface Corner {
   readonly decor?: DeskCorner;
 }
 
-export const CORNERS: Readonly<Record<CornerPlace, Corner>> = {
+const CORNERS: Readonly<Record<CornerPlace, Corner>> = {
   upperLeft: { desk: UPPER_LEFT_DESK, decor: LIBRARY },
   upperRight: { desk: UPPER_RIGHT_DESK, guests: { ...TAVERN, spots: TAVERN_GUEST_SPOTS } },
   lowerLeftEnd: {
