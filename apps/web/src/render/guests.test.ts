@@ -19,7 +19,13 @@ import {
 import { createGuestArt } from './guestArt';
 import { createGuestStage } from './guestStage';
 import { LAYOUTS } from './layouts';
-import { overlaps, tallestWindowExtentsFor, type PxRect } from './map';
+import {
+  LOGICAL_HEIGHT,
+  LOGICAL_WIDTH,
+  overlaps,
+  tallestWindowExtentsFor,
+  type PxRect,
+} from './map';
 import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET } from './metrics';
 
 const fixed: Random = () => 0.5;
@@ -90,15 +96,24 @@ describe('guestLook', () => {
 
 describe('guestTags', () => {
   const feet = { x: 100, y: 400 };
+  /** A message window under the feet, its top at `top`. */
+  const below = (top: number): PxRect => ({ left: 50, right: 900, top, bottom: top + 60 });
 
   it('puts the name under the feet, and nothing else without a repository', () => {
-    expect(guestTags(guest(0), feet, 500)).toEqual([
-      { text: '客0', kind: 'name', align: 'center', x: 100, y: 400 + GUEST.nameBelowFeet },
+    expect(guestTags(guest(0), feet, below(500))).toEqual([
+      {
+        text: '客0',
+        kind: 'name',
+        align: 'center',
+        x: 100,
+        y: 400 + GUEST.nameBelowFeet,
+        maxWidth: null,
+      },
     ]);
   });
 
   it('puts the counts under the name when they fit above the message window', () => {
-    const tags = guestTags(guest(0, { counts: { issues: 3, prs: 1 } }), feet, 500);
+    const tags = guestTags(guest(0, { counts: { issues: 3, prs: 1 } }), feet, below(500));
     expect(tags.map((tag) => [tag.text, tag.align, tag.y])).toEqual([
       ['客0', 'center', 400 + GUEST.nameBelowFeet],
       ['Issue 3 / PR 1', 'center', 400 + GUEST.nameBelowFeet + GUEST.countBelowName],
@@ -106,11 +121,11 @@ describe('guestTags', () => {
   });
 
   it('puts the counts on the name line when they would reach the window', () => {
-    const below = 400 + GUEST.nameBelowFeet + GUEST.countBelowName;
+    const countY = 400 + GUEST.nameBelowFeet + GUEST.countBelowName;
     const tags = guestTags(
       guest(0, { counts: { issues: 0, prs: 2 } }),
       feet,
-      below + GUEST.countBelowName / 2 - 1,
+      below(countY + GUEST.countBelowName / 2 - 1),
     );
     expect(tags).toEqual([
       {
@@ -119,6 +134,7 @@ describe('guestTags', () => {
         align: 'right',
         x: 100 - GUEST.tagGap,
         y: 400 + GUEST.nameBelowFeet,
+        maxWidth: null,
       },
       {
         text: 'Issue 0 / PR 2',
@@ -126,12 +142,34 @@ describe('guestTags', () => {
         align: 'left',
         x: 100 + GUEST.tagGap,
         y: 400 + GUEST.nameBelowFeet,
+        maxWidth: null,
       },
     ]);
   });
 
   it('writes the counts as Issue n / PR m', () => {
     expect(countText({ issues: 12, prs: 0 })).toBe('Issue 12 / PR 0');
+  });
+});
+
+describe('guestTags beside the message window', () => {
+  it('keeps both lines in the span beside the window for a guest standing next to it', () => {
+    const window = { left: 100, right: 900, top: 380, bottom: 560 };
+    const right = guestTags(
+      guest(0, { counts: { issues: 1, prs: 1 } }),
+      { x: 960, y: 400 },
+      window,
+    );
+    const span = {
+      x: (900 + GUEST.tagGap + LOGICAL_WIDTH - GUEST.tagGap) / 2,
+      maxWidth: LOGICAL_WIDTH - 900 - 2 * GUEST.tagGap,
+    };
+    expect(right.map(({ align, x, maxWidth }) => ({ align, x, maxWidth }))).toEqual([
+      { align: 'center', ...span },
+      { align: 'center', ...span },
+    ]);
+    const left = guestTags(guest(0), { x: 60, y: 400 }, window);
+    expect(left).toMatchObject([{ x: 50, maxWidth: 100 - 2 * GUEST.tagGap }]);
   });
 });
 
@@ -255,9 +293,19 @@ describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layou
     const tags = guestTags(
       guest(index, { name: '十二文字のながいおきゃくさん', counts: { issues: 100, prs: 100 } }),
       feet,
-      message.top,
+      message,
     );
-    for (const tag of tags) expect(tag.y + 5).toBeLessThanOrEqual(message.top);
+    for (const tag of tags) {
+      // Over the window: above its top. Beside it: within the span between it and the canvas edge.
+      if (tag.maxWidth === null) {
+        expect(tag.y + 5).toBeLessThanOrEqual(message.top);
+      } else {
+        const [left, right] = [tag.x - tag.maxWidth / 2, tag.x + tag.maxWidth / 2];
+        const clear = left >= message.right || right <= message.left;
+        expect(clear && left >= 0 && right <= LOGICAL_WIDTH).toBe(true);
+        expect(tag.y + 5).toBeLessThanOrEqual(LOGICAL_HEIGHT);
+      }
+    }
   });
 });
 

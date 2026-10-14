@@ -318,7 +318,7 @@ function paint(painter: Painter, scale: number, moment: Moment): void {
   drawShade(ctx, painter.scratch, light, lampLights(moment.now));
   const tags = levelTags(moment.levels, DEFAULT_SEATS);
   drawLevelTags(ctx, tags);
-  drawGuestOverheads(ctx, moment.guests, WINDOW_EXTENTS.message.top);
+  drawGuestOverheads(ctx, moment.guests, WINDOW_EXTENTS.message);
   const placed = painter.placer.place({ ...moment, tags });
   drawOverhead(ctx, { placed, confetti: moment.frame.confetti });
   drawLevelUpBanners(ctx, { placed, confetti: moment.frame.confetti });

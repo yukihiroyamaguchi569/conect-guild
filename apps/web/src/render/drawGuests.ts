@@ -3,6 +3,7 @@ import { drawSleepZ } from './draw';
 import { drawBubble } from './drawBubble';
 import { LEVEL_TAG_ALPHA } from './drawLevelTags';
 import { readingPoint, type GuestArt } from './guestArt';
+import type { PxRect } from './map';
 import { guestTags, markFeet, type GuestFrame, type GuestTag, type SparkleView } from './guests';
 
 /**
@@ -37,8 +38,9 @@ function drawTags(ctx: CanvasRenderingContext2D, tags: readonly GuestTag[]): voi
     ctx.font = tag.kind === 'name' ? 'bold 10px sans-serif' : 'bold 9px sans-serif';
     ctx.fillStyle = tag.kind === 'name' ? '#ffe9a8' : '#d8ecff';
     ctx.textAlign = tag.align;
-    ctx.strokeText(tag.text, tag.x, tag.y);
-    ctx.fillText(tag.text, tag.x, tag.y);
+    const maxWidth = tag.maxWidth ?? undefined;
+    ctx.strokeText(tag.text, tag.x, tag.y, maxWidth);
+    ctx.fillText(tag.text, tag.x, tag.y, maxWidth);
   }
   ctx.restore();
 }
@@ -51,16 +53,16 @@ function drawSparkle(ctx: CanvasRenderingContext2D, view: SparkleView): void {
 }
 
 /**
- * Over everything, like the members' bubbles: the name and the counts under each guest (kept above
- * `bottom`, the message window), the 「?」 or the 「Z」 over the head, and the sparkles.
+ * Over everything, like the members' bubbles: the name and the counts under each guest (kept clear of
+ * `messageWindow`), the 「?」 or the 「Z」 over the head, and the sparkles.
  */
 export function drawGuestOverheads(
   ctx: CanvasRenderingContext2D,
   frame: GuestFrame,
-  bottom: number,
+  messageWindow: PxRect,
 ): void {
   for (const { guest, feet, look } of frame.poses) {
-    drawTags(ctx, guestTags(guest, feet, bottom));
+    drawTags(ctx, guestTags(guest, feet, messageWindow));
     const { mark } = look;
     if (mark?.kind === 'question') drawBubble(ctx, QUESTION, markFeet(feet, mark), 'beside-right');
     if (mark?.kind === 'z') drawSleepZ(ctx, mark.rise, markFeet(feet, mark));
