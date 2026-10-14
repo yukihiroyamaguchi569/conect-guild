@@ -18,7 +18,7 @@ import {
   type SpriteArt,
   type TileArt,
 } from './art';
-import { createGuestArt, placeholderGuestArt, type GuestArt } from './guestArt';
+import { createGuestArt, type GuestArt } from './guestArt';
 import { chooseProps, createDecorArt, decorProps, sheetProps } from './decorArt';
 import { createSpriteArt } from './spriteArt';
 import { createTileArt } from './tileArt';
@@ -108,11 +108,16 @@ export async function loadArt(): Promise<GuildArt> {
 /** The guests' pictures (Issue #108), in the order of the settings' guests. */
 const GUEST_URLS = [guest1Url, guest2Url] as const;
 
-/** The guests' art; plain boxes when a picture cannot be loaded. */
+/** The guests' art; a plain box for a guest whose picture cannot be loaded (the other keeps its). */
 export async function loadGuestArt(): Promise<GuestArt> {
-  try {
-    return createGuestArt(await Promise.all(GUEST_URLS.map(loadImage)));
-  } catch {
-    return placeholderGuestArt;
-  }
+  const sheets = await Promise.all(
+    GUEST_URLS.map(async (url) => {
+      try {
+        return await loadImage(url);
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return createGuestArt(sheets);
 }

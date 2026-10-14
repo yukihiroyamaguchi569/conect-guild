@@ -16,6 +16,7 @@ import {
   stageGuestsOf,
   type StageGuest,
 } from './guests';
+import { createGuestArt } from './guestArt';
 import { createGuestStage } from './guestStage';
 import { LAYOUTS } from './layouts';
 import { overlaps, tallestWindowExtentsFor, type PxRect } from './map';
@@ -191,6 +192,19 @@ describe('createGuestStage', () => {
     expect(stage.frameAt(20).animating).toBe(false);
   });
 
+  it('drops the sparkles while the screen is halted and starts none until it is back', () => {
+    const stage = createGuestStage(spots, () => true, fixed);
+    stage.set([guest(0)]);
+    stage.sparkle(0, 0);
+    stage.setHalted(true);
+    expect(stage.frameAt(10).sparkles).toEqual([]);
+    stage.sparkle(0, 20);
+    expect(stage.frameAt(30).sparkles).toEqual([]);
+    stage.setHalted(false);
+    stage.sparkle(0, 40);
+    expect(stage.frameAt(50).sparkles).toHaveLength(1);
+  });
+
   it('forgets a sparkle once it is over', () => {
     const stage = createGuestStage(spots, () => true, fixed);
     stage.set([guest(0)]);
@@ -244,5 +258,23 @@ describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layou
       message.top,
     );
     for (const tag of tags) expect(tag.y + 5).toBeLessThanOrEqual(message.top);
+  });
+});
+
+describe('createGuestArt', () => {
+  const sheet: ImageBitmap = { width: 560, height: 80, close: () => undefined };
+  const short: ImageBitmap = { width: 320, height: 80, close: () => undefined };
+
+  it('reads with the arms in front only from a sheet that has the holding frames', () => {
+    const art = createGuestArt([sheet, short]);
+    expect(art.hasHoldFrames(0)).toBe(true);
+    expect(art.hasHoldFrames(1)).toBe(false);
+  });
+
+  it('keeps the other guest’s picture when one could not be loaded', () => {
+    const art = createGuestArt([null, sheet]);
+    expect(art.hasHoldFrames(0)).toBe(false);
+    expect(art.hasHoldFrames(1)).toBe(true);
+    expect(art.hasHoldFrames(2)).toBe(false);
   });
 });

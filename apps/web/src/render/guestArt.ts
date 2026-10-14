@@ -36,15 +36,16 @@ function sheetWidth(sheet: SpriteSheet): number {
   return 'naturalWidth' in sheet ? sheet.naturalWidth : sheet.width;
 }
 
-export function createGuestArt(sheets: readonly SpriteSheet[]): GuestArt {
+/** Each guest's sheet by position; null where its picture could not be loaded (a plain box). */
+export function createGuestArt(sheets: readonly (SpriteSheet | null)[]): GuestArt {
   return {
     hasHoldFrames: (index) => {
-      const sheet = sheets[index];
-      return sheet !== undefined && sheetHasHoldFrames(sheetWidth(sheet));
+      const sheet = sheets[index] ?? null;
+      return sheet !== null && sheetHasHoldFrames(sheetWidth(sheet));
     },
     drawGuest(ctx, index, frame, feet) {
-      const sheet = sheets[index];
-      if (sheet === undefined) {
+      const sheet = sheets[index] ?? null;
+      if (sheet === null) {
         placeholderGuestArt.drawGuest(ctx, index, frame, feet);
         return;
       }

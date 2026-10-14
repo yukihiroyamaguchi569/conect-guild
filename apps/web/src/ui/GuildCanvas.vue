@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
 import {
   EMPTY_CUE_QUEUE,
+  guestCueToPlay,
   receiveCue,
   takeCues,
   type GuestCue,
@@ -135,6 +136,8 @@ function start(element: HTMLCanvasElement, art: GuildArt, guestArt: GuestArt): v
   setIdleSince(lastActive.observe(props.party, Date.now()));
   running.setParty(stageParty(props.party));
   running.setGuests(stageGuestsOf(props.guests));
+  // The message in the window may have come while the pictures were loading.
+  takeSparkle();
   running.resize(cssWidth ?? element.clientWidth, globalThis.devicePixelRatio);
   // Messages may have reached the window while the pictures were loading.
   playCues();
@@ -234,13 +237,17 @@ watch(
   },
 );
 
-// A guest sparkles once per message; one seen before the stage runs is past (not kept).
-watch(
-  () => props.sparkle?.id,
-  () => {
-    if (props.sparkle !== null) loop?.sparkle(props.sparkle.guest);
-  },
-);
+/** The message last sparkled for (guestCueToPlay). */
+let sparkledId: number | null = null;
+
+/** Sparkles the guest of the message in the window, once, as soon as the stage runs. */
+function takeSparkle(): void {
+  const taken = guestCueToPlay(sparkledId, props.sparkle, loop !== null);
+  sparkledId = taken.lastId;
+  if (taken.play !== null) loop?.sparkle(taken.play);
+}
+
+watch(() => props.sparkle?.id, takeSparkle);
 
 // The message in the window at mount counts too.
 watch(() => props.cue?.id, takeCue, { immediate: true });

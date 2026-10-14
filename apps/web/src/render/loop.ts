@@ -525,6 +525,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
     },
     setParty(next) {
       party = next;
+      guests.setHalted(next.halted);
       director = cast.receive(director, party, { t: stageNow(), quiet: paused() });
       schedule.now();
     },

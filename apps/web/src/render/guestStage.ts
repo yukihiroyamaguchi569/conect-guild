@@ -21,6 +21,8 @@ export interface GuestStage {
   frameAt(t: number): GuestFrame;
   /** Drops the sparkles (the canvas is out of sight: they must not play late). */
   clearSparkles(): void;
+  /** While the screen is halted the sparkles are dropped and new ones are not started. */
+  setHalted(halted: boolean): void;
 }
 
 export function createGuestStage(
@@ -30,12 +32,13 @@ export function createGuestStage(
 ): GuestStage {
   let guests: readonly StageGuest[] = [];
   let sparkles: readonly GuestSparkle[] = [];
+  let halted = false;
   return {
     set(next) {
       guests = next;
     },
     sparkle(index, t) {
-      if (!guests.some((guest) => guest.index === index)) return;
+      if (halted || !guests.some((guest) => guest.index === index)) return;
       sparkles = [...liveSparkles(sparkles, t), createSparkle(index, t, random)];
     },
     frameAt(t) {
@@ -44,6 +47,10 @@ export function createGuestStage(
     },
     clearSparkles() {
       sparkles = [];
+    },
+    setHalted(next) {
+      halted = next;
+      if (halted) sparkles = [];
     },
   };
 }

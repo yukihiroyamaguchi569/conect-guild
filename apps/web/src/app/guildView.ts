@@ -283,6 +283,20 @@ export function guestCue(message: GuildMessage | null): GuestCue | null {
   return message === null || guest === undefined ? null : { id: message.id, guest };
 }
 
+/**
+ * Which guest to sparkle now, once per message: the cue of the message in the window, when the
+ * stage runs (`ready`). A cue seen while the stage loads waits for it, as long as its message is
+ * still in the window; `lastId` is the message last sparkled for.
+ */
+export function guestCueToPlay(
+  lastId: number | null,
+  cue: GuestCue | null,
+  ready: boolean,
+): { readonly lastId: number | null; readonly play: number | null } {
+  if (!ready || cue === null || cue.id === lastId) return { lastId, play: null };
+  return { lastId: cue.id, play: cue.guest };
+}
+
 /** Cues the canvas has seen: the last one, and those waiting for its loop to start. */
 export interface CueQueue {
   readonly lastId: number | null;

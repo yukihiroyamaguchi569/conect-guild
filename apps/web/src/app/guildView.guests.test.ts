@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GuestItem, GuestView } from '../domain/guests';
-import { buildGuestBoard, GUEST_BOARD_ITEMS } from './guildView';
+import { buildGuestBoard, GUEST_BOARD_ITEMS, guestCueToPlay } from './guildView';
 
 function items(count: number): GuestItem[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -37,5 +37,23 @@ describe('buildGuestBoard', () => {
       { key: 'guest:0', name: '客0', items: [], more: 0 },
       { key: 'guest:1', name: '客1', items: null, more: 0 },
     ]);
+  });
+});
+
+describe('guestCueToPlay', () => {
+  const cue = { id: 7, guest: 1 };
+
+  it('sparkles the guest of a new message once', () => {
+    expect(guestCueToPlay(null, cue, true)).toEqual({ lastId: 7, play: 1 });
+    expect(guestCueToPlay(7, cue, true)).toEqual({ lastId: 7, play: null });
+  });
+
+  it('keeps a cue that came while the stage loads, for when it runs', () => {
+    expect(guestCueToPlay(null, cue, false)).toEqual({ lastId: null, play: null });
+    expect(guestCueToPlay(null, cue, true)).toEqual({ lastId: 7, play: 1 });
+  });
+
+  it('does nothing without a cue (the message left the window meanwhile)', () => {
+    expect(guestCueToPlay(3, null, true)).toEqual({ lastId: 3, play: null });
   });
 });
