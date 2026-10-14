@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DEFAULT_SETTINGS_FILE, SETTINGS_ROOT } from '@conect-guild/snapshot/settingsFile';
 import type { GhRunner } from './gh.ts';
+import type { GitRunner } from './settingsGuests.ts';
 import type { SettingsWriteDeps } from './settingsWrite.ts';
 
 /** Shared fakes for the settings writer tests: an in-memory repository root, home and gh. */
@@ -56,6 +57,7 @@ export interface Fake {
   readonly dirs: Set<string>;
   readonly writes: { path: string; content: string }[];
   readonly ghCalls: (readonly string[])[];
+  readonly gitCalls: (readonly string[])[];
   output: () => string;
   stdinReads: () => number;
 }
@@ -66,6 +68,8 @@ export interface FakeOptions {
   readonly failWriteOf?: string;
   /** A file that appears at this path after the check, before the write (another process). */
   readonly appearsBeforeWrite?: string;
+  /** The origin URL of each folder (expanded path) for the guests' repo suggestion; others fail. */
+  readonly gitRemotes?: Readonly<Record<string, string>>;
 }
 
 /** The company folders under the fake home, each with a CLAUDE.md naming its own label. */
@@ -86,12 +90,26 @@ function fakeGh(repoLabels: readonly string[] | Error, calls: (readonly string[]
   };
 }
 
+function fakeGit(
+  remotes: Readonly<Record<string, string>>,
+  calls: (readonly string[])[],
+): GitRunner {
+  return (args) => {
+    calls.push(args);
+    const url = args[0] === '-C' && args[1] !== undefined ? remotes[args[1]] : undefined;
+    return url === undefined
+      ? Promise.reject(new Error('git-failed'))
+      : Promise.resolve(`${url}\n`);
+  };
+}
+
 export function fake(options: FakeOptions = {}): Fake {
   const files = new Map<string, string>([[join(ROOT, DEFAULT_SETTINGS_FILE), DEFAULT_TEXT]]);
   const dirs = new Set<string>([ROOT]);
   companyFiles(files, dirs);
   const writes: { path: string; content: string }[] = [];
   const ghCalls: (readonly string[])[] = [];
+  const gitCalls: (readonly string[])[] = [];
   let out = '';
   let reads = 0;
   const deps: SettingsWriteDeps = {
@@ -109,6 +127,7 @@ export function fake(options: FakeOptions = {}): Fake {
       return text;
     },
     gh: fakeGh(options.repoLabels ?? [...LABELS, 'bug'], ghCalls),
+    git: fakeGit(options.gitRemotes ?? {}, gitCalls),
     writeFile: (path, content) => {
       if (path === options.failWriteOf) return Promise.reject(new Error('EACCES'));
       writes.push({ path, content });
@@ -128,5 +147,14 @@ export function fake(options: FakeOptions = {}): Fake {
       out += text;
     },
   };
-  return { deps, files, dirs, writes, ghCalls, output: () => out, stdinReads: () => reads };
+  return {
+    deps,
+    files,
+    dirs,
+    writes,
+    ghCalls,
+    gitCalls,
+    output: () => out,
+    stdinReads: () => reads,
+  };
 }

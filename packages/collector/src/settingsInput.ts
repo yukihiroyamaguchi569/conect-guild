@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   DEPARTMENT_MEMBER_IDS,
+  MAX_GUESTS,
   SUPPORTED_DEPARTMENT_COUNTS,
   type DepartmentMemberId,
   type GuildSettings,
@@ -8,7 +9,7 @@ import {
 
 /**
  * Issue #79: the values `npm run settings:write` reads from stdin. Only the values a team has to
- * choose; the rest (members, ruleChangePaths, extra branch prefixes, guests) is kept from the settings it
+ * choose; the rest (members, ruleChangePaths, extra branch prefixes) is kept from the settings it
  * starts from. Each value is checked again with the settings schema once merged.
  */
 const inputDepartmentSchema = z.strictObject({
@@ -18,21 +19,65 @@ const inputDepartmentSchema = z.strictObject({
   prefix: z.string().min(1),
 });
 
-export const settingsInputSchema = z.strictObject({
-  repo: z.string(),
-  commanderSessionDir: z.string(),
-  /**
-   * All of them together, in the fixed order: they replace the departments as a whole. As many
-   * as the office has a layout for (Issue #18).
-   */
-  departments: z
-    .array(inputDepartmentSchema)
-    .refine(
-      (departments) => SUPPORTED_DEPARTMENT_COUNTS.includes(departments.length),
-      `${SUPPORTED_DEPARTMENT_COUNTS.join(' or ')} departments (#18)`,
-    ),
+/**
+ * Issue #118: a guest. `repo` left out: suggested from the folder's git origin; null: none.
+ */
+const inputGuestSchema = z.strictObject({
+  name: z.string(),
+  sessionDir: z.string(),
+  repo: z.string().nullable().optional(),
 });
+export type InputGuest = z.infer<typeof inputGuestSchema>;
+
+const COMPANY_KEYS = ['repo', 'commanderSessionDir', 'departments'] as const;
+
+export const settingsInputSchema = z
+  .strictObject({
+    repo: z.string().optional(),
+    commanderSessionDir: z.string().optional(),
+    /**
+     * All of them together, in the fixed order: they replace the departments as a whole. As many
+     * as the office has a layout for (Issue #18).
+     */
+    departments: z
+      .array(inputDepartmentSchema)
+      .refine(
+        (departments) => SUPPORTED_DEPARTMENT_COUNTS.includes(departments.length),
+        `${SUPPORTED_DEPARTMENT_COUNTS.join(' or ')} departments (#18)`,
+      )
+      .optional(),
+    /**
+     * Issue #118: all of them together, replacing the guests as a whole (empty removes them). Left
+     * out, the starting settings' guests are kept.
+     */
+    // At most MAX_GUESTS here already, so git is asked about two folders at most.
+    guests: z.array(inputGuestSchema).max(MAX_GUESTS).optional(),
+  })
+  .superRefine((input, ctx) => {
+    // The company values come together or not at all (a guests-only input keeps them).
+    const given = COMPANY_KEYS.filter((key) => input[key] !== undefined);
+    if (given.length === 0 || given.length === COMPANY_KEYS.length) return;
+    for (const key of COMPANY_KEYS.filter((k) => input[k] === undefined)) {
+      ctx.addIssue({ code: 'custom', path: [key], message: `required with ${given.join(', ')}` });
+    }
+  });
 export type SettingsInput = z.infer<typeof settingsInputSchema>;
+
+/** The company values of the input. */
+export interface CompanyInput {
+  readonly repo: string;
+  readonly commanderSessionDir: string;
+  readonly departments: readonly z.infer<typeof inputDepartmentSchema>[];
+}
+
+/** The input's company values, or null for an input without them (guests only, or nothing). */
+export function companyOf(input: SettingsInput): CompanyInput | null {
+  const { repo, commanderSessionDir, departments } = input;
+  if (repo === undefined || commanderSessionDir === undefined || departments === undefined) {
+    return null;
+  }
+  return { repo, commanderSessionDir, departments };
+}
 
 /** The settings to write, before they are checked against the schema. */
 export interface MergedSettings {
@@ -43,8 +88,11 @@ export interface MergedSettings {
     readonly departments: readonly { label: string; member: string; sessionDir: string }[];
     readonly branchPrefixes: readonly { prefix: string; department: string }[];
     readonly ruleChangePaths: GuildSettings['ruleChangePaths'];
-    /** Issue #108: kept as they were; the schema checks them against the new company values. */
-    readonly guests?: GuildSettings['guests'];
+    /**
+     * Issue #108: kept as they were unless the input has guests (Issue #118); the schema checks
+     * them against the company values.
+     */
+    readonly guests?: readonly { name: string; sessionDir: string; repo?: string }[];
   };
   /** How many rows of `branchPrefixes` were kept from the starting settings. */
   readonly keptBranchPrefixes: number;
@@ -107,7 +155,7 @@ function membersFollowingLabels(
  */
 function branchPrefixesOf(
   base: GuildSettings,
-  input: SettingsInput,
+  input: CompanyInput,
 ): { rows: { prefix: string; department: string }[]; kept: number } {
   const fromInput = input.departments.map((d) => ({ prefix: d.prefix, department: d.label }));
   const labels = new Set(input.departments.map((d) => d.label));
@@ -118,12 +166,7 @@ function branchPrefixesOf(
   return { rows: [...fromInput, ...kept], kept: kept.length };
 }
 
-/**
- * The input laid over the starting settings. The department at position i keeps the member that
- * sat there (the seats are fixed by member id), a new position takes a member no department uses
- * (membersByPosition); everything not in the input stays as it was.
- */
-export function mergeSettings(base: GuildSettings, input: SettingsInput): MergedSettings {
+function companyRaw(base: GuildSettings, input: CompanyInput) {
   const members = membersByPosition(base, input.departments.length);
   const departments = input.departments.map((d, i) => ({
     label: d.label,
@@ -138,9 +181,53 @@ export function mergeSettings(base: GuildSettings, input: SettingsInput): Merged
       commanderSessionDir: input.commanderSessionDir,
       departments,
       branchPrefixes: prefixes.rows,
-      ruleChangePaths: base.ruleChangePaths,
-      ...(base.guests === undefined ? {} : { guests: base.guests }),
     },
-    keptBranchPrefixes: prefixes.kept,
+    kept: prefixes.kept,
+  };
+}
+
+/** The starting settings' company values as they are (an input without them, Issue #118). */
+function keptCompanyRaw(base: GuildSettings) {
+  return {
+    raw: {
+      repo: base.repo,
+      members: base.members,
+      commanderSessionDir: base.commanderSessionDir,
+      departments: base.departments,
+      branchPrefixes: base.branchPrefixes,
+    },
+    kept: base.branchPrefixes.length,
+  };
+}
+
+type MergedGuests = MergedSettings['raw']['guests'];
+
+/** The input's guests when given (none for an empty list), else the starting ones. */
+function guestsToWrite(base: GuildSettings, guests: MergedGuests): MergedGuests {
+  if (guests === undefined) return base.guests;
+  return guests.length === 0 ? undefined : guests;
+}
+
+/**
+ * The input laid over the starting settings. The department at position i keeps the member that
+ * sat there (the seats are fixed by member id), a new position takes a member no department uses
+ * (membersByPosition); everything not in the input stays as it was. `guests` (the input's, with
+ * their repos resolved; Issue #118) replace the starting ones when given; an empty list removes
+ * the key.
+ */
+export function mergeSettings(
+  base: GuildSettings,
+  input: CompanyInput | null,
+  guests?: MergedGuests,
+): MergedSettings {
+  const company = input === null ? keptCompanyRaw(base) : companyRaw(base, input);
+  const chosen = guestsToWrite(base, guests);
+  return {
+    raw: {
+      ...company.raw,
+      ruleChangePaths: base.ruleChangePaths,
+      ...(chosen === undefined ? {} : { guests: chosen }),
+    },
+    keptBranchPrefixes: company.kept,
   };
 }

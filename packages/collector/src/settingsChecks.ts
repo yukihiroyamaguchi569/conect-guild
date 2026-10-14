@@ -96,6 +96,32 @@ function folderErrors(settings: GuildSettings, reader: FolderReader): string[] {
   return [...missing, ...repeated];
 }
 
+/**
+ * Issue #118: the guests' folders. Each one written in the input (`fromInput`) must be there; any
+ * guest's (kept ones too) must differ from the company's and the other guests' once `~` is
+ * expanded (the schema compares the strings as written; the collector stops on an expanded match).
+ */
+export function guestFolderErrors(
+  settings: GuildSettings,
+  fromInput: boolean,
+  reader: FolderReader,
+): string[] {
+  const seen = new Set(seatsOf(settings).map((seat) => expandHome(seat.dir, reader.home)));
+  return (settings.guests ?? []).flatMap((guest, i) => {
+    const name = `guests[${String(i)}].sessionDir`;
+    const dir = expandHome(guest.sessionDir, reader.home);
+    const errors: string[] = [];
+    if (fromInput && !reader.isDirectory(dir)) {
+      errors.push(`${name} のフォルダがありません: ${quote(guest.sessionDir)}`);
+    }
+    if (seen.has(dir)) {
+      errors.push(`${name} は別の項目と同じフォルダを指しています: ${quote(guest.sessionDir)}`);
+    }
+    seen.add(dir);
+    return errors;
+  });
+}
+
 function claudeMdWarning(i: number, settings: GuildSettings, finding: ClaudeMdFinding): string[] {
   const d = settings.departments[i];
   if (d === undefined || finding === 'found') return [];

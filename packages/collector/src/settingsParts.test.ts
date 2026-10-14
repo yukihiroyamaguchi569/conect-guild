@@ -209,6 +209,7 @@ describe('runSettingsWrite on real files', () => {
       isDirectory: isDirectoryOnDisk,
       readText: (path) => readFileSync(path, 'utf8'),
       gh: () => Promise.resolve(LABELS.map((l) => `${JSON.stringify(l)}\n`).join('')),
+      git: () => Promise.reject(new Error('git-failed')),
       writeFile: writeFileAtomic,
       createFile: createFileExclusive,
       out: () => undefined,

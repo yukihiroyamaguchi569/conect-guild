@@ -10,6 +10,18 @@ export interface DepartmentRow {
 }
 
 /**
+ * One guest as it will be written (Issue #118). `repoFrom`: the input gave the repo, it was
+ * suggested from the folder's git origin, there is none, or the guest was kept from the starting
+ * settings.
+ */
+export interface GuestRow {
+  readonly name: string;
+  readonly sessionDir: string;
+  readonly repo: string | null;
+  readonly repoFrom: 'input' | 'git' | 'none' | 'kept';
+}
+
+/**
  * What `npm run settings:write` found and did. The same for the table a person reads and the
  * `--json` a skill reads. Never holds a department CLAUDE.md's text, only whether the label was
  * found in it.
@@ -27,6 +39,13 @@ export interface WriteReport {
   readonly commanderSessionDir: string | null;
   readonly departments: readonly DepartmentRow[];
   readonly keptBranchPrefixes: number;
+  /** The input had no company values: they are kept from the starting settings (Issue #118). */
+  readonly companyKept: boolean;
+  /** The guests as they will be written, from the input or kept (Issue #118). */
+  readonly guests: readonly GuestRow[];
+  readonly guestsFrom: 'input' | 'kept';
+  /** How many guests the departments leave room for (maxGuestsFor); null when not known. */
+  readonly maxGuests: number | null;
   readonly warnings: readonly string[];
   readonly errors: readonly string[];
 }
@@ -84,6 +103,26 @@ function departmentLines(report: WriteReport): string[] {
   ];
 }
 
+const REPO_FROM_TEXT: Record<GuestRow['repoFrom'], string> = {
+  input: '入力から',
+  git: 'フォルダの git の origin から提案',
+  none: 'なし',
+  kept: '出発点のまま',
+};
+
+function guestLines(report: WriteReport): string[] {
+  const from = report.guestsFrom === 'input' ? '入力から' : '出発点のまま';
+  const max = report.maxGuests === null ? '' : `。${String(report.maxGuests)} 人まで`;
+  if (report.guests.length === 0) return [`お客さん: なし（${from}${max}）`];
+  return [
+    `お客さん（${from}${max}。名前 / repo / フォルダ）:`,
+    ...report.guests.map(
+      (g, i) =>
+        `  ${quote(g.name)}（guests[${String(i)}]）  ${g.repo === null ? '-' : quote(g.repo)}（${REPO_FROM_TEXT[g.repoFrom]}）  ${quote(g.sessionDir)}`,
+    ),
+  ];
+}
+
 function listLines(title: string, items: readonly string[]): string[] {
   return items.length === 0
     ? []
@@ -100,7 +139,9 @@ export function renderText(report: WriteReport): string {
     ...(report.commanderSessionDir === null
       ? []
       : [`司令塔のフォルダ: ${quote(report.commanderSessionDir)}`]),
+    ...(report.companyKept ? ['会社の値（repo・司令塔のフォルダ・部門）: 出発点のまま'] : []),
     ...departmentLines(report),
+    ...guestLines(report),
     ...listLines('警告（止めません）', report.warnings),
     ...listLines('エラー（書けません）', report.errors),
     ...(report.written ? NEXT_STEPS : []),
