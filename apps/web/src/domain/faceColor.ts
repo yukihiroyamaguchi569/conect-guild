@@ -12,6 +12,8 @@ export const HAIR_COLORS: Readonly<Record<MemberId, string>> = {
   hibiki: '#f3899a',
   hirame: '#3e64a3',
   sasae: '#5c7a52',
+  takumi: '#794f3d',
+  musubi: '#594f56',
   yukihiro: '#ebeae7',
 };
 

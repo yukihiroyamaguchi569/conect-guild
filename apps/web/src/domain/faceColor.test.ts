@@ -12,7 +12,8 @@ import {
 
 describe('HAIR_COLORS', () => {
   it('has a #rrggbb colour for every member id and nothing else', () => {
-    expect(Object.keys(HAIR_COLORS).sort()).toEqual([...memberIdSchema.options].sort());
+    expect(new Set(Object.keys(HAIR_COLORS))).toEqual(new Set(memberIdSchema.options));
+    expect(Object.keys(HAIR_COLORS)).toHaveLength(memberIdSchema.options.length);
     for (const color of Object.values(HAIR_COLORS)) expect(color).toMatch(/^#[0-9a-f]{6}$/);
   });
 });
@@ -76,6 +77,8 @@ describe('faceColors', () => {
       hibiki: ['#f3899a', INK_DARK],
       hirame: ['#3e64a3', INK_LIGHT],
       sasae: ['#5c7a52', INK_LIGHT],
+      takumi: ['#794f3d', INK_LIGHT],
+      musubi: ['#594f56', INK_LIGHT],
       yukihiro: ['#ebeae7', INK_DARK],
     });
   });
