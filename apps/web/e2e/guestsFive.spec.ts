@@ -75,3 +75,38 @@ test('the one guest stands at its spot, its name and counts clear of the windows
   expect(tags.map((tag) => tag.align)).toEqual(['center', 'center']);
   for (const tag of tags) expect(tag.y + 5).toBeLessThanOrEqual(message.top);
 });
+
+test('the お客さん section stays whole under many quests; only the quests scroll (Issue #121)', async ({
+  page,
+  snapshotServer,
+}) => {
+  const base = guestsSnapshot({ now: NOW, states: ['working', 'idle'], settings: SETTINGS });
+  const labels = SETTINGS.departments.map((department) => department.label);
+  const at = new Date(NOW - 3_600_000).toISOString();
+  const issues = Array.from({ length: 14 }, (_, i) => ({
+    number: 301 + i,
+    title: `架空のクエスト その ${String(i + 1)}`,
+    labels: [labels[i % labels.length] ?? ''],
+    state: 'open' as const,
+    createdAt: at,
+    updatedAt: at,
+    closedAt: null,
+  }));
+  snapshotServer.serve({ ...base, issues });
+  await page.setViewportSize({ width: 1024, height: 576 });
+  await page.goto('/');
+  const board = page.getByRole('region', { name: 'クエスト掲示板' });
+  await expect(board).toContainText('架空のクエスト その 14');
+
+  const boardBox = await logicalBox(page, board);
+  const guests = await logicalBox(page, board.getByRole('region', { name: 'お客さん' }));
+  // The whole section (name, three items and 「ほか 1 件」) inside the board as drawn.
+  await expect(board.getByRole('region', { name: 'お客さん' })).toContainText('ほか 1 件');
+  expect(guests.top).toBeGreaterThan(boardBox.top);
+  expect(guests.bottom).toBeLessThanOrEqual(boardBox.bottom);
+  // The quest list scrolls instead.
+  const scrolls = await board
+    .locator('.board__list')
+    .evaluate((list) => list.scrollHeight > list.clientHeight);
+  expect(scrolls).toBe(true);
+});

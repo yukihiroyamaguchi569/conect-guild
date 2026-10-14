@@ -37,24 +37,24 @@ defineProps<{
           </li>
         </ul>
       </div>
-      <section v-if="guests.length > 0" class="board__guests" aria-label="お客さん">
-        <h3 class="board__section">お客さん</h3>
-        <div v-for="guest in guests" :key="guest.key" class="board__guest">
-          <h4 class="board__group-label">{{ guest.name }}</h4>
-          <p v-if="guest.items !== null && guest.items.length === 0" class="board__none">
-            ひらいている Issue・PR は ない
-          </p>
-          <ul v-if="guest.items !== null" class="board__guest-items">
-            <li v-for="item in guest.items" :key="item.number" class="guest-item">
-              <span class="guest-item__number">#{{ item.number }}</span>
-              <span v-if="item.isPr" class="guest-item__pr">PR</span>
-              <span class="guest-item__title">{{ item.title }}</span>
-            </li>
-          </ul>
-          <p v-if="guest.more > 0" class="board__more">ほか {{ guest.more }} 件</p>
-        </div>
-      </section>
     </div>
+    <section v-if="guests.length > 0" class="board__guests" aria-label="お客さん">
+      <h3 class="board__section">お客さん</h3>
+      <div v-for="guest in guests" :key="guest.key" class="board__guest">
+        <h4 class="board__group-label">{{ guest.name }}</h4>
+        <p v-if="guest.items !== null && guest.items.length === 0" class="board__none">
+          ひらいている Issue・PR は ない
+        </p>
+        <ul v-if="guest.items !== null" class="board__guest-items">
+          <li v-for="item in guest.items" :key="item.number" class="guest-item">
+            <span class="guest-item__number">#{{ item.number }}</span>
+            <span v-if="item.isPr" class="guest-item__pr">PR</span>
+            <span class="guest-item__title">{{ item.title }}</span>
+          </li>
+        </ul>
+        <p v-if="guest.more > 0" class="board__more">ほか {{ guest.more }} 件</p>
+      </div>
+    </section>
   </section>
 </template>
 
@@ -77,6 +77,10 @@ defineProps<{
   color: var(--muted-text);
 }
 
+/*
+ * Only the company's quests scroll; the お客さん section stays under them, whole, however many
+ * quests there are (Issue #121: the lower board of five departments showed only its heading).
+ */
 .board__list {
   overflow-y: auto;
   min-height: 0;
@@ -156,6 +160,7 @@ defineProps<{
 }
 
 .board__guests {
+  flex: none;
   margin-top: 0.4em;
   padding-top: 0.25em;
   border-top: 0.1em dashed var(--muted-text);

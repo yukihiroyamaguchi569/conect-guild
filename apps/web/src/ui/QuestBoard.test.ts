@@ -27,3 +27,40 @@ describe('QuestBoard without company quests', () => {
     expect(html).toContain('架空の Issue');
   });
 });
+
+describe('QuestBoard: the お客さん section (Issue #121)', () => {
+  it('sits under the scrolling quest list, not inside it', async () => {
+    const html = await renderToString(
+      createSSRApp(QuestBoard, {
+        groups: [
+          {
+            key: 'department:錬金',
+            label: 'みのり',
+            color: '#4caf50',
+            quests: [
+              {
+                number: 1,
+                title: '架空のクエスト',
+                state: 'open',
+                closedAt: null,
+                department: '錬金',
+                multiDepartment: false,
+              },
+            ],
+          },
+        ],
+        guests: [GUEST],
+        loaded: true,
+      }),
+    );
+    const list = html.indexOf('class="board__list"');
+    const quest = html.indexOf('架空のクエスト');
+    const guests = html.indexOf('class="board__guests"');
+    expect(list).toBeGreaterThan(-1);
+    expect(quest).toBeGreaterThan(list);
+    expect(guests).toBeGreaterThan(quest);
+    // Every <div> opened from the list on is closed before the section: it is the list's sibling.
+    const between = html.slice(html.lastIndexOf('<div', list), guests);
+    expect(between.split('<div').length).toBe(between.split('</div>').length);
+  });
+});
