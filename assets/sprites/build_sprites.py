@@ -191,7 +191,7 @@ def scale_of(path):
 
 
 def build(members, sheet_path, poses_path, out_dir, preview_path=None, scale_path=None):
-    inputs = {sheet_path.resolve(), poses_path.resolve()}
+    inputs = {p.resolve() for p in (sheet_path, poses_path, scale_path) if p}
     sprite_paths = {(out_dir / f"{m}.png").resolve() for m in members}
     if inputs & sprite_paths:
         sys.exit(f"{out_dir}: a sprite would overwrite an input sheet")
