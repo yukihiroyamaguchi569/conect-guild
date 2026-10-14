@@ -138,8 +138,13 @@ describe('the E2E department mode (Issue #18, test only)', () => {
         JSON.parse(readFileSync(join(SETTINGS_ROOT, path), 'utf8')),
       );
       const real = checkGuildSettings(JSON.parse(VALID));
-      // The guests' fixtures (Issue #108) are of four and of six departments.
-      const guestFixtures: Readonly<Record<string, number>> = { guests: 4, 'guests-6': 6 };
+      // The guests' fixtures (Issue #108) are of four, two, three and six departments.
+      const guestFixtures: Readonly<Record<string, number>> = {
+        guests: 4,
+        'guests-2': 2,
+        'guests-3': 3,
+        'guests-6': 6,
+      };
       const departments = guestFixtures[count] ?? Number(count);
       expect(settings.departments).toHaveLength(departments);
       expect(settings.repo).not.toBe(real.repo);
@@ -153,7 +158,7 @@ describe('the E2E department mode (Issue #18, test only)', () => {
 });
 
 describe('the E2E fixtures with guests (Issue #108, test only)', () => {
-  it.each(['guests', 'guests-6'])(
+  it.each(['guests', 'guests-2', 'guests-3', 'guests-6'])(
     'has two fictional guests in the %s fixture (Issue #108)',
     (key) => {
       const path = E2E_SETTINGS_FILES[key] ?? '';

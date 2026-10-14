@@ -47,7 +47,10 @@ export const E2E_SETTINGS_FILES: Readonly<Record<string, string>> = {
   '6': 'apps/web/e2e/settings/departments-6.json',
   // Four departments and two fictional guests (Issue #108).
   guests: 'apps/web/e2e/settings/guests.json',
-  // Six departments and the same two guests, for a look at the guests by the right-hand door.
+  // Two, three and six departments and the same two guests, for a look at the guests in the
+  // tavern of the upper right (2, 3) and by the right-hand door (6).
+  'guests-2': 'apps/web/e2e/settings/guests-2.json',
+  'guests-3': 'apps/web/e2e/settings/guests-3.json',
   'guests-6': 'apps/web/e2e/settings/guests-6.json',
 };
 
