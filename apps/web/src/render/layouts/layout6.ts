@@ -1,13 +1,12 @@
 import {
-  CORNER_DESK_DECOR,
-  CORNER_DESK_OBJECTS,
-  CORNER_SEAT,
-  DOOR_GUEST_SPOTS,
   LOWER_DESK_DECOR,
   LOWER_DESK_OBJECTS,
+  SALES_DESK,
   UPPER_DESK_DECOR,
   UPPER_DESK_OBJECTS,
   UPPER_DESKS,
+  WORKSHOP_BOARD_MAX_CQW,
+  WORKSHOP_DESK,
 } from './largeRoom';
 import {
   lowerDesks,
@@ -16,11 +15,12 @@ import {
   SMALL_ROOM_OBJECTS,
   SMALL_ROOM_SEATS,
 } from './smallRoom';
-import { flat, place, rect, solid, type GuildLayout } from './types';
+import type { GuildLayout } from './types';
 
 /**
- * Six departments (Issue #18): the five desks of layout5 and a sixth on the rug in front of the
- * counter, its member right below かなめ. Visitors to the counter stand left of that desk's chair.
+ * Six departments (Issue #18): the five desks of layout5 and a sixth, the sales desk, right of the
+ * 総務 desk on the lower right carpet, where layout4 has its files and crates. The rug in front of
+ * the counter stays clear.
  */
 export const LAYOUT6: GuildLayout = {
   departmentCount: 6,
@@ -29,32 +29,29 @@ export const LAYOUT6: GuildLayout = {
     ...SMALL_ROOM_OBJECTS,
     ...UPPER_DESK_OBJECTS,
     ...LOWER_DESK_OBJECTS,
-    ...CORNER_DESK_OBJECTS,
-    flat('chair', rect(16, 10, 1, 2)),
-    solid('desk', rect(15, 12, 4, 2)),
+    ...WORKSHOP_DESK.objects,
+    ...SALES_DESK.objects,
   ],
   decor: [
     ...SMALL_ROOM_DECOR,
     ...UPPER_DESK_DECOR,
     ...LOWER_DESK_DECOR,
-    ...CORNER_DESK_DECOR,
-    // The middle desk
-    place('scroll-pile', 15, 12),
-    place('ledger-stack', 17, 12),
-    place('candlestick', 18, 12),
+    ...WORKSHOP_DESK.decor,
+    ...SALES_DESK.decor,
   ],
   desks: [
     ...UPPER_DESKS,
     ...lowerDesks(2),
-    { seat: CORNER_SEAT, side: 'lower', things: [], chatWith: 5 },
-    { seat: { col: 16, row: 11 }, side: 'lower', things: [], chatWith: 4 },
+    { seat: WORKSHOP_DESK.seat, side: 'lower', things: [], chatWith: 5 },
+    { seat: SALES_DESK.seat, side: 'lower', things: [], chatWith: 4 },
   ],
   ...SMALL_ROOM_SEATS,
-  places: { ...SMALL_ROOM_SEATS.places, counterFront: { col: 14, row: 10 } },
-  guestSpots: DOOR_GUEST_SPOTS,
+  guestSpots: [],
+  boardMaxCqw: WORKSHOP_BOARD_MAX_CQW,
+  underPartyWindow: SALES_DESK.underPartyWindow,
   // Eight packed rows: the column ends 24.5 px above layout4's (297.9 px against 322.4 px in the
   // demo at 1024 px, Chrome, 2026-10-14). Taken off layout4's 340 and 372.5 px and rounded up.
   partyWindow: { bottom: 316, tallestBottom: 349, dense: true },
-  // As in layout4: the upper desks are 5 tiles from かなめ, the lower ones 5.8, the middle one 4.
+  // As in layout4: the upper desks are 5 tiles from かなめ, the lower ones 5.8, the outer ones more.
   toss: { maxTiles: 5.5 },
 };

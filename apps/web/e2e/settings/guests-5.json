@@ -1,0 +1,107 @@
+{
+  "repo": "example-owner/example-guild",
+  "members": {
+    "kaname": {
+      "name": "かなめ",
+      "role": "司令塔",
+      "color": "#e0b040"
+    },
+    "minori": {
+      "name": "みのり",
+      "role": "錬金",
+      "color": "#4caf50"
+    },
+    "hibiki": {
+      "name": "ひびき",
+      "role": "鍛冶",
+      "color": "#e91e63"
+    },
+    "hirame": {
+      "name": "ひらめ",
+      "role": "占術",
+      "color": "#2196f3"
+    },
+    "sasae": {
+      "name": "ささえ",
+      "role": "交易",
+      "color": "#9c6b3f"
+    },
+    "takumi": {
+      "name": "たくみ",
+      "role": "細工",
+      "color": "#00897b"
+    },
+    "yukihiro": {
+      "name": "ゆきひろ",
+      "role": "社長",
+      "color": "#8e44ad"
+    }
+  },
+  "commanderSessionDir": "~/example-guild",
+  "departments": [
+    {
+      "label": "錬金",
+      "member": "minori",
+      "sessionDir": "~/example-guild/alchemy"
+    },
+    {
+      "label": "鍛冶",
+      "member": "hibiki",
+      "sessionDir": "~/example-guild/smithy"
+    },
+    {
+      "label": "占術",
+      "member": "hirame",
+      "sessionDir": "~/example-guild/oracle"
+    },
+    {
+      "label": "交易",
+      "member": "sasae",
+      "sessionDir": "~/example-guild/trade"
+    },
+    {
+      "label": "細工",
+      "member": "takumi",
+      "sessionDir": "~/example-guild/craft"
+    }
+  ],
+  "branchPrefixes": [
+    {
+      "prefix": "alchemy/",
+      "department": "錬金"
+    },
+    {
+      "prefix": "smithy/",
+      "department": "鍛冶"
+    },
+    {
+      "prefix": "oracle/",
+      "department": "占術"
+    },
+    {
+      "prefix": "trade/",
+      "department": "交易"
+    },
+    {
+      "prefix": "craft/",
+      "department": "細工"
+    }
+  ],
+  "ruleChangePaths": [
+    {
+      "match": "exact",
+      "path": "CLAUDE.md"
+    },
+    {
+      "match": "suffix",
+      "path": "/CLAUDE.md"
+    }
+  ],
+  "guests": [
+    {
+      "name": "たびびと",
+      "sessionDir": "~/example-visitor",
+      "repo": "example-visitor/potion-shop"
+    }
+  ]
+}

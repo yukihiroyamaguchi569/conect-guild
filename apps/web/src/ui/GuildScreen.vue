@@ -9,6 +9,7 @@ import { useMissingLabels } from '../app/useMissingLabels';
 import { useNarration } from '../app/useNarration';
 import { useSound } from '../app/useSound';
 import { SELECTED_LAYOUT } from '../render/layouts';
+import { BOARD_MAX_CQW } from '../render/map';
 import DemoStart from './DemoStart.vue';
 import FetchStatus from './FetchStatus.vue';
 import GuildCanvas from './GuildCanvas.vue';
@@ -58,6 +59,10 @@ const {
   message,
   cue,
   summons,
+  guests,
+  guestCount,
+  guestBoard,
+  sparkle,
   nextMessage,
   clearBaseline,
   setStageShown,
@@ -109,6 +114,9 @@ function onStageShown(shown: boolean): void {
         :idle-seeds="idleSeeds"
         :summons="summons"
         :halted="state.halted"
+        :guests="guests"
+        :guest-count="guestCount"
+        :sparkle="sparkle"
         :last-active-storage="demo?.storage"
         @stage-shown="onStageShown"
         @stage="setStage"
@@ -132,7 +140,13 @@ function onStageShown(shown: boolean): void {
         </template>
       </section>
       <template v-else>
-        <QuestBoard class="stage__board" :groups="board" :loaded="state.snapshot !== null" />
+        <QuestBoard
+          class="stage__board"
+          :style="{ '--board-max-height': `${SELECTED_LAYOUT.boardMaxCqw ?? BOARD_MAX_CQW}cqw` }"
+          :groups="board"
+          :guests="guestBoard"
+          :loaded="state.snapshot !== null"
+        />
         <KingBubble class="stage__king" :waiting="king.waiting" :detail="king.detail" />
         <MessageWindow
           class="stage__message"
@@ -223,8 +237,9 @@ function onStageShown(shown: boolean): void {
   width: 29%;
   /* Heights in cqw (stage width) because the stage height is 9/16 of it. */
   min-height: 17.7cqw;
-  /* render/map.ts WINDOW_EXTENTS: ends above ひらめ's bubble (seat row 12) even mid-stretch. */
-  max-height: 31cqw;
+  /* render/map.ts WINDOW_EXTENTS: ends above the lower desks' bubbles even mid-stretch (31cqw, less
+     with the workshop desk of five and six departments). */
+  max-height: var(--board-max-height, 31cqw);
 }
 
 /* Party and fetch status share the right column so they never overlap. */

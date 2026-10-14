@@ -45,6 +45,13 @@ export const E2E_SETTINGS_FILES: Readonly<Record<string, string>> = {
   '3': 'apps/web/e2e/settings/departments-3.json',
   '5': 'apps/web/e2e/settings/departments-5.json',
   '6': 'apps/web/e2e/settings/departments-6.json',
+  // Four departments and two fictional guests (Issue #108).
+  guests: 'apps/web/e2e/settings/guests.json',
+  // Two and three departments and the same two guests, for a look at the guests in the tavern of
+  // the upper right; five departments and one guest (seven on stage), beside the 総務 desk.
+  'guests-2': 'apps/web/e2e/settings/guests-2.json',
+  'guests-3': 'apps/web/e2e/settings/guests-3.json',
+  'guests-5': 'apps/web/e2e/settings/guests-5.json',
 };
 
 /** The fixture of the E2E department mode, checked like any settings file; it must be named. */

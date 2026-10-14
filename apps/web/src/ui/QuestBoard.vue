@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import type { BoardGroup } from '../app/guildView';
+import type { BoardGroup, GuestBoardGroup } from '../app/guildView';
 
 defineProps<{
   groups: readonly BoardGroup[];
+  /** The お客さん section (Issue #108); empty without guests, and then not shown. */
+  guests: readonly GuestBoardGroup[];
   /** False until the first snapshot arrives. */
   loaded: boolean;
 }>();
@@ -31,6 +33,23 @@ defineProps<{
           </li>
         </ul>
       </div>
+      <section v-if="guests.length > 0" class="board__guests" aria-label="お客さん">
+        <h3 class="board__section">お客さん</h3>
+        <div v-for="guest in guests" :key="guest.key" class="board__guest">
+          <h4 class="board__group-label">{{ guest.name }}</h4>
+          <p v-if="guest.items !== null && guest.items.length === 0" class="board__none">
+            ひらいている Issue・PR は ない
+          </p>
+          <ul v-if="guest.items !== null" class="board__guest-items">
+            <li v-for="item in guest.items" :key="item.number" class="guest-item">
+              <span class="guest-item__number">#{{ item.number }}</span>
+              <span v-if="item.isPr" class="guest-item__pr">PR</span>
+              <span class="guest-item__title">{{ item.title }}</span>
+            </li>
+          </ul>
+          <p v-if="guest.more > 0" class="board__more">ほか {{ guest.more }} 件</p>
+        </div>
+      </section>
     </div>
   </section>
 </template>
@@ -130,6 +149,65 @@ defineProps<{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.board__guests {
+  margin-top: 0.4em;
+  padding-top: 0.25em;
+  border-top: 0.1em dashed var(--muted-text);
+}
+
+.board__section {
+  margin: 0 0 0.1em;
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.board__guest + .board__guest {
+  margin-top: 0.2em;
+}
+
+.board__guest-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guest-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35em;
+  margin: 0 0.5em 0.1em;
+  font-size: 0.85em;
+}
+
+.guest-item__number {
+  flex: none;
+  color: var(--muted-text);
+}
+
+.guest-item__pr {
+  flex: none;
+  font-size: 0.8em;
+  padding: 0 0.3em;
+  border-radius: 0.25em;
+  background: #2b5d8e;
+  color: #fff;
+}
+
+.guest-item__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board__none,
+.board__more {
+  margin: 0 0.5em 0.1em;
+  font-size: 0.8em;
+  color: var(--muted-text);
 }
 
 .scroll__multi {

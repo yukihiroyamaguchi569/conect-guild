@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { checkGuildSettings, type GuildSettings } from '@conect-guild/snapshot/settingsSchema';
 import { runSettingsWrite } from './settingsWrite.ts';
-import { DEFAULT_TEXT, fake, LOCAL, type Fake } from './settingsWrite.fixtures.test-util.ts';
+import { join } from 'node:path';
+import {
+  claudeMd,
+  DEFAULT_TEXT,
+  fake,
+  HOME,
+  input,
+  LABELS,
+  LOCAL,
+  type Fake,
+} from './settingsWrite.fixtures.test-util.ts';
 
 function written(f: Fake): GuildSettings {
   const text = f.files.get(LOCAL);
@@ -43,5 +53,20 @@ describe('runSettingsWrite with guests (Issue #108)', () => {
     expect(f.writes).toEqual([]);
     expect(f.output()).toContain('guests[0].sessionDir');
     expect(f.output()).toContain('guests[0].repo');
+  });
+
+  it('stops when the kept guests no longer fit the new departments (seven on stage)', async () => {
+    const data = input();
+    data.departments = [
+      ...data.departments,
+      { label: '開発', sessionDir: '~/company/dev', prefix: 'dev/' },
+    ];
+    const f = fake({ stdin: JSON.stringify(data), repoLabels: [...LABELS, '開発'] });
+    f.dirs.add(join(HOME, 'company', 'dev'));
+    f.files.set(join(HOME, 'company', 'dev', 'CLAUDE.md'), claudeMd('開発'));
+    f.files.set(LOCAL, localWithGuests(GUESTS));
+    expect(await runSettingsWrite(['--write', '--overwrite'], f.deps)).toBe(1);
+    expect(f.writes).toEqual([]);
+    expect(f.output()).toContain('at most 1 guests with 5 departments (#108)');
   });
 });

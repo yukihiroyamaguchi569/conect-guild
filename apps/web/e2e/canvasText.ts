@@ -4,6 +4,8 @@ declare global {
   interface Window {
     /** The texts drawn on a 2D canvas, once per text and place (installCanvasTextRecorder). */
     e2eCanvasTexts?: string[];
+    /** The texts drawn with strokeText, once per text (installCanvasTextRecorder). */
+    e2eCanvasStrokedTexts?: string[];
   }
 }
 
@@ -14,6 +16,7 @@ declare global {
 export function installCanvasTextRecorder(): void {
   const seen = new Set<string>();
   window.e2eCanvasTexts = [];
+  window.e2eCanvasStrokedTexts = [];
   const proto = CanvasRenderingContext2D.prototype;
   const names: readonly ('fillText' | 'strokeText')[] = ['fillText', 'strokeText'];
   for (const name of names) {
@@ -30,6 +33,10 @@ export function installCanvasTextRecorder(): void {
         seen.add(key);
         window.e2eCanvasTexts?.push(text);
       }
+      if (name === 'strokeText' && !seen.has(`stroke:${text}`)) {
+        seen.add(`stroke:${text}`);
+        window.e2eCanvasStrokedTexts?.push(text);
+      }
       Reflect.apply(original, this, args);
     };
   }
@@ -38,6 +45,11 @@ export function installCanvasTextRecorder(): void {
 /** The texts drawn on the canvas so far, once per text and place. */
 export function drawnTexts(page: Page): Promise<string[]> {
   return page.evaluate(() => window.e2eCanvasTexts ?? []);
+}
+
+/** The texts drawn with strokeText so far, once per text. */
+export function strokedTexts(page: Page): Promise<string[]> {
+  return page.evaluate(() => window.e2eCanvasStrokedTexts ?? []);
 }
 
 /** The 「Lv N」 texts drawn so far (one per place), sorted. */
