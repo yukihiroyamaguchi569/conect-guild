@@ -1,5 +1,5 @@
 import type { GuildEvent } from '../domain/events';
-import type { MemberId, TilePos } from '../guild.config';
+import { ACTIVE_MEMBER_IDS, type MemberId, type TilePos } from '../guild.config';
 import { ambientPose, type AmbientMoods, type AmbientSeeds, type HandProp } from './ambient';
 import { burstOrigin, confettiAt, CONFETTI_MS, type PlacedParticle } from './confetti';
 import type { IdleMark, IdlePose, IdlePoses } from './idle';
@@ -35,14 +35,8 @@ export interface Director {
   readonly busyUntil: Readonly<Partial<Record<MemberId, number>>>;
 }
 
-const MEMBER_IDS: readonly MemberId[] = [
-  'kaname',
-  'minori',
-  'hibiki',
-  'hirame',
-  'sasae',
-  'yukihiro',
-];
+/** The members on stage (the settings' departments, かなめ and the king). */
+const MEMBER_IDS: readonly MemberId[] = ACTIVE_MEMBER_IDS;
 
 export const EMPTY_DIRECTOR: Director = {
   tracks: [],
