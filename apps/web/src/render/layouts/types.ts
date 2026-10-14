@@ -61,6 +61,13 @@ export interface DecorPlacement extends TileRect {
   readonly name: DecorName;
   /** True when members cannot walk on its cells. */
   readonly solid: boolean;
+  /**
+   * Logical px its picture is drawn right of and below its tiles (negative: left, above). Its
+   * cells stay where they are. Only layout5's round table uses them, to stand centred right at
+   * the guest's feet (Issue #122).
+   */
+  readonly dx?: number;
+  readonly dy?: number;
 }
 
 /** Which banner a desk's cleared quests flutter: the back wall's (upper) or the left wall's (lower). */
@@ -127,8 +134,9 @@ export interface GuildLayout {
   readonly boardMaxCqw?: number;
   /**
    * Tiles where the party window may cover the top of a member's frame and the bubble over the
-   * head. None at present: layout6's sales desk was one until its column ended above the bubble
-   * (Issue #121). Nowhere else does anything that matters go under a window.
+   * head: layout5's guest, whose head only its rare extra notes reach (the president accepted it,
+   * 2026-10-15). layout6's sales desk was one until its column ended above the bubble (Issue #121).
+   * Nowhere else does anything that matters go under a window.
    */
   readonly underPartyWindow?: readonly TilePos[];
   readonly toss: {

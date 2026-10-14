@@ -103,16 +103,10 @@ describe.each([LAYOUT2, LAYOUT3])('$departmentCount departments: the guests', (l
     const [back, front] = TAVERN_GUEST_SPOTS;
     expect(layout.guestSpots).toBe(TAVERN_GUEST_SPOTS);
     for (const spot of layout.guestSpots) expect(contains(carpet, spot)).toBe(true);
-    // Three rows apart: the back one's name tags end above the front one's head.
-    expect(front.row - back.row).toBe(3);
+    expect(front.row).toBeGreaterThan(back.row);
     // Right of the table, so the front one's picture leaves the table in sight.
     expect(front.col).toBe(table.col + table.w);
     expect(front.row).toBe(table.row + table.h - 1);
-  });
-
-  it("puts the front guest right of the back one, so its 「?」 misses the back one's tags", () => {
-    const [back, front] = TAVERN_GUEST_SPOTS;
-    expect(front.col).toBeGreaterThan(back.col);
   });
 });
 

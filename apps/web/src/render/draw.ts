@@ -3,11 +3,12 @@ import type { GuildArt } from './art';
 import type { BubbleKind } from './bubbles';
 import type { ConfettiView, MemberPose, StageFrame } from './director';
 import type { DecorPlacement } from './decor';
+import { decorPoint } from './decorPoint';
 import { drawBubble } from './drawBubble';
 import { drawAnimatedDecor } from './drawDecor';
 import { BACK_OBJECTS, BACK_STILL_DECOR, stageSteps, type FrontLayer } from './layers';
 import { GROUND } from './map';
-import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
+import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET } from './metrics';
 import { heldLook } from './hands';
 import type { Overhead } from './overhead';
 import type { Placed } from './overheadPlace';
@@ -19,7 +20,8 @@ import type { DecorCues } from './trinkets';
 /** Canvas side effects only: every decision was made in the pure modules. Logical pixels. */
 
 function drawPlacement(ctx: CanvasRenderingContext2D, art: GuildArt, item: DecorPlacement): void {
-  art.decor.drawDecor(ctx, item.name, item.col * TILE_SIZE, item.row * TILE_SIZE);
+  const { x, y } = decorPoint(item);
+  art.decor.drawDecor(ctx, item.name, x, y);
 }
 
 /**
