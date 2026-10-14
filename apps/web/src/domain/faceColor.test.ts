@@ -83,10 +83,13 @@ describe('faceColors', () => {
     });
   });
 
-  it('keeps every face at the WCAG AA contrast for large text (3:1) or better', () => {
+  // The letter is bold at about 18 px at most, under WCAG's large text (14 pt bold): normal text's AA.
+  it('keeps every face at the WCAG AA contrast for normal text (4.5:1) or better', () => {
     for (const id of memberIdSchema.options) {
       const { fill, ink } = faceColors(id);
-      expect(contrastRatio(relativeLuminance(fill), relativeLuminance(ink))).toBeGreaterThan(3);
+      expect(contrastRatio(relativeLuminance(fill), relativeLuminance(ink))).toBeGreaterThanOrEqual(
+        4.5,
+      );
     }
   });
 });
