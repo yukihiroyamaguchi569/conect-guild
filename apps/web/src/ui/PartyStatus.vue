@@ -5,13 +5,15 @@ defineProps<{
   rows: readonly PartyRow[];
   /** Packed rows, so that seven or eight fit (the layouts of five and six departments). */
   dense?: boolean;
+  /** Packed tighter still, the type unchanged (six departments, Issue #121). */
+  tight?: boolean;
 }>();
 </script>
 
 <template>
   <section
     class="rpg-window party"
-    :class="{ 'party--dense': dense }"
+    :class="{ 'party--dense': dense, 'party--tight': tight }"
     aria-label="パーティのようす"
   >
     <h2 class="rpg-window__title">パーティのようす</h2>
@@ -99,6 +101,29 @@ defineProps<{
 
 .party--dense .member + .member {
   margin-top: 0.14em;
+}
+
+/*
+ * Eight rows above the sales desk's bubble (render/layouts partyWindow.tight, Issue #121): the
+ * dense type, with the room around it taken out.
+ */
+.party--tight {
+  padding-top: 0.3em;
+  padding-bottom: 0.3em;
+}
+
+.party--tight .rpg-window__title {
+  margin-bottom: 0.1em;
+  line-height: 1.2;
+}
+
+.party--tight .member {
+  padding: 0 0.35em;
+  line-height: 1.05;
+}
+
+.party--tight .member + .member {
+  margin-top: 0.08em;
 }
 
 .member[title] {

@@ -109,10 +109,7 @@ export const WORKSHOP_DESK: DeskCorner & { readonly seat: TilePos } = {
  * The sales desk (むすび, 営業) on the lower right carpet, right of the 総務 desk and mirroring
  * it: letters, a ledger and mugs for the visitors.
  */
-export const SALES_DESK: DeskCorner & {
-  readonly seat: TilePos;
-  readonly underPartyWindow: readonly TilePos[];
-} = {
+export const SALES_DESK: DeskCorner & { readonly seat: TilePos } = {
   objects: [flat('chair', rect(26, 9, 1, 2)), solid('desk', rect(25, 11, 4, 2))],
   decor: [
     place('open-book', 25, 11),
@@ -121,14 +118,6 @@ export const SALES_DESK: DeskCorner & {
     place('mugs', 28, 11),
   ],
   seat: { col: 26, row: 10 },
-  // Every tile right of col 22 down to row 11 is under the party window of six departments (bottom
-  // 316 px): the seat and the way from it to the alley between the desks (col 24, row 12).
-  underPartyWindow: [
-    { col: 26, row: 10 },
-    { col: 25, row: 10 },
-    { col: 24, row: 10 },
-    { col: 24, row: 11 },
-  ],
 };
 
 /**

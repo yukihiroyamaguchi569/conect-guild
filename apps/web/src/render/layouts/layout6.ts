@@ -48,10 +48,10 @@ export const LAYOUT6: GuildLayout = {
   ...SMALL_ROOM_SEATS,
   guestSpots: [],
   boardMaxCqw: WORKSHOP_BOARD_MAX_CQW,
-  underPartyWindow: SALES_DESK.underPartyWindow,
-  // Eight packed rows: the column ends 24.5 px above layout4's (297.9 px against 322.4 px in the
-  // demo at 1024 px, Chrome, 2026-10-14). Taken off layout4's 340 and 372.5 px and rounded up.
-  partyWindow: { bottom: 316, tallestBottom: 349, dense: true },
+  // Eight tightly packed rows, with the fetch status as a tab on the message window (Issue #121):
+  // the column ends at 232.3 px in the demo at 1024 px (Chrome, 2026-10-15), above the bubble over
+  // the sales desk (240 px). No rare notes reach it any more, so both are the same.
+  partyWindow: { bottom: 236, tallestBottom: 236, dense: true, tight: true, fetchTab: true },
   // As in layout4: the upper desks are 5 tiles from かなめ, the lower ones 5.8, the outer ones more.
   toss: { maxTiles: 5.5 },
 };

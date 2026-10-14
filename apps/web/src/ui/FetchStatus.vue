@@ -9,13 +9,20 @@ defineProps<{
   baselineNotice: string | null;
   /** The demo mode (Issue #49): its data are fictional and its baseline is not stored. */
   demo?: boolean;
+  /**
+   * One line, as a tab on the message window (six departments, Issue #121): the notes shrink to an
+   * ellipsis, their whole text in the tooltip.
+   */
+  tab?: boolean;
 }>();
 
 const emit = defineEmits<{ 'clear-baseline': [] }>();
+
+const EFFECTS_NOTE = 'localStorage が使えないため、演出は出ません';
 </script>
 
 <template>
-  <section class="rpg-window fetch" aria-label="取得のようす">
+  <section class="rpg-window fetch" :class="{ 'fetch--tab': tab }" aria-label="取得のようす">
     <p class="fetch__line">
       <span>最終取得 {{ status.fetchedAt ?? '--:--' }}</span>
       <span
@@ -32,11 +39,20 @@ const emit = defineEmits<{ 'clear-baseline': [] }>();
     >
       {{ status.sessions }}
     </p>
-    <p v-if="status.failure !== null" class="fetch__line fetch__failure" role="status">
+    <p
+      v-if="status.failure !== null"
+      class="fetch__line fetch__failure"
+      role="status"
+      :title="tab ? status.failure : undefined"
+    >
       {{ status.failure }}
     </p>
-    <p v-if="!effectsAvailable" class="fetch__line fetch__note">
-      localStorage が使えないため、演出は出ません
+    <p
+      v-if="!effectsAvailable"
+      class="fetch__line fetch__note"
+      :title="tab ? EFFECTS_NOTE : undefined"
+    >
+      {{ EFFECTS_NOTE }}
     </p>
     <p class="fetch__line">
       <span v-if="demo" class="fetch__note">デモ（架空のデータ）</span>
@@ -51,7 +67,12 @@ const emit = defineEmits<{ 'clear-baseline': [] }>();
       </button>
       <!-- Controls that sit on this line without making the window taller (the sound buttons). -->
       <slot />
-      <span v-if="baselineNotice !== null" class="fetch__note">{{ baselineNotice }}</span>
+      <span
+        v-if="baselineNotice !== null"
+        class="fetch__note"
+        :title="tab ? baselineNotice : undefined"
+        >{{ baselineNotice }}</span
+      >
     </p>
   </section>
 </template>
@@ -92,5 +113,48 @@ const emit = defineEmits<{ 'clear-baseline': [] }>();
 
 .fetch__note {
   color: var(--muted-text);
+}
+
+/*
+ * The tab (GuildScreen.vue .stage__tab): every line side by side on one line, never wrapped. The
+ * notes and the failure give way first, down to an ellipsis; the time and the buttons keep their
+ * size. No bottom edge: it opens into the message window under it, and stays low enough for the
+ * members walking above it (render/map.ts FETCH_TAB).
+ */
+.fetch--tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0 0.6em;
+  border-bottom: none;
+  border-radius: 0.5em 0.5em 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* The sound buttons come through the slot, hence :deep. */
+.fetch--tab :deep(.rpg-button) {
+  padding: 0 0.5em;
+  border-width: 0.1em;
+  line-height: 1.15;
+}
+
+.fetch--tab .fetch__line {
+  flex-wrap: nowrap;
+}
+
+.fetch--tab .fetch__line + .fetch__line {
+  margin-top: 0;
+}
+
+.fetch--tab .fetch__line:last-child {
+  min-width: 0;
+}
+
+.fetch--tab .fetch__note,
+.fetch--tab .fetch__failure {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

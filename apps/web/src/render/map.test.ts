@@ -317,15 +317,35 @@ describe('map: the windows of each layout', () => {
 
   it('lets members walk under the party window only on the tiles the layout lists', () => {
     const six = layoutFor(6);
-    // The sales desk's seat and the way from it (layouts/largeRoom.ts SALES_DESK).
-    expect(isWalkableIn(six, { col: 26, row: 10 })).toBe(true);
-    expect(isWalkableIn(six, { col: 24, row: 11 })).toBe(true);
-    expect(isWalkableIn({ ...six, underPartyWindow: [] }, { col: 26, row: 10 })).toBe(false);
-    // Not listed, as far under the window.
-    expect(isWalkableIn(six, { col: 27, row: 10 })).toBe(false);
+    // Upper right, under the party window of six departments and no other window. No layout lists
+    // a tile any more: the sales desk's went with Issue #121.
+    const under = { col: 27, row: 5 };
+    expect(overlaps(spriteRect(under), windowExtentsFor(six).party)).toBe(true);
+    expect(isWalkableIn(six, under)).toBe(false);
+    expect(isWalkableIn({ ...six, underPartyWindow: [under] }, under)).toBe(true);
     // A listed tile under another window stays out of reach.
     expect(
       isWalkableIn({ ...six, underPartyWindow: [{ col: 5, row: 5 }] }, { col: 5, row: 5 }),
     ).toBe(false);
+  });
+
+  it('puts the fetch tab on the message window’s top edge in six departments only', () => {
+    for (const count of [2, 3, 4, 5])
+      expect(windowExtentsFor(layoutFor(count)).tab).toBeUndefined();
+    const { tab, message } = windowExtentsFor(layoutFor(6));
+    if (tab === undefined) throw new Error('no tab');
+    // right 9.8%, bottom on the message window, max-width 50% (512 px), height 1.6cqw (16.384 px).
+    expect(tab.right).toBeCloseTo(message.right);
+    expect(tab.bottom).toBeCloseTo(message.top);
+    expect(tab.right - tab.left).toBeCloseTo(512);
+    expect(tab.bottom - tab.top).toBeCloseTo(16.384);
+  });
+
+  it('keeps the fetch tab under the feet on row 13, the way to the right of six departments', () => {
+    const six = layoutFor(6);
+    const { tab } = windowExtentsFor(six);
+    if (tab === undefined) throw new Error('no tab');
+    expect(spriteRect({ col: 20, row: 13 }).bottom).toBeLessThan(tab.top);
+    for (let col = 24; col <= 30; col += 1) expect(isWalkableIn(six, { col, row: 13 })).toBe(true);
   });
 });

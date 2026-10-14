@@ -10,6 +10,9 @@ import type { MemberId } from '@conect-guild/snapshot/settings';
 import { drawnLevels, installCanvasTextRecorder } from './canvasText.ts';
 import { installFakeAudio } from './fakeAudio.ts';
 import { waitForRoom } from './fixtures.ts';
+import { guestsSnapshot } from './guestsSnapshot.ts';
+import { bubbleBox } from '../src/render/overhead.ts';
+import { tileToPoint } from '../src/render/path.ts';
 import { DEMO_TITLES } from '../src/domain/demoScript.ts';
 import { faceColors } from '../src/domain/faceColor.ts';
 import { layoutFor } from '../src/render/layouts/catalog.ts';
@@ -69,6 +72,24 @@ async function logicalBox(page: Page, window: Locator): Promise<PxRect> {
     right: (box.x + box.width - canvas.x) * scale,
     bottom: (box.y + box.height - canvas.y) * scale,
   };
+}
+
+/** `box` inside `area`, give or take the browser's rounding (half a px). */
+function expectWithin(box: PxRect, area: PxRect): void {
+  expect(box.left).toBeGreaterThanOrEqual(area.left - 0.5);
+  expect(box.top).toBeGreaterThanOrEqual(area.top - 0.5);
+  expect(box.right).toBeLessThanOrEqual(area.right + 0.5);
+  expect(box.bottom).toBeLessThanOrEqual(area.bottom + 0.5);
+}
+
+/** The bubble over each desk's seat (the 「?」, standing) clear of every one of `areas`. */
+function expectBubblesClear(desks: readonly { seat: TilePos }[], areas: readonly PxRect[]): void {
+  for (const { seat } of desks) {
+    const bubble = bubbleBox(tileToPoint(seat), { voice: 'glyph', chars: 1 }, 'right', 0);
+    for (const area of areas) {
+      expect(overlaps(bubble, area), `${String(seat.col)},${String(seat.row)}`).toBe(false);
+    }
+  }
 }
 
 test('the demo plays in the office of this many departments', async ({ page, context }) => {
@@ -148,10 +169,13 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
 
   const party = await logicalBox(page, page.getByRole('region', { name: 'パーティのようす' }));
   const fetch = await logicalBox(page, page.getByRole('region', { name: '取得のようす' }));
+  // Six departments: the fetch status is a tab on the message window, not in the column.
+  const fetchTab = layout.partyWindow.fetchTab === true;
   const measured = {
     board: await logicalBox(page, page.getByRole('region', { name: 'クエスト掲示板' })),
-    party: { ...party, bottom: fetch.bottom },
+    party: fetchTab ? party : { ...party, bottom: fetch.bottom },
     message: await logicalBox(page, page.getByRole('region', { name: 'メッセージ' })),
+    ...(fetchTab ? { tab: fetch } : {}),
   };
   // The right-hand column ends above the layout's measured bottom (render/layouts), its rows
   // packed for seven or eight of them (five and six departments).
@@ -162,6 +186,8 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
   expect(partyClass?.includes('party--dense')).toBe(layout.partyWindow.dense === true);
 
   const modelled = windowExtentsFor(layout);
+  expect(modelled.tab === undefined).toBe(!fetchTab);
+  expectWithin(fetch, modelled.tab ?? fetch);
   // The quest board scrolls from the layout's max-height on (five and six departments: lower).
   const maxHeight = await page
     .getByRole('region', { name: 'クエスト掲示板' })
@@ -179,7 +205,7 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
     ...layout.guestSpots,
   ];
   for (const spot of spots) {
-    // The party window may cover the tiles the layout lists (layout6's sales desk).
+    // The party window may cover the tiles the layout lists (none since Issue #121).
     const areas = isPartyExceptionIn(layout, spot)
       ? [measured.board, measured.message, modelled.board, modelled.message]
       : [...Object.values(measured), ...Object.values(modelled)];
@@ -189,6 +215,70 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
       );
     }
   }
+  // The bubble over every desk's seat is clear of the windows as drawn (むすび's, Issue #121).
+  expectBubblesClear(layout.desks, Object.values(measured));
   expect(snapshotRequests).toEqual([]);
   expect(errors).toEqual([]);
+});
+
+/**
+ * The live screen on a fictional snapshot of these settings, then a failed fetch; localStorage
+ * refuses every write, so the effects note and the failed baseline clear show too.
+ */
+async function openWithEveryNote(page: Page, context: BrowserContext, count: number) {
+  let failing = false;
+  const snapshot = guestsSnapshot({
+    now: Date.now(),
+    states: ['idle', 'idle'],
+    settings: fictionalSettings(count),
+  });
+  await context.route('**/snapshot.json', (route) =>
+    failing ? route.fulfill({ status: 500, body: '' }) : route.fulfill({ json: snapshot }),
+  );
+  await context.route('**/collector-status.json', (route) =>
+    route.fulfill({ status: 204, body: '' }),
+  );
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException('blocked', 'QuotaExceededError');
+    };
+  });
+  await page.goto('/');
+  const fetch = page.getByRole('region', { name: '取得のようす' });
+  await expect(fetch).toContainText('localStorage が使えないため');
+  await fetch.getByRole('button', { name: '基準を消す' }).click();
+  failing = true;
+  await expect(fetch.getByRole('status')).toContainText('取得失敗', { timeout: 15_000 });
+  return fetch;
+}
+
+test('the fetch status keeps every note: in the column, or on one line as the tab (Issue #121)', async ({
+  page,
+  context,
+}) => {
+  const count = departmentCount();
+  const tabArea = windowExtentsFor(layoutFor(count)).tab;
+  await page.setViewportSize({ width: 1024, height: 576 });
+  const fetch = await openWithEveryNote(page, context, count);
+  // Up to five departments the window stays in the column, its notes on lines of their own.
+  expect((await fetch.getAttribute('class'))?.includes('fetch--tab')).toBe(tabArea !== undefined);
+  if (tabArea === undefined) return;
+
+  // Six: one line inside the modelled tab, every line's box within the tab's height.
+  expectWithin(await logicalBox(page, fetch), tabArea);
+  const lines = await fetch.evaluate((element) => {
+    const outer = element.getBoundingClientRect();
+    return [...element.children].map((child) => {
+      const box = child.getBoundingClientRect();
+      return box.top >= outer.top - 0.5 && box.bottom <= outer.bottom + 0.5;
+    });
+  });
+  expect(lines.length).toBeGreaterThanOrEqual(4);
+  expect(lines.every(Boolean)).toBe(true);
+  // The buttons are whole; the notes give way to an ellipsis, their text in the tooltip.
+  for (const name of ['基準を消す', /音を/]) {
+    const button = fetch.getByRole('button', { name });
+    expect(await button.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  }
+  await expect(fetch.getByRole('status')).toHaveAttribute('title', /取得失敗/);
 });

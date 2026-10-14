@@ -16,6 +16,7 @@ import { DEFAULT_SEATS } from '../scenes';
 import { seatSinkFor } from '../seating';
 import { LAYOUTS } from './index';
 import { LAYOUT5 } from './layout5';
+import { LAYOUT6 } from './layout6';
 import { TILE_SIZE } from '../metrics';
 import type { GuildLayout, TilePos } from './types';
 
@@ -199,9 +200,8 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: d
     }
   });
 
-  it('lets the party window cover only tiles it does cover, and only in six departments', () => {
+  it('lets the party window cover only tiles it does cover', () => {
     const listed = layout.underPartyWindow ?? [];
-    expect(listed.length > 0).toBe(layout.departmentCount === 6);
     const { party } = windowExtentsFor(layout);
     for (const tile of listed) expect(overlaps(spriteRect(tile), party), keyOf(tile)).toBe(true);
   });
@@ -219,5 +219,32 @@ describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () =
     expect(spot.col).toBeGreaterThan(desk.col + desk.w);
     expect(spot.row).toBe(desk.row + desk.h - 1);
     expect(groundAt(LAYOUT5, spot)).toBe('floor-carpet');
+  });
+});
+
+describe('layout of 6 departments: むすび clear of the party window (Issue #121)', () => {
+  const seat = LAYOUT6.desks[5]?.seat;
+  if (seat === undefined) throw new Error('no sales desk');
+
+  it('lists no tile under the party window', () => {
+    expect(LAYOUT6.underPartyWindow ?? []).toEqual([]);
+    expect(isPartyExceptionIn(LAYOUT6, seat)).toBe(false);
+  });
+
+  it('ends the column above the seat’s bubble, the fetch status gone to the tab', () => {
+    const { party, tab } = tallestWindowExtentsFor(LAYOUT6);
+    const feet = tileToPoint(seat);
+    const bubble = bubbleBox(feet, { voice: 'glyph', chars: 1 }, 'right', 0);
+    expect(overlaps(bubble, party)).toBe(false);
+    expect(overlaps(spriteRect(seat), party)).toBe(false);
+    expect(LAYOUT6.partyWindow).toMatchObject({ tight: true, fetchTab: true });
+    expect(tab).toBeDefined();
+  });
+
+  it('keeps the party window extents of the other layouts and their fetch status in the column', () => {
+    for (const layout of Object.values(LAYOUTS).filter((l) => l !== LAYOUT6)) {
+      expect(layout.partyWindow.tight ?? false).toBe(false);
+      expect(layout.partyWindow.fetchTab ?? false).toBe(false);
+    }
   });
 });
