@@ -95,28 +95,66 @@ export function laneStatesAt(
   return lanes;
 }
 
-function departmentAt(index: number): DepartmentLabel {
-  const label = DEPARTMENT_LABELS[index];
-  // guild.settings.json is checked to have exactly four departments (packages/snapshot/src/settings.ts).
-  if (label === undefined)
-    throw new Error(`no department #${String(index)} in guild.settings.json`);
+function departmentAt(labels: readonly DepartmentLabel[], index: number): DepartmentLabel {
+  const label = labels[index];
+  // Only indexes below labels.length are asked for (questCarriers, PAST_WORK by label).
+  if (label === undefined) throw new Error(`no department #${String(index)}`);
   return label;
 }
 
+/** Loops until every one of `count` departments has carried a quest: half of them per loop. */
+function carryCycle(count: number): number {
+  if (!Number.isInteger(count) || count < 2) {
+    throw new RangeError(`the demo needs two departments or more, not ${String(count)}`);
+  }
+  return Math.ceil(count / 2);
+}
+
 /**
- * The departments of the lanes in a loop; null for the commander (かなめ, the reception). Even loops: the 1st and 3rd departments (経理, 企画)
- * carry the quests and the 2nd and 4th (広報, 総務) help; odd loops swap them. Each pair has one
- * desk near かなめ (the scroll may be thrown) and one farther away.
+ * The indexes of the two departments that carry the quests of `loop` (quest1, quest2): the k-th
+ * and the (k + half)-th, k going round the first half. Four departments: 1st and 3rd (経理, 企画)
+ * in even loops, 2nd and 4th (広報, 総務) in odd ones, so each pair has one desk near かなめ (the
+ * scroll may be thrown) and one farther away. Three: (1st, 3rd), (2nd, 1st). Two: both, always.
  */
-export function laneDepartments(loop: number): Readonly<Record<DemoLane, DepartmentLabel | null>> {
-  const order = loop % 2 === 0 ? [0, 2, 1, 3] : [1, 3, 0, 2];
-  return {
+export function questCarriers(loop: number, count: number): readonly [number, number] {
+  const half = carryCycle(count);
+  const first = loop % half;
+  return [first, (first + half) % count];
+}
+
+/** How many loops before `loop` department `index` carried a quest in (its next title). */
+function carriesBefore(index: number, loop: number, count: number): number {
+  const half = carryCycle(count);
+  const inCycle = (k: number): boolean => questCarriers(k, count).includes(index);
+  let carries = 0;
+  for (let k = 0; k < half; k += 1) {
+    if (!inCycle(k)) continue;
+    carries += Math.floor(loop / half) + (k < loop % half ? 1 : 0);
+  }
+  return carries;
+}
+
+/**
+ * The departments of the lanes in a loop; null for the commander (かなめ, the reception). Two
+ * departments carry the quests (questCarriers); the next two of the others in the settings' order
+ * help. A lane no department is left for (two or three departments) is not in the record: its
+ * beats play for nobody.
+ */
+export function laneDepartments(
+  loop: number,
+  labels: readonly DepartmentLabel[] = DEPARTMENT_LABELS,
+): Readonly<Partial<Record<DemoLane, DepartmentLabel | null>>> {
+  const [quest1, quest2] = questCarriers(loop, labels.length);
+  const helpers = labels.flatMap((label, i) => (i === quest1 || i === quest2 ? [] : [label]));
+  const lanes: Partial<Record<DemoLane, DepartmentLabel | null>> = {
     commander: null,
-    quest1: departmentAt(order[0] ?? 0),
-    quest2: departmentAt(order[1] ?? 0),
-    helper1: departmentAt(order[2] ?? 0),
-    helper2: departmentAt(order[3] ?? 0),
+    quest1: departmentAt(labels, quest1),
+    quest2: departmentAt(labels, quest2),
   };
+  const [helper1, helper2] = helpers;
+  if (helper1 !== undefined) lanes.helper1 = helper1;
+  if (helper2 !== undefined) lanes.helper2 = helper2;
+  return lanes;
 }
 
 /** Numbers grow with the loop, so a new loop's quests are new Issues, never reopened ones. */
@@ -124,13 +162,16 @@ export function demoIssueNumber(loop: number, lane: DemoLane): number {
   return 101 + 2 * DEMO_LANES.length * loop + 2 * DEMO_LANES.indexOf(lane);
 }
 
-function titlesOf(department: DepartmentLabel | null, loop: number): DemoQuestTitles {
-  const pool =
-    department === null
-      ? DEMO_RECEPTION_TITLES
-      : (DEMO_TITLES[DEPARTMENT_LABELS.indexOf(department)] ?? []);
-  // A department carries a quest every other loop: the next one is the next in its pool.
-  const titles = pool[Math.floor(loop / 2) % Math.max(pool.length, 1)];
+function titlesOf(
+  department: DepartmentLabel | null,
+  loop: number,
+  labels: readonly DepartmentLabel[],
+): DemoQuestTitles {
+  const index = department === null ? -1 : labels.indexOf(department);
+  const pool = index < 0 ? DEMO_RECEPTION_TITLES : (DEMO_TITLES[index % DEMO_TITLES.length] ?? []);
+  // Each quest a department carries is the next in its pool; the reception's go round per loop.
+  const turn = index < 0 ? loop : carriesBefore(index, loop, labels.length);
+  const titles = pool[turn % Math.max(pool.length, 1)];
   return titles ?? { issue: '架空のクエスト', pr: '架空の成果' };
 }
 
@@ -194,22 +235,35 @@ interface QuestRef {
   readonly loopStart: number;
 }
 
-function questRef(loop: number, lane: DemoLane, loopStart: number): QuestRef {
-  const department = laneDepartments(loop)[lane];
+/** The lane's quest of `loop`; null for a lane no department is left for. */
+function questRef(
+  loop: number,
+  lane: DemoLane,
+  loopStart: number,
+  labels: readonly DepartmentLabel[],
+): QuestRef | null {
+  const department = laneDepartments(loop, labels)[lane];
+  if (department === undefined) return null;
   return {
     number: demoIssueNumber(loop, lane),
     department,
-    titles: titlesOf(department, loop),
+    titles: titlesOf(department, loop, labels),
     loopStart,
   };
 }
 
 /** The Issues and PRs of one loop as they stand at `inLoopMs`. */
-function loopItems(loop: number, inLoopMs: number, loopStart: number): LoopItems {
+function loopItems(
+  loop: number,
+  inLoopMs: number,
+  loopStart: number,
+  labels: readonly DepartmentLabel[],
+): LoopItems {
   const lanes = laneStatesAt(inLoopMs);
   const items: LoopItems = { issues: [], prs: [] };
   for (const lane of DEMO_LANES) {
-    const quest = questRef(loop, lane, loopStart);
+    const quest = questRef(loop, lane, loopStart, labels);
+    if (quest === null) continue;
     const state = lanes[lane];
     if (state.issue !== 'none') items.issues.push(issueOf(state, quest));
     if (state.pr !== 'none') items.prs.push(prOf(state, quest));
@@ -220,9 +274,10 @@ function loopItems(loop: number, inLoopMs: number, loopStart: number): LoopItems
 /**
  * A made-up past, so the counts (and the levels of Issue #19) do not start from zero. Each
  * department's clears and merges (in the settings' order: 経理, 広報, 企画, 総務 by default) and
- * the Issues opened are picked so that the level-ups come one by one: in the first loop かなめ
- * (her second scroll), the 1st department (its chest) and the 3rd (its clear); later only now and
- * then (domain/demo.test.ts has the times).
+ * the Issues opened are picked so that, with four departments, the level-ups come one by one: in
+ * the first loop かなめ (her second scroll), the 1st department (its chest) and the 3rd (its
+ * clear); later only now and then (domain/demo.test.ts has the times). The 5th and 6th are for
+ * the larger offices to come; a company of fewer departments takes the first ones.
  */
 const PAST_WORK: readonly { readonly clears: number; readonly merges: number }[] = [
   // 205 experience: Lv 7 (210) with the chest of the first loop.
@@ -233,18 +288,24 @@ const PAST_WORK: readonly { readonly clears: number; readonly merges: number }[]
   { clears: 10, merges: 8 },
   // 170: Lv 7 (210) with the clear of the 6th loop.
   { clears: 12, merges: 10 },
+  // 115 (Lv 5, 100) and 95 (Lv 4, 60): a few loops from their next levels. Not yet timed.
+  { clears: 8, merges: 7 },
+  { clears: 7, merges: 5 },
 ];
 /** 48 scrolls × 3 = 144: かなめ reaches Lv 6 (150) with the second scroll of the first loop. */
 const PAST_OPENED = 48;
 
 /** Past Issues are numbered from 1 and past PRs after them; the loops' numbers start at 101. */
-function pastHistory(): { completed: HistoryIssue[]; merged: HistoryPr[] } {
+function pastHistory(labels: readonly DepartmentLabel[]): {
+  completed: HistoryIssue[];
+  merged: HistoryPr[];
+} {
   const completed: HistoryIssue[] = [];
   const merged: HistoryPr[] = [];
-  PAST_WORK.forEach(({ clears, merges }, index) => {
+  PAST_WORK.slice(0, labels.length).forEach(({ clears, merges }, index) => {
     const first = completed.length + 1;
     for (let i = 0; i < clears; i += 1)
-      completed.push({ number: first + i, departments: [departmentAt(index)] });
+      completed.push({ number: first + i, departments: [departmentAt(labels, index)] });
     for (let i = 0; i < merges; i += 1)
       merged.push({ number: 0, linkedIssues: [first + i], branchDepartment: null });
   });
@@ -255,15 +316,19 @@ function pastHistory(): { completed: HistoryIssue[]; merged: HistoryPr[] } {
   };
 }
 
-const PAST = pastHistory();
-
 /** The made-up past, then every loop so far (the current one up to `inLoopMs`). */
-function historyUntil(loop: number, inLoopMs: number): SnapshotHistory {
+function historyUntil(
+  loop: number,
+  inLoopMs: number,
+  labels: readonly DepartmentLabel[],
+): SnapshotHistory {
+  const past = pastHistory(labels);
   let opened = PAST_OPENED;
-  const completed: HistoryIssue[] = [...PAST.completed];
-  const merged: HistoryPr[] = [...PAST.merged];
+  const completed: HistoryIssue[] = [...past.completed];
+  const merged: HistoryPr[] = [...past.merged];
+  const isDepartment = (label: string): boolean => labels.includes(label);
   for (let j = 0; j <= loop; j += 1) {
-    const { issues, prs } = loopItems(j, j < loop ? DEMO_LOOP_MS : inLoopMs, 0);
+    const { issues, prs } = loopItems(j, j < loop ? DEMO_LOOP_MS : inLoopMs, 0, labels);
     opened += issues.length;
     for (const issue of issues.filter((i) => i.state === 'closed'))
       completed.push({ number: issue.number, departments: issue.labels.filter(isDepartment) });
@@ -273,22 +338,26 @@ function historyUntil(loop: number, inLoopMs: number): SnapshotHistory {
   return { openedIssueCount: opened, completedIssues: completed, mergedPrs: merged };
 }
 
-function isDepartment(label: string): label is DepartmentLabel {
-  return DEPARTMENT_LABELS.some((department) => department === label);
-}
-
-function sessionsOf(loop: number, inLoopMs: number, nowMs: number): Snapshot['sessions'] {
+function sessionsOf(
+  loop: number,
+  inLoopMs: number,
+  nowMs: number,
+  labels: readonly DepartmentLabel[],
+): Snapshot['sessions'] {
   const lanes = laneStatesAt(inLoopMs);
-  const departments = laneDepartments(loop);
+  const departments = laneDepartments(loop, labels);
   const byDepartment = new Map<DepartmentLabel | null, SessionState>(
-    DEMO_LANES.map((lane) => [departments[lane], lanes[lane].session]),
+    DEMO_LANES.flatMap((lane) => {
+      const department = departments[lane];
+      return department === undefined ? [] : [[department, lanes[lane].session] as const];
+    }),
   );
   return {
     status: 'ok',
     checkedAt: iso(nowMs),
     members: [
       { department: null, state: byDepartment.get(null) ?? 'idle' },
-      ...DEPARTMENT_LABELS.map((department) => ({
+      ...labels.map((department) => ({
         department,
         state: byDepartment.get(department) ?? 'idle',
       })),
@@ -297,24 +366,29 @@ function sessionsOf(loop: number, inLoopMs: number, nowMs: number): Snapshot['se
 }
 
 /**
- * The fictional snapshot `elapsedMs` after the demo started, at wall time `nowMs` (epoch ms).
- * It holds the current loop as far as it has gone and the whole previous loop (so the members who
- * cleared a quest stay 完了 and keep their rewards). `fetchedAt` is always now: never stale.
+ * The fictional snapshot `elapsedMs` after the demo started, at wall time `nowMs` (epoch ms), for
+ * the departments `labels` (the settings' by default; tests pass made-up ones). It holds the
+ * current loop as far as it has gone and the whole previous loop (so the members who cleared a
+ * quest stay 完了 and keep their rewards). `fetchedAt` is always now: never stale.
  */
-export function demoSnapshotAt(elapsedMs: number, nowMs: number): Snapshot {
+export function demoSnapshotAt(
+  elapsedMs: number,
+  nowMs: number,
+  labels: readonly DepartmentLabel[] = DEPARTMENT_LABELS,
+): Snapshot {
   const elapsed = Math.max(elapsedMs, 0);
   const loop = Math.floor(elapsed / DEMO_LOOP_MS);
   const inLoop = elapsed - loop * DEMO_LOOP_MS;
   const loopStart = (j: number) => nowMs - inLoop - (loop - j) * DEMO_LOOP_MS;
-  const previous = loop > 0 ? loopItems(loop - 1, DEMO_LOOP_MS, loopStart(loop - 1)) : null;
-  const current = loopItems(loop, inLoop, loopStart(loop));
+  const previous = loop > 0 ? loopItems(loop - 1, DEMO_LOOP_MS, loopStart(loop - 1), labels) : null;
+  const current = loopItems(loop, inLoop, loopStart(loop), labels);
   return {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     fetchedAt: iso(nowMs),
     repo: DEMO_REPO,
     issues: [...(previous?.issues ?? []), ...current.issues],
     prs: [...(previous?.prs ?? []), ...current.prs],
-    history: historyUntil(loop, inLoop),
-    sessions: sessionsOf(loop, inLoop, nowMs),
+    history: historyUntil(loop, inLoop, labels),
+    sessions: sessionsOf(loop, inLoop, nowMs, labels),
   };
 }
