@@ -13,9 +13,7 @@ import {
 /**
  * What the offices of five and six departments add to the room of smallRoom.ts and its upper left
  * desk (Issue #18): layout4's upper right desk, the two lower desks where layout4 has them (企画
- * and 総務), a desk in the lower-left corner beside the message window, and the guests at the
- * door. Every seat stays between the quest board and the party window (cols 11–21), but the
- * corner one (CORNER_DESK_OBJECTS).
+ * and 総務), the desks beside them on the lower carpets, and the guests at the door.
  */
 
 /** layout4's upper right (広報) desk, with its easel, megaphone, book, flyers and mugs. */
@@ -48,12 +46,14 @@ export const UPPER_DESKS: readonly [Desk, Desk] = [
   UPPER_RIGHT_DESK.desk,
 ];
 
-/** The lower desks of layout4, the files and crates beside the right one. */
+/** The lower desks of layout4. */
 export const LOWER_DESK_OBJECTS: readonly MapObject[] = [
   flat('chair', rect(11, 9, 1, 2)),
   solid('desk', rect(9, 11, 4, 2)),
   flat('chair', rect(21, 9, 1, 2)),
   solid('desk', rect(20, 11, 4, 2)),
+  // Left of the message window, as in layout4
+  solid('crate', rect(2, 14, 1, 1)),
 ];
 
 export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
@@ -70,32 +70,66 @@ export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
   place('scroll-pile', 22, 11),
   place('toolbox', 23, 11),
   place('sacks', 22, 10),
+  place('barrel', 30, 11),
+  // Left of the message window, as in layout4
+  place('barrel-pair', 1, 14),
+  place('sacks', 2, 15),
+  place('barrel-small', 2, 16),
+];
+
+/** layout4's files and crates right of the lower right desk, where layout6 has the sales desk. */
+export const LOWER_RIGHT_STORAGE: readonly DecorPlacement[] = [
   place('file-cabinet', 26, 11),
   place('crate-stack', 28, 11),
-  place('barrel', 30, 11),
 ];
 
 /**
- * The corner desk: the member sits low enough (row 13) that the bubble over the head clears the
- * quest board, and far enough left (col 2) that the 「Lv N」 on the desk's front is beside the
- * message window, not under it. The desk's front goes under the window.
+ * The quest board's max-height (cqw) with the workshop desk: the board then ends above the bubble
+ * over its seat (logical 234.5 px against 240 px) and scrolls sooner (31cqw elsewhere).
  */
-export const CORNER_DESK_OBJECTS: readonly MapObject[] = [
-  flat('chair', rect(2, 12, 1, 2)),
-  solid('desk', rect(1, 14, 4, 2)),
-];
+export const WORKSHOP_BOARD_MAX_CQW = 22;
 
-export const CORNER_DESK_DECOR: readonly DecorPlacement[] = [
-  place('candlestick', 1, 14),
-  place('open-book', 3, 14),
-  place('book-pile', 4, 14),
-  // Beside the chair, and a map table on the carpet
-  place('barrel', 1, 11),
-  place('map-table', 4, 11),
-  place('stool', 7, 12),
-];
+/**
+ * The workshop desk (たくみ, 開発) on the lower left carpet, left of the 企画 desk and like it:
+ * the member on the chair behind it, tools and scrolls on it, a barrel in the corner.
+ */
+export const WORKSHOP_DESK: DeskCorner & { readonly seat: TilePos } = {
+  objects: [flat('chair', rect(6, 9, 1, 2)), solid('desk', rect(4, 11, 4, 2))],
+  decor: [
+    place('candlestick', 4, 11),
+    place('toolbox', 5, 11),
+    place('scroll-pile', 6, 11),
+    place('book-pile', 7, 11),
+    place('barrel', 1, 11),
+  ],
+  seat: { col: 6, row: 10 },
+};
 
-export const CORNER_SEAT: TilePos = { col: 2, row: 13 };
+/**
+ * The sales desk (むすび, 営業) on the lower right carpet, right of the 総務 desk and mirroring
+ * it: letters, a ledger and mugs for the visitors.
+ */
+export const SALES_DESK: DeskCorner & {
+  readonly seat: TilePos;
+  readonly underPartyWindow: readonly TilePos[];
+} = {
+  objects: [flat('chair', rect(26, 9, 1, 2)), solid('desk', rect(25, 11, 4, 2))],
+  decor: [
+    place('open-book', 25, 11),
+    place('ledger-stack', 26, 11),
+    place('flyers', 27, 11),
+    place('mugs', 28, 11),
+  ],
+  seat: { col: 26, row: 10 },
+  // Every tile right of col 22 down to row 11 is under the party window of six departments (bottom
+  // 316 px): the seat and the way from it to the alley between the desks (col 24, row 12).
+  underPartyWindow: [
+    { col: 26, row: 10 },
+    { col: 25, row: 10 },
+    { col: 24, row: 10 },
+    { col: 24, row: 11 },
+  ],
+};
 
 /**
  * The guests wait by the door, beside the right end of the message window: one just inside, in

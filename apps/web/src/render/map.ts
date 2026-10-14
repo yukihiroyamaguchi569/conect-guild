@@ -41,17 +41,21 @@ const PCT_X = LOGICAL_WIDTH / 100;
 const PCT_Y = LOGICAL_HEIGHT / 100;
 const CQW = LOGICAL_WIDTH / 100;
 
+/** The quest board's max-height in cqw (GuildScreen.vue), unless the layout lowers it. */
+export const BOARD_MAX_CQW = 31;
+
 /** The most each window covers (logical px), from the numbers in GuildScreen.vue's styles. */
 export function windowExtentsFor(
   layout: GuildLayout,
 ): Readonly<Record<'board' | 'party' | 'message', PxRect>> {
   return {
-    // .stage__board: left 1.2%, top 1.6%, width 29%, max-height 31cqw (it scrolls beyond that)
+    // .stage__board: left 1.2%, top 1.6%, width 29%, max-height BOARD_MAX_CQW or the layout's
+    // (it scrolls beyond that)
     board: {
       left: 1.2 * PCT_X,
       top: 1.6 * PCT_Y,
       right: (1.2 + 29) * PCT_X,
-      bottom: 1.6 * PCT_Y + 31 * CQW,
+      bottom: 1.6 * PCT_Y + (layout.boardMaxCqw ?? BOARD_MAX_CQW) * CQW,
     },
     // .stage__side: right 1.1%, top 1.6%, width 24.6%. Its height is its content (party window
     // and fetch status), measured per layout: walking uses the height with a failure line; seats
@@ -182,14 +186,30 @@ export function groundAt(pos: TilePos): TileName | null {
 /**
  * True where a member may walk in `layout`: walkable ground, no solid furniture or floor decor, and
  * no part of the sprite (80 px wide and tall, so it reaches into the tiles beside and above) under
- * a window, so nobody vanishes behind one on the way.
+ * a window, so nobody vanishes behind one on the way; but the party window may cover the tiles the
+ * layout lists (GuildLayout.underPartyWindow).
  */
 export function isWalkableIn(layout: GuildLayout, pos: TilePos): boolean {
   const ground = groundAtIn(layout, pos);
   if (ground === null || !WALKABLE_GROUND.has(ground)) return false;
   if (layout.objects.some((object) => object.solid && contains(object, pos))) return false;
   if (layout.decor.some((item) => item.solid && contains(item, pos))) return false;
-  return !isUnderWindowIn(layout, pos);
+  return !isUnderWindowIn(layout, pos) || isOnlyUnderPartyIn(layout, pos);
+}
+
+/** True when the layout lets the party window cover `pos` (GuildLayout.underPartyWindow). */
+export function isPartyExceptionIn(layout: GuildLayout, pos: TilePos): boolean {
+  return (layout.underPartyWindow ?? []).some(
+    (tile) => tile.col === pos.col && tile.row === pos.row,
+  );
+}
+
+/** A listed tile under the party window and no other window. */
+function isOnlyUnderPartyIn(layout: GuildLayout, pos: TilePos): boolean {
+  if (!isPartyExceptionIn(layout, pos)) return false;
+  const { board, message } = cachedWindows(layout);
+  const sprite = spriteRect(pos);
+  return !overlaps(sprite, board) && !overlaps(sprite, message);
 }
 
 /** isWalkableIn the selected layout. */

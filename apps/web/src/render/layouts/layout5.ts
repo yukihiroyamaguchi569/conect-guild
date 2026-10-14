@@ -1,13 +1,13 @@
 import {
-  CORNER_DESK_DECOR,
-  CORNER_DESK_OBJECTS,
-  CORNER_SEAT,
   DOOR_GUEST_SPOTS,
   LOWER_DESK_DECOR,
   LOWER_DESK_OBJECTS,
+  LOWER_RIGHT_STORAGE,
   UPPER_DESK_DECOR,
   UPPER_DESK_OBJECTS,
   UPPER_DESKS,
+  WORKSHOP_BOARD_MAX_CQW,
+  WORKSHOP_DESK,
 } from './largeRoom';
 import {
   lowerDesks,
@@ -19,8 +19,8 @@ import {
 import type { GuildLayout } from './types';
 
 /**
- * Five departments (Issue #18): the four desks of layout4 and a fifth in the lower-left corner,
- * with a map table and a stool beside it. The rug in front of the counter stays clear.
+ * Five departments (Issue #18): the four desks of layout4 and a fifth, the workshop desk, left of
+ * the 企画 desk on the lower left carpet. The files and crates of layout4 stay right of 総務.
  */
 export const LAYOUT5: GuildLayout = {
   departmentCount: 5,
@@ -29,15 +29,26 @@ export const LAYOUT5: GuildLayout = {
     ...SMALL_ROOM_OBJECTS,
     ...UPPER_DESK_OBJECTS,
     ...LOWER_DESK_OBJECTS,
-    ...CORNER_DESK_OBJECTS,
+    ...WORKSHOP_DESK.objects,
   ],
-  decor: [...SMALL_ROOM_DECOR, ...UPPER_DESK_DECOR, ...LOWER_DESK_DECOR, ...CORNER_DESK_DECOR],
-  desks: [...UPPER_DESKS, ...lowerDesks(2), { seat: CORNER_SEAT, side: 'lower', things: [] }],
+  decor: [
+    ...SMALL_ROOM_DECOR,
+    ...UPPER_DESK_DECOR,
+    ...LOWER_DESK_DECOR,
+    ...LOWER_RIGHT_STORAGE,
+    ...WORKSHOP_DESK.decor,
+  ],
+  desks: [
+    ...UPPER_DESKS,
+    ...lowerDesks(2),
+    { seat: WORKSHOP_DESK.seat, side: 'lower', things: [] },
+  ],
   ...SMALL_ROOM_SEATS,
   guestSpots: DOOR_GUEST_SPOTS,
+  boardMaxCqw: WORKSHOP_BOARD_MAX_CQW,
   // Seven packed rows: the column ends 49.2 px above layout4's (273.3 px against 322.4 px in the
   // demo at 1024 px, Chrome, 2026-10-14). Taken off layout4's 340 and 372.5 px and rounded up.
   partyWindow: { bottom: 291, tallestBottom: 324, dense: true },
-  // As in layout4: the upper desks are 5 tiles from かなめ, the lower ones 5.8, the corner 15.2.
+  // As in layout4: the upper desks are 5 tiles from かなめ, the lower ones 5.8, the workshop 10.4.
   toss: { maxTiles: 5.5 },
 };
