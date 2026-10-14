@@ -22,7 +22,7 @@ export function fictionalSettings(name: string): GuildSettings {
   );
 }
 
-export const GUESTS_SETTINGS = fictionalSettings('guests');
+const GUESTS_SETTINGS = fictionalSettings('guests');
 
 const at = (ms: number): string => new Date(ms).toISOString();
 

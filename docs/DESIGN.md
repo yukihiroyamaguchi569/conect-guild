@@ -97,7 +97,8 @@ conect-guild/
 │       │   ├── guests.ts / guestStage.ts / guestArt.ts / drawGuests.ts  お客さんの見た目・名札・きらめき（純粋関数）、ループが持つきらめき、お客さんの絵（MemberId ではない）、描画（4.13）
 │       │   ├── art.ts        絵の差し替え境界（TileArt / SpriteArt / DecorArt）と仮の矩形
 │       │   ├── tileArt.ts / spriteArt.ts / decorArt.ts / loadArt.ts  assets/ の絵で描く実装と読み込み
-│       │   └── draw.ts / loop.ts  描画と requestAnimationFrame（動かないものはキャッシュの canvas に 1 回だけ。演出中は毎フレーム、それ以外はアンビエントだけ約 7fps、非表示の間は止める）
+│       │   ├── draw.ts / loop.ts  描画と requestAnimationFrame（動かないものはキャッシュの canvas に 1 回だけ。演出中は毎フレーム、それ以外はアンビエントだけ約 7fps、非表示の間は止める）
+│       │   └── painter.ts    1 フレームの描き方（キャッシュする背景と前景、日の光・メンバー・お客さん・夜の影・頭上の文字の順）。loop.ts はいつ描くかを受け持つ（Issue #124）
 │       ├── audio/            効果音（M4、4.8）。楽譜・鳴らす判定・設定は純粋、Web Audio は差し替えられる境界
 │       ├── ui/               Vue 部品: QuestBoard / PartyStatus / MessageWindow（Canvas の上に重ねる HTML）
 │       └── app/              Vue の reactive による小さなストア。Pinia は入れない。demo.ts は `?demo=1` の判定と、デモの読み込み・メモリの保存先（4.11）
@@ -271,6 +272,8 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 M3 からは、セッションの状態（4.7）を混ぜる。優先順位は 許可待ち（リアルタイム） > 社長の承認まち > かなめの確認まち > いま作業中（リアルタイム） > working > done > idle。リアルタイムの 2 つは、パーティの窓に「許可待ち」「いま作業中」と点滅する印付きで出し、ツールチップに MulmoTerminal から読んだことを書く。一区切り（resting）と待機（idle）のセッションは GitHub だけで決める。かなめも同じ考えで、許可待ち > PR の確認 > いま作業中 > 受付 > 待機。社長にはセッションが無いので変わらない。セッションの状態が取れないか古いときは、M2 までと同じく GitHub だけで決める。
 
 「最近の成果」= 自分が担当の、直近 7 日にマージされた PR の数（domain/reward.ts。テストで固定）。取得範囲に合わせた値なので、時間がたつと減る。
+
+**パーティの窓のアイコン**（Issue #120。社長の判断、2026-10-15）: 名前の頭文字の丸は、設定の色（`color`）ではなく、そのメンバーのスプライトの髪の色で塗る（`domain/faceColor.ts` の表。スプライトを描き直したら測り直す）。文字は WCAG のコントラストが高いほうの白か黒にし、丸の白い縁は全員そのまま（ゆきひろの髪の白に近い丸も変えない）。設定の色は掲示板の欄の点にそのまま使う。
 
 **累積の経験値とレベル**（M4、Issue #19。社長の判断、2026-10-12）。collector が全履歴を毎回数え直して snapshot の `history`（4.1、4.2）に入れ、経験値は画面の domain で数える。PR は 3 本に分ける: 1) collector と schema（済み）2) 経験値とレベルの表示（済み）3) レベルアップの演出と E2E
 

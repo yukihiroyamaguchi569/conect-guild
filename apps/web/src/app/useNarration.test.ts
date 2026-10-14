@@ -2,6 +2,7 @@ import { effectScope, nextTick, ref, shallowRef } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { issue, T0 } from '../domain/fixtures.test-util';
 import type { GuildEvent } from '../domain/events';
+import { faceColors } from '../domain/faceColor';
 import { MEMBERS, type MemberId } from '../guild.config';
 import type { PartyRow } from './guildView';
 import type { GuildMessage } from './messageQueue';
@@ -17,7 +18,7 @@ function rows(): PartyRow[] {
     id,
     name: MEMBERS[id].name,
     role: MEMBERS[id].role,
-    color: MEMBERS[id].color,
+    face: faceColors(id),
     state: 'working',
     stateLabel: '作業中',
     tooltip: null,

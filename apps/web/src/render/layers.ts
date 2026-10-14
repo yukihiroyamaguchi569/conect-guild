@@ -83,7 +83,7 @@ export interface Layers {
 }
 
 /** The layers of `layout` with its things (animatedDecor.ts). */
-export function layersFor(layout: GuildLayout, decor: LayerDecor): Layers {
+function layersFor(layout: GuildLayout, decor: LayerDecor): Layers {
   /** The front piece a small thing stands on, if any (its top-left cell is on the piece). */
   const standsOn = (item: DecorPlacement): MapObject | undefined =>
     layout.objects.find((object) => isFront(object) && contains(object, item));
