@@ -172,8 +172,8 @@ describe('runSettingsWrite: input and settings that stop it', () => {
   const stops: [string, string, string][] = [
     ['not JSON', '{"repo": ', '標準入力を JSON として読めません（途中で終わっています）'],
     [
-      'three departments',
-      JSON.stringify({ ...input(), departments: input().departments.slice(1) }),
+      'one department',
+      JSON.stringify({ ...input(), departments: input().departments.slice(3) }),
       '入力の形が違います',
     ],
     ['an unknown key', JSON.stringify({ ...input(), members: {} }), '入力の形が違います'],
