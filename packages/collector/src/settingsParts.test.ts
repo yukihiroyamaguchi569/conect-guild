@@ -73,6 +73,54 @@ describe('mergeSettings', () => {
   });
 });
 
+describe('mergeSettings with another number of departments (Issue #18)', () => {
+  const twoOf = (settings: typeof BASE) => ({
+    ...settings,
+    departments: settings.departments.slice(0, 2),
+    branchPrefixes: settings.branchPrefixes.filter((row) =>
+      ['経理', '広報'].includes(row.department),
+    ),
+  });
+
+  it('keeps the members of the positions it keeps when there are fewer', () => {
+    const data = input();
+    data.departments = data.departments.slice(0, 3);
+    const { raw } = mergeSettings(BASE, data);
+    expect(raw.departments.map((d) => d.member)).toEqual(['minori', 'hibiki', 'hirame']);
+    // The member left without a department keeps its entry (and its role) as it was.
+    expect(raw.members.sasae).toEqual(BASE.members.sasae);
+  });
+
+  it('gives a new position the next member no department uses, with the new label as role', () => {
+    const base = twoOf({
+      ...BASE,
+      departments: [BASE.departments[1], BASE.departments[0], ...BASE.departments.slice(2)].filter(
+        (d) => d !== undefined,
+      ),
+    });
+    const data = input();
+    data.departments = data.departments
+      .slice(0, 3)
+      .map((d, i) => (i === 2 ? { ...d, label: '研究' } : d));
+    const { raw } = mergeSettings(base, data);
+    expect(raw.departments.map((d) => d.member)).toEqual(['hibiki', 'minori', 'hirame']);
+    expect(raw.members.hirame?.role).toBe('研究');
+    expect(checkGuildSettings(raw).departments).toHaveLength(3);
+  });
+
+  it('leaves a member the starting settings do not have missing, for the schema to name', () => {
+    const members = Object.fromEntries(
+      Object.entries(BASE.members).filter(([id]) => id !== 'hirame'),
+    );
+    const data = input();
+    data.departments = data.departments.slice(0, 3);
+    const { raw } = mergeSettings({ ...twoOf(BASE), members }, data);
+    expect(raw.departments[2]?.member).toBe('hirame');
+    expect(raw.members.hirame).toBeUndefined();
+    expect(() => checkGuildSettings(raw)).toThrow(/members\.hirame/);
+  });
+});
+
 describe('prefixMatchesFolder', () => {
   it.each([
     ['accounting/', '~/company/accounting', true],

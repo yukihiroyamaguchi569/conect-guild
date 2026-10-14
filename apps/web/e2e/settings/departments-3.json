@@ -1,0 +1,72 @@
+{
+  "repo": "example-owner/example-guild",
+  "members": {
+    "kaname": {
+      "name": "かなめ",
+      "role": "司令塔",
+      "color": "#e0b040"
+    },
+    "minori": {
+      "name": "みのり",
+      "role": "錬金",
+      "color": "#4caf50"
+    },
+    "hibiki": {
+      "name": "ひびき",
+      "role": "鍛冶",
+      "color": "#e91e63"
+    },
+    "hirame": {
+      "name": "ひらめ",
+      "role": "占術",
+      "color": "#2196f3"
+    },
+    "yukihiro": {
+      "name": "ゆきひろ",
+      "role": "社長",
+      "color": "#8e44ad"
+    }
+  },
+  "commanderSessionDir": "~/example-guild",
+  "departments": [
+    {
+      "label": "錬金",
+      "member": "minori",
+      "sessionDir": "~/example-guild/alchemy"
+    },
+    {
+      "label": "鍛冶",
+      "member": "hibiki",
+      "sessionDir": "~/example-guild/smithy"
+    },
+    {
+      "label": "占術",
+      "member": "hirame",
+      "sessionDir": "~/example-guild/oracle"
+    }
+  ],
+  "branchPrefixes": [
+    {
+      "prefix": "alchemy/",
+      "department": "錬金"
+    },
+    {
+      "prefix": "smithy/",
+      "department": "鍛冶"
+    },
+    {
+      "prefix": "oracle/",
+      "department": "占術"
+    }
+  ],
+  "ruleChangePaths": [
+    {
+      "match": "exact",
+      "path": "CLAUDE.md"
+    },
+    {
+      "match": "suffix",
+      "path": "/CLAUDE.md"
+    }
+  ]
+}

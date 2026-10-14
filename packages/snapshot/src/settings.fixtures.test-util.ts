@@ -33,7 +33,7 @@ export const FICTIONAL_GUESTS = [
 /**
  * Settings with the first `departmentCount` fictional departments, two branch prefixes each, and
  * the given fields replaced. Not parsed here: the schema accepts only SUPPORTED_DEPARTMENT_COUNTS
- * (four until the layouts of Issue #18), and tests for other counts check the schema themselves.
+ * (not one department), and tests for other counts check the schema themselves.
  */
 export function makeSettings(
   departmentCount: number,

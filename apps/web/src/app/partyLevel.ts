@@ -41,7 +41,7 @@ function partyLevel(tally: XpTally, breakdown: Breakdown): PartyLevel {
   };
 }
 
-/** Each member's level from the snapshot's history: かなめ, the four departments and the king. */
+/** Each member's level from the snapshot's history: かなめ, the departments and the king. */
 export function buildPartyLevels(
   snapshot: Pick<Snapshot, 'issues' | 'history'>,
 ): Readonly<Record<MemberId, PartyLevel>> {

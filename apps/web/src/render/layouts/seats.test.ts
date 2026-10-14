@@ -54,6 +54,6 @@ describe('guildFromSettings with a layout', () => {
   });
 
   it('has no layout for a count without one', () => {
-    expect(() => guildFromSettings(makeSettings(3))).toThrow(/no office layout for 3/);
+    expect(() => guildFromSettings(makeSettings(1))).toThrow(/no office layout for 1/);
   });
 });

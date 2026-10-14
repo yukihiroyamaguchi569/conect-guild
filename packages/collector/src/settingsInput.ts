@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { DEPARTMENT_MEMBER_IDS, type GuildSettings } from '@conect-guild/snapshot/settingsSchema';
+import {
+  DEPARTMENT_MEMBER_IDS,
+  SUPPORTED_DEPARTMENT_COUNTS,
+  type GuildSettings,
+} from '@conect-guild/snapshot/settingsSchema';
 
 /**
  * Issue #79: the values `npm run settings:write` reads from stdin. Only the values a team has to
@@ -16,8 +20,16 @@ const inputDepartmentSchema = z.strictObject({
 export const settingsInputSchema = z.strictObject({
   repo: z.string(),
   commanderSessionDir: z.string(),
-  /** All four together, in the fixed order: they replace the departments as a whole. */
-  departments: z.array(inputDepartmentSchema).length(DEPARTMENT_MEMBER_IDS.length),
+  /**
+   * All of them together, in the fixed order: they replace the departments as a whole. As many
+   * as the office has a layout for (Issue #18).
+   */
+  departments: z
+    .array(inputDepartmentSchema)
+    .refine(
+      (departments) => SUPPORTED_DEPARTMENT_COUNTS.includes(departments.length),
+      `${SUPPORTED_DEPARTMENT_COUNTS.join(' or ')} departments (#18)`,
+    ),
 });
 export type SettingsInput = z.infer<typeof settingsInputSchema>;
 
@@ -38,19 +50,34 @@ export interface MergedSettings {
 }
 
 /**
+ * The member at each of `count` positions: the one the starting settings have there (the seats
+ * are fixed by member id), and for a position they do not have, the next member of the pool
+ * (DEPARTMENT_MEMBER_IDS) that no kept position uses.
+ */
+function membersByPosition(base: GuildSettings, count: number): string[] {
+  const kept: string[] = base.departments.slice(0, count).map((d) => d.member);
+  const free = DEPARTMENT_MEMBER_IDS.filter((id) => !kept.includes(id));
+  return Array.from({ length: count }, (_, i) => kept[i] ?? free[i - kept.length] ?? '');
+}
+
+/**
  * The members with each department member's role following its new label, but only where the
- * role was the old label (as in guild.settings.json). A role written by hand is kept.
+ * role was the old label (as in guild.settings.json). A role written by hand is kept. A member
+ * that had no department in the starting settings takes its new label: its role named none of
+ * them. A member the starting settings do not have stays missing (the schema then names it).
  */
 function membersFollowingLabels(
   base: GuildSettings,
   departments: readonly { label: string; member: string }[],
 ): GuildSettings['members'] {
   const members = { ...base.members };
-  base.departments.forEach((before, i) => {
-    const label = departments[i]?.label;
-    const member = members[before.member];
-    if (label !== undefined && member?.role === before.label) {
-      members[before.member] = { ...member, role: label };
+  departments.forEach(({ label, member: id }, i) => {
+    const before = base.departments[i];
+    const parsed = DEPARTMENT_MEMBER_IDS.find((known) => known === id);
+    const member = parsed === undefined ? undefined : members[parsed];
+    if (parsed === undefined || member === undefined) return;
+    if (before === undefined || member.role === before.label) {
+      members[parsed] = { ...member, role: label };
     }
   });
   return members;
@@ -75,12 +102,14 @@ function branchPrefixesOf(
 
 /**
  * The input laid over the starting settings. The department at position i keeps the member that
- * sat there (the seats are fixed by member id); everything not in the input stays as it was.
+ * sat there (the seats are fixed by member id), a new position takes a member no department uses
+ * (membersByPosition); everything not in the input stays as it was.
  */
 export function mergeSettings(base: GuildSettings, input: SettingsInput): MergedSettings {
+  const members = membersByPosition(base, input.departments.length);
   const departments = input.departments.map((d, i) => ({
     label: d.label,
-    member: base.departments[i]?.member ?? '',
+    member: members[i] ?? '',
     sessionDir: d.sessionDir,
   }));
   const prefixes = branchPrefixesOf(base, input);

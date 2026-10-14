@@ -12,10 +12,11 @@ export const DEMO_REPO = 'demo-guild/demo-company';
 
 /**
  * Who a beat is about. commander is かなめ (an Issue on this lane has no department and waits at
- * the reception). Each loop gives the other four lanes to the four departments: two of them carry
- * a quest from opening to clearing (quest1 sits near かなめ, quest2 farther and needs the
- * president), the other two help. The pairs swap every loop (domain/demo.ts laneDepartments), so
- * all four departments carry a quest every two loops.
+ * the reception). Each loop gives the other four lanes to departments: two of them carry a quest
+ * from opening to clearing (quest1, and quest2, which needs the president), and up to two others
+ * help. Half the departments carry a quest each loop (domain/demo.ts laneDepartments): with four,
+ * the pairs swap every loop, so all four carry one every two loops. With two departments the
+ * helper lanes are left out, with three one of them.
  */
 export const DEMO_LANES = ['commander', 'quest1', 'quest2', 'helper1', 'helper2'] as const;
 export type DemoLane = (typeof DEMO_LANES)[number];
@@ -79,8 +80,9 @@ export const DEMO_RECEPTION_TITLES: readonly DemoQuestTitles[] = [
 ];
 
 /**
- * Fictional quests per department, in the order of guild.settings.json (経理, 広報, 企画, 総務).
- * Plain everyday work: no client, product or real project names.
+ * Fictional quests per department, in the order of guild.settings.json (経理, 広報, 企画, 総務,
+ * then two more for the larger offices). Plain everyday work: no client, product or real project
+ * names.
  */
 export const DEMO_TITLES: readonly (readonly DemoQuestTitles[])[] = [
   [
@@ -102,5 +104,15 @@ export const DEMO_TITLES: readonly (readonly DemoQuestTitles[])[] = [
     { issue: '備品の棚卸しをする', pr: '棚卸しの結果' },
     { issue: '会議室の予約表を作る', pr: '予約表のひな形' },
     { issue: '防災用品を点検する', pr: '点検の記録' },
+  ],
+  [
+    { issue: '新しい手順書を読み合わせる', pr: '読み合わせのメモ' },
+    { issue: '問い合わせの返事を書く', pr: '返事の下書き' },
+    { issue: '来月の予定表を作る', pr: '予定表のひな形' },
+  ],
+  [
+    { issue: '名刺の在庫を数える', pr: '在庫の一覧' },
+    { issue: '掲示物を貼り替える', pr: '掲示物の案' },
+    { issue: '年末の挨拶状を準備する', pr: '挨拶状の文面' },
   ],
 ];

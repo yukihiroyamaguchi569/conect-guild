@@ -5,7 +5,11 @@ import { join } from 'node:path';
 import { DEFAULT_SETTINGS_FILE, SETTINGS_ROOT } from '@conect-guild/snapshot/settingsFile';
 import { createServer, type ViteDevServer } from 'vite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { checkGuildSettings } from '@conect-guild/snapshot/settingsSchema';
 import {
+  E2E_DEPARTMENTS_ENV,
+  E2E_DEPARTMENTS_MODE,
+  E2E_SETTINGS_FILES,
   readsLocalSettings,
   settingsPlugin,
   settingsRedirect,
@@ -83,6 +87,66 @@ describe('settingsRedirect', () => {
       /guild\.settings\.local\.ts は読まなくなりました/,
     );
   });
+});
+
+describe('the E2E department mode (Issue #18, test only)', () => {
+  const FIXTURE = E2E_SETTINGS_FILES['2'] ?? '';
+
+  /** The fake files with the two-department fixture (the real one) under /link. */
+  function withFixture(): SettingsFiles {
+    const base = files(VALID);
+    const fixture = readFileSync(join(SETTINGS_ROOT, FIXTURE), 'utf8');
+    return {
+      ...base,
+      exists: (path) => path === `/link/${FIXTURE}` || base.exists(path),
+      readText: (path) => (path === `/link/${FIXTURE}` ? fixture : base.readText(path)),
+    };
+  }
+
+  it('sends guild.settings.json to the named fictional fixture, never the local file', () => {
+    const env = { [E2E_DEPARTMENTS_ENV]: '2' };
+    expect(settingsRedirect('serve', E2E_DEPARTMENTS_MODE, withFixture(), env)).toEqual({
+      from: '/repo/guild.settings.json',
+      to: `/link/${FIXTURE}`,
+    });
+  });
+
+  it.each([undefined, '', '4', '5', '../guild.settings.local.json', '__proto__', 'toString'])(
+    'stops on %j: the variable only picks a fixture',
+    (choice) => {
+      const env = { [E2E_DEPARTMENTS_ENV]: choice };
+      expect(() => settingsRedirect('serve', E2E_DEPARTMENTS_MODE, withFixture(), env)).toThrow(
+        /needs GUILD_E2E_DEPARTMENTS=2, 3/,
+      );
+    },
+  );
+
+  it('is ignored by every other mode and by the build', () => {
+    const env = { [E2E_DEPARTMENTS_ENV]: '2' };
+    expect(settingsRedirect('serve', 'development', withFixture(), env)?.to).toBe(
+      '/link/guild.settings.local.json',
+    );
+    expect(settingsRedirect('serve', 'e2e', withFixture(), env)).toBeNull();
+    expect(settingsRedirect('build', 'production', withFixture(), env)).toBeNull();
+    expect(settingsRedirect('build', E2E_DEPARTMENTS_MODE, withFixture(), env)).toBeNull();
+  });
+
+  it.each(Object.entries(E2E_SETTINGS_FILES))(
+    'has a valid, fictional fixture of %s departments',
+    (count, path) => {
+      const settings = checkGuildSettings(
+        JSON.parse(readFileSync(join(SETTINGS_ROOT, path), 'utf8')),
+      );
+      const real = checkGuildSettings(JSON.parse(VALID));
+      expect(settings.departments).toHaveLength(Number(count));
+      expect(settings.repo).not.toBe(real.repo);
+      const realLabels = real.departments.map((d) => d.label);
+      for (const d of settings.departments) {
+        expect(realLabels).not.toContain(d.label);
+        expect(real.departments.map((r) => r.sessionDir)).not.toContain(d.sessionDir);
+      }
+    },
+  );
 });
 
 /** The real file system, for the dev server below. */

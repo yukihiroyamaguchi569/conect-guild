@@ -11,7 +11,7 @@ describe('layoutFor', () => {
     }
   });
 
-  it.each([0, 1, 3, 5, 7, 4.5, Number.NaN])('throws for %d departments', (count) => {
+  it.each([0, 1, 5, 7, 4.5, Number.NaN])('throws for %d departments', (count) => {
     expect(() => layoutFor(count)).toThrow(/no office layout/);
   });
 
