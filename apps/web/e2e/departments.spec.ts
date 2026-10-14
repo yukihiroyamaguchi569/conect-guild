@@ -179,7 +179,7 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
     ...layout.guestSpots,
   ];
   for (const spot of spots) {
-    // The party window may cover the tiles the layout lists (layout6's sales desk).
+    // The party window may cover the tiles the layout lists (layout6's sales desk, layout5's guest).
     const areas = isPartyExceptionIn(layout, spot)
       ? [measured.board, measured.message, modelled.board, modelled.message]
       : [...Object.values(measured), ...Object.values(modelled)];
