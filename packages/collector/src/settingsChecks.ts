@@ -138,7 +138,7 @@ export function checkFolders(
 }
 
 /** Warnings from the label check (Issue #85). A failed check warns and lets it write. */
-export function labelWarnings(check: LabelCheck, settings: GuildSettings): string[] {
+function labelWarnings(check: LabelCheck, settings: GuildSettings): string[] {
   if (!check.ok) {
     return [
       `ラベルを GitHub に問い合わせられませんでした（${check.kind}）。書くことはできます。collector が起動したときと 10 分ごとに照合し直します`,

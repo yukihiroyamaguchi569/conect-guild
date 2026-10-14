@@ -12,7 +12,7 @@ import { triggerIn, triggerTableFor, type DecorTrigger, type TriggerTable } from
  */
 
 /** The still things of `layout`, drawn once after the furniture, lower ones last. */
-export function stillDecorFor(layout: GuildLayout): readonly DecorPlacement[] {
+function stillDecorFor(layout: GuildLayout): readonly DecorPlacement[] {
   return layout.decor
     .filter((item) => !isFloorPatch(item) && DECOR_MOTION[item.name] === undefined)
     .toSorted((a, b) => a.row + a.h - (b.row + b.h));
@@ -31,10 +31,7 @@ export interface AnimatedDecor {
 }
 
 /** The moving things of `layout`, with their triggers from `triggers`. */
-export function animatedDecorFor(
-  layout: GuildLayout,
-  triggers: TriggerTable,
-): readonly AnimatedDecor[] {
+function animatedDecorFor(layout: GuildLayout, triggers: TriggerTable): readonly AnimatedDecor[] {
   return layout.decor
     .flatMap((placement) => {
       const motion = DECOR_MOTION[placement.name];

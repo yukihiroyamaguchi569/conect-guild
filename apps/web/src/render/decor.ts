@@ -16,7 +16,7 @@ export { isFloorPatch, type DecorPlacement };
 export const DECOR_PLACEMENTS: readonly DecorPlacement[] = SELECTED_LAYOUT.decor;
 
 /** The floor patches of `layout`. */
-export function floorPatchDecorFor(layout: GuildLayout): readonly DecorPlacement[] {
+function floorPatchDecorFor(layout: GuildLayout): readonly DecorPlacement[] {
   return layout.decor.filter(isFloorPatch);
 }
 

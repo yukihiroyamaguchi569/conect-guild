@@ -170,7 +170,7 @@ export function poseAt(director: Director, id: MemberId, now: number, seat: Tile
 }
 
 /** How high a member hops at `now` (a level-up, levelUp.ts); 0 when they do not. */
-export function hopAt(director: Director, id: MemberId, now: number): number {
+function hopAt(director: Director, id: MemberId, now: number): number {
   const segment = segmentAt(director, id, now);
   return segment === undefined ? 0 : hopLift(segment, now);
 }

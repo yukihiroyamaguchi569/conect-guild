@@ -27,9 +27,9 @@ import { renderJson, renderText, type WriteReport } from './settingsReport.ts';
  * argument or environment variable points it anywhere else (docs/DESIGN.md 4.1).
  */
 
-export const BACKUP_FILE = `${LOCAL_SETTINGS_FILE}.bak`;
+const BACKUP_FILE = `${LOCAL_SETTINGS_FILE}.bak`;
 
-export const USAGE =
+const USAGE =
   '使い方: npm run settings:write -- --dry-run [--json] < 入力.json\n' +
   '        npm run settings:write -- --write [--overwrite] [--json] < 入力.json\n';
 
@@ -181,7 +181,7 @@ async function plan(options: WriteOptions, deps: SettingsWriteDeps): Promise<Pla
 }
 
 /** Only JSON.stringify's output is written: nothing in it is ever run. */
-export function settingsJson(settings: GuildSettings): string {
+function settingsJson(settings: GuildSettings): string {
   return `${JSON.stringify(settings, null, 2)}\n`;
 }
 
