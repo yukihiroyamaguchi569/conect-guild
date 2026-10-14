@@ -7,7 +7,7 @@ import {
   type SessionState,
   type Snapshot,
 } from '@conect-guild/snapshot';
-import { checkGuildSettings } from '@conect-guild/snapshot/settingsSchema';
+import { checkGuildSettings, type GuildSettings } from '@conect-guild/snapshot/settingsSchema';
 
 /**
  * Issue #108: the fictional snapshot of the guests' E2E project (playwright.config.ts), whose dev
@@ -15,9 +15,14 @@ import { checkGuildSettings } from '@conect-guild/snapshot/settingsSchema';
  * never from apps/web/.data.
  */
 
-export const GUESTS_SETTINGS = checkGuildSettings(
-  JSON.parse(readFileSync(path.resolve(import.meta.dirname, 'settings', 'guests.json'), 'utf8')),
-);
+/** The fictional settings e2e/settings/<name>.json. */
+export function fictionalSettings(name: string): GuildSettings {
+  return checkGuildSettings(
+    JSON.parse(readFileSync(path.resolve(import.meta.dirname, 'settings', `${name}.json`), 'utf8')),
+  );
+}
+
+export const GUESTS_SETTINGS = fictionalSettings('guests');
 
 const at = (ms: number): string => new Date(ms).toISOString();
 
@@ -57,17 +62,24 @@ export interface GuestsSnapshotOptions {
   readonly states: readonly [SessionState, SessionState];
   /** Finished items of the first guest, newest first. */
   readonly recent?: readonly GuestRecentItem[];
+  /** The settings the dev server reads (default e2e/settings/guests.json); its guests only. */
+  readonly settings?: GuildSettings;
 }
 
-/** Four fictional departments with an open quest each, and the two fictional guests. */
+/**
+ * The fictional departments with an open quest each, and the fictional guests (two of guests.json,
+ * or as many as `settings` has).
+ */
 export function guestsSnapshot(options: GuestsSnapshotOptions): Snapshot {
   const { now, states } = options;
-  const [first, second] = GUESTS_SETTINGS.guests ?? [];
-  const labels = GUESTS_SETTINGS.departments.map((d) => d.label);
+  const settings = options.settings ?? GUESTS_SETTINGS;
+  const count = (settings.guests ?? []).length;
+  const [first, second] = settings.guests ?? [];
+  const labels = settings.departments.map((d) => d.label);
   return {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     fetchedAt: at(now),
-    repo: GUESTS_SETTINGS.repo,
+    repo: settings.repo,
     issues: labels.map((label, i) => ({
       number: 201 + i,
       title: `架空のクエスト ${String(i + 1)}`,
@@ -83,11 +95,11 @@ export function guestsSnapshot(options: GuestsSnapshotOptions): Snapshot {
       status: 'ok',
       checkedAt: at(now),
       members: [null, ...labels].map((department) => ({ department, state: 'idle' })),
-      guests: [...states],
+      guests: states.slice(0, count),
     },
     guests: [
       part(first?.repo ?? '', FIRST_GUEST_OPEN, options.recent ?? [], now),
       part(second?.repo ?? '', SECOND_GUEST_OPEN, [], now),
-    ],
+    ].slice(0, count),
   };
 }
