@@ -155,7 +155,7 @@ npm run settings:write -- --dry-run < input.json   # 書かずに、確認の表
 npm run settings:write -- --write < input.json     # 書く（guild.settings.local.json が既にあるときは --overwrite も付ける）
 ```
 
-- 入力に無い項目（`members` の名前・色、`ruleChangePaths`、`branchPrefixes` の `docs/` で始まる行など）は、いまの設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の値を保ちます。ただし `branchPrefixes` の既存の行は、入力のラベルのどれかを指すものだけを保ちます（ラベルを変えた部門を指していた行は消えます）。`guests`（お客さん）も保ちます
+- 入力に無い項目（`members` の名前・色、`ruleChangePaths`、`branchPrefixes` の `docs/` で始まる行など）は、いまの設定（`guild.settings.local.json`、無ければ `guild.settings.json`）の値を保ちます。ただし `branchPrefixes` の既存の行は、入力のラベルのどれかを指すものだけを保ちます（ラベルを変えた部門を指していた行は消えます）。`guests`（お客さん）も、入力に無ければ保ちます（入力に書くときは 2-5）
 - i 番目の部門の担当（`member`）は、いまの設定の i 番目のままです。いまの設定より部門が多いときは、増えた部門に、どの部門も担当していないメンバーがみのり・ひびき・ひらめ・ささえ・たくみ・むすびの順で就き、役（`role`）はその部門のラベルになります。いまの設定に無いたくみ・むすびは、名前と色を既定のまま足します
 - 既にある `guild.settings.local.json` を上書きするときは、前の内容を `guild.settings.local.json.bak`（git に入りません）に残します。戻すときはこのファイルを `guild.settings.local.json` に名前を変えます
 - `--json` を付けると、同じ結果を JSON で出します
@@ -214,9 +214,29 @@ collector は GitHub を 60 秒ごと、MulmoTerminal を 5 秒ごとに読み�
 
 会社の外のプロジェクト（自分の別のアプリなど）の AI のセッションを、「お客さん」としてギルドに来させられます。かなめ・部門のメンバー・お客さんを合わせて 7 人まで（王様は数えません）なので、お客さんは 2〜4 部門で 2 人、5 部門で 1 人まで、6 部門では足せません。無くても構いません（既定は無し）。上限を超えると、設定の検証が `at most 1 guests with 5 departments (#108)` のように上限の数を挙げて止まります。画面では、お客さんは部屋の決まった場所（部門の数で変わります）に立ち、状態と、リポジトリの開いている Issue・PR の数を足元の名札に出します。掲示板にはお客さんの欄が出ます（#117）。
 
-**やること**
+**スキルで足す**
 
-`guild.settings.local.json` に `guests` を手で足します。`/guild-setup` と `npm run settings:write` はお客さんを書きません（いまの設定の `guests` をそのまま残します）。
+conect-guild のリポジトリで開いた Claude Code のセッションで `/guild-setup` を動かし、「お客さんを足したい」（外したい・入れ替えたい）と頼みます。スキルは次の順に進めます。
+
+1. `npm run --silent settings:list-sessions` で、MulmoTerminal のセッションのフォルダを新しい順に番号付きで見せます（MulmoTerminal が `~/.mulmoterminal/dev-terminal-cwds.json` に記録しているもので、閉じたセッションのフォルダが残っていることもあります。司令塔と部門のフォルダは除きます）。いまのお客さんと、部門の数で決まる上限も出ます。一覧はその場で見せるだけで、ファイルにもログにも残しません
+2. 番号で選ぶと、フォルダ名から名前を提案します。直したい名前を伝えます
+3. `npm run settings:write` に、お客さん全員（`guests`）だけの入力を書かずに渡して確かめます。`repo` は、選んだフォルダの git の `origin`（GitHub のもの）から提案するので、合っているか、要らないかを答えます
+4. 確認の表を見て OK と答えると、`guild.settings.local.json` に書きます（会社の値は今のまま保ちます）
+
+道具だけで書くときは、2-2b の入力に `guests` を足します。`guests` は全員をまとめて書き、いまのお客さんを置き換えます（空の `[]` で全員外します）。お客さんだけを変えるときは、`repo`・`commanderSessionDir`・`departments` を書きません（3 つとも書かないと、いまの値を保ちます）。`repo` を書かないお客さんは、フォルダの git の `origin` から道具が `owner/name` を提案して、そのまま書きます。リポジトリを付けないなら `"repo": null` と書きます。
+
+```json
+{
+  "guests": [
+    { "name": "たびびと", "sessionDir": "~/side-project" },
+    { "name": "ぼうけんしゃ", "sessionDir": "~/another-app", "repo": null }
+  ]
+}
+```
+
+**手で書く**
+
+`guild.settings.local.json` に `guests` を手で足しても構いません。
 
 ```json
   "guests": [
