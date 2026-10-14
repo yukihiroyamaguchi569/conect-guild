@@ -1,6 +1,8 @@
 import { LAYOUT2 } from './layout2';
 import { LAYOUT3 } from './layout3';
 import { LAYOUT4 } from './layout4';
+import { LAYOUT5 } from './layout5';
+import { LAYOUT6 } from './layout6';
 import type { GuildLayout } from './types';
 
 /**
@@ -12,6 +14,8 @@ export const LAYOUTS: Readonly<Record<number, GuildLayout>> = {
   2: LAYOUT2,
   3: LAYOUT3,
   4: LAYOUT4,
+  5: LAYOUT5,
+  6: LAYOUT6,
 };
 
 /** The layout for `departmentCount` departments; a count without one is a bug (settings check it). */

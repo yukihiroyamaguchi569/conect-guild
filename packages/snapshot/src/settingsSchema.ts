@@ -47,7 +47,7 @@ export function byMember<V>(valueOf: (id: MemberId) => V): Record<MemberId, V> {
  * The numbers of departments the office has a layout for (apps/web/src/render/layouts). It grows
  * as layouts are drawn (Issue #18).
  */
-export const SUPPORTED_DEPARTMENT_COUNTS: readonly number[] = [2, 3, 4];
+export const SUPPORTED_DEPARTMENT_COUNTS: readonly number[] = [2, 3, 4, 5, 6];
 
 const memberSchema = z.strictObject({
   name: z.string().min(1),

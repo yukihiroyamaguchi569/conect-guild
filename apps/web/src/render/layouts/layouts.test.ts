@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { contains, isWalkableIn, overlaps, spriteRect, tallestWindowExtentsFor } from '../map';
-import { bubbleBox } from '../overhead';
+import { levelTags } from '../levelTags';
+import { bubbleBox, tagBox } from '../overhead';
 import { findPath, tileToPoint } from '../path';
+import { DEFAULT_SEATS } from '../scenes';
 import { seatSinkFor } from '../seating';
 import { LAYOUTS } from './index';
+import { TILE_SIZE } from '../metrics';
 import type { GuildLayout, TilePos } from './types';
 
 /**
@@ -69,6 +72,25 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: s
         );
         for (const area of windows) expect(overlaps(box, area)).toBe(false);
       }
+    }
+  });
+
+  it('puts the 「Lv N」 of every desk on its front, clear of the windows at their tallest', () => {
+    const windows = Object.values(tallestWindowExtentsFor(layout));
+    for (const desk of layout.desks) {
+      const [tag] = levelTags({ minori: 99 }, { ...DEFAULT_SEATS, minori: desk.seat });
+      if (tag === undefined) throw new Error('no tag');
+      const box = tagBox(tag);
+      const front = layout.objects.filter(
+        (object) =>
+          object.tile === 'desk' &&
+          box.left >= object.col * TILE_SIZE &&
+          box.right <= (object.col + object.w) * TILE_SIZE &&
+          box.top >= object.row * TILE_SIZE &&
+          box.bottom <= (object.row + object.h) * TILE_SIZE,
+      );
+      expect(front, keyOf(desk.seat)).toHaveLength(1);
+      for (const area of windows) expect(overlaps(box, area), keyOf(desk.seat)).toBe(false);
     }
   });
 });
