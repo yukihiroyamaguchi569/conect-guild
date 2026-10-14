@@ -39,7 +39,7 @@ const CLAUDE_MD_TEXT: Record<ClaudeMdFinding, string> = {
 
 export const NEXT_STEPS = [
   '次にやること: npm run dev:all を起動し、collector の settings: の行が guild.settings.local.json で、ok: の行が出ることを確かめてください',
-  'sessions=5 ok は MulmoTerminal を使う人だけの確認です（使わないなら sessions unavailable と出てかまいません）',
+  'sessions=<司令塔と部門の数> ok（4 部門なら sessions=5 ok）は MulmoTerminal を使う人だけの確認です（使わないなら sessions unavailable と出てかまいません）',
 ];
 
 function headLine(report: WriteReport): string {
