@@ -1,7 +1,8 @@
 import type { DecorName } from '../../../../assets/decor/decor';
 import { decorPose } from './ambient';
-import { ANIMATED_DECOR } from './animatedDecor';
-import { AMBIENT, DAYLIGHT, TILE_SIZE } from './metrics';
+import { ANIMATED_DECOR, type AnimatedDecor } from './animatedDecor';
+import { decorPoint } from './decorPoint';
+import { AMBIENT, DAYLIGHT } from './metrics';
 import type { Point } from './path';
 
 /**
@@ -110,17 +111,24 @@ const FLAMES: Readonly<Partial<Record<DecorName, Point & { readonly small: boole
   candlestick: { x: 15, y: 11, small: true },
 };
 
-/** The light around every lamp at `now`: its radius grows a little with the flame's flicker. */
-export function lampLights(now: number): LampLight[] {
-  return ANIMATED_DECOR.flatMap(({ placement, motion, phaseMs }) => {
+/**
+ * The light around every lamp of `items` at `now`: its radius grows a little with the flame's
+ * flicker. The light is on the flame where the picture is drawn (decorPoint: its dx and dy).
+ */
+export function lampLights(
+  now: number,
+  items: readonly AnimatedDecor[] = ANIMATED_DECOR,
+): LampLight[] {
+  return items.flatMap(({ placement, motion, phaseMs }) => {
     const flame = FLAMES[placement.name];
     if (motion !== 'flame' || flame === undefined) return [];
     const base = flame.small ? DAYLIGHT.smallLampRadiusPx : DAYLIGHT.lampRadiusPx;
     const flicker = decorPose('flame', phaseMs, now).glow / AMBIENT.flameGlow;
+    const at = decorPoint(placement);
     return [
       {
-        x: placement.col * TILE_SIZE + flame.x,
-        y: placement.row * TILE_SIZE + flame.y,
+        x: at.x + flame.x,
+        y: at.y + flame.y,
         r: base * (1 + DAYLIGHT.lampFlickerShare * flicker),
       },
     ];

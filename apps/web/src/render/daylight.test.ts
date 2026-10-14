@@ -9,6 +9,7 @@ import {
   type Daylight,
 } from './daylight';
 import { ANIMATED_DECOR } from './animatedDecor';
+import { place } from './layouts/types';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
 import { AMBIENT, DAYLIGHT } from './metrics';
 
@@ -109,6 +110,20 @@ describe('dayPhaseOf', () => {
 
 describe('lampLights', () => {
   const flames = ANIMATED_DECOR.filter((item) => item.motion === 'flame');
+
+  it('moves the light with a lamp drawn off its cell (dx, dy: decorPoint, Issue #122)', () => {
+    const lamp = {
+      placement: place('lantern', 3, 4),
+      motion: 'flame',
+      phaseMs: 0,
+      trigger: null,
+    } as const;
+    const moved = { ...lamp, placement: { ...lamp.placement, dx: -16, dy: -24 } };
+    const [at] = lampLights(0, [lamp]);
+    const [off] = lampLights(0, [moved]);
+    expect(off?.x).toBe((at?.x ?? 0) - 16);
+    expect(off?.y).toBe((at?.y ?? 0) - 24);
+  });
 
   it('lights every lamp and candle, inside the room', () => {
     const lights = lampLights(0);
