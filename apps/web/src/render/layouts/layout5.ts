@@ -1,8 +1,8 @@
 import {
-  ALLEY_GUEST_SPOT,
   LOWER_DESK_DECOR,
   LOWER_DESK_OBJECTS,
   LOWER_RIGHT_STORAGE,
+  RIGHT_OF_SASAE_GUEST_SPOT,
   UPPER_DESK_DECOR,
   UPPER_DESK_OBJECTS,
   UPPER_DESKS,
@@ -20,7 +20,8 @@ import type { GuildLayout } from './types';
 
 /**
  * Five departments (Issue #18): the four desks of layout4 and a fifth, the workshop desk, left of
- * the 企画 desk on the lower left carpet. The files and crates of layout4 stay right of 総務.
+ * the 企画 desk on the lower left carpet. The files of layout4 move to the
+ * right end of the lower right carpet, its crates go: the guest stands right of 総務 (Issue #122).
  */
 export const LAYOUT5: GuildLayout = {
   departmentCount: 5,
@@ -44,7 +45,7 @@ export const LAYOUT5: GuildLayout = {
     { seat: WORKSHOP_DESK.seat, side: 'lower', things: [] },
   ],
   ...SMALL_ROOM_SEATS,
-  guestSpots: [ALLEY_GUEST_SPOT],
+  guestSpots: [RIGHT_OF_SASAE_GUEST_SPOT],
   boardMaxCqw: WORKSHOP_BOARD_MAX_CQW,
   // Seven packed rows: the column ends 49.2 px above layout4's (273.3 px against 322.4 px in the
   // demo at 1024 px, Chrome, 2026-10-14). Taken off layout4's 340 and 372.5 px and rounded up.

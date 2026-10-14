@@ -15,6 +15,8 @@ import { findPath, tileToPoint } from '../path';
 import { DEFAULT_SEATS } from '../scenes';
 import { seatSinkFor } from '../seating';
 import { LAYOUTS } from './index';
+import { LAYOUT5 } from './layout5';
+import { LAYOUT6 } from './layout6';
 import { TILE_SIZE } from '../metrics';
 import type { GuildLayout, TilePos } from './types';
 
@@ -203,5 +205,34 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: d
     expect(listed.length > 0).toBe(layout.departmentCount === 6);
     const { party } = windowExtentsFor(layout);
     for (const tile of listed) expect(overlaps(spriteRect(tile), party), keyOf(tile)).toBe(true);
+  });
+});
+
+describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () => {
+  const layout = LAYOUT5;
+  const sasae = layout.desks[3]?.seat;
+  const sales = LAYOUT6.desks[5]?.seat;
+  const [spot] = layout.guestSpots;
+  if (sasae === undefined || sales === undefined || spot === undefined) {
+    throw new Error('no 総務 desk, sales desk or guest spot');
+  }
+
+  it('stands the guest on the lower right carpet, in the column of the sales seat of six', () => {
+    expect(spot.col).toBe(sales.col);
+    expect(spot.col).toBeGreaterThan(sasae.col);
+    expect(groundAt(layout, spot)).toBe('floor-carpet');
+  });
+
+  it('keeps every piece of furniture off the guest’s picture', () => {
+    const picture = spriteRect(spot);
+    for (const thing of [...layout.objects, ...layout.decor]) {
+      const box = {
+        left: thing.col * TILE_SIZE,
+        top: thing.row * TILE_SIZE,
+        right: (thing.col + thing.w) * TILE_SIZE,
+        bottom: (thing.row + thing.h) * TILE_SIZE,
+      };
+      expect(overlaps(picture, box), keyOf(thing)).toBe(false);
+    }
   });
 });

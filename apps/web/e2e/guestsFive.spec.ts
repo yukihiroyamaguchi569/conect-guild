@@ -61,7 +61,8 @@ test('the one guest stands at its spot, its name and counts clear of the windows
     await logicalBox(page, page.getByRole('region', { name: 'メッセージ' })),
   ];
   for (const area of windows) expect(overlaps(spriteRect(spot), area)).toBe(false);
-  // Its tags, as drawn against the measured message window: on its line, above the window.
+  // Its tags, as drawn against the measured message window: on two lines (the name over the
+  // counts, Issue #122), above the window.
   const message = windows[3];
   if (message === undefined) throw new Error('no message window');
   const guest = {
@@ -70,7 +71,7 @@ test('the one guest stands at its spot, its name and counts clear of the windows
     state: 'working',
     counts: { issues: 3, prs: 1 },
   } as const;
-  for (const tag of guestTags(guest, feet, message)) {
-    expect(tag.y + 5).toBeLessThanOrEqual(message.top);
-  }
+  const tags = guestTags(guest, feet, message);
+  expect(tags.map((tag) => tag.align)).toEqual(['center', 'center']);
+  for (const tag of tags) expect(tag.y + 5).toBeLessThanOrEqual(message.top);
 });

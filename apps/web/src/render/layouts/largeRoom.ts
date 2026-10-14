@@ -77,11 +77,11 @@ export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
   place('barrel-small', 2, 16),
 ];
 
-/** layout4's files and crates right of the lower right desk, where layout6 has the sales desk. */
-export const LOWER_RIGHT_STORAGE: readonly DecorPlacement[] = [
-  place('file-cabinet', 26, 11),
-  place('crate-stack', 28, 11),
-];
+/**
+ * layout4's files right of the lower right desk, moved to the right end of the carpet to leave
+ * room for layout5's guest (its crates go). layout6 has the sales desk there instead.
+ */
+export const LOWER_RIGHT_STORAGE: readonly DecorPlacement[] = [place('file-cabinet', 28, 11)];
 
 /**
  * The quest board's max-height (cqw) with the workshop desk: the board then ends above the bubble
@@ -132,8 +132,9 @@ export const SALES_DESK: DeskCorner & {
 };
 
 /**
- * The one guest of five departments (seven on stage with かなめ): in front of the right end of the
- * 総務 desk, clear of its 「Lv N」, its tags on one line above the
- * message window. Six departments leave no room for a guest.
+ * The one guest of five departments (seven on stage with かなめ, Issue #122): on the lower right
+ * carpet right of the 総務 desk, in the column of layout6's sales seat. It stands on the desk's
+ * front row rather than level with the seat (row 10), where the party window would cover it; its
+ * tags fit on two lines above the message window. Six departments leave no room for a guest.
  */
-export const ALLEY_GUEST_SPOT: TilePos = { col: 23, row: 13 };
+export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 26, row: 12 };
