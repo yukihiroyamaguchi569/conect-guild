@@ -317,8 +317,8 @@ describe('map: the windows of each layout', () => {
 
   it('lets members walk under the party window only on the tiles the layout lists', () => {
     const six = layoutFor(6);
-    // Upper right, under the party window of six departments and no other window. No layout lists
-    // a tile any more: the sales desk's went with Issue #121.
+    // Upper right, under the party window of six departments and no other window. layout6 lists
+    // no tile any more: the sales desk's went with Issue #121.
     const under = { col: 27, row: 5 };
     expect(overlaps(spriteRect(under), windowExtentsFor(six).party)).toBe(true);
     expect(isWalkableIn(six, under)).toBe(false);

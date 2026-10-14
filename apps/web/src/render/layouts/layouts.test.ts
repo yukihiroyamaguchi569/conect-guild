@@ -42,8 +42,8 @@ const allSeats = (layout: GuildLayout): TilePos[] => [...walkerSeats(layout), la
 
 /**
  * The windows at their tallest that must keep clear of `pos`: all but the party window on the
- * tiles the layout lets it cover (layout6's sales desk and layout5's guest, the president's
- * decisions 2026-10-15).
+ * tiles the layout lets it cover (layout5's guest, the president's decision 2026-10-15; layout6's
+ * sales desk was one until Issue #121).
  */
 function windowsOver(layout: GuildLayout, pos: TilePos) {
   const { party, ...others } = tallestWindowExtentsFor(layout);

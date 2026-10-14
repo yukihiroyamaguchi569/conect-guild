@@ -133,7 +133,8 @@ export const SALES_DESK: DeskCorner & { readonly seat: TilePos } = {
  * carpet right of the 総務 desk, three columns past the alley beside it (col 24; the president
  * chose it, 2026-10-15), one row in front of the 総務 seat with the round table (GUEST_TABLE)
  * before it. The party window at its usual height ends
- * above the frame; only its rare extra notes (tallestBottom) cover the top of the head, as at the
- * sales desk of six departments (underPartyWindow). Six departments leave no room for a guest.
+ * above the frame; only its rare extra notes (tallestBottom) cover the top of the head: the one
+ * tile the party window may cover (underPartyWindow; six departments' sales desk was one until
+ * Issue #121). Six departments leave no room for a guest.
  */
 export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 27, row: 11 };
