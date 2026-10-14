@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { memberIdSchema } from '@conect-guild/snapshot/settings';
 import type { MemberId } from '../guild.config';
 import {
   hasOwnLines,
@@ -10,7 +11,7 @@ import {
   type SpokenLine,
 } from './lineBook';
 
-const MEMBERS: readonly MemberId[] = ['kaname', 'minori', 'hibiki', 'hirame', 'sasae', 'yukihiro'];
+const MEMBERS: readonly MemberId[] = memberIdSchema.options;
 const SCENES: readonly LineScene[] = [
   'handOver',
   'toss',
@@ -95,7 +96,7 @@ describe('line book: each moment', () => {
     );
   });
 
-  it.each(['minori', 'hibiki', 'hirame', 'sasae'] as const)(
+  it.each(['minori', 'hibiki', 'hirame', 'sasae', 'takumi', 'musubi'] as const)(
     'gives %s the moments of a department and its three waits',
     (id) => {
       expect(new Set(Object.keys(LINE_BOOK[id]))).toEqual(
@@ -159,7 +160,16 @@ describe('line book: murmurs', () => {
   });
 
   it('keeps every member’s name out of every line, even as a word (ひらめく)', () => {
-    for (const name of ['かなめ', 'みのり', 'ひびき', 'ひらめ', 'ささえ', 'ゆきひろ']) {
+    for (const name of [
+      'かなめ',
+      'みのり',
+      'ひびき',
+      'ひらめ',
+      'ささえ',
+      'たくみ',
+      'むすび',
+      'ゆきひろ',
+    ]) {
       expect(ALL_LINES.filter((line) => line.includes(name))).toEqual([]);
     }
   });
