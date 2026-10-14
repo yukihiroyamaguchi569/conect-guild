@@ -137,22 +137,23 @@ export const LOWER_ROW: DeskCorner = {
 };
 
 /**
- * The tavern in the upper right (Issue #18), where layout4 has the 広報 desk: a round table with
- * the guests on either side of it, and barrels and mugs against the right edge. The tiles beside
- * the pet and under the right window stay free for the members' play spots (render/idleSpots.ts);
- * the window's light falls on them.
+ * The tavern in the upper right (Issue #18), where layout4 has the 広報 desk: a round table on the
+ * blue carpet and mugs in the corner under the window. The tiles beside the pet and under the
+ * right window stay free for the members' play spots (render/idleSpots.ts).
  */
 export const TAVERN_DECOR: readonly DecorPlacement[] = [
-  place('light-patch', 20, 3),
   place('round-table', 19, 5),
-  place('barrel', 22, 3),
-  place('mugs', 22, 5),
-  place('barrel-small', 22, 6),
+  place('mugs', 22, 3),
 ];
 
-/** Left and right of the round table, facing each other across it. */
+/**
+ * The guests on the tavern's carpet, one behind the other and clear of the red rug: one at the
+ * back under the window, one in front right of the round table. Their name tags go under their
+ * feet (render/guests.ts): the back one's end above the front one's head, and the front one's
+ * 「?」 (right of the head) is right of the back one's tags. Neither stands in front of the table.
+ */
 export const TAVERN_GUEST_SPOTS: readonly [TilePos, TilePos] = [
-  { col: 18, row: 6 },
+  { col: 20, row: 3 },
   { col: 21, row: 6 },
 ];
 
