@@ -1,29 +1,36 @@
 """Cut the two codex-generated sprite sheets into one strip of seven square frames per member.
 
-Inputs, both 6 rows (one member each) on a magenta (#ff00ff) background:
-- source-sheet.png, 1024x1536, 4 columns (see prompt.txt): frames 0-3
-- source-sheet-poses.png, 768x1536, 3 columns (see prompt-poses.txt): frames 4-6
-Default inputs sit next to this script; default output directory is this script's.
+Inputs, both one row per member (in --members order) on a magenta (#ff00ff) background,
+with 256x256 cells:
+- the main sheet, 4 columns (1024 wide): frames 0-3
+- the poses sheet, 3 columns (768 wide): frames 4-6
+Defaults: the six members kaname..yukihiro, source-sheet.png (1024x1536, see prompt.txt) and
+source-sheet-poses.png (768x1536, see prompt-poses.txt) next to this script, and this script's
+directory as output. Other members: e.g. --members takumi,musubi,guest1,guest2 with
+--sheet source-sheet-new4.png --poses source-sheet-new4-poses.png (1024x1024 and 768x1024).
+The scale comes from the main sheet's tallest and widest frame; --scale-from <main sheet> takes it
+from another main sheet instead (e.g. source-sheet.png, so new members stand at the same size).
 Output: <out_dir>/<memberId>.png, seven FRAME x FRAME frames (80x80, so 560x80) side by side
 (0 = front idle, 1 = facing right, 2 = walk right 1, 3 = walk right 2, 4 = front, both hands up,
 5 = front, carrying in both arms, 6 = facing right, carrying in both arms), transparent background,
 feet on the bottom edge, centred horizontally. Optionally a 2x preview of all frames.
 
-Usage: python build_sprites.py [--sheet <sheet.png>] [--poses <poses.png>] [--out <out_dir>]
-       [--preview <preview.png>]
+Usage: python build_sprites.py [--members <id,id,...>] [--sheet <sheet.png>] [--poses <poses.png>]
+       [--scale-from <sheet.png>] [--out <out_dir>] [--preview <preview.png>]
 Needs Pillow only. Not a project dependency; run it from a throwaway venv.
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageFilter
 
-MEMBERS = ["kaname", "minori", "hibiki", "hirame", "sasae", "yukihiro"]
-SHEET_SIZE = (1024, 1536)
+DEFAULT_MEMBERS = ["kaname", "minori", "hibiki", "hirame", "sasae", "yukihiro"]
+# Each source sheet is a grid of CELL x CELL cells: one row per member, one column per frame.
+CELL = 256
 SHEET_COLS = 4
-POSES_SIZE = (768, 1536)
 POSES_COLS = 3
 FRAMES = SHEET_COLS + POSES_COLS
 HERE = Path(__file__).resolve().parent
@@ -49,7 +56,7 @@ def threshold(channel, test):
     return channel.point(lambda v: 255 if test(v) else 0)
 
 
-def row_bounds(alpha):
+def row_bounds(alpha, rows):
     """Split the sheet between the member rows: on the grid line when it lies in the empty gap
     between two rows, otherwise in the middle of that gap.
 
@@ -64,9 +71,9 @@ def row_bounds(alpha):
             bands.append([y, y + 1])
         elif on:
             bands[-1][1] = y + 1
-    if len(bands) != len(MEMBERS):
+    if len(bands) != rows:
         return None
-    cell_h = alpha.height // len(MEMBERS)
+    cell_h = alpha.height // rows
     cuts = [
         grid if above[1] <= grid <= below[0] else (above[1] + below[0]) // 2
         for grid, above, below in zip(range(cell_h, alpha.height, cell_h), bands, bands[1:])
@@ -74,26 +81,27 @@ def row_bounds(alpha):
     return list(zip([0, *cuts], [*cuts, alpha.height]))
 
 
-def load_cells(path, size, cols):
-    """Key the sheet and cut it into rows x cols cells, refusing anything that is not as expected."""
+def load_cells(path, members, cols):
+    """Key the sheet and cut it into one row per member x cols cells, refusing anything unexpected."""
     sheet = Image.open(path).convert("RGB")
+    size = (cols * CELL, len(members) * CELL)
     if sheet.size != size:
         sys.exit(f"{path}: expected {size[0]}x{size[1]}, got {sheet.width}x{sheet.height}")
-    bounds = row_bounds(keyed(sheet).getchannel("A"))
+    bounds = row_bounds(keyed(sheet).getchannel("A"), len(members))
     if bounds is None:
-        sys.exit(f"{path}: expected {len(MEMBERS)} rows of characters separated by background")
+        sys.exit(f"{path}: expected {len(members)} rows of characters separated by background")
     cell_w = sheet.width // cols
     rows = [
         [keyed(sheet.crop((c * cell_w, top, (c + 1) * cell_w, bottom))) for c in range(cols)]
         for top, bottom in bounds
     ]
     boxes = [[cell.getchannel("A").getbbox() for cell in row] for row in rows]
-    empty = [f"{MEMBERS[r]} frame {c}" for r, row in enumerate(boxes) for c, box in enumerate(row) if box is None]
+    empty = [f"{members[r]} frame {c}" for r, row in enumerate(boxes) for c, box in enumerate(row) if box is None]
     if empty:
         sys.exit(f"{path}: no character found in " + ", ".join(empty))
     # The cell outline should be almost all background; otherwise the key colour is not magenta.
     off_key = [
-        f"{MEMBERS[r]} frame {c}"
+        f"{members[r]} frame {c}"
         for r, row in enumerate(rows)
         for c, cell in enumerate(row)
         if outline_background_ratio(cell) < MIN_OUTLINE_BACKGROUND
@@ -169,17 +177,30 @@ def shrink(rgba, size):
     return crisp
 
 
-def build(sheet_path, poses_path, out_dir, preview_path=None):
-    inputs = {sheet_path.resolve(), poses_path.resolve()}
-    sprite_paths = {(out_dir / f"{m}.png").resolve() for m in MEMBERS}
+def sheet_scale(boxes):
+    """One scale for every frame of a main sheet, so that its tallest and widest frames just fit."""
+    return min(MAX_H / max(height(b) for row in boxes for b in row), MAX_W / max(width(b) for row in boxes for b in row))
+
+
+def scale_of(path):
+    """The scale of another main sheet, one member per CELL-high row."""
+    with Image.open(path) as sheet:
+        rows = sheet.height // CELL
+    _, boxes = load_cells(path, [f"row {r + 1}" for r in range(rows)], SHEET_COLS)
+    return sheet_scale(boxes)
+
+
+def build(members, sheet_path, poses_path, out_dir, preview_path=None, scale_path=None):
+    inputs = {p.resolve() for p in (sheet_path, poses_path, scale_path) if p}
+    sprite_paths = {(out_dir / f"{m}.png").resolve() for m in members}
     if inputs & sprite_paths:
         sys.exit(f"{out_dir}: a sprite would overwrite an input sheet")
     if preview_path and preview_path.resolve() in sprite_paths | inputs:
         sys.exit(f"{preview_path}: the preview would overwrite a sprite or an input sheet")
-    rows, boxes = load_cells(sheet_path, SHEET_SIZE, SHEET_COLS)
-    pose_rows, pose_boxes = load_cells(poses_path, POSES_SIZE, POSES_COLS)
-    # One scale for every frame of the main sheet so all six stand at the same size.
-    scale = min(MAX_H / max(height(b) for row in boxes for b in row), MAX_W / max(width(b) for row in boxes for b in row))
+    rows, boxes = load_cells(sheet_path, members, SHEET_COLS)
+    pose_rows, pose_boxes = load_cells(poses_path, members, POSES_COLS)
+    # One scale for every frame of the main sheet so all members stand at the same size.
+    scale = scale_of(scale_path) if scale_path else sheet_scale(boxes)
     # The poses sheet was drawn at its own size. Match each member's standing front pose
     # (pose 5, carrying) to their idle front pose (frame 0) so frames 0-3 stay exactly as they were.
     scales = [
@@ -193,7 +214,7 @@ def build(sheet_path, poses_path, out_dir, preview_path=None):
         for row, row_scales in zip(all_boxes, scales)
     ]
     too_big = [
-        f"{MEMBERS[r]} frame {c} ({w}x{h})"
+        f"{members[r]} frame {c} ({w}x{h})"
         for r, row in enumerate(sizes)
         for c, (w, h) in enumerate(row)
         if w > FRAME or h > FRAME
@@ -203,7 +224,7 @@ def build(sheet_path, poses_path, out_dir, preview_path=None):
 
     out_dir.mkdir(parents=True, exist_ok=True)
     strips = []
-    for member, row, row_boxes, row_sizes in zip(MEMBERS, cells, all_boxes, sizes):
+    for member, row, row_boxes, row_sizes in zip(members, cells, all_boxes, sizes):
         strip = Image.new("RGBA", (FRAME * FRAMES, FRAME), (0, 0, 0, 0))
         for col, (cell, box, (w, h)) in enumerate(zip(row, row_boxes, row_sizes)):
             sprite = shrink(cell.crop(box), (w, h))
@@ -213,7 +234,7 @@ def build(sheet_path, poses_path, out_dir, preview_path=None):
 
     if preview_path:
         preview_path.parent.mkdir(parents=True, exist_ok=True)
-        preview = Image.new("RGBA", (FRAME * FRAMES, FRAME * len(MEMBERS)), (60, 60, 70, 255))
+        preview = Image.new("RGBA", (FRAME * FRAMES, FRAME * len(members)), (60, 60, 70, 255))
         for i, strip in enumerate(strips):
             preview.paste(strip, (0, i * FRAME), strip)
         preview.resize(
@@ -221,11 +242,21 @@ def build(sheet_path, poses_path, out_dir, preview_path=None):
         ).save(preview_path)
 
 
+def member_list(text):
+    """Comma-separated member ids, top row first. Ids become file names, so keep them simple."""
+    members = text.split(",")
+    if not all(re.fullmatch(r"[a-z][a-z0-9]*", m) for m in members) or len(set(members)) != len(members):
+        raise argparse.ArgumentTypeError(f"expected distinct ids like takumi,musubi, got {text!r}")
+    return members
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--members", type=member_list, default=DEFAULT_MEMBERS)
     parser.add_argument("--sheet", type=Path, default=HERE / "source-sheet.png")
     parser.add_argument("--poses", type=Path, default=HERE / "source-sheet-poses.png")
+    parser.add_argument("--scale-from", type=Path)
     parser.add_argument("--out", type=Path, default=HERE)
     parser.add_argument("--preview", type=Path)
     args = parser.parse_args()
-    build(args.sheet, args.poses, args.out, args.preview)
+    build(args.members, args.sheet, args.poses, args.out, args.preview, args.scale_from)
