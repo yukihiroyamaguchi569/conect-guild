@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import {
+  ACTIVE_MEMBER_IDS,
   BRANCH_PREFIX_RULES,
   DEPARTMENT_LABELS,
   DEPARTMENT_MEMBER,
@@ -20,7 +21,7 @@ describe('guild.config', () => {
   });
 
   it('uses the names the president fixed on 2026-10-12', () => {
-    const names = Object.values(MEMBERS).map((m) => [m.role, m.name]);
+    const names = ACTIVE_MEMBER_IDS.map((id) => [MEMBERS[id].role, MEMBERS[id].name]);
     expect(Object.fromEntries(names)).toEqual({
       司令塔: 'かなめ',
       経理: 'みのり',
@@ -60,13 +61,15 @@ describe('guild.config from guild.settings.json', () => {
   it('keeps the literal types of the ids; the labels are strings checked when read', () => {
     expectTypeOf<DepartmentLabel>().toEqualTypeOf<string>();
     expectTypeOf<MemberId>().toEqualTypeOf<
-      'kaname' | 'minori' | 'hibiki' | 'hirame' | 'sasae' | 'yukihiro'
+      'kaname' | 'minori' | 'hibiki' | 'hirame' | 'sasae' | 'takumi' | 'musubi' | 'yukihiro'
     >();
   });
 
   it('keeps the colours and seats of the members', () => {
     expect(
-      Object.fromEntries(Object.values(MEMBERS).map((m) => [m.id, [m.color, m.seat]])),
+      Object.fromEntries(
+        ACTIVE_MEMBER_IDS.map((id) => [id, [MEMBERS[id].color, MEMBERS[id].seat]]),
+      ),
     ).toEqual({
       kaname: ['#e0b040', { col: 16, row: 7 }],
       minori: ['#4caf50', { col: 12, row: 4 }],
@@ -75,6 +78,12 @@ describe('guild.config from guild.settings.json', () => {
       sasae: ['#9c6b3f', { col: 21, row: 10 }],
       yukihiro: ['#8e44ad', { col: 16, row: 3 }],
     });
+  });
+
+  it('keeps the members no department names (takumi, musubi) off stage', () => {
+    expect(ACTIVE_MEMBER_IDS).not.toContain('takumi');
+    expect(ACTIVE_MEMBER_IDS).not.toContain('musubi');
+    expect(MEMBERS.takumi.seat).toEqual(MEMBERS.musubi.seat);
   });
 
   it('stops at a label the settings do not have', () => {

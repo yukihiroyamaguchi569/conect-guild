@@ -16,6 +16,8 @@ describe('seatsFor', () => {
       hibiki: { col: 20, row: 4 },
       hirame: { col: 11, row: 10 },
       sasae: { col: 21, row: 10 },
+      takumi: LAYOUT4.offstage,
+      musubi: LAYOUT4.offstage,
       yukihiro: { col: 16, row: 3 },
     });
   });

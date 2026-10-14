@@ -7,7 +7,7 @@ import { OVERHEAD_TOP, TILE_SIZE } from './metrics';
 import { bubbleBox, type BubbleOf } from './overhead';
 import { DEFAULT_SEATS } from './scenes';
 
-const ALL: Readonly<Record<Exclude<MemberId, 'yukihiro'>, number>> = {
+const ALL: Readonly<Partial<Record<Exclude<MemberId, 'yukihiro'>, number>>> = {
   kaname: 4,
   minori: 3,
   hibiki: 2,

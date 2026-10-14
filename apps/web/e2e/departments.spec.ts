@@ -115,8 +115,13 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
     party: { ...party, bottom: fetch.bottom },
     message: await logicalBox(page, page.getByRole('region', { name: 'メッセージ' })),
   };
-  // The right-hand column ends above the layout's measured bottom (render/layouts).
+  // The right-hand column ends above the layout's measured bottom (render/layouts), its rows
+  // packed for seven or eight of them (five and six departments).
   expect(measured.party.bottom).toBeLessThanOrEqual(layout.partyWindow.bottom);
+  const partyClass = await page
+    .getByRole('region', { name: 'パーティのようす' })
+    .getAttribute('class');
+  expect(partyClass?.includes('party--dense')).toBe(layout.partyWindow.dense === true);
 
   // Nobody's seat and no guest spot is under a window as it is drawn, nor as the layout models it.
   const modelled = windowExtentsFor(layout);

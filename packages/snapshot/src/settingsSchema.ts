@@ -13,7 +13,14 @@ const REPO_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\/(?!\.{1,2}$)[\w
  */
 export const COMMANDER_ID = 'kaname';
 export const PRESIDENT_ID = 'yukihiro';
-export const DEPARTMENT_MEMBER_IDS = ['minori', 'hibiki', 'hirame', 'sasae'] as const;
+export const DEPARTMENT_MEMBER_IDS = [
+  'minori',
+  'hibiki',
+  'hirame',
+  'sasae',
+  'takumi',
+  'musubi',
+] as const;
 export const memberIdSchema = z.enum([COMMANDER_ID, ...DEPARTMENT_MEMBER_IDS, PRESIDENT_ID]);
 export type MemberId = z.infer<typeof memberIdSchema>;
 export type DepartmentMemberId = (typeof DEPARTMENT_MEMBER_IDS)[number];
@@ -30,6 +37,8 @@ export function byMember<V>(valueOf: (id: MemberId) => V): Record<MemberId, V> {
     hibiki: valueOf('hibiki'),
     hirame: valueOf('hirame'),
     sasae: valueOf('sasae'),
+    takumi: valueOf('takumi'),
+    musubi: valueOf('musubi'),
     yukihiro: valueOf('yukihiro'),
   };
 }
@@ -38,7 +47,7 @@ export function byMember<V>(valueOf: (id: MemberId) => V): Record<MemberId, V> {
  * The numbers of departments the office has a layout for (apps/web/src/render/layouts). It grows
  * as layouts are drawn (Issue #18).
  */
-export const SUPPORTED_DEPARTMENT_COUNTS: readonly number[] = [2, 3, 4];
+export const SUPPORTED_DEPARTMENT_COUNTS: readonly number[] = [2, 3, 4, 5, 6];
 
 const memberSchema = z.strictObject({
   name: z.string().min(1),

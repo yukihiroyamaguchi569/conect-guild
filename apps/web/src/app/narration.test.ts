@@ -156,7 +156,16 @@ describe('memberLines: long idle spells (A)', () => {
   });
 
   it('follows the canvas: idleActivities with the same salts gives the same outing', () => {
-    const seeds = { kaname: 1, minori: 2, hibiki: 3, hirame: 4, sasae: 5, yukihiro: 6 };
+    const seeds = {
+      kaname: 1,
+      minori: 2,
+      hibiki: 3,
+      hirame: 4,
+      sasae: 5,
+      takumi: 7,
+      musubi: 8,
+      yukihiro: 6,
+    };
     const since = { hirame: 0 };
     // Look through the cycles for a moment when ひらめ is out, as the canvas would show it.
     for (let cycle = 10; cycle < 400; cycle += 1) {

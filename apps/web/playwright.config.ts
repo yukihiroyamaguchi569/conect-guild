@@ -10,7 +10,7 @@ const ON_CI = process.env.CI !== undefined;
  * in the test-only mode that reads the fictional settings of e2e/settings (vite-plugin-settings.ts
  * E2E_DEPARTMENTS_MODE). Only departments.spec.ts runs against them.
  */
-const OTHER_COUNTS = [2, 3] as const;
+const OTHER_COUNTS = [2, 3, 5, 6] as const;
 const portFor = (count: number): number => PORT + count - 1;
 const urlFor = (count: number): string => `http://127.0.0.1:${String(portFor(count))}`;
 const DEPARTMENTS_SPEC = /departments\.spec\.ts/;

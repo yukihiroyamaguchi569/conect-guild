@@ -43,6 +43,8 @@ export const E2E_DEPARTMENTS_ENV = 'GUILD_E2E_DEPARTMENTS';
 export const E2E_SETTINGS_FILES: Readonly<Record<string, string>> = {
   '2': 'apps/web/e2e/settings/departments-2.json',
   '3': 'apps/web/e2e/settings/departments-3.json',
+  '5': 'apps/web/e2e/settings/departments-5.json',
+  '6': 'apps/web/e2e/settings/departments-6.json',
   // Four departments and two fictional guests (Issue #108).
   guests: 'apps/web/e2e/settings/guests.json',
 };
