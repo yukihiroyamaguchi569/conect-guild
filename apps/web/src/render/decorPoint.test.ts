@@ -11,6 +11,6 @@ describe('decorPoint', () => {
   it('moves the round table of five departments half a tile left and 24 px up (Issue #122)', () => {
     const table = LAYOUT5.decor.find((item) => item.name === 'round-table');
     if (table === undefined) throw new Error('no round table');
-    expect(decorPoint(table)).toEqual({ x: 25 * 32 - 16, y: 12 * 32 - 24 });
+    expect(decorPoint(table)).toEqual({ x: 27 * 32 - 16, y: 12 * 32 - 24 });
   });
 });

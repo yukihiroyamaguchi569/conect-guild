@@ -86,7 +86,7 @@ export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
  * of layout4's files and crates; layout6 has the sales desk there instead.
  */
 export const GUEST_TABLE: DecorPlacement = {
-  ...place('round-table', 25, 12),
+  ...place('round-table', 27, 12),
   dx: -16,
   dy: -24,
 };
@@ -141,9 +141,10 @@ export const SALES_DESK: DeskCorner & {
 
 /**
  * The one guest of five departments (seven on stage with かなめ, Issue #122): on the lower right
- * carpet right of the 総務 desk, past the alley beside it (col 24), one row in front of the 総務
- * seat with the round table (GUEST_TABLE) before it. The party window at its usual height ends
+ * carpet right of the 総務 desk, three columns past the alley beside it (col 24; the president
+ * chose it, 2026-10-15), one row in front of the 総務 seat with the round table (GUEST_TABLE)
+ * before it. The party window at its usual height ends
  * above the frame; only its rare extra notes (tallestBottom) cover the top of the head, as at the
  * sales desk of six departments (underPartyWindow). Six departments leave no room for a guest.
  */
-export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 25, row: 11 };
+export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 27, row: 11 };
