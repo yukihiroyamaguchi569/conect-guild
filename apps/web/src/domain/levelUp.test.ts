@@ -111,7 +111,16 @@ describe('the baseline keeps the levels', () => {
   it('reads a baseline that lacks a member (one with no desk then, Issue #18)', () => {
     const base = toBaseline(withHistory(T0, {}));
     const levels = { kaname: 1, minori: 1, hibiki: 1, hirame: 1 };
-    expect(parseBaseline({ ...base, levels })?.levels).toEqual(levels);
+    expect(parseBaseline({ ...base, levels, crew: '00000000' })?.levels).toEqual(levels);
+    expect(parseBaseline({ ...base, levels, crew: undefined })?.levels).toEqual(levels);
+  });
+
+  it('rejects a baseline of the mapping in use that lacks a member (as before #18)', () => {
+    const base = toBaseline(withHistory(T0, {}));
+    expect(
+      parseBaseline({ ...base, levels: { kaname: 1, minori: 1, hibiki: 1, hirame: 1 } }),
+    ).toBeNull();
+    expect(parseBaseline({ ...base, levels: {} })).toBeNull();
   });
 });
 
