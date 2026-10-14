@@ -1,5 +1,6 @@
 import type { TilePos } from '../guild.config';
-import { MAP_OBJECTS, type MapObject } from './map';
+import { SELECTED_LAYOUT } from './layouts';
+import type { GuildLayout, MapObject } from './layouts/types';
 import { SEATING, TILE_SIZE } from './metrics';
 import type { Point } from './path';
 
@@ -21,10 +22,13 @@ function seatCells(object: MapObject): readonly (readonly [TilePos, number])[] {
   return Array.from({ length: w }, (_, i) => [{ col: col + i, row: row - 1 }, SEATING.counterPx]);
 }
 
+/** Sink of every seat cell of `layout`, px, by `col,row`. */
+export function seatSinkFor(layout: GuildLayout): ReadonlyMap<string, number> {
+  return new Map(layout.objects.flatMap(seatCells).map(([pos, px]) => [keyOf(pos), px]));
+}
+
 /** Sink of every seat cell, px. */
-export const SEAT_SINK: ReadonlyMap<string, number> = new Map(
-  MAP_OBJECTS.flatMap(seatCells).map(([pos, px]) => [keyOf(pos), px]),
-);
+export const SEAT_SINK: ReadonlyMap<string, number> = seatSinkFor(SELECTED_LAYOUT);
 
 function sinkOfTile(col: number, row: number): number {
   return SEAT_SINK.get(keyOf({ col, row })) ?? 0;

@@ -1,12 +1,14 @@
 /**
  * Guild settings for the web app: the team's values come from the repository root's
- * guild.settings.json (validated when it is imported); the seats and the time windows the domain
- * uses stay here.
+ * guild.settings.json (validated when it is imported), the seats from the office layout for its
+ * number of departments (render/layouts); the time windows the domain uses stay here.
  */
 import { z } from 'zod';
 import {
+  ACTIVE_MEMBER_IDS,
   byMember,
   DEPARTMENT_LABELS,
+  LEVEL_MEMBER_IDS,
   GUILD_SETTINGS,
   departmentLabelSchema,
   memberIdSchema,
@@ -21,7 +23,9 @@ import { seatsFor } from './render/layouts/seats';
 import type { GuildLayout, TilePos } from './render/layouts/types';
 
 export {
+  ACTIVE_MEMBER_IDS,
   DEPARTMENT_LABELS,
+  LEVEL_MEMBER_IDS,
   departmentLabelSchema,
   type DepartmentLabel,
   type MemberId,
@@ -96,6 +100,11 @@ export const MEMBERS: Readonly<Record<MemberId, MemberConfig>> = GUILD.members;
 /** Department label → the member who works it (see guildFromSettings). */
 export const DEPARTMENT_MEMBER: Readonly<Record<DepartmentLabel, MemberId>> =
   GUILD.departmentMember;
+
+/** The departments' members in the settings' order: `departments[i]` sits at desk i. */
+export const DEPARTMENT_MEMBERS: readonly MemberId[] = GUILD_SETTINGS.departments.map(
+  (d) => d.member,
+);
 
 /**
  * The member who works a department. Labels come from the settings, so they are plain strings to

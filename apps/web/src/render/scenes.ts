@@ -1,3 +1,4 @@
+import { byMember } from '@conect-guild/snapshot/settings';
 import type { GuildEvent } from '../domain/events';
 import { departmentMember, MEMBERS, type MemberId, type TilePos } from '../guild.config';
 import { createConfetti, type Particle, type Random } from './confetti';
@@ -322,12 +323,7 @@ export function planScene(event: GuildEvent, start: number, context: SceneContex
   return { ...handoverTracks(event.kind, actor, start, seats), bursts: [], flights: [] };
 }
 
-/** Seats from the guild config. */
-export const DEFAULT_SEATS: Readonly<Record<MemberId, TilePos>> = {
-  kaname: MEMBERS.kaname.seat,
-  minori: MEMBERS.minori.seat,
-  hibiki: MEMBERS.hibiki.seat,
-  hirame: MEMBERS.hirame.seat,
-  sasae: MEMBERS.sasae.seat,
-  yukihiro: MEMBERS.yukihiro.seat,
-};
+/** Seats from the guild config (the selected office layout, render/layouts/seats.ts). */
+export const DEFAULT_SEATS: Readonly<Record<MemberId, TilePos>> = byMember(
+  (id) => MEMBERS[id].seat,
+);
