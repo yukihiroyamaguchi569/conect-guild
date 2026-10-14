@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto';
 import type { SessionState, SnapshotSession } from '@conect-guild/snapshot';
 import { z } from 'zod';
-import type { CompanySeat } from '../collector.config.ts';
+import type { Seat } from '../collector.config.ts';
 
 /**
- * Company session states from MulmoTerminal's files (docs/DESIGN.md 4.7). Pure: the caller reads
- * the files. Only the five company directories are kept; every other line is dropped where it is
+ * Company and guest session states from MulmoTerminal's files (docs/DESIGN.md 4.7). Pure: the
+ * caller reads the files. Only the seats' directories (the five company ones and the guests named
+ * in the settings, Issue #108) are kept, by exact match; every other line is dropped where it is
  * read, and nothing of it (path, id or count) leaves these functions.
  */
 
@@ -15,7 +16,7 @@ const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 /**
  * One line of dev-terminal-cwds.json: `<id> <absolute path>`. The id holds no space, so the first
  * space splits it and the rest (spaces included) is the path. Trimmed as MulmoTerminal does.
- * Private on purpose: it returns any line's id and path, and only the company ones may leave.
+ * Private on purpose: it returns any line's id and path, and only the seats' ones may leave.
  */
 function parseCwdLine(line: string): { id: string; cwd: string } | null {
   const text = line.trim();
@@ -67,7 +68,7 @@ export async function* settledLines(
 }
 
 /**
- * The current session id of each company seat, keyed by the seat's cwd.
+ * The current session id of each seat (company or guest), keyed by the seat's cwd.
  *
  * The log only grows and the last line of an id is its truth, so for each seat this is the id of
  * its last line whose id was not moved elsewhere later. Lines of other directories are only
@@ -75,10 +76,10 @@ export async function* settledLines(
  */
 export async function latestCompanySessionIds(
   lines: AsyncIterable<string> | Iterable<string>,
-  seats: readonly CompanySeat[],
+  seats: readonly Seat[],
 ): Promise<ReadonlyMap<string, string>> {
   const seatPaths = new Set(seats.map((seat) => seat.cwd));
-  // Company ids only: where each one was last seen and on which line. One pass, no rescans.
+  // Seat ids only: where each one was last seen and on which line. One pass, no rescans.
   const lastSeen = new Map<string, { cwd: string; line: number }>();
   let line = 0;
   for await (const text of lines) {
@@ -125,8 +126,12 @@ export type SessionsReading =
   | {
       readonly ok: true;
       readonly members: readonly SnapshotSession[];
-      /** How many seats have a session in the cwd log. */
+      /** The guests' states (Issue #108), in the settings' order. */
+      readonly guests: readonly SessionState[];
+      /** How many company seats have a session in the cwd log. */
       readonly found: number;
+      /** How many guest seats have a session in the cwd log. */
+      readonly guestsFound: number;
     }
   | { readonly ok: false; readonly kind: SessionsFailureKind };
 
@@ -159,7 +164,7 @@ function lookupEntry(file: Readonly<Record<string, unknown>>, id: string | undef
  */
 export function readSeatStates(
   activityText: string,
-  seats: readonly CompanySeat[],
+  seats: readonly Seat[],
   ids: ReadonlyMap<string, string>,
 ): SessionsReading {
   const json = parseJson(activityText);
@@ -173,15 +178,26 @@ export function readSeatStates(
  */
 export function seatStatesOf(
   file: unknown,
-  seats: readonly CompanySeat[],
+  seats: readonly Seat[],
   ids: ReadonlyMap<string, string>,
 ): SessionsReading {
   if (!isJsonObject(file)) return { ok: false, kind: 'invalid' };
   const members: SnapshotSession[] = [];
+  const guests: { index: number; state: SessionState }[] = [];
   for (const seat of seats) {
     const lookup = lookupEntry(file, ids.get(seat.cwd));
     if (!lookup.ok) return { ok: false, kind: 'invalid' };
-    members.push({ department: seat.department, state: sessionStateOf(lookup.entry) });
+    const state = sessionStateOf(lookup.entry);
+    if (seat.kind === 'company') members.push({ department: seat.department, state });
+    else guests.push({ index: seat.index, state });
   }
-  return { ok: true, members, found: seats.filter((seat) => ids.has(seat.cwd)).length };
+  const found = (kind: Seat['kind']): number =>
+    seats.filter((seat) => seat.kind === kind && ids.has(seat.cwd)).length;
+  return {
+    ok: true,
+    members,
+    guests: guests.toSorted((a, b) => a.index - b.index).map((guest) => guest.state),
+    found: found('company'),
+    guestsFound: found('guest'),
+  };
 }

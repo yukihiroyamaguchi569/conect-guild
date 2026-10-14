@@ -52,9 +52,12 @@ export function reportStatusNotWritten(deps: ReportDeps): void {
   deps.error(`${prefix(deps)} status not written: write-failed`);
 }
 
-/** e.g. `sessions=5 ok` or `sessions unavailable: parse-failed`. */
+/**
+ * e.g. `sessions=5 ok`, `sessions=5 ok guests=1` (with guests in the settings: how many of them
+ * have a session; Issue #108) or `sessions unavailable: parse-failed`.
+ */
 export function sessionsSummary(reading: SessionsReading): string {
-  return reading.ok
-    ? `sessions=${String(reading.found)} ok`
-    : `sessions unavailable: ${reading.kind}`;
+  if (!reading.ok) return `sessions unavailable: ${reading.kind}`;
+  const guests = reading.guests.length > 0 ? ` guests=${String(reading.guestsFound)}` : '';
+  return `sessions=${String(reading.found)} ok${guests}`;
 }
