@@ -14,7 +14,11 @@ defineProps<{
   <section class="rpg-window board" aria-label="クエスト掲示板">
     <h2 class="rpg-window__title board__title">クエスト掲示板</h2>
     <p v-if="!loaded" class="board__empty">よみこみちゅう…</p>
-    <p v-else-if="groups.length === 0" class="board__empty">いまは クエストが ありません</p>
+    <p v-else-if="groups.length === 0" class="board__empty">
+      {{
+        guests.length > 0 ? '会社の クエストは いまは ありません' : 'いまは クエストが ありません'
+      }}
+    </p>
     <div class="board__list">
       <div v-for="group in groups" :key="group.key" class="board__group">
         <h3 class="board__group-label">
