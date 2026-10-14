@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { Snapshot } from '@conect-guild/snapshot';
 import { DEPARTMENT_LABELS, departmentMember } from '../guild.config';
-import { memberLevels, memberLevelsSchema } from './levelUp';
+import { LEVEL_MEMBERS, memberLevels, memberLevelsSchema } from './levelUp';
 
 /** Bump when the stored shape changes; a stored baseline with another version counts as absent. */
 export const BASELINE_SCHEMA_VERSION = 3;
@@ -51,20 +51,27 @@ const fingerprintSchema = z.string().regex(/^[0-9a-f]{8}$/);
  * fingerprint only. `levels` is each member's level (Issue #19; the version went 2 → 3 with it).
  * `crew` is the fingerprint of the department → member mapping the levels were counted with
  * (Issue #18). It is optional, so a baseline stored before it still parses (as an unknown mapping).
+ * Counted with the mapping in use, `levels` must have every member with a level now: one lacking a
+ * member is malformed and counts as absent, as before #18.
  */
-const baselineSchema = z.strictObject({
-  schemaVersion: z.literal(BASELINE_SCHEMA_VERSION),
-  fetchedAt: isoDateTime,
-  repo: fingerprintSchema,
-  issues: z.array(
-    z.strictObject({ number: issueNumber, state: stateSchema, closedAt: isoDateTime.nullable() }),
-  ),
-  prs: z.array(
-    z.strictObject({ number: issueNumber, state: stateSchema, mergedAt: isoDateTime.nullable() }),
-  ),
-  levels: memberLevelsSchema,
-  crew: fingerprintSchema.optional(),
-});
+const baselineSchema = z
+  .strictObject({
+    schemaVersion: z.literal(BASELINE_SCHEMA_VERSION),
+    fetchedAt: isoDateTime,
+    repo: fingerprintSchema,
+    issues: z.array(
+      z.strictObject({ number: issueNumber, state: stateSchema, closedAt: isoDateTime.nullable() }),
+    ),
+    prs: z.array(
+      z.strictObject({ number: issueNumber, state: stateSchema, mergedAt: isoDateTime.nullable() }),
+    ),
+    levels: memberLevelsSchema,
+    crew: fingerprintSchema.optional(),
+  })
+  .refine(
+    ({ levels, crew }) =>
+      crew !== CREW_FINGERPRINT || LEVEL_MEMBERS.every((member) => levels[member] !== undefined),
+  );
 
 export type Baseline = z.infer<typeof baselineSchema>;
 
