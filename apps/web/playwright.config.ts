@@ -15,6 +15,15 @@ const portFor = (count: number): number => PORT + count - 1;
 const urlFor = (count: number): string => `http://127.0.0.1:${String(portFor(count))}`;
 const DEPARTMENTS_SPEC = /departments\.spec\.ts/;
 
+/**
+ * The guests (Issue #108): a server of its own in the same test-only mode, reading the fictional
+ * settings with two guests (vite-plugin-settings.ts E2E_SETTINGS_FILES.guests). Only guests.spec.ts
+ * runs against it.
+ */
+const GUESTS_PORT = PORT + 10;
+const GUESTS_URL = `http://127.0.0.1:${String(GUESTS_PORT)}`;
+const GUESTS_SPEC = /guests\.spec\.ts/;
+
 export default defineConfig({
   testDir: './e2e',
   // One at a time: the tests wait on the app's real 5-second refresh, which load could delay.
@@ -36,7 +45,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: DEPARTMENTS_SPEC,
+      testIgnore: [DEPARTMENTS_SPEC, GUESTS_SPEC],
       use: { ...devices['Desktop Chrome'] },
     },
     ...OTHER_COUNTS.map((count) => ({
@@ -45,6 +54,11 @@ export default defineConfig({
       metadata: { departmentCount: count },
       use: { ...devices['Desktop Chrome'], baseURL: urlFor(count) },
     })),
+    {
+      name: 'guests',
+      testMatch: GUESTS_SPEC,
+      use: { ...devices['Desktop Chrome'], baseURL: GUESTS_URL },
+    },
   ],
   webServer: [
     {
@@ -64,5 +78,13 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 60_000,
     })),
+    {
+      command: `npx vite --port ${String(GUESTS_PORT)} --strictPort --mode e2e-departments`,
+      cwd: import.meta.dirname,
+      env: { GUILD_E2E_DEPARTMENTS: 'guests' },
+      url: GUESTS_URL,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
   ],
 });
