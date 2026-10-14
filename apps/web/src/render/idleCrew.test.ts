@@ -151,6 +151,8 @@ const SEEDS_ANY = {
   hibiki: { phaseMs: 0, intervalMs: 5_000 },
   hirame: { phaseMs: 0, intervalMs: 5_000 },
   sasae: { phaseMs: 0, intervalMs: 5_000 },
+  takumi: { phaseMs: 0, intervalMs: 5_000 },
+  musubi: { phaseMs: 0, intervalMs: 5_000 },
   yukihiro: { phaseMs: 0, intervalMs: 5_000 },
 };
 

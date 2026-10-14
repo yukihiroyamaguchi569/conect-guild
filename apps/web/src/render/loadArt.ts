@@ -2,7 +2,9 @@ import hibikiUrl from '../../../../assets/sprites/hibiki.png';
 import hirameUrl from '../../../../assets/sprites/hirame.png';
 import kanameUrl from '../../../../assets/sprites/kaname.png';
 import minoriUrl from '../../../../assets/sprites/minori.png';
+import musubiUrl from '../../../../assets/sprites/musubi.png';
 import sasaeUrl from '../../../../assets/sprites/sasae.png';
+import takumiUrl from '../../../../assets/sprites/takumi.png';
 import yukihiroUrl from '../../../../assets/sprites/yukihiro.png';
 import decorUrl from '../../../../assets/decor/decor.png';
 import propsUrl from '../../../../assets/props/props.png';
@@ -33,6 +35,8 @@ const SPRITE_URLS: Readonly<Record<MemberId, string>> = {
   hibiki: hibikiUrl,
   hirame: hirameUrl,
   sasae: sasaeUrl,
+  takumi: takumiUrl,
+  musubi: musubiUrl,
   yukihiro: yukihiroUrl,
 };
 
@@ -54,15 +58,17 @@ async function loadTiles(): Promise<TileArt> {
 async function loadSprites(): Promise<SpriteArt> {
   const load = (id: MemberId) => loadImage(SPRITE_URLS[id]);
   try {
-    const [kaname, minori, hibiki, hirame, sasae, yukihiro] = await Promise.all([
+    const [kaname, minori, hibiki, hirame, sasae, takumi, musubi, yukihiro] = await Promise.all([
       load('kaname'),
       load('minori'),
       load('hibiki'),
       load('hirame'),
       load('sasae'),
+      load('takumi'),
+      load('musubi'),
       load('yukihiro'),
     ]);
-    const sheets = { kaname, minori, hibiki, hirame, sasae, yukihiro };
+    const sheets = { kaname, minori, hibiki, hirame, sasae, takumi, musubi, yukihiro };
     return createSpriteArt(sheets, drawPlaceholderProp);
   } catch {
     return placeholderArt.sprites;

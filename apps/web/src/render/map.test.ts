@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MEMBERS, type MemberId } from '../guild.config';
+import { ACTIVE_MEMBER_IDS, MEMBERS, type MemberId } from '../guild.config';
 import {
   contains,
   GROUND,
@@ -105,8 +105,10 @@ describe('map: places and seats', () => {
     expect(isUnderWindow(seat)).toBe(false);
   });
 
-  it('gives every member a different seat', () => {
-    const keys = Object.values(MEMBERS).map((m) => `${String(m.seat.col)},${String(m.seat.row)}`);
+  it('gives every member of the office a different seat', () => {
+    const keys = ACTIVE_MEMBER_IDS.map(
+      (id) => `${String(MEMBERS[id].seat.col)},${String(MEMBERS[id].seat.row)}`,
+    );
     expect(new Set(keys).size).toBe(keys.length);
   });
 

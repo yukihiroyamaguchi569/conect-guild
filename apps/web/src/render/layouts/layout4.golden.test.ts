@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MEMBERS } from '../../guild.config';
+import { ACTIVE_MEMBER_IDS, MEMBERS } from '../../guild.config';
 import { ANIMATED_DECOR, STILL_DECOR } from '../animatedDecor';
 import { DECOR_PLACEMENTS } from '../decor';
 import { BACK_OBJECTS, FRONT_LAYERS } from '../layers';
@@ -25,8 +25,9 @@ function lines(): string[] {
     ...GROUND.map((row, i) => `ground ${String(i)}: ${row.join(' ')}`),
     ...MAP_OBJECTS.map((o) => `object ${o.tile} ${area(o)} solid=${String(o.solid)}`),
     ...DECOR_PLACEMENTS.map((d) => `decor ${d.name} ${area(d)} solid=${String(d.solid)}`),
-    ...Object.entries(DEFAULT_SEATS).map(([id, seat]) => `seat ${id} ${tile(seat)}`),
-    ...Object.values(MEMBERS).map((m) => `member ${m.id} ${tile(m.seat)}`),
+    // The members of the office: ids no department names (off stage) came after the recording.
+    ...ACTIVE_MEMBER_IDS.map((id) => `seat ${id} ${tile(DEFAULT_SEATS[id])}`),
+    ...ACTIVE_MEMBER_IDS.map((id) => `member ${id} ${tile(MEMBERS[id].seat)}`),
     ...Object.entries(PLACES).map(([name, pos]) => `place ${name} ${tile(pos)}`),
     ...Object.entries(WINDOW_EXTENTS).map(([name, r]) => `window ${name} ${JSON.stringify(r)}`),
     ...Object.entries(TALLEST_WINDOW_EXTENTS).map(
