@@ -1,5 +1,4 @@
 import {
-  DOOR_GUEST_SPOTS,
   LOWER_DESK_DECOR,
   LOWER_DESK_OBJECTS,
   SALES_DESK,
@@ -47,7 +46,7 @@ export const LAYOUT6: GuildLayout = {
     { seat: SALES_DESK.seat, side: 'lower', things: [], chatWith: 4 },
   ],
   ...SMALL_ROOM_SEATS,
-  guestSpots: DOOR_GUEST_SPOTS,
+  guestSpots: [],
   boardMaxCqw: WORKSHOP_BOARD_MAX_CQW,
   underPartyWindow: SALES_DESK.underPartyWindow,
   // Eight packed rows: the column ends 24.5 px above layout4's (297.9 px against 322.4 px in the

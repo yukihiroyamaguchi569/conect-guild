@@ -51,6 +51,8 @@ export function eventMessage(
 export interface MessageEntry {
   readonly text: string;
   readonly event: GuildEvent | null;
+  /** The guest (its position in the settings) whose PR or Issue the line reports (Issue #108). */
+  readonly guest?: number;
 }
 
 /** The diff's notice (if any) first, then one entry per event, in the diff's order. */

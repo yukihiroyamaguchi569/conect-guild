@@ -59,6 +59,10 @@ const {
   message,
   cue,
   summons,
+  guests,
+  guestCount,
+  guestBoard,
+  sparkle,
   nextMessage,
   clearBaseline,
   setStageShown,
@@ -110,6 +114,9 @@ function onStageShown(shown: boolean): void {
         :idle-seeds="idleSeeds"
         :summons="summons"
         :halted="state.halted"
+        :guests="guests"
+        :guest-count="guestCount"
+        :sparkle="sparkle"
         :last-active-storage="demo?.storage"
         @stage-shown="onStageShown"
         @stage="setStage"
@@ -137,6 +144,7 @@ function onStageShown(shown: boolean): void {
           class="stage__board"
           :style="{ '--board-max-height': `${SELECTED_LAYOUT.boardMaxCqw ?? BOARD_MAX_CQW}cqw` }"
           :groups="board"
+          :guests="guestBoard"
           :loaded="state.snapshot !== null"
         />
         <KingBubble class="stage__king" :waiting="king.waiting" :detail="king.detail" />

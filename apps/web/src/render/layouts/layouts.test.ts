@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { maxGuestsFor } from '@conect-guild/snapshot/settingsSchema';
 import {
   contains,
   isPartyExceptionIn,
@@ -123,9 +124,13 @@ describe.each(Object.values(LAYOUTS))(
   (layout) => {
     const walkable = (pos: TilePos): boolean => isWalkableIn(layout, pos);
 
-    it('stands the guests on two walkable tiles, clear of the windows, reachable from the door', () => {
-      const [first, second] = layout.guestSpots;
-      expect(keyOf(first)).not.toBe(keyOf(second));
+    it('has a spot for each guest the departments leave room for (seven on stage)', () => {
+      expect(layout.guestSpots).toHaveLength(maxGuestsFor(layout.departmentCount));
+      const keys = layout.guestSpots.map(keyOf);
+      expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    it('stands the guests on walkable tiles, clear of the windows, reachable from the door', () => {
       expect(walkable(layout.offstage)).toBe(true);
       const seats = new Set(allSeats(layout).map(keyOf));
       for (const spot of layout.guestSpots) {
