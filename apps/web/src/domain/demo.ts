@@ -8,6 +8,7 @@ import {
   type SnapshotIssue,
   type SnapshotPr,
 } from '@conect-guild/snapshot';
+import { GUILD_SETTINGS, type GuildGuest } from '@conect-guild/snapshot/settings';
 import {
   DEPARTMENT_LABELS,
   RULE_CHANGE_PATHS,
@@ -25,6 +26,7 @@ import {
   type DemoLane,
   type DemoQuestTitles,
 } from './demoScript';
+import { demoGuestsAt } from './demoGuests';
 
 /**
  * The demo mode's data (Issue #49): the fictional snapshot at a given time, played from the script
@@ -343,7 +345,7 @@ function sessionsOf(
   inLoopMs: number,
   nowMs: number,
   labels: readonly DepartmentLabel[],
-): Snapshot['sessions'] {
+): Extract<Snapshot['sessions'], { status: 'ok' }> {
   const lanes = laneStatesAt(inLoopMs);
   const departments = laneDepartments(loop, labels);
   const byDepartment = new Map<DepartmentLabel | null, SessionState>(
@@ -362,7 +364,7 @@ function sessionsOf(
         state: byDepartment.get(department) ?? 'idle',
       })),
     ],
-    // The demo has no guests (Issue #108).
+    // The guests' states are added by demoSnapshotAt (Issue #108).
     guests: [],
   };
 }
@@ -371,12 +373,14 @@ function sessionsOf(
  * The fictional snapshot `elapsedMs` after the demo started, at wall time `nowMs` (epoch ms), for
  * the departments `labels` (the settings' by default; tests pass made-up ones). It holds the
  * current loop as far as it has gone and the whole previous loop (so the members who cleared a
- * quest stay 完了 and keep their rewards). `fetchedAt` is always now: never stale.
+ * quest stay 完了 and keep their rewards). `fetchedAt` is always now: never stale. The settings'
+ * guests (Issue #108) come too, with made-up work (domain/demoGuests.ts); without any, none.
  */
 export function demoSnapshotAt(
   elapsedMs: number,
   nowMs: number,
   labels: readonly DepartmentLabel[] = DEPARTMENT_LABELS,
+  guests: readonly GuildGuest[] = GUILD_SETTINGS.guests ?? [],
 ): Snapshot {
   const elapsed = Math.max(elapsedMs, 0);
   const loop = Math.floor(elapsed / DEMO_LOOP_MS);
@@ -384,6 +388,7 @@ export function demoSnapshotAt(
   const loopStart = (j: number) => nowMs - inLoop - (loop - j) * DEMO_LOOP_MS;
   const previous = loop > 0 ? loopItems(loop - 1, DEMO_LOOP_MS, loopStart(loop - 1), labels) : null;
   const current = loopItems(loop, inLoop, loopStart(loop), labels);
+  const visitors = demoGuestsAt(guests, { loop, inLoopMs: inLoop, nowMs });
   return {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     fetchedAt: iso(nowMs),
@@ -391,7 +396,7 @@ export function demoSnapshotAt(
     issues: [...(previous?.issues ?? []), ...current.issues],
     prs: [...(previous?.prs ?? []), ...current.prs],
     history: historyUntil(loop, inLoop, labels),
-    sessions: sessionsOf(loop, inLoop, nowMs, labels),
-    guests: [],
+    sessions: { ...sessionsOf(loop, inLoop, nowMs, labels), guests: visitors.states },
+    guests: visitors.parts,
   };
 }
