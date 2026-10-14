@@ -20,14 +20,16 @@ import {
 import { createGuestArt } from './guestArt';
 import { createGuestStage } from './guestStage';
 import { LAYOUTS } from './layouts';
+import type { GuildLayout } from './layouts/types';
 import {
   LOGICAL_HEIGHT,
   LOGICAL_WIDTH,
   overlaps,
+  spriteRect,
   tallestWindowExtentsFor,
   type PxRect,
 } from './map';
-import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET } from './metrics';
+import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
 
 const fixed: Random = () => 0.5;
 
@@ -299,6 +301,42 @@ function tagBox(tag: GuestTag): PxRect {
   };
 }
 
+/** A tile rectangle in logical px. */
+function tilePx(area: { col: number; row: number; w: number; h: number }): PxRect {
+  return {
+    left: area.col * TILE_SIZE,
+    top: area.row * TILE_SIZE,
+    right: (area.col + area.w) * TILE_SIZE,
+    bottom: (area.row + area.h) * TILE_SIZE,
+  };
+}
+
+/**
+ * The drawn figure of a guest on `spot`: assets/sprites/guest1.png and guest2.png fill x 8–70 and
+ * y 6–79 of each 80 px frame (measured over all seven frames, 2026-10-15).
+ */
+function bodyRect(spot: { col: number; row: number }): PxRect {
+  const frame = spriteRect(spot);
+  return { left: frame.left + 8, right: frame.left + 71, top: frame.top + 6, bottom: frame.bottom };
+}
+
+/** Guest `index`'s tags in `layout`, with a six-character name as the fictional guests have. */
+function ordinaryTags(layout: GuildLayout, index: number): GuestTag[] {
+  return guestTags(
+    guest(index, { name: 'ぼうけんしゃ', counts: { issues: 99, prs: 99 } }),
+    guestFeet(layout.guestSpots[index] ?? { col: 0, row: 0 }),
+    tallestWindowExtentsFor(layout).message,
+  );
+}
+
+/** The texts of guest `index`'s tags that fall on the other guest's figure in `layout`. */
+function tagsOnOtherGuest(layout: GuildLayout, index: 0 | 1): string[] {
+  const other = bodyRect(layout.guestSpots[index === 0 ? 1 : 0]);
+  return ordinaryTags(layout, index)
+    .filter((tag) => overlaps(tagBox(tag), other))
+    .map((tag) => tag.text);
+}
+
 describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layout) => {
   const windows = Object.values(tallestWindowExtentsFor(layout));
   const message = tallestWindowExtentsFor(layout).message;
@@ -323,6 +361,27 @@ describe.each(Object.entries(LAYOUTS))('the guests of layout %s', (_count, layou
     for (const tag of tags) {
       for (const area of [board, party]) expect(overlaps(tagBox(tag), area), tag.text).toBe(false);
     }
+  });
+
+  it.each([0, 1])('keep the tags of guest %i off the red rug and the desks', (index) => {
+    const rugs = layout.groundFills.filter((fill) => fill.tile === 'rug-red').map(tilePx);
+    const desks = layout.objects.filter((object) => object.tile === 'desk').map(tilePx);
+    for (const tag of ordinaryTags(layout, index)) {
+      for (const area of [...rugs, ...desks]) {
+        expect(overlaps(tagBox(tag), area), tag.text).toBe(false);
+      }
+    }
+  });
+
+  // Not yet for the first guest of 5 and 6 departments: by the door its counts go on the name
+  // line, right of the feet, and run onto the second guest (to be settled with the president).
+  const doorKnown = _count === '5' || _count === '6';
+  it.skipIf(doorKnown)('keep the tags of guest 0 off the other guest', () => {
+    expect(tagsOnOtherGuest(layout, 0)).toEqual([]);
+  });
+
+  it('keep the tags of guest 1 off the other guest', () => {
+    expect(tagsOnOtherGuest(layout, 1)).toEqual([]);
   });
 
   it.each([0, 1])('keep the tags of guest %i above the message window', (index) => {

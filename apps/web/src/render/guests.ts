@@ -45,8 +45,8 @@ export const GUEST = {
   /** Each guest's moves run this much behind the one before, so the two never move as one. */
   phaseMs: 700,
   /** The name's centre under the feet, and the counts' under the name. */
-  nameBelowFeet: 8,
-  countBelowName: 11,
+  nameBelowFeet: 6,
+  countBelowName: 10,
   /** On one line, the gap between the feet and each of the name and the counts. */
   tagGap: 3,
   /** How much lower than over a member each mark is (markFeet). */
