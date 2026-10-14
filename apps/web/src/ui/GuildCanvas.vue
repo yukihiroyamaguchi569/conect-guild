@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
 import {
   EMPTY_CUE_QUEUE,
   guestCueToPlay,
+  guestSparkleAfterHalt,
   receiveCue,
   takeCues,
   type GuestCue,
@@ -75,6 +76,8 @@ let unmounted = false;
 let cssWidth: number | null = null;
 /** Cues seen so far; those that arrive while the pictures load wait for the loop. */
 let cues = EMPTY_CUE_QUEUE;
+/** The message last sparkled for (guestCueToPlay). */
+let sparkledId: number | null = null;
 /** When each member last had work (localStorage), for dozing, sleeping and playing (Issue #23). */
 const lastActive = createLastActiveTracker(props.lastActiveStorage);
 let idleSince: IdleSince = {};
@@ -206,8 +209,11 @@ watch(
 
 watch(
   () => props.halted,
-  () => {
+  (halted) => {
     loop?.setParty(stageParty(props.party));
+    // The window is hidden while halted: the guest line in it sparkles again once it is back.
+    sparkledId = guestSparkleAfterHalt(sparkledId, halted);
+    takeSparkle();
   },
 );
 
@@ -237,12 +243,9 @@ watch(
   },
 );
 
-/** The message last sparkled for (guestCueToPlay). */
-let sparkledId: number | null = null;
-
 /** Sparkles the guest of the message in the window, once, as soon as the stage runs. */
 function takeSparkle(): void {
-  const taken = guestCueToPlay(sparkledId, props.sparkle, loop !== null);
+  const taken = guestCueToPlay(sparkledId, props.sparkle, loop !== null && !props.halted);
   sparkledId = taken.lastId;
   if (taken.play !== null) loop?.sparkle(taken.play);
 }

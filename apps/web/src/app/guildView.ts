@@ -297,6 +297,15 @@ export function guestCueToPlay(
   return { lastId: cue.id, play: cue.guest };
 }
 
+/**
+ * The message last sparkled for, once the screen halts or comes back: a halt forgets it, so the
+ * guest line still in the window sparkles again when the window shows again (its sparkle was
+ * dropped with the halt).
+ */
+export function guestSparkleAfterHalt(lastId: number | null, halted: boolean): number | null {
+  return halted ? null : lastId;
+}
+
 /** Cues the canvas has seen: the last one, and those waiting for its loop to start. */
 export interface CueQueue {
   readonly lastId: number | null;

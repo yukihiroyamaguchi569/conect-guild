@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { GuestItem, GuestView } from '../domain/guests';
-import { buildGuestBoard, GUEST_BOARD_ITEMS, guestCueToPlay } from './guildView';
+import {
+  buildGuestBoard,
+  GUEST_BOARD_ITEMS,
+  guestCueToPlay,
+  guestSparkleAfterHalt,
+} from './guildView';
 
 function items(count: number): GuestItem[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -55,5 +60,23 @@ describe('guestCueToPlay', () => {
 
   it('does nothing without a cue (the message left the window meanwhile)', () => {
     expect(guestCueToPlay(3, null, true)).toEqual({ lastId: 3, play: null });
+  });
+});
+
+describe('guestSparkleAfterHalt', () => {
+  const cue = { id: 7, guest: 0 };
+
+  it('sparkles the line still in the window again once the halt is over', () => {
+    const shown = guestCueToPlay(null, cue, true).lastId;
+    const halted = guestSparkleAfterHalt(shown, true);
+    // Not while halted (the stage is not ready then)...
+    expect(guestCueToPlay(halted, cue, false).play).toBeNull();
+    // ...but once it is back.
+    const back = guestSparkleAfterHalt(halted, false);
+    expect(guestCueToPlay(back, cue, true)).toEqual({ lastId: 7, play: 0 });
+  });
+
+  it('keeps what was sparkled when nothing halts', () => {
+    expect(guestSparkleAfterHalt(7, false)).toBe(7);
   });
 });
