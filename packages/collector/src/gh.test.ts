@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CollectorError } from './errors.ts';
 import {
   ghApiProjected,
+  ghApiProjectedPage,
   parseJsonLines,
   parseOrThrow,
   projectionFilter,
@@ -73,5 +74,21 @@ describe('parseOrThrow', () => {
   it('returns parsed data or throws validation-failed', () => {
     expect(parseOrThrow(z.number(), 1)).toBe(1);
     expect(kindOf(() => parseOrThrow(z.number(), 'x'))).toBe('validation-failed');
+  });
+});
+
+describe('ghApiProjectedPage', () => {
+  it('asks for one page only (no --paginate) and parses its lines', async () => {
+    const calls: (readonly string[])[] = [];
+    const gh = (args: readonly string[]) => {
+      calls.push(args);
+      return Promise.resolve('{"n":1}\n{"n":2}\n');
+    };
+    await expect(
+      ghApiProjectedPage(gh, 'repos/a/b/issues?per_page=100', '{n: .number}'),
+    ).resolves.toEqual([{ n: 1 }, { n: 2 }]);
+    expect(calls).toEqual([
+      ['api', '--jq', projectionFilter('{n: .number}'), 'repos/a/b/issues?per_page=100'],
+    ]);
   });
 });

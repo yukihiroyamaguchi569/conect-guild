@@ -362,6 +362,8 @@ function sessionsOf(
         state: byDepartment.get(department) ?? 'idle',
       })),
     ],
+    // The demo has no guests (Issue #108).
+    guests: [],
   };
 }
 
@@ -390,5 +392,6 @@ export function demoSnapshotAt(
     prs: [...(previous?.prs ?? []), ...current.prs],
     history: historyUntil(loop, inLoop, labels),
     sessions: sessionsOf(loop, inLoop, nowMs, labels),
+    guests: [],
   };
 }

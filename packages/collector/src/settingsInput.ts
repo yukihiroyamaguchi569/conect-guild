@@ -8,7 +8,7 @@ import {
 
 /**
  * Issue #79: the values `npm run settings:write` reads from stdin. Only the values a team has to
- * choose; the rest (members, ruleChangePaths, extra branch prefixes) is kept from the settings it
+ * choose; the rest (members, ruleChangePaths, extra branch prefixes, guests) is kept from the settings it
  * starts from. Each value is checked again with the settings schema once merged.
  */
 const inputDepartmentSchema = z.strictObject({
@@ -43,6 +43,8 @@ export interface MergedSettings {
     readonly departments: readonly { label: string; member: string; sessionDir: string }[];
     readonly branchPrefixes: readonly { prefix: string; department: string }[];
     readonly ruleChangePaths: GuildSettings['ruleChangePaths'];
+    /** Issue #108: kept as they were; the schema checks them against the new company values. */
+    readonly guests?: GuildSettings['guests'];
   };
   /** How many rows of `branchPrefixes` were kept from the starting settings. */
   readonly keptBranchPrefixes: number;
@@ -137,6 +139,7 @@ export function mergeSettings(base: GuildSettings, input: SettingsInput): Merged
       departments,
       branchPrefixes: prefixes.rows,
       ruleChangePaths: base.ruleChangePaths,
+      ...(base.guests === undefined ? {} : { guests: base.guests }),
     },
     keptBranchPrefixes: prefixes.kept,
   };

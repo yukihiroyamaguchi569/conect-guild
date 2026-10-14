@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { COLLECTOR_CONFIG, companySeatsOf, expandHome } from '../collector.config.ts';
+import { COLLECTOR_CONFIG, sessionSeatsOf, expandHome } from '../collector.config.ts';
 import { parseCliArgs } from './args.ts';
 
 describe('COLLECTOR_CONFIG', () => {
@@ -21,11 +21,11 @@ describe('COLLECTOR_CONFIG.sessions', () => {
   it('fixes the five company directories under the home directory', () => {
     const root = `${homedir()}/conect-management`;
     expect(COLLECTOR_CONFIG.sessions.seats).toEqual([
-      { department: null, cwd: root },
-      { department: '経理', cwd: `${root}/accounting` },
-      { department: '広報', cwd: `${root}/pr` },
-      { department: '企画', cwd: `${root}/planning` },
-      { department: '総務', cwd: `${root}/general-affairs` },
+      { kind: 'company', department: null, cwd: root },
+      { kind: 'company', department: '経理', cwd: `${root}/accounting` },
+      { kind: 'company', department: '広報', cwd: `${root}/pr` },
+      { kind: 'company', department: '企画', cwd: `${root}/planning` },
+      { kind: 'company', department: '総務', cwd: `${root}/general-affairs` },
     ]);
   });
 
@@ -52,33 +52,55 @@ describe('expandHome', () => {
   });
 });
 
-describe('companySeatsOf', () => {
+describe('sessionSeatsOf', () => {
   const departments = [
     { label: '経理', sessionDir: '~/c/accounting' },
     { label: '広報', sessionDir: '/srv/pr' },
   ] as const;
 
   it('expands the directories in order, the 司令塔 first', () => {
-    expect(companySeatsOf({ commanderSessionDir: '~/c', departments }, '/home/me')).toEqual([
-      { department: null, cwd: '/home/me/c' },
-      { department: '経理', cwd: '/home/me/c/accounting' },
-      { department: '広報', cwd: '/srv/pr' },
+    expect(sessionSeatsOf({ commanderSessionDir: '~/c', departments }, '/home/me')).toEqual([
+      { kind: 'company', department: null, cwd: '/home/me/c' },
+      { kind: 'company', department: '経理', cwd: '/home/me/c/accounting' },
+      { kind: 'company', department: '広報', cwd: '/srv/pr' },
     ]);
   });
 
   it('stops when two seats expand to the same directory', () => {
     expect(() =>
-      companySeatsOf(
+      sessionSeatsOf(
         { commanderSessionDir: '~', departments: [{ label: '経理', sessionDir: '/home/me' }] },
         '/home/me',
       ),
     ).toThrow(/same directory/);
     expect(() =>
-      companySeatsOf(
+      sessionSeatsOf(
         { commanderSessionDir: '~/c', departments: [{ label: '経理', sessionDir: '/home/me/c' }] },
         '/home/me',
       ),
     ).toThrow(/same directory/);
+  });
+
+  it('adds the guests after the company, in their order (Issue #108)', () => {
+    const guests = [{ sessionDir: '~/visitor' }, { sessionDir: '/srv/wanderer' }];
+    expect(sessionSeatsOf({ commanderSessionDir: '~/c', departments, guests }, '/home/me')).toEqual(
+      [
+        { kind: 'company', department: null, cwd: '/home/me/c' },
+        { kind: 'company', department: '経理', cwd: '/home/me/c/accounting' },
+        { kind: 'company', department: '広報', cwd: '/srv/pr' },
+        { kind: 'guest', index: 0, cwd: '/home/me/visitor' },
+        { kind: 'guest', index: 1, cwd: '/srv/wanderer' },
+      ],
+    );
+  });
+
+  it('stops when a guest expands to a company or another guest directory', () => {
+    const seats = (guests: readonly { sessionDir: string }[]) =>
+      sessionSeatsOf({ commanderSessionDir: '~/c', departments, guests }, '/home/me');
+    expect(() => seats([{ sessionDir: '/home/me/c/accounting' }])).toThrow(/same directory/);
+    expect(() => seats([{ sessionDir: '~/v' }, { sessionDir: '/home/me/v' }])).toThrow(
+      /same directory/,
+    );
   });
 });
 

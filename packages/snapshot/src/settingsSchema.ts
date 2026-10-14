@@ -107,8 +107,61 @@ const ruleChangePathSchema = z.strictObject({
 });
 export type RuleChangePath = z.infer<typeof ruleChangePathSchema>;
 
+/**
+ * Issue #108: a session outside the company, named in the settings, that visits the guild. Its
+ * folder is read like a company one (exact match only, docs/DESIGN.md 4.7); its repository, when
+ * given, is read for its open and recently finished Issues and PRs (4.1). The name is shown on the
+ * screen only: it never goes into the snapshot or a log.
+ */
+const guestSchema = z.strictObject({
+  name: z.string().min(1).max(12),
+  sessionDir: sessionDirSchema,
+  repo: z.string().regex(REPO_PATTERN, 'owner/name').optional(),
+});
+
+/** At most two guests (Issue #108, the president's decision). */
+export const MAX_GUESTS = 2;
+export type GuildGuest = z.output<typeof guestSchema>;
+
 function duplicates(values: readonly string[]): string[] {
   return values.filter((value, i) => values.indexOf(value) !== i);
+}
+
+interface GuestCheckInput {
+  readonly repo: string;
+  readonly commanderSessionDir: string;
+  readonly departments: readonly { readonly sessionDir: string }[];
+  readonly guests?: readonly z.output<typeof guestSchema>[];
+}
+
+/**
+ * Issue #108: guests differ from each other by name and folder, and from the company by folder
+ * and repository (GitHub names compare without case). Issues name a guest by its position only.
+ */
+function checkGuests(
+  settings: GuestCheckInput,
+  issue: (path: (string | number)[], message: string) => void,
+): void {
+  const guests = settings.guests ?? [];
+  const companyDirs = new Set([
+    settings.commanderSessionDir,
+    ...settings.departments.map((d) => d.sessionDir),
+  ]);
+  const companyRepo = settings.repo.toLowerCase();
+  guests.forEach((guest, i) => {
+    const earlier = guests.slice(0, i);
+    if (earlier.some((other) => other.name === guest.name)) {
+      issue(['guests', i, 'name'], 'name used by another guest');
+    }
+    if (companyDirs.has(guest.sessionDir)) {
+      issue(['guests', i, 'sessionDir'], 'a company session dir');
+    } else if (earlier.some((other) => other.sessionDir === guest.sessionDir)) {
+      issue(['guests', i, 'sessionDir'], 'session dir used by another guest');
+    }
+    if (guest.repo?.toLowerCase() === companyRepo) {
+      issue(['guests', i, 'repo'], 'the company repo');
+    }
+  });
 }
 
 export const guildSettingsSchema = z
@@ -121,6 +174,7 @@ export const guildSettingsSchema = z
     departments: z.array(departmentSchema).readonly(),
     branchPrefixes: z.array(branchPrefixSchema).readonly(),
     ruleChangePaths: z.array(ruleChangePathSchema).readonly(),
+    guests: z.array(guestSchema).max(MAX_GUESTS).readonly().optional(),
   })
   .superRefine((settings, ctx) => {
     const labels = settings.departments.map((d) => d.label);
@@ -149,6 +203,7 @@ export const guildSettingsSchema = z
         issue(['branchPrefixes', i, 'department'], 'not a department label');
       }
     });
+    checkGuests(settings, issue);
   });
 
 /**

@@ -24,6 +24,15 @@ export const FICTIONAL_REPO = 'example-owner/example-guild';
 const FICTIONAL_ROOT = '~/example-guild';
 
 /**
+ * Fictional guests (Issue #108), for `makeSettings(n, { guests: [...FICTIONAL_GUESTS] })`. The
+ * second has no repository, so only its session is read.
+ */
+export const FICTIONAL_GUESTS = [
+  { name: 'たびびと', sessionDir: '~/example-visitor', repo: 'example-visitor/visitor-app' },
+  { name: 'ぼうけんしゃ', sessionDir: '/srv/example-wanderer' },
+] as const satisfies GuildSettings['guests'];
+
+/**
  * Settings with the first `departmentCount` fictional departments, two branch prefixes each, and
  * the given fields replaced. Not parsed here: the schema accepts only SUPPORTED_DEPARTMENT_COUNTS
  * (not one department), and tests for other counts check the schema themselves.
