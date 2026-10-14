@@ -20,7 +20,7 @@ GitHub の Issue・PR で仕事を回しているチームなら、設定ファ�
 - **Node.js 26.10 以上**（collector は Node の型除去で TypeScript をそのまま動かします）
 - **Claude Code から GitHub CLI（`gh`）で GitHub を使っていること。** 対象のリポジトリの Issue・PR を `gh` で読めることが前提です。collector は `gh` の認証をそのまま使い、トークンを別に置きません。確かめ方: 会社のリポジトリの直下で起動した Claude Code に `gh issue list` を実行させ、Issue の一覧が出れば何もしなくてよい（出なければ [3 章](#gh-issue-list-が動かない)）
 - **司令塔 1 と部門の数のセッション（4 部門なら 5 つ）を並べて開ける端末アプリ。** [MulmoTerminal](https://github.com/receptron/mulmoterminal) を勧めます。cmux などほかの端末アプリでも使えます。Issue・PR の表示はどの端末でも動きますが、「いま作業中」「許可待ち」などセッションの状態と王様の呼びかけは MulmoTerminal のときだけ出ます。MulmoTerminal を使うときは、司令塔と各部門の AI を**別々のフォルダ**で起動し、そのフォルダを設定に**文字列で完全に一致**させて書きます（別のフォルダで起動したセッションは映りません。起動したあとセッションの中で worktree に移るのは構いません。[3 章](#いま作業中許可待ちが出ない)）
-- **ほかのエージェント（Codex など）でも**、Issue・PR の表示は動きます。設定のスキル（`/guild-setup`）、部門の `CLAUDE.md` にラベルがあるかの確認（2-2b）、セッションの状態の表示は、Claude Code（状態の表示は MulmoTerminal も）向けに作っています
+- **ほかのエージェント（Codex など）でも**、Issue・PR の表示は動きます。設定のスキル（`/guild-setup`）とセッションの状態の表示は、Claude Code（状態の表示は MulmoTerminal も）向けに作っています。設定の道具（2-2b）が部門のフォルダで確かめるのも、Claude Code の `CLAUDE.md` です
 
 ## 1. まずデモを見る
 
