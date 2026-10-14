@@ -3,6 +3,7 @@ import { decorPose, type DecorMotion } from './ambient';
 import type { GuildArt } from './art';
 import type { AnimatedDecor } from './animatedDecor';
 import { decorDraw } from './decorArt';
+import { decorPoint } from './decorPoint';
 import { TILE_SIZE, TRINKETS } from './metrics';
 import {
   activeSince,
@@ -235,8 +236,7 @@ export function drawAnimatedDecor(
 ): void {
   const d: Drawing = { ctx, art, now: stage.now, petCompany: stage.cues.petCompany };
   for (const { placement, motion, phaseMs, trigger } of items) {
-    const x = placement.col * TILE_SIZE;
-    const y = placement.row * TILE_SIZE;
+    const { x, y } = decorPoint(placement);
     const since = activeSince(trigger, stage.cues);
     if (since === null) {
       art.decor.drawDecor(ctx, placement.name, x, y);

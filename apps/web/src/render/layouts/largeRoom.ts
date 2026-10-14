@@ -78,10 +78,18 @@ export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
 ];
 
 /**
- * layout4's files right of the lower right desk, moved to the right end of the carpet to leave
- * room for layout5's guest (its crates go). layout6 has the sales desk there instead.
+ * The tavern's round table (with its stools, as in layout2 and layout3) in front of layout5's
+ * guest (Issue #122). Its picture fills x 6–57 and the lower 38 px of its 2 x 2 tiles
+ * (assets/decor/decor.png), so it is drawn half a tile left and 24 px higher than its tiles: its
+ * middle is then under the guest's feet and its top 2 px under them, and the guest (drawn after
+ * the furniture) never covers it. Its cells stay right of the alley (col 24). It takes the place
+ * of layout4's files and crates; layout6 has the sales desk there instead.
  */
-export const LOWER_RIGHT_STORAGE: readonly DecorPlacement[] = [place('file-cabinet', 28, 11)];
+export const GUEST_TABLE: DecorPlacement = {
+  ...place('round-table', 27, 12),
+  dx: -16,
+  dy: -24,
+};
 
 /**
  * The quest board's max-height (cqw) with the workshop desk: the board then ends above the bubble
@@ -133,9 +141,10 @@ export const SALES_DESK: DeskCorner & {
 
 /**
  * The one guest of five departments (seven on stage with かなめ, Issue #122): on the lower right
- * carpet right of the 総務 desk, past the alley beside it (col 24). It stands on the desk's front
- * row rather than level with the seat (row 10), where the party window would cover it; its tags
- * fit on two lines above the message window, its 「?」 clear of the files further right. Six
- * departments leave no room for a guest.
+ * carpet right of the 総務 desk, three columns past the alley beside it (col 24; the president
+ * chose it, 2026-10-15), one row in front of the 総務 seat with the round table (GUEST_TABLE)
+ * before it. The party window at its usual height ends
+ * above the frame; only its rare extra notes (tallestBottom) cover the top of the head, as at the
+ * sales desk of six departments (underPartyWindow). Six departments leave no room for a guest.
  */
-export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 25, row: 12 };
+export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 27, row: 11 };

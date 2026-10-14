@@ -19,7 +19,7 @@ import type { GuestFrame } from './guests';
 import { BACK_ANIMATED_DECOR, FRONT_LAYERS } from './layers';
 import { levelTags, type Levels } from './levelTags';
 import type { SpokenLines } from './lines';
-import { LOGICAL_HEIGHT, LOGICAL_WIDTH, WINDOW_EXTENTS } from './map';
+import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
 import {
   NO_PLACES,
   overheadsOf,
@@ -114,7 +114,7 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
   drawShade(ctx, painter.scratch, light, lampLights(moment.now));
   const tags = levelTags(moment.levels, DEFAULT_SEATS);
   drawLevelTags(ctx, tags);
-  drawGuestOverheads(ctx, moment.guests, WINDOW_EXTENTS.message);
+  drawGuestOverheads(ctx, moment.guests);
   const placed = painter.placer.place({ ...moment, tags });
   drawOverhead(ctx, { placed, confetti: moment.frame.confetti });
   drawLevelUpBanners(ctx, { placed, confetti: moment.frame.confetti });
