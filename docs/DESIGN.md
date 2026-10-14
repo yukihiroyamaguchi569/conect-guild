@@ -97,7 +97,8 @@ conect-guild/
 │       │   ├── guests.ts / guestStage.ts / guestArt.ts / drawGuests.ts  お客さんの見た目・名札・きらめき（純粋関数）、ループが持つきらめき、お客さんの絵（MemberId ではない）、描画（4.13）
 │       │   ├── art.ts        絵の差し替え境界（TileArt / SpriteArt / DecorArt）と仮の矩形
 │       │   ├── tileArt.ts / spriteArt.ts / decorArt.ts / loadArt.ts  assets/ の絵で描く実装と読み込み
-│       │   └── draw.ts / loop.ts  描画と requestAnimationFrame（動かないものはキャッシュの canvas に 1 回だけ。演出中は毎フレーム、それ以外はアンビエントだけ約 7fps、非表示の間は止める）
+│       │   ├── draw.ts / loop.ts  描画と requestAnimationFrame（動かないものはキャッシュの canvas に 1 回だけ。演出中は毎フレーム、それ以外はアンビエントだけ約 7fps、非表示の間は止める）
+│       │   └── painter.ts    1 フレームの描き方（キャッシュする背景と前景、日の光・メンバー・お客さん・夜の影・頭上の文字の順）。loop.ts はいつ描くかを受け持つ（Issue #124）
 │       ├── audio/            効果音（M4、4.8）。楽譜・鳴らす判定・設定は純粋、Web Audio は差し替えられる境界
 │       ├── ui/               Vue 部品: QuestBoard / PartyStatus / MessageWindow（Canvas の上に重ねる HTML）
 │       └── app/              Vue の reactive による小さなストア。Pinia は入れない。demo.ts は `?demo=1` の判定と、デモの読み込み・メモリの保存先（4.11）
