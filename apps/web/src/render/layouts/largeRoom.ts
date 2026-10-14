@@ -1,3 +1,4 @@
+import { UPPER_LEFT_DESK, type DeskCorner } from './smallRoom';
 import {
   flat,
   place,
@@ -10,11 +11,42 @@ import {
 } from './types';
 
 /**
- * What the offices of five and six departments add to the room of smallRoom.ts (Issue #18): the
- * two lower desks where layout4 has them (企画 and 総務), a desk in the lower-left corner beside
- * the message window, and the guests at the door. Every seat stays between the quest board and
- * the party window (cols 11–21), but the corner one (CORNER_DESK_OBJECTS).
+ * What the offices of five and six departments add to the room of smallRoom.ts and its upper left
+ * desk (Issue #18): layout4's upper right desk, the two lower desks where layout4 has them (企画
+ * and 総務), a desk in the lower-left corner beside the message window, and the guests at the
+ * door. Every seat stays between the quest board and the party window (cols 11–21), but the
+ * corner one (CORNER_DESK_OBJECTS).
  */
+
+/** layout4's upper right (広報) desk, with its easel, megaphone, book, flyers and mugs. */
+export const UPPER_RIGHT_DESK: DeskCorner & { readonly desk: Desk } = {
+  objects: [flat('chair', rect(20, 3, 1, 2)), solid('desk', rect(19, 5, 4, 2))],
+  decor: [
+    place('easel', 22, 3),
+    place('megaphone', 19, 5),
+    place('open-book', 20, 5),
+    place('flyers', 21, 5),
+    place('mugs', 22, 5),
+  ],
+  desk: { seat: { col: 20, row: 4 }, side: 'upper', things: ['megaphone'], chatWith: 0 },
+};
+
+/** Both upper desks of layout4; the hourglass stands on かなめ's counter. */
+export const UPPER_DESK_OBJECTS: readonly MapObject[] = [
+  ...UPPER_LEFT_DESK.objects,
+  ...UPPER_RIGHT_DESK.objects,
+];
+export const UPPER_DESK_DECOR: readonly DecorPlacement[] = [
+  ...UPPER_LEFT_DESK.decor,
+  ...UPPER_RIGHT_DESK.decor,
+  place('hourglass', 17, 8),
+];
+
+/** The upper desks chat across the throne, as in layout4. */
+export const UPPER_DESKS: readonly [Desk, Desk] = [
+  { ...UPPER_LEFT_DESK.desk, chatWith: 1 },
+  UPPER_RIGHT_DESK.desk,
+];
 
 /** The lower desks of layout4, the files and crates beside the right one. */
 export const LOWER_DESK_OBJECTS: readonly MapObject[] = [
@@ -32,7 +64,7 @@ export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
   place('model', 10, 11),
   place('blueprint-rolls', 11, 11),
   place('lantern', 12, 11),
-  // Lower right desk (the hourglass stands on the counter, as in smallRoom.ts)
+  // Lower right desk (the hourglass stands on the counter: UPPER_DESK_DECOR)
   place('inkwell', 20, 11),
   place('file-stack', 21, 11),
   place('scroll-pile', 22, 11),
@@ -42,14 +74,6 @@ export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
   place('crate-stack', 28, 11),
   place('barrel', 30, 11),
 ];
-
-/** The lower desks chat across the rug, as in layout4. */
-export function lowerDesks(left: number, right: number): readonly [Desk, Desk] {
-  return [
-    { seat: { col: 11, row: 10 }, side: 'lower', things: ['globe'], chatWith: right },
-    { seat: { col: 21, row: 10 }, side: 'lower', things: ['file-stack'], chatWith: left },
-  ];
-}
 
 /**
  * The corner desk: the member sits low enough (row 13) that the bubble over the head clears the
