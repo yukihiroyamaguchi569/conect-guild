@@ -78,12 +78,13 @@ export const LOWER_DESK_DECOR: readonly DecorPlacement[] = [
 ];
 
 /**
- * The tavern's round table (with its stools) beside layout5's guest, in front of it on the right
- * (Issue #122): the table is drawn on the lower half of its 2 x 2 tiles, so right below the guest
- * it would be behind the message window. It takes the place of layout4's files and crates;
- * layout6 has the sales desk there instead.
+ * The tavern's round table (with its stools, as in layout2 and layout3) in front of layout5's
+ * guest (Issue #122). Its picture fills the lower 38 px of its 2 x 2 tiles (assets/decor/decor.png),
+ * so it is drawn 24 px higher than its tiles: its top is then 2 px under the guest's feet, and the
+ * guest (drawn after the furniture) never covers it. A tile higher, the guest would. It takes the
+ * place of layout4's files and crates; layout6 has the sales desk there instead.
  */
-export const GUEST_TABLE: DecorPlacement = place('round-table', 27, 12);
+export const GUEST_TABLE: DecorPlacement = { ...place('round-table', 25, 12), dy: -24 };
 
 /**
  * The quest board's max-height (cqw) with the workshop desk: the board then ends above the bubble
@@ -135,9 +136,9 @@ export const SALES_DESK: DeskCorner & {
 
 /**
  * The one guest of five departments (seven on stage with かなめ, Issue #122): on the lower right
- * carpet right of the 総務 desk, past the alley beside it (col 24). It stands on the desk's front
- * row rather than level with the seat (row 10), where the party window would cover it; its tags
- * fit on two lines above the message window, its 「?」 clear of the round table (GUEST_TABLE). Six
- * departments leave no room for a guest.
+ * carpet right of the 総務 desk, past the alley beside it (col 24), one row in front of the 総務
+ * seat with the round table (GUEST_TABLE) before it. The party window at its usual height ends
+ * above the frame; only its rare extra notes (tallestBottom) cover the top of the head, as at the
+ * sales desk of six departments (underPartyWindow). Six departments leave no room for a guest.
  */
-export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 25, row: 12 };
+export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 25, row: 11 };

@@ -19,7 +19,7 @@ import type { DecorCues } from './trinkets';
 /** Canvas side effects only: every decision was made in the pure modules. Logical pixels. */
 
 function drawPlacement(ctx: CanvasRenderingContext2D, art: GuildArt, item: DecorPlacement): void {
-  art.decor.drawDecor(ctx, item.name, item.col * TILE_SIZE, item.row * TILE_SIZE);
+  art.decor.drawDecor(ctx, item.name, item.col * TILE_SIZE, item.row * TILE_SIZE + (item.dy ?? 0));
 }
 
 /**

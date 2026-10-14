@@ -3,18 +3,15 @@ import type { GuestView } from '../domain/guests';
 import { bubbleShape, shapeExtent } from './bubbleShape';
 import type { Random } from './confetti';
 import {
-  countText,
   createSparkle,
   GUEST,
   guestFeet,
   guestFrame,
   guestLook,
-  guestTags,
   liveSparkles,
   markFeet,
   sparkleAt,
   stageGuestsOf,
-  type GuestTag,
   type StageGuest,
 } from './guests';
 import { createGuestArt } from './guestArt';
@@ -23,19 +20,25 @@ import { tagBox as levelTagBox } from './overhead';
 import { DEFAULT_SEATS } from './scenes';
 import { createGuestStage } from './guestStage';
 import { LAYOUTS } from './layouts';
-import type { GuildLayout } from './layouts/types';
-import type { Point } from './path';
-import { overlaps, spriteRect, tallestWindowExtentsFor, type PxRect } from './map';
+import type { DecorPlacement } from './layouts/types';
+import {
+  isPartyExceptionIn,
+  overlaps,
+  spriteRect,
+  tallestWindowExtentsFor,
+  windowExtentsFor,
+  type PxRect,
+} from './map';
 import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
 
 const fixed: Random = () => 0.5;
 
 function guest(index: number, over: Partial<StageGuest> = {}): StageGuest {
-  return { index, name: `客${String(index)}`, state: 'idle', counts: null, ...over };
+  return { index, state: 'idle', ...over };
 }
 
 describe('stageGuestsOf', () => {
-  it('keeps the name and the state, and the counts only of a repository read', () => {
+  it('keeps the index and the state only: no name or counts are drawn (Issue #122)', () => {
     const views: GuestView[] = [
       {
         index: 0,
@@ -46,8 +49,8 @@ describe('stageGuestsOf', () => {
       { index: 1, name: 'ぼうけんしゃ', state: 'idle', repo: null },
     ];
     expect(stageGuestsOf(views)).toEqual([
-      { index: 0, name: 'たびびと', state: 'working', counts: { issues: 2, prs: 1 } },
-      { index: 1, name: 'ぼうけんしゃ', state: 'idle', counts: null },
+      { index: 0, state: 'working' },
+      { index: 1, state: 'idle' },
     ]);
   });
 });
@@ -91,61 +94,6 @@ describe('guestLook', () => {
     const t = IDLE.nodMs / 2;
     expect(guestLook(guest(0), t, true).dy).toBe(IDLE.nodPx);
     expect(guestLook(guest(1), t, true).dy).toBe(0);
-  });
-});
-
-describe('guestTags', () => {
-  const feet = { x: 100, y: 400 };
-  /** A message window under the feet, its top at `top`. */
-  const below = (top: number): PxRect => ({ left: 50, right: 900, top, bottom: top + 60 });
-
-  it('puts the name under the feet, and nothing else without a repository', () => {
-    expect(guestTags(guest(0), feet, below(500))).toEqual([
-      {
-        text: '客0',
-        kind: 'name',
-        align: 'center',
-        x: 100,
-        y: 400 + GUEST.nameBelowFeet,
-      },
-    ]);
-  });
-
-  it('puts the counts under the name when they fit above the message window', () => {
-    const tags = guestTags(guest(0, { counts: { issues: 3, prs: 1 } }), feet, below(500));
-    expect(tags.map((tag) => [tag.text, tag.align, tag.y])).toEqual([
-      ['客0', 'center', 400 + GUEST.nameBelowFeet],
-      ['Issue 3 / PR 1', 'center', 400 + GUEST.nameBelowFeet + GUEST.countBelowName],
-    ]);
-  });
-
-  it('puts the counts on the name line when they would reach the window', () => {
-    const countY = 400 + GUEST.nameBelowFeet + GUEST.countBelowName;
-    const tags = guestTags(
-      guest(0, { counts: { issues: 0, prs: 2 } }),
-      feet,
-      below(countY + GUEST.countBelowName / 2 - 1),
-    );
-    expect(tags).toEqual([
-      {
-        text: '客0',
-        kind: 'name',
-        align: 'right',
-        x: 100 - GUEST.tagGap,
-        y: 400 + GUEST.nameBelowFeet,
-      },
-      {
-        text: 'Issue 0 / PR 2',
-        kind: 'count',
-        align: 'left',
-        x: 100 + GUEST.tagGap,
-        y: 400 + GUEST.nameBelowFeet,
-      },
-    ]);
-  });
-
-  it('writes the counts as Issue n / PR m', () => {
-    expect(countText({ issues: 12, prs: 0 })).toBe('Issue 12 / PR 0');
   });
 });
 
@@ -252,28 +200,6 @@ function zRect(feet: { x: number; y: number }): PxRect {
   };
 }
 
-/**
- * How wide a tag is drawn at most (drawGuests.ts: the name in bold 10 px, the counts in bold 9 px,
- * with a 1 px dark rim filled around it): a full-width character as wide as the font, any other 0.65 of it, and the
- * outline's 1 px on each side.
- */
-const OUTLINE_PX = 1;
-function tagBox(tag: GuestTag): PxRect {
-  const font = tag.kind === 'name' ? 10 : 9;
-  const natural = Array.from(tag.text).reduce(
-    (sum, char) => sum + ((char.codePointAt(0) ?? 0) >= 0x2e80 ? font : font * 0.65),
-    0,
-  );
-  const width = natural;
-  const left = { center: tag.x - width / 2, left: tag.x, right: tag.x - width }[tag.align];
-  return {
-    left: left - OUTLINE_PX,
-    right: left + width + OUTLINE_PX,
-    top: tag.y - font / 2 - OUTLINE_PX,
-    bottom: tag.y + font / 2 + OUTLINE_PX,
-  };
-}
-
 /** A tile rectangle in logical px. */
 function tilePx(area: { col: number; row: number; w: number; h: number }): PxRect {
   return {
@@ -281,6 +207,21 @@ function tilePx(area: { col: number; row: number; w: number; h: number }): PxRec
     top: area.row * TILE_SIZE,
     right: (area.col + area.w) * TILE_SIZE,
     bottom: (area.row + area.h) * TILE_SIZE,
+  };
+}
+
+/**
+ * Where the round table's picture is: x 6–57 and y 26–63 of its 64 px tiles (assets/decor/decor.png,
+ * measured 2026-10-15), moved by its `dy`.
+ */
+function drawnPx(table: DecorPlacement): PxRect {
+  const tiles = tilePx(table);
+  const dy = table.dy ?? 0;
+  return {
+    left: tiles.left + 6,
+    right: tiles.left + 58,
+    top: tiles.top + 26 + dy,
+    bottom: tiles.bottom + dy,
   };
 }
 
@@ -293,15 +234,6 @@ function bodyRect(spot: { col: number; row: number }): PxRect {
   return { left: frame.left + 8, right: frame.left + 71, top: frame.top + 6, bottom: frame.bottom };
 }
 
-/** The tags of a guest at `feet` in `layout`, with a six-character name as the fictional guests have. */
-function ordinaryTags(layout: GuildLayout, index: number, feet: Point): GuestTag[] {
-  return guestTags(
-    guest(index, { name: 'ぼうけんしゃ', counts: { issues: 99, prs: 99 } }),
-    feet,
-    tallestWindowExtentsFor(layout).message,
-  );
-}
-
 /**
  * Every guest spot of every layout (5 departments have one, 6 none: the seven on stage, settings),
  * with its index and feet.
@@ -310,35 +242,16 @@ const SPOTS = Object.entries(LAYOUTS).flatMap(([count, layout]) =>
   layout.guestSpots.map((spot, index) => ({ count, layout, spot, index, feet: guestFeet(spot) })),
 );
 
-describe.each(SPOTS)('guest $index of layout $count', ({ layout, spot, index, feet }) => {
+describe.each(SPOTS)('guest $index of layout $count', ({ layout, spot, feet }) => {
   const { board, party, message } = tallestWindowExtentsFor(layout);
 
   it('keeps its marks clear of the windows', () => {
-    for (const area of [board, party, message]) {
+    // Where the layout lets the party window's rare notes cover the head (layout5, Issue #122),
+    // the marks keep clear of it at its usual height.
+    const partyOver = isPartyExceptionIn(layout, spot) ? windowExtentsFor(layout).party : party;
+    for (const area of [board, partyOver, message]) {
       expect(overlaps(questionRect(feet), area)).toBe(false);
       expect(overlaps(zRect(feet), area)).toBe(false);
-    }
-  });
-
-  it('keeps its tags clear of the board and the party window', () => {
-    // The longest name the settings accept (12 characters) and four-digit counts.
-    const tags = guestTags(
-      guest(index, { name: 'じゅうにもじのおきゃくさ', counts: { issues: 9999, prs: 9999 } }),
-      feet,
-      message,
-    );
-    for (const tag of tags) {
-      for (const area of [board, party]) expect(overlaps(tagBox(tag), area), tag.text).toBe(false);
-    }
-  });
-
-  it('keeps its tags off the red rug and the desks', () => {
-    const rugs = layout.groundFills.filter((fill) => fill.tile === 'rug-red').map(tilePx);
-    const desks = layout.objects.filter((object) => object.tile === 'desk').map(tilePx);
-    for (const tag of ordinaryTags(layout, index, feet)) {
-      for (const area of [...rugs, ...desks]) {
-        expect(overlaps(tagBox(tag), area), tag.text).toBe(false);
-      }
     }
   });
 
@@ -350,22 +263,6 @@ describe.each(SPOTS)('guest $index of layout $count', ({ layout, spot, index, fe
       expect(overlaps(bodyRect(spot), levelTagBox(tag))).toBe(false);
       expect(overlaps(mark, levelTagBox(tag))).toBe(false);
     }
-  });
-
-  it('keeps its tags off the other guest', () => {
-    const others = layout.guestSpots.filter((_, i) => i !== index).map(bodyRect);
-    for (const tag of ordinaryTags(layout, index, feet)) {
-      for (const other of others) expect(overlaps(tagBox(tag), other), tag.text).toBe(false);
-    }
-  });
-
-  it('keeps its tags above the message window', () => {
-    const tags = guestTags(
-      guest(index, { name: '十二文字のながいおきゃくさん', counts: { issues: 100, prs: 100 } }),
-      feet,
-      message,
-    );
-    for (const tag of tags) expect(tag.y + 5).toBeLessThanOrEqual(message.top);
   });
 });
 
@@ -385,6 +282,21 @@ describe('the guest of five departments right of 総務 (Issue #122)', () => {
       expect(overlaps(bodyRect(spot), area), at).toBe(false);
       expect(overlaps(questionRect(feet), area), at).toBe(false);
       expect(overlaps(zRect(feet), area), at).toBe(false);
+    }
+  });
+
+  it('has the round table drawn right under its feet, not under its picture', () => {
+    const layout = LAYOUTS[5];
+    const [spot] = layout?.guestSpots ?? [];
+    if (layout === undefined || spot === undefined) throw new Error('no guest spot of five');
+    const tables = layout.decor.filter((item) => item.name === 'round-table');
+    expect(tables).toHaveLength(1);
+    for (const table of tables) {
+      const drawn = drawnPx(table);
+      expect(drawn.top).toBeGreaterThanOrEqual(bodyRect(spot).bottom);
+      expect(drawn.top - guestFeet(spot).y).toBeLessThanOrEqual(2);
+      expect(drawn.left).toBeLessThan(guestFeet(spot).x);
+      expect(drawn.right).toBeGreaterThan(guestFeet(spot).x);
     }
   });
 });

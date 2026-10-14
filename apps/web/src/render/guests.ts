@@ -9,7 +9,6 @@ import {
 } from './confetti';
 import { CONFETTI, IDLE } from './metrics';
 import type { SpriteFrame } from './motion';
-import type { PxRect } from './map';
 import { tileToPoint, type Point } from './path';
 
 /**
@@ -19,22 +18,17 @@ import { tileToPoint, type Point } from './path';
  * Pure: drawGuests.ts draws.
  */
 
-/** What the stage needs of a guest: names come from the settings, counts from the snapshot. */
+/**
+ * What the stage needs of a guest: its place in the settings and its session's state. No name
+ * or counts are drawn under it (the president, 2026-10-15, Issue #122): the board lists them.
+ */
 export interface StageGuest {
   readonly index: number;
-  readonly name: string;
   readonly state: GuestState;
-  /** Open Issues and PRs; null while the guest has no repository read. */
-  readonly counts: { readonly issues: number; readonly prs: number } | null;
 }
 
 export function stageGuestsOf(views: readonly GuestView[]): StageGuest[] {
-  return views.map(({ index, name, state, repo }) => ({
-    index,
-    name,
-    state,
-    counts: repo === null ? null : { issues: repo.openIssues, prs: repo.openPrs },
-  }));
+  return views.map(({ index, state }) => ({ index, state }));
 }
 
 /** Times are ms, distances logical px. */
@@ -44,11 +38,6 @@ export const GUEST = {
   readPx: 1,
   /** Each guest's moves run this much behind the one before, so the two never move as one. */
   phaseMs: 700,
-  /** The name's centre under the feet, and the counts' under the name. */
-  nameBelowFeet: 6,
-  countBelowName: 10,
-  /** On one line, the gap between the feet and each of the name and the counts. */
-  tagGap: 3,
   /** How much lower than over a member each mark is (markFeet). */
   markDrop: { question: 20, z: 17 },
   /** A sparkle: fewer, slower and shorter-lived squares than a member's confetti. */
@@ -105,43 +94,6 @@ export function markFeet(feet: Point, mark: GuestMark): Point {
 /** The feet of a guest on its spot. */
 export function guestFeet(spot: TilePos): Point {
   return tileToPoint(spot);
-}
-
-export interface GuestTag {
-  readonly text: string;
-  readonly kind: 'name' | 'count';
-  /** Which end of the text `x` is (canvas textAlign); `y` is its middle. Logical px. */
-  readonly align: 'center' | 'left' | 'right';
-  readonly x: number;
-  readonly y: number;
-}
-
-/** 「Issue 2 / PR 1」: what is open in the guest's repository. */
-export function countText(counts: NonNullable<StageGuest['counts']>): string {
-  return `Issue ${String(counts.issues)} / PR ${String(counts.prs)}`;
-}
-
-/**
- * The name under the feet and the counts under it. When the counts would reach below the top of
- * `messageWindow`, they go on the name's line instead: the name left of the feet, the counts right.
- */
-export function guestTags(guest: StageGuest, feet: Point, messageWindow: PxRect): GuestTag[] {
-  const { x } = feet;
-  const nameY = feet.y + GUEST.nameBelowFeet;
-  const name = { text: guest.name, kind: 'name' } as const;
-  if (guest.counts === null) return [{ ...name, align: 'center', x, y: nameY }];
-  const count = { text: countText(guest.counts), kind: 'count' } as const;
-  const below = nameY + GUEST.countBelowName;
-  if (below + GUEST.countBelowName / 2 <= messageWindow.top) {
-    return [
-      { ...name, align: 'center', x, y: nameY },
-      { ...count, align: 'center', x, y: below },
-    ];
-  }
-  return [
-    { ...name, align: 'right', x: x - GUEST.tagGap, y: nameY },
-    { ...count, align: 'left', x: x + GUEST.tagGap, y: nameY },
-  ];
 }
 
 /** A sparkle over a guest, started at stage time `start`. */

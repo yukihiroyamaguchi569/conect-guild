@@ -39,7 +39,7 @@ test('the board lists the guests’ open Issues and PRs with their titles', asyn
   await expect(guests).toContainText(SECOND_GUEST_OPEN[0].title);
 });
 
-test('the guests stand at their spots with their names and counts', async ({ page }) => {
+test('the guests stand at their spots, with no name or counts under them', async ({ page }) => {
   await page.goto('/');
   await waitForRoom(page);
   const layout = layoutFor(4);
@@ -52,16 +52,12 @@ test('the guests stand at their spots with their names and counts', async ({ pag
     // At most the reading bob (1 px) below the spot.
     expect(tops.every((dy) => dy >= feet.y - SPRITE && dy <= feet.y - SPRITE + 1)).toBe(true);
   }
-  const texts = await drawnTexts(page);
-  expect(texts).toEqual(
-    expect.arrayContaining(['たびびと', 'Issue 3 / PR 1', 'ぼうけんしゃ', 'Issue 0 / PR 1']),
-  );
   // The second guest waits for a permission: the 「?」 over her.
-  expect(texts).toContain('?');
-  // Strings from the settings and the snapshot are drawn with fillText only (CLAUDE.md).
-  const stroked = await strokedTexts(page);
+  await expect.poll(async () => drawnTexts(page)).toContain('?');
+  // No name or counts on the canvas (the president, 2026-10-15, Issue #122): the board lists them.
+  const texts = [...(await drawnTexts(page)), ...(await strokedTexts(page))];
   for (const text of ['たびびと', 'Issue 3 / PR 1', 'ぼうけんしゃ', 'Issue 0 / PR 1']) {
-    expect(stroked).not.toContain(text);
+    expect(texts).not.toContain(text);
   }
 });
 

@@ -199,10 +199,11 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: d
     }
   });
 
-  it('lets the party window cover only tiles it does cover, and only in six departments', () => {
+  it('lets the party window cover only tiles it reaches, and only in five and six departments', () => {
     const listed = layout.underPartyWindow ?? [];
-    expect(listed.length > 0).toBe(layout.departmentCount === 6);
-    const { party } = windowExtentsFor(layout);
+    expect(listed.length > 0).toBe(layout.departmentCount >= 5);
+    // At its tallest: layout5's guest is clear of it at its usual height (Issue #122).
+    const { party } = tallestWindowExtentsFor(layout);
     for (const tile of listed) expect(overlaps(spriteRect(tile), party), keyOf(tile)).toBe(true);
   });
 });
@@ -214,21 +215,25 @@ describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () =
   );
   if (spot === undefined || desk === undefined) throw new Error('no 総務 desk or guest spot');
 
-  it('stands the guest on the lower right carpet, past the 総務 desk, on its front row', () => {
-    expect(LAYOUT5.desks[3]?.seat).toEqual({ col: 21, row: 10 });
+  it('stands the guest on the lower right carpet, past the 総務 desk, one row before the seat', () => {
+    const seat = LAYOUT5.desks[3]?.seat;
+    expect(seat).toEqual({ col: 21, row: 10 });
     expect(spot.col).toBeGreaterThan(desk.col + desk.w);
-    expect(spot.row).toBe(desk.row + desk.h - 1);
+    expect(spot.row).toBe((seat?.row ?? 0) + 1);
     expect(groundAt(LAYOUT5, spot)).toBe('floor-carpet');
   });
 
-  it('puts the tavern’s round table on the carpet in front of the guest on the right', () => {
+  it('keeps the guest clear of the party window at its usual height', () => {
+    expect(overlaps(spriteRect(spot), windowExtentsFor(LAYOUT5).party)).toBe(false);
+  });
+
+  it('puts the tavern’s round table on the carpet right in front of the guest', () => {
     const tables = LAYOUT5.decor.filter((item) => item.name === 'round-table');
     expect(tables).toHaveLength(1);
     const [table] = tables;
     if (table === undefined) return;
-    expect(table.col).toBeGreaterThan(spot.col);
-    // Its picture is on the lower half of its tiles: the lower row in front of the guest's feet.
-    expect(table.row + table.h - 1).toBe(spot.row + 1);
+    expect(table.col).toBe(spot.col);
+    expect(table.row).toBe(spot.row + 1);
     for (let col = table.col; col < table.col + table.w; col += 1) {
       for (let row = table.row; row < table.row + table.h; row += 1) {
         expect(groundAt(LAYOUT5, { col, row }), keyOf({ col, row })).toBe('floor-carpet');
@@ -247,7 +252,7 @@ describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () =
   });
 
   it('keeps the alley beside the 総務 desk free (col 24)', () => {
-    for (let row = desk.row; row <= spot.row + 1; row += 1) {
+    for (let row = desk.row; row < desk.row + desk.h + 1; row += 1) {
       expect(isWalkableIn(LAYOUT5, { col: desk.col + desk.w, row })).toBe(true);
     }
   });

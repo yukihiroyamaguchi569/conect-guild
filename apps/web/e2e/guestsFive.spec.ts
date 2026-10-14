@@ -8,7 +8,6 @@ import { fictionalSettings, guestsSnapshot } from './guestsSnapshot.ts';
 import { NOW } from './sampleSnapshot.ts';
 import type { Locator, Page } from '@playwright/test';
 import { layoutFor } from '../src/render/layouts/catalog.ts';
-import { guestTags } from '../src/render/guests.ts';
 import { overlaps, spriteRect, type PxRect } from '../src/render/map.ts';
 import { tileToPoint } from '../src/render/path.ts';
 
@@ -37,7 +36,7 @@ test.beforeEach(async ({ page, snapshotServer }) => {
   );
 });
 
-test('the one guest stands at its spot, its name and counts clear of the windows', async ({
+test('the one guest stands at its spot, clear of the windows, with no name or counts', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1024, height: 576 });
@@ -51,8 +50,9 @@ test('the one guest stands at its spot, its name and counts clear of the windows
     .poll(async () => (await drawnImages(page, 'guest1')).map((image) => image.dx))
     .toContain(feet.x - SPRITE / 2);
   expect(await drawnImages(page, 'guest2')).toEqual([]);
+  // No name or counts under it (Issue #122).
   const texts = await drawnTexts(page);
-  expect(texts).toEqual(expect.arrayContaining(['たびびと', 'Issue 3 / PR 1']));
+  for (const text of ['たびびと', 'Issue 3 / PR 1']) expect(texts).not.toContain(text);
 
   const windows = [
     await logicalBox(page, page.getByRole('region', { name: 'クエスト掲示板' })),
@@ -60,18 +60,6 @@ test('the one guest stands at its spot, its name and counts clear of the windows
     await logicalBox(page, page.getByRole('region', { name: '取得のようす' })),
     await logicalBox(page, page.getByRole('region', { name: 'メッセージ' })),
   ];
+  // The party window at its usual height too: only its rare extra notes reach the head (#122).
   for (const area of windows) expect(overlaps(spriteRect(spot), area)).toBe(false);
-  // Its tags, as drawn against the measured message window: on two lines (the name over the
-  // counts, Issue #122), above the window.
-  const message = windows[3];
-  if (message === undefined) throw new Error('no message window');
-  const guest = {
-    index: 0,
-    name: 'たびびと',
-    state: 'working',
-    counts: { issues: 3, prs: 1 },
-  } as const;
-  const tags = guestTags(guest, feet, message);
-  expect(tags.map((tag) => tag.align)).toEqual(['center', 'center']);
-  for (const tag of tags) expect(tag.y + 5).toBeLessThanOrEqual(message.top);
 });

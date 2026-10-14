@@ -148,9 +148,8 @@ export const TAVERN_DECOR: readonly DecorPlacement[] = [
 
 /**
  * The guests on the tavern's carpet, one behind the other and clear of the red rug: one at the
- * back under the window, one in front right of the round table. Their name tags go under their
- * feet (render/guests.ts): the back one's end above the front one's head, and the front one's
- * 「?」 (right of the head) is right of the back one's tags. Neither stands in front of the table.
+ * back under the window, one in front right of the round table. Neither stands in front of the
+ * table.
  */
 export const TAVERN_GUEST_SPOTS: readonly [TilePos, TilePos] = [
   { col: 20, row: 3 },
