@@ -187,7 +187,7 @@ function memberTooltip(state: MemberState, reason: string | null): string | null
 }
 
 /**
- * Six rows: かなめ, the four departments (fixed order), then the king. The live session states
+ * One row each: かなめ, the departments (fixed order), then the king. The live session states
  * join in while they are fresh (docs/DESIGN.md 4.7); the levels come from the history (4.6).
  * `now` is epoch ms.
  */

@@ -1,3 +1,5 @@
+import { LAYOUT2 } from './layout2';
+import { LAYOUT3 } from './layout3';
 import { LAYOUT4 } from './layout4';
 import type { GuildLayout } from './types';
 
@@ -7,6 +9,8 @@ import type { GuildLayout } from './types';
  * guildFromSettings.ts can use it without loading guild.settings.json (index.ts selects the layout).
  */
 export const LAYOUTS: Readonly<Record<number, GuildLayout>> = {
+  2: LAYOUT2,
+  3: LAYOUT3,
   4: LAYOUT4,
 };
 

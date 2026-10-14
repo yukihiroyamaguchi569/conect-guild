@@ -166,9 +166,20 @@ describe('guildSettingsSchema entries', () => {
 });
 
 describe('guildSettingsSchema departments', () => {
-  it('requires exactly four departments for now (#18)', () => {
-    expect(rejects({ ...settings(), departments: departments().slice(0, 3) })).toBe(true);
-    expect(rejects({ ...settings(), departments: [] })).toBe(true);
+  it('takes two to four departments for now (#18)', () => {
+    const first = (count: number) => {
+      const kept = departments().slice(0, count);
+      const labels = kept.map((d) => d.label);
+      return {
+        ...settings(),
+        departments: kept,
+        branchPrefixes: settings().branchPrefixes.filter((r) => labels.includes(r.department)),
+      };
+    };
+    expect(rejects(first(3))).toBe(false);
+    expect(rejects(first(2))).toBe(false);
+    expect(rejects(first(1))).toBe(true);
+    expect(rejects(first(0))).toBe(true);
   });
 
   it('rejects a department label, member or session dir used twice', () => {

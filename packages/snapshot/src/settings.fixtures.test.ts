@@ -3,10 +3,12 @@ import { FICTIONAL_REPO, makeSettings } from './settings.fixtures.test-util.ts';
 import { guildSettingsSchema } from './settingsSchema.ts';
 
 describe('makeSettings', () => {
-  it('builds four departments that pass the schema', () => {
-    const settings = makeSettings(4);
-    expect(guildSettingsSchema.safeParse(settings).success).toBe(true);
-    expect(settings.departments).toHaveLength(4);
+  it('builds two to four departments that pass the schema', () => {
+    for (const count of [2, 3, 4]) {
+      const settings = makeSettings(count);
+      expect(guildSettingsSchema.safeParse(settings).success).toBe(true);
+      expect(settings.departments).toHaveLength(count);
+    }
   });
 
   it('keeps departments, branch prefixes and members consistent', () => {

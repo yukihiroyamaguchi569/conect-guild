@@ -41,17 +41,37 @@ describe('guildSettingsSchema members (Issue #18)', () => {
 });
 
 describe('guildSettingsSchema department counts (Issue #18)', () => {
-  it('supports four departments for now', () => {
-    expect(SUPPORTED_DEPARTMENT_COUNTS).toEqual([4]);
+  const COUNTS_MESSAGE = 'departments: 2 or 3 or 4 departments (#18)';
+
+  it('supports two to four departments for now', () => {
+    expect(SUPPORTED_DEPARTMENT_COUNTS).toEqual([2, 3, 4]);
   });
 
-  it.each([1, 2, 3])('rejects %i departments, naming the supported counts and #18', (count) => {
-    expect(problems(makeSettings(count))).toEqual(['departments: 4 departments (#18)']);
+  it.each([2, 3, 4])('accepts %i departments', (count) => {
+    expect(problems(makeSettings(count))).toEqual([]);
+  });
+
+  it('needs only the members of the departments it has', () => {
+    expect(problems(without(without(makeSettings(2), 'hirame'), 'sasae'))).toEqual([]);
+    expect(problems(without(makeSettings(3), 'sasae'))).toEqual([]);
+    expect(problems(without(makeSettings(3), 'hirame'))).toEqual(['members.hirame: missing']);
+  });
+
+  it('rejects one department, naming the supported counts and #18', () => {
+    expect(problems(makeSettings(1))).toEqual([COUNTS_MESSAGE]);
+  });
+
+  it('rejects five departments', () => {
+    const four = makeSettings(4);
+    const extra = { label: '予備', member: 'minori', sessionDir: '~/example-guild/spare' } as const;
+    expect(problems({ ...four, departments: [...four.departments, extra] })).toContain(
+      COUNTS_MESSAGE,
+    );
   });
 
   it('rejects no department', () => {
     expect(problems({ ...makeSettings(4), departments: [], branchPrefixes: [] })).toEqual([
-      'departments: 4 departments (#18)',
+      COUNTS_MESSAGE,
     ]);
   });
 });
