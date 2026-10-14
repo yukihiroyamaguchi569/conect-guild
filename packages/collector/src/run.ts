@@ -90,7 +90,7 @@ async function readSessionsSafely(deps: RunDeps): Promise<SessionsReading> {
 function toSnapshotSessions(reading: SessionsReading, checkedAt: Date): SnapshotSessions {
   const at = checkedAt.toISOString();
   return reading.ok
-    ? { status: 'ok', checkedAt: at, members: [...reading.members] }
+    ? { status: 'ok', checkedAt: at, members: [...reading.members], guests: [] }
     : { status: 'unavailable', checkedAt: at };
 }
 
@@ -105,7 +105,7 @@ async function writeSnapshot(
 ): Promise<WriteResult> {
   try {
     const sessions = toSnapshotSessions(reading, deps.now());
-    const snapshot = parseOrThrow(snapshotSchema, { ...github, sessions });
+    const snapshot = parseOrThrow(snapshotSchema, { ...github, sessions, guests: [] });
     const content = `${JSON.stringify(snapshot, null, 2)}\n`;
     try {
       await deps.writeSnapshot(content);

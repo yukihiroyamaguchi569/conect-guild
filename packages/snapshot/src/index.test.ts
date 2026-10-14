@@ -23,7 +23,7 @@ describe('snapshotSchema', () => {
     expect(result.data?.schemaVersion).toBe(SNAPSHOT_SCHEMA_VERSION);
   });
 
-  it.each([1, 2, 4])('rejects schemaVersion %i', (version) => {
+  it.each([1, 2, 3, 5])('rejects schemaVersion %i', (version) => {
     expect(snapshotSchema.safeParse({ ...sampleRecord(), schemaVersion: version }).success).toBe(
       false,
     );
@@ -64,13 +64,18 @@ const FIVE: readonly Record<string, unknown>[] = [
 ];
 
 function withSessions(sessions: unknown) {
-  return snapshotSchema.safeParse({ ...sampleRecord(), sessions });
+  return snapshotSchema.safeParse({ ...sampleRecord(), sessions, guests: [] });
 }
 
 /** `ok` sessions with the five members, the first one patched. */
 function okWithFirst(patch: Record<string, unknown>) {
   const [first, ...rest] = FIVE;
-  return { status: 'ok', checkedAt: CHECKED_AT, members: [{ ...first, ...patch }, ...rest] };
+  return {
+    status: 'ok',
+    checkedAt: CHECKED_AT,
+    members: [{ ...first, ...patch }, ...rest],
+    guests: [],
+  };
 }
 
 describe('snapshotSchema: sessions', () => {
@@ -80,7 +85,9 @@ describe('snapshotSchema: sessions', () => {
 
   it('accepts かなめ (department null) and the four departments in any order', () => {
     const members = FIVE.toReversed();
-    expect(withSessions({ status: 'ok', checkedAt: CHECKED_AT, members }).success).toBe(true);
+    expect(withSessions({ status: 'ok', checkedAt: CHECKED_AT, members, guests: [] }).success).toBe(
+      true,
+    );
   });
 
   it.each([
@@ -104,7 +111,9 @@ describe('snapshotSchema: session members', () => {
     ['a sixth entry', [...FIVE, { department: '経理', state: 'idle' }]],
     ['two entries for one department', [...FIVE.slice(0, 4), { department: null, state: 'idle' }]],
   ])('rejects %s', (_label, members) => {
-    expect(withSessions({ status: 'ok', checkedAt: CHECKED_AT, members }).success).toBe(false);
+    expect(withSessions({ status: 'ok', checkedAt: CHECKED_AT, members, guests: [] }).success).toBe(
+      false,
+    );
   });
 
   it.each([

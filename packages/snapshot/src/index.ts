@@ -1,10 +1,11 @@
 import { z } from 'zod';
-import { DEPARTMENT_LABELS, departmentLabelSchema } from './settings.ts';
+import { DEPARTMENT_LABELS, MAX_GUESTS, departmentLabelSchema } from './settings.ts';
 
 /** Bump when the snapshot shape changes; the web app refuses other versions. */
-export const SNAPSHOT_SCHEMA_VERSION = 3;
+export const SNAPSHOT_SCHEMA_VERSION = 4;
 
 const isoDateTime = z.iso.datetime({ offset: true });
+const repoSchema = z.string().regex(/^[\w.-]+\/[\w.-]+$/);
 
 export const snapshotIssueSchema = z.strictObject({
   number: z.number().int().positive(),
@@ -48,6 +49,8 @@ export const snapshotSessionSchema = z.strictObject({
 /**
  * The company sessions. Only the department and the state: no MulmoTerminal ids, no paths.
  * `checkedAt` is when the collector read them; it moves every few seconds, unlike `fetchedAt`.
+ * `guests` (Issue #108) are the states of the guests' sessions, in the order of the settings'
+ * `guests`; no names, no paths.
  */
 export const snapshotSessionsSchema = z.discriminatedUnion('status', [
   z.strictObject({
@@ -61,6 +64,7 @@ export const snapshotSessionsSchema = z.discriminatedUnion('status', [
         (members) => new Set(members.map((m) => m.department)).size === members.length,
         'one entry per department',
       ),
+    guests: z.array(sessionStateSchema).max(MAX_GUESTS),
   }),
   z.strictObject({ status: z.literal('unavailable'), checkedAt: isoDateTime }),
 ]);
@@ -115,16 +119,63 @@ export const snapshotHistorySchema = z
 export const githubPartSchema = z.strictObject({
   schemaVersion: z.literal(SNAPSHOT_SCHEMA_VERSION),
   fetchedAt: isoDateTime,
-  repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
+  repo: repoSchema,
   issues: z.array(snapshotIssueSchema),
   prs: z.array(snapshotPrSchema),
   history: snapshotHistorySchema,
 });
 
-export const snapshotSchema = z.strictObject({
-  ...githubPartSchema.shape,
-  sessions: snapshotSessionsSchema,
+/** An open Issue or PR of a guest's repository (Issue #108). The title is shown on the screen. */
+export const guestOpenItemSchema = z.strictObject({
+  number: issueNumber,
+  title: z.string(),
+  isPr: z.boolean(),
+  createdAt: isoDateTime,
+  updatedAt: isoDateTime,
 });
+
+/** How many finished items a guest part keeps, newest first. */
+export const GUEST_RECENT_LIMIT = 20;
+
+/** An Issue closed as completed or a PR merged in the last 7 days; `at` is when. */
+export const guestRecentItemSchema = z.strictObject({
+  kind: z.enum(['issue-completed', 'pr-merged']),
+  number: issueNumber,
+  title: z.string(),
+  at: isoDateTime,
+});
+
+/**
+ * Issue #108: a guest's repository, fetched every few minutes apart from the company's. No guest
+ * name: the screen takes it from the settings, by position. `repo` lets the screen check that the
+ * part is of the guest in its settings.
+ */
+export const guestGithubPartSchema = z.strictObject({
+  repo: repoSchema,
+  fetchedAt: isoDateTime,
+  open: z.array(guestOpenItemSchema).refine(hasUniqueNumbers, 'unique numbers'),
+  recent: z
+    .array(guestRecentItemSchema)
+    .max(GUEST_RECENT_LIMIT)
+    .refine(hasUniqueNumbers, 'unique numbers'),
+});
+
+export const snapshotSchema = z
+  .strictObject({
+    ...githubPartSchema.shape,
+    sessions: snapshotSessionsSchema,
+    /**
+     * One entry per guest of the settings, in their order: null when the guest has no repository
+     * or it has not been fetched yet.
+     */
+    guests: z.array(guestGithubPartSchema.nullable()).max(MAX_GUESTS),
+  })
+  .refine(
+    (snapshot) =>
+      snapshot.sessions.status !== 'ok' ||
+      snapshot.sessions.guests.length === snapshot.guests.length,
+    'one session state per guest',
+  );
 
 /**
  * Why the collector's last try failed (packages/collector/src/errors.ts): `gh` failed (not logged
@@ -211,5 +262,8 @@ export type HistoryPr = z.infer<typeof historyPrSchema>;
 export type SnapshotHistory = z.infer<typeof snapshotHistorySchema>;
 export type GithubPart = z.infer<typeof githubPartSchema>;
 export type Snapshot = z.infer<typeof snapshotSchema>;
+export type GuestOpenItem = z.infer<typeof guestOpenItemSchema>;
+export type GuestRecentItem = z.infer<typeof guestRecentItemSchema>;
+export type GuestGithubPart = z.infer<typeof guestGithubPartSchema>;
 export type CollectorFailureKind = z.infer<typeof collectorFailureKindSchema>;
 export type CollectorStatus = z.infer<typeof collectorStatusSchema>;

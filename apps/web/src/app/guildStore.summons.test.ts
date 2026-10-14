@@ -27,6 +27,7 @@ function reading(seconds: number, kaname: SessionState, keiri: SessionState = 'i
   return snapshot({
     sessions: {
       status: 'ok',
+      guests: [],
       checkedAt,
       members: [
         { department: null, state: kaname },

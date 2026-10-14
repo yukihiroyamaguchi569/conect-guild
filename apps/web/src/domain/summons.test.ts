@@ -13,6 +13,7 @@ function sessions(states: Five, checkedAt: string = T0): SnapshotSessions {
   const [kaname, keiri, kouhou, kikaku, soumu] = states;
   return {
     status: 'ok',
+    guests: [],
     checkedAt,
     members: [
       { department: null, state: kaname },

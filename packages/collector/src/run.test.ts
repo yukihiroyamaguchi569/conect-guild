@@ -41,7 +41,9 @@ describe('collectOnce', () => {
       status: 'ok',
       checkedAt: '2026-10-12T00:00:00.000Z',
       members: SESSION_MEMBERS,
+      guests: [],
     });
+    expect(snapshot.guests).toEqual([]);
     expect(snapshot.issues.map((i) => i.number)).toEqual([1]);
     expect(snapshot.prs.map((p) => [p.number, p.linkedIssues, p.changedFiles])).toEqual([
       [2, [1], ['a/CLAUDE.md', 'b.md']],
