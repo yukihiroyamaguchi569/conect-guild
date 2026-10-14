@@ -39,18 +39,32 @@ export function createGitRunner(): GitRunner {
     });
 }
 
-/** The GitHub remote URL forms: https (with or without a user), scp-like ssh, ssh URL. */
-const GITHUB_PREFIXES = ['https://github.com/', 'git@github.com:', 'ssh://git@github.com/'];
+/** The URL schemes of a GitHub remote, with the port each may name (its default). */
+const GITHUB_SCHEMES: Readonly<Record<string, string>> = { 'https:': '443', 'ssh:': '22' };
+
+/** The path of a GitHub remote: an https or ssh URL (any user, the default port) or scp-like ssh. */
+function githubPath(text: string): string | null {
+  const scp = /^git@github\.com:/i.exec(text);
+  if (scp !== null) return text.slice(scp[0].length);
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    return null;
+  }
+  const port = GITHUB_SCHEMES[url.protocol];
+  if (port === undefined || url.hostname !== 'github.com') return null;
+  if (url.port !== '' && url.port !== port) return null;
+  return url.search === '' && url.hash === '' ? url.pathname.slice(1) : null;
+}
 
 /**
  * `owner/name` from a GitHub remote URL (`.git` and a trailing `/` dropped), or null for anything
  * else (another host, a local path, a name the settings would not take).
  */
 export function repoFromRemoteUrl(url: string): string | null {
-  const text = url.trim().replace(/^https:\/\/[^@/]+@github\.com\//, 'https://github.com/');
-  const prefix = GITHUB_PREFIXES.find((p) => text.startsWith(p));
-  if (prefix === undefined) return null;
-  let path = text.slice(prefix.length);
+  let path = githubPath(url.trim());
+  if (path === null) return null;
   if (path.endsWith('/')) path = path.slice(0, -1);
   if (path.endsWith('.git')) path = path.slice(0, -'.git'.length);
   return isRepoName(path) ? path : null;

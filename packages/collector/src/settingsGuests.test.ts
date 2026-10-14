@@ -9,6 +9,10 @@ describe('repoFromRemoteUrl (Issue #118)', () => {
     ['https://token@github.com/me/side.git', 'me/side'],
     ['git@github.com:me/side.git', 'me/side'],
     ['ssh://git@github.com/me/my.app.git', 'me/my.app'],
+    ['ssh://git@github.com:22/me/side.git', 'me/side'],
+    ['https://GitHub.com/me/side.git', 'me/side'],
+    ['https://github.com:443/me/side', 'me/side'],
+    ['git@GitHub.com:me/side.git', 'me/side'],
   ])('reads %j as %s', (url, repo) => {
     expect(repoFromRemoteUrl(url)).toBe(repo);
   });
@@ -19,6 +23,10 @@ describe('repoFromRemoteUrl (Issue #118)', () => {
     'git@github.com:me/side/extra.git',
     'https://github.com/me',
     'https://github.com/-me/side',
+    'ssh://git@github.com:2222/me/side.git',
+    'git://github.com/me/side.git',
+    'https://github.com/me/side?x=1',
+    'file:///home/me/side.git',
     '/home/me/bare.git',
     '',
   ])('suggests nothing for %j', (url) => {
