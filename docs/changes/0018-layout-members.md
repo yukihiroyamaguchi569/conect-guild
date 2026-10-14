@@ -8,7 +8,7 @@
 - 画面のメンバーの繰り返し（director・idle・idleCrew の並び、remarks・summons の順、partyLevel、乱数の種）を、これらの並びと `byMember` で作るようにした。キャラごとの絵・手の位置・セリフはすべての id を網羅したまま
 - 間取り（新しい `apps/web/src/render/layouts/`）
   - `GuildLayout` に床・家具・小物・机（席、上段か下段、部門の小物、おしゃべりの相手）・かなめと王様の席・カウンター前と玉座の横・舞台裏（扉のそば）・お客さんの場所 2 つ・パーティ窓の下端・投げる距離を持たせた。いまの地図を `layout4.ts` にそのまま移した
-  - `layoutFor(部門の数)` で選び、無い数は止める。`SELECTED_LAYOUT` は設定の部門の数から選ぶ
+  - `layoutFor(部門の数)` で選び、無い数は止める。`SELECTED_LAYOUT` は設定の部門の数から選ぶ。`LAYOUTS` と `layoutFor` は設定を読まない `catalog.ts` に置き、実際の設定を読まない `guildFromSettings.ts`（#18 の準備で分けたもの）から使う。`guildFromSettings(settings, layout)` の席は間取りの机から引き、`guild.config.ts` は実際の設定と `SELECTED_LAYOUT` を渡す
   - `map.ts`・`decor.ts`・`seating.ts`・`layers.ts`・`drawDaylight.ts`・`animatedDecor.ts`・`trinkets.ts`・`idleSpots.ts` に間取りを受け取って作る関数を足し、これまでの名前の export は選んだ間取りから作る（呼ぶ側は変えていない）。`guild.config.ts` の席と `scenes.ts` の `DEFAULT_SEATS`、`TOSS.maxTiles` も間取りから引く
   - 机ごとの表（部門の小物、旗の側、おしゃべりの相手）は机の番号で持ち、`departments[i].member` でメンバーに対応させる。部門の無いメンバー（いまはいない）の席は舞台裏で、描かない
   - 4 部門のお客さんの場所は、左下の地図の机の前とスツールの横の 2 マスにした（実装時の判断。歩けて、窓に隠れず、扉から行ける）。小物は動かしていない。お客さん自身は #108 で足す

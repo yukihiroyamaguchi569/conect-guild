@@ -1,26 +1,22 @@
 /**
  * Guild settings for the web app: the team's values come from the repository root's
- * guild.settings.json (validated when it is imported), the seats from the office layout for its
- * number of departments (render/layouts); the time windows the domain uses stay here.
+ * guild.settings.json (validated when it is imported), derived by guildFromSettings.ts with the
+ * office layout for its number of departments (render/layouts, which gives the seats); the time
+ * windows the domain uses stay here.
  */
-import { z } from 'zod';
 import {
   ACTIVE_MEMBER_IDS,
-  byMember,
   DEPARTMENT_LABELS,
   LEVEL_MEMBER_IDS,
   GUILD_SETTINGS,
   departmentLabelSchema,
-  memberIdSchema,
   type BranchPrefixRule,
   type DepartmentLabel,
-  type GuildSettings,
   type MemberId,
   type RuleChangePath,
 } from '@conect-guild/snapshot/settings';
-import { layoutFor } from './render/layouts';
-import { seatsFor } from './render/layouts/seats';
-import type { GuildLayout, TilePos } from './render/layouts/types';
+import { guildFromSettings, type MemberConfig } from './guildFromSettings';
+import { SELECTED_LAYOUT } from './render/layouts';
 
 export {
   ACTIVE_MEMBER_IDS,
@@ -31,69 +27,14 @@ export {
   type MemberId,
   type RuleChangePath,
 };
+export {
+  guildFromSettings,
+  type Guild,
+  type MemberConfig,
+  type TilePos,
+} from './guildFromSettings';
 
-/** A cell on the office tile map (32 px tiles, 32 x 18; src/render/map.ts). */
-export type { TilePos };
-
-export interface MemberConfig {
-  readonly id: MemberId;
-  /** Display name. */
-  readonly name: string;
-  /** Role shown next to the name. */
-  readonly role: string;
-  /** Accent colour for the name plate and speech bubble. */
-  readonly color: string;
-  /**
-   * Where the member is when at home: the tile under their feet (src/render/map.ts). Department
-   * members sit on the chair right behind their desk; render/seating.ts sinks them into it.
-   */
-  readonly seat: TilePos;
-}
-
-/**
- * Shown for a member no department names: never on screen (only the active members are drawn), it
- * keeps MEMBERS a record of every id.
- */
-const OFFSTAGE_MEMBER = { name: '-', role: '-', color: '#808080' } as const;
-
-/** What the web app derives from the settings and the office layout (the windows stay constants). */
-export interface Guild {
-  readonly members: Readonly<Record<MemberId, MemberConfig>>;
-  /** Department label → the member who works it. */
-  readonly departmentMember: Readonly<Record<DepartmentLabel, MemberId>>;
-  readonly branchPrefixRules: readonly BranchPrefixRule[];
-  readonly ruleChangePaths: readonly RuleChangePath[];
-}
-
-/**
- * The team from the given settings, without reading the module-level GUILD_SETTINGS, so tests can
- * pass made-up settings. The seats come from `layout` (by default the one for the settings' number
- * of departments). The department record is checked against the settings' own labels: a label the
- * settings do not map fails here instead of yielding undefined later.
- */
-export function guildFromSettings(
-  settings: GuildSettings,
-  layout: GuildLayout = layoutFor(settings.departments.length),
-): Guild {
-  const seats = seatsFor(
-    layout,
-    settings.departments.map((d) => d.member),
-  );
-  const labels = settings.departments.map((d) => d.label);
-  return {
-    members: byMember((id): MemberConfig => {
-      const { name, role, color } = settings.members[id] ?? OFFSTAGE_MEMBER;
-      return { id, name, role, color, seat: seats[id] };
-    }),
-    departmentMember: z
-      .record(z.enum(labels), memberIdSchema)
-      .parse(Object.fromEntries(settings.departments.map((d) => [d.label, d.member]))),
-    branchPrefixRules: settings.branchPrefixes,
-    ruleChangePaths: settings.ruleChangePaths,
-  };
-}
-
-const GUILD = guildFromSettings(GUILD_SETTINGS);
+const GUILD = guildFromSettings(GUILD_SETTINGS, SELECTED_LAYOUT);
 
 export const MEMBERS: Readonly<Record<MemberId, MemberConfig>> = GUILD.members;
 

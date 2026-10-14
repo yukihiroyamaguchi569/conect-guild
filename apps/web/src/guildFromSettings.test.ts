@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeSettings } from '@conect-guild/snapshot/settings.fixtures';
-import { guildFromSettings } from './guild.config';
+import { guildFromSettings } from './guildFromSettings';
 
 describe('guildFromSettings (made-up settings, not guild.settings.json)', () => {
   const settings = makeSettings(4);

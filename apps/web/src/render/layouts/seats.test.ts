@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeSettings } from '@conect-guild/snapshot/settings.fixtures';
-import { guildFromSettings } from '../../guild.config';
+import { guildFromSettings } from '../../guildFromSettings';
 import { LAYOUT4 } from './layout4';
 import { seatsFor } from './seats';
 import type { GuildLayout } from './types';
