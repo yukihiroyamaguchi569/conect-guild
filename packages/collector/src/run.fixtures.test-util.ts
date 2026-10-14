@@ -92,7 +92,13 @@ export const SESSION_MEMBERS: readonly SnapshotSession[] = [
   { department: '総務', state: 'idle' },
 ];
 
-export const SESSIONS_OK: SessionsReading = { ok: true, found: 5, members: SESSION_MEMBERS };
+export const SESSIONS_OK: SessionsReading = {
+  ok: true,
+  found: 5,
+  members: SESSION_MEMBERS,
+  guests: [],
+  guestsFound: 0,
+};
 
 export interface Harness extends RunDeps {
   readonly logs: string[];
@@ -116,6 +122,7 @@ export function harness(gh: GhRunner, patch: Partial<RunDeps> = {}): Harness {
     log: (line) => logs.push(line),
     error: (line) => errors.push(line),
     gh,
+    guestRepos: [],
     readSessions: () => Promise.resolve(SESSIONS_OK),
     writeSnapshot: (content) => {
       writes.push(content);

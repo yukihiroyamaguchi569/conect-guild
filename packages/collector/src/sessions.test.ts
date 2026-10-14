@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CompanySeat } from '../collector.config.ts';
+import type { Seat } from '../collector.config.ts';
 import {
   latestCompanySessionIds,
   readSeatStates,
@@ -11,12 +11,12 @@ import {
 } from './sessions.ts';
 
 const ROOT = '/home/u/conect-management';
-const SEATS: readonly CompanySeat[] = [
-  { department: null, cwd: ROOT },
-  { department: '経理', cwd: `${ROOT}/accounting` },
-  { department: '広報', cwd: `${ROOT}/pr` },
-  { department: '企画', cwd: `${ROOT}/planning` },
-  { department: '総務', cwd: `${ROOT}/general-affairs` },
+const SEATS: readonly Seat[] = [
+  { kind: 'company', department: null, cwd: ROOT },
+  { kind: 'company', department: '経理', cwd: `${ROOT}/accounting` },
+  { kind: 'company', department: '広報', cwd: `${ROOT}/pr` },
+  { kind: 'company', department: '企画', cwd: `${ROOT}/planning` },
+  { kind: 'company', department: '総務', cwd: `${ROOT}/general-affairs` },
 ];
 
 /** Session ids of the company seats. */
@@ -28,7 +28,9 @@ const OTHER = 'bbbbbbbb-0000-4000-8000-00000000000f';
 const OTHER_PATH = '/home/u/secret-client-project';
 
 describe('latestCompanySessionIds: one line', () => {
-  const SPACED: readonly CompanySeat[] = [{ department: null, cwd: '/home/u/my dir/a b' }];
+  const SPACED: readonly Seat[] = [
+    { kind: 'company', department: null, cwd: '/home/u/my dir/a b' },
+  ];
 
   it('splits at the first space, so the path keeps its spaces', async () => {
     const ids = await latestCompanySessionIds([`${KANAME} /home/u/my dir/a b`], SPACED);
@@ -259,6 +261,8 @@ describe('readSeatStates', () => {
         { department: '企画', state: 'idle' },
         { department: '総務', state: 'idle' },
       ],
+      guests: [],
+      guestsFound: 0,
     });
   });
 

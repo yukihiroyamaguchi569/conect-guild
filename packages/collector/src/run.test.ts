@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { snapshotSchema } from '@conect-guild/snapshot';
 import { describe, expect, it } from 'vitest';
-import type { CompanySeat } from '../collector.config.ts';
+import type { Seat } from '../collector.config.ts';
 import { CollectorError } from './errors.ts';
 import { collectOnce, runCollector } from './run.ts';
 import {
@@ -17,13 +17,13 @@ import {
 import { createCompanySessionsReader } from './sessionFiles.ts';
 
 /** The five company seats under `root`, as collector.config.ts fixes them under the home. */
-function seatsUnder(root: string): CompanySeat[] {
+function seatsUnder(root: string): Seat[] {
   return [
-    { department: null, cwd: root },
-    { department: '経理', cwd: join(root, 'accounting') },
-    { department: '広報', cwd: join(root, 'pr') },
-    { department: '企画', cwd: join(root, 'planning') },
-    { department: '総務', cwd: join(root, 'general-affairs') },
+    { kind: 'company', department: null, cwd: root },
+    { kind: 'company', department: '経理', cwd: join(root, 'accounting') },
+    { kind: 'company', department: '広報', cwd: join(root, 'pr') },
+    { kind: 'company', department: '企画', cwd: join(root, 'planning') },
+    { kind: 'company', department: '総務', cwd: join(root, 'general-affairs') },
   ];
 }
 
@@ -323,5 +323,19 @@ describe('collectOnce: PRs that change while the pages are read', () => {
     expect(gh.calls.filter((c) => c.includes('/files'))).toEqual([
       'repos/yukihiroyamaguchi569/conect-management/pulls/9/files?per_page=100',
     ]);
+  });
+});
+
+describe('collectOnce with guest sessions (Issue #108)', () => {
+  it('writes the guests states and one empty part per guest before any guest fetch', async () => {
+    const reading = { ...SESSIONS_OK, guests: ['working', 'idle'], guestsFound: 1 } as const;
+    const deps = harness(fakeGh(), {
+      guestRepos: [null, null],
+      readSessions: () => Promise.resolve(reading),
+    });
+    await collectOnce(deps);
+    const snapshot = snapshotSchema.parse(JSON.parse(deps.writes[0] ?? ''));
+    expect(snapshot.sessions).toMatchObject({ status: 'ok', guests: ['working', 'idle'] });
+    expect(snapshot.guests).toEqual([null, null]);
   });
 });

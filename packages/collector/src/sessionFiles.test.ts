@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { CompanySeat } from '../collector.config.ts';
+import type { Seat } from '../collector.config.ts';
 import {
   MAX_ACTIVITY_STATE_BYTES,
   MAX_CWD_LOG_BYTES,
@@ -20,9 +20,9 @@ let paths: SessionFilePaths;
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'guild-sessions-'));
   const root = join(dir, 'conect-management');
-  const seats: CompanySeat[] = [
-    { department: null, cwd: root },
-    { department: '経理', cwd: join(root, 'accounting') },
+  const seats: Seat[] = [
+    { kind: 'company', department: null, cwd: root },
+    { kind: 'company', department: '経理', cwd: join(root, 'accounting') },
   ];
   paths = {
     seats,
@@ -66,6 +66,8 @@ describe('readCompanySessions', () => {
         { department: null, state: 'awaiting-permission' },
         { department: '経理', state: 'idle' },
       ],
+      guests: [],
+      guestsFound: 0,
     });
     expect(JSON.stringify(result)).not.toMatch(new RegExp(`${OTHER}|${OTHER_PATH}|${dir}`));
   });
@@ -73,9 +75,9 @@ describe('readCompanySessions', () => {
   it('reads a large log with many company relaunches in one pass', async () => {
     // A fixed short root (matched as a string, never touched on disk) keeps the log size independent of TMPDIR.
     const root = '/guild/conect-management';
-    const seats: CompanySeat[] = [
-      { department: null, cwd: root },
-      { department: '経理', cwd: `${root}/accounting` },
+    const seats: Seat[] = [
+      { kind: 'company', department: null, cwd: root },
+      { kind: 'company', department: '経理', cwd: `${root}/accounting` },
     ];
     const id = (i: number) => `aaaaaaaa-0000-4000-8000-${String(i).padStart(12, '0')}`;
     // About 13 MB, well under the 16 MiB cap: 200k lines, half of them new company sessions at かなめ's path.

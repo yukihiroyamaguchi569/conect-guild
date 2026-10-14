@@ -29,6 +29,11 @@ export interface RunDeps {
   readonly log: (line: string) => void;
   readonly error: (line: string) => void;
   readonly gh: GhRunner;
+  /**
+   * Issue #108: the guests of the settings by position, each its repository or null when it has
+   * none. Fixed by the settings file (collector.config.ts), like the company repository.
+   */
+  readonly guestRepos: readonly (string | null)[];
   /** Reads the company sessions from MulmoTerminal's files. Never throws; ends on `signal`. */
   readonly readSessions: () => Promise<SessionsReading>;
   readonly writeSnapshot: (content: string) => Promise<void>;
@@ -90,7 +95,7 @@ async function readSessionsSafely(deps: RunDeps): Promise<SessionsReading> {
 function toSnapshotSessions(reading: SessionsReading, checkedAt: Date): SnapshotSessions {
   const at = checkedAt.toISOString();
   return reading.ok
-    ? { status: 'ok', checkedAt: at, members: [...reading.members], guests: [] }
+    ? { status: 'ok', checkedAt: at, members: [...reading.members], guests: [...reading.guests] }
     : { status: 'unavailable', checkedAt: at };
 }
 
@@ -105,7 +110,8 @@ async function writeSnapshot(
 ): Promise<WriteResult> {
   try {
     const sessions = toSnapshotSessions(reading, deps.now());
-    const snapshot = parseOrThrow(snapshotSchema, { ...github, sessions, guests: [] });
+    const guests = deps.guestRepos.map(() => null);
+    const snapshot = parseOrThrow(snapshotSchema, { ...github, sessions, guests });
     const content = `${JSON.stringify(snapshot, null, 2)}\n`;
     try {
       await deps.writeSnapshot(content);
