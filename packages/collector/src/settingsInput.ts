@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   DEPARTMENT_MEMBER_IDS,
+  MAX_GUESTS,
   SUPPORTED_DEPARTMENT_COUNTS,
   type DepartmentMemberId,
   type GuildSettings,
@@ -49,7 +50,8 @@ export const settingsInputSchema = z
      * Issue #118: all of them together, replacing the guests as a whole (empty removes them). Left
      * out, the starting settings' guests are kept.
      */
-    guests: z.array(inputGuestSchema).optional(),
+    // At most MAX_GUESTS here already, so git is asked about two folders at most.
+    guests: z.array(inputGuestSchema).max(MAX_GUESTS).optional(),
   })
   .superRefine((input, ctx) => {
     // The company values come together or not at all (a guests-only input keeps them).

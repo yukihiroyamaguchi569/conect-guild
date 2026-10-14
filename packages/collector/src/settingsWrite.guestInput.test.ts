@@ -118,13 +118,6 @@ describe('settings:write with guests in the input (Issue #118)', () => {
 });
 
 describe('settings:write stops on guests it cannot write (Issue #118)', () => {
-  it('stops on part of the company values', async () => {
-    const f = fakeWithFolders({ repo: 'me/company', guests: [] });
-    expect(await runSettingsWrite(['--write'], f.deps)).toBe(1);
-    expect(f.writes).toEqual([]);
-    expect(f.output()).toContain('required with repo');
-  });
-
   it('stops past the limit of the departments and writes nothing', async () => {
     const data = input();
     data.departments.push({ label: '開発', sessionDir: '~/company/dev', prefix: 'dev/' });
@@ -153,6 +146,16 @@ describe('settings:write stops on guests it cannot write (Issue #118)', () => {
     expect(await runSettingsWrite(['--write'], f.deps)).toBe(1);
     expect(f.writes).toEqual([]);
     expect(f.output()).toContain('guests[0].repo');
+  });
+
+  it('stops on more than two guests before asking git anything', async () => {
+    const f = fakeWithFolders({
+      guests: ['a', 'b', 'c'].map((name) => ({ name, sessionDir: '~/side' })),
+    });
+    expect(await runSettingsWrite(['--write'], f.deps)).toBe(1);
+    expect(f.writes).toEqual([]);
+    expect(f.gitCalls).toEqual([]);
+    expect(f.output()).toContain('入力の形が違います');
   });
 
   it('stops on a guest folder that is not there', async () => {
@@ -193,5 +196,12 @@ describe('settings:write with guests only, and its report (Issue #118)', () => {
     expect(f.output()).toContain(
       '"たびびと"（guests[0]）  "me/side"（フォルダの git の origin から提案）  "~/side"',
     );
+  });
+
+  it('stops on part of the company values', async () => {
+    const f = fakeWithFolders({ repo: 'me/company', guests: [] });
+    expect(await runSettingsWrite(['--write'], f.deps)).toBe(1);
+    expect(f.writes).toEqual([]);
+    expect(f.output()).toContain('required with repo');
   });
 });

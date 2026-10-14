@@ -220,7 +220,7 @@ conect-guild のリポジトリで開いた Claude Code のセッションで `/
 
 1. `npm run --silent settings:list-sessions` で、MulmoTerminal のセッションのフォルダを新しい順に番号付きで見せます（MulmoTerminal が `~/.mulmoterminal/dev-terminal-cwds.json` に記録しているもので、閉じたセッションのフォルダが残っていることもあります。司令塔と部門のフォルダは除きます）。いまのお客さんと、部門の数で決まる上限も出ます。一覧はその場で見せるだけで、ファイルにもログにも残しません
 2. 番号で選ぶと、フォルダ名から名前を提案します。直したい名前を伝えます
-3. `npm run settings:write` に、お客さん全員（`guests`）だけの入力を書かずに渡して確かめます。`repo` は、選んだフォルダの git の `origin`（GitHub のもの）から提案するので、合っているか、要らないかを答えます
+3. `npm run settings:write` に、お客さん全員（`guests`）だけの入力（スキルがリポジトリの外の一時ファイルに書き、終わったら消します）を渡し、設定ファイルを書かずに（`--dry-run`）確かめます。`repo` は、選んだフォルダの git の `origin`（GitHub のもの）から提案するので、合っているか、要らないかを答えます
 4. 確認の表を見て OK と答えると、`guild.settings.local.json` に書きます（会社の値は今のまま保ちます）
 
 道具だけで書くときは、2-2b の入力に `guests` を足します。`guests` は全員をまとめて書き、いまのお客さんを置き換えます（空の `[]` で全員外します）。お客さんだけを変えるときは、`repo`・`commanderSessionDir`・`departments` を書きません（3 つとも書かないと、いまの値を保ちます）。`repo` を書かないお客さんは、フォルダの git の `origin` から道具が `owner/name` を提案して、そのまま書きます。リポジトリを付けないなら `"repo": null` と書きます。
