@@ -111,12 +111,12 @@ describe('the E2E department mode (Issue #18, test only)', () => {
     });
   });
 
-  it.each([undefined, '', '4', '5', '../guild.settings.local.json', '__proto__', 'toString'])(
+  it.each([undefined, '', '1', '4', '7', '../guild.settings.local.json', '__proto__', 'toString'])(
     'stops on %j: the variable only picks a fixture',
     (choice) => {
       const env = { [E2E_DEPARTMENTS_ENV]: choice };
       expect(() => settingsRedirect('serve', E2E_DEPARTMENTS_MODE, withFixture(), env)).toThrow(
-        /needs GUILD_E2E_DEPARTMENTS=2, 3/,
+        /needs GUILD_E2E_DEPARTMENTS=2, 3, 5, 6/,
       );
     },
   );
