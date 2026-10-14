@@ -20,6 +20,8 @@ export interface GuildMessage {
   readonly text: string;
   /** The event this line reports; its scene starts when the line reaches the window. */
   readonly event: GuildEvent | null;
+  /** The guest whose PR or Issue this line reports: it sparkles when the line shows (Issue #108). */
+  readonly guest?: number;
 }
 
 export interface MessageQueue {

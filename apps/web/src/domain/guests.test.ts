@@ -1,4 +1,9 @@
-import type { GuestGithubPart, GuestRecentItem, SessionState } from '@conect-guild/snapshot';
+import type {
+  GuestGithubPart,
+  GuestRecentItem,
+  SessionState,
+  SnapshotSessions,
+} from '@conect-guild/snapshot';
 import { FICTIONAL_GUESTS, makeSettings } from '@conect-guild/snapshot/settings.fixtures';
 import { describe, expect, it } from 'vitest';
 import { SESSION_STALE_AFTER_MS } from '../guild.config';
@@ -27,8 +32,8 @@ function recent(kind: GuestRecentItem['kind'], number: number): GuestRecentItem 
 }
 
 /** Read sessions; the members are not read for the guests. */
-function okSessions(guests: SessionState[]) {
-  return { status: 'ok', checkedAt: T0, members: [], guests } as const;
+function okSessions(guests: SessionState[]): SnapshotSessions {
+  return { status: 'ok', checkedAt: T0, members: [], guests };
 }
 
 describe('buildGuests', () => {

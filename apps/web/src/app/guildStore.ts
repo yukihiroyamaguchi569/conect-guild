@@ -1,4 +1,5 @@
 import type { Snapshot } from '@conect-guild/snapshot';
+import { GUILD_SETTINGS, type GuildGuest } from '@conect-guild/snapshot/settings';
 import { shallowReactive } from 'vue';
 import { z } from 'zod';
 import {
@@ -10,6 +11,7 @@ import {
 import { createKeyValueStore, type KeyValueStore } from '../adapters/storage';
 import { parseBaseline } from '../domain/baseline';
 import { diffSnapshot } from '../domain/events';
+import { guestEventMessage, guestEvents, type GuestBaseline } from '../domain/guests';
 import { diffEntries, type MessageEntry } from '../domain/message';
 import {
   comparedReading,
@@ -106,10 +108,14 @@ export interface GuildStoreOptions {
    * stored baseline as it is.
    */
   readonly freshBaseline?: boolean;
+  /** The settings' guests (Issue #108); defaults to those of the settings in use. */
+  readonly guests?: readonly GuildGuest[];
 }
 
 export interface GuildStore {
   readonly state: Readonly<GuildState>;
+  /** The guests the screen shows (GuildStoreOptions.guests). */
+  readonly guests: readonly GuildGuest[];
   /** Loads once now, then every refresh interval. */
   start(): void;
   /** Stops all timers; results of a fetch still in flight are dropped. */
@@ -213,6 +219,24 @@ function applyResult(
   return outcome.entries;
 }
 
+/**
+ * The guests' finished PRs and Issues since the last snapshot, as message lines (Issue #108). What
+ * was seen is kept in memory only, so the first snapshot after a load brings none. Parts beyond
+ * the settings' guests (the build's sample, which is not checked against them) are not read.
+ */
+function createGuestWatch(guests: readonly GuildGuest[]): (snapshot: Snapshot) => MessageEntry[] {
+  let seen: GuestBaseline | null = null;
+  return (snapshot) => {
+    const { events, baseline } = guestEvents(seen, snapshot.guests.slice(0, guests.length));
+    seen = baseline;
+    return events.map((event) => ({
+      text: guestEventMessage(event, guests[event.guest]?.name ?? ''),
+      event: null,
+      guest: event.guest,
+    }));
+  };
+}
+
 /** The message queue that publishes into `state.messages`. */
 function queueInto(
   state: GuildState,
@@ -290,6 +314,8 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
   const scheduler = options.scheduler ?? globalScheduler;
   const state = shallowReactive<GuildState>(initialState());
   const queue = queueInto(state, { scheduler, now, holdMs: options.messageHoldMs });
+  const guests = options.guests ?? GUILD_SETTINGS.guests ?? [];
+  const watchGuests = createGuestWatch(guests);
   let cancelRefresh: Cancel | null = null;
   let inFlight = false;
   // Bumped by stop(), so a fetch that started before it cannot touch the state.
@@ -304,10 +330,11 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
       if (started !== generation) return;
       state.checkedAt = now();
       const entries = applyResult(state, storage, result, { now: now(), fresh });
+      const guestEntries = result.ok ? watchGuests(result.snapshot) : [];
       // While halted the window is hidden: hold the messages (and their scenes) until it is back.
       if (state.halted) queue.pause();
       else queue.resume();
-      queue.push(entries);
+      queue.push([...entries, ...guestEntries]);
     } finally {
       inFlight = false;
     }
@@ -315,6 +342,7 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
 
   return {
     state,
+    guests,
     start() {
       if (cancelRefresh !== null) return;
       cancelRefresh = scheduler.every(options.refreshIntervalMs ?? REFRESH_INTERVAL_MS, () => {

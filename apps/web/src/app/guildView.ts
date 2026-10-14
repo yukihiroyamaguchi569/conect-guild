@@ -9,6 +9,7 @@ import {
 } from '../guild.config';
 import type { GuildEvent } from '../domain/events';
 import { isSnapshotStale } from '../domain/freshness';
+import type { GuestItem, GuestView } from '../domain/guests';
 import {
   assignPr,
   deriveMemberStatuses,
@@ -68,6 +69,32 @@ export function buildBoard(snapshot: SnapshotLists): BoardGroup[] {
     };
   });
   return [reception, ...departments].filter((group) => group.quests.length > 0);
+}
+
+/** How many open items of each guest the board lists (the most recently updated). */
+export const GUEST_BOARD_ITEMS = 3;
+
+/** A guest's part of the board's お客さん section (Issue #108). */
+export interface GuestBoardGroup {
+  readonly key: `guest:${string}`;
+  readonly name: string;
+  /** Null while the guest has no repository or it has not been fetched: nothing to list. */
+  readonly items: readonly GuestItem[] | null;
+  /** Open items not listed (「ほか n 件」). */
+  readonly more: number;
+}
+
+/** The お客さん section: one group per guest, in the settings' order; empty without guests. */
+export function buildGuestBoard(guests: readonly GuestView[]): GuestBoardGroup[] {
+  return guests.map((guest) => {
+    const open = guest.repo?.open ?? null;
+    return {
+      key: `guest:${String(guest.index)}`,
+      name: guest.name,
+      items: open?.slice(0, GUEST_BOARD_ITEMS) ?? null,
+      more: Math.max((open?.length ?? 0) - GUEST_BOARD_ITEMS, 0),
+    };
+  });
 }
 
 /** CSS-facing state of a row. Department members use MemberState; かなめ and the king reuse it. */
@@ -241,6 +268,19 @@ export interface SceneCue {
 export function sceneCue(message: GuildMessage | null): SceneCue | null {
   const event = message?.event ?? null;
   return message === null || event === null ? null : { id: message.id, event };
+}
+
+/** A guest to sparkle on the canvas: the guest of the message now in the window (Issue #108). */
+export interface GuestCue {
+  /** The message id, so the same message never sparkles twice. */
+  readonly id: number;
+  readonly guest: number;
+}
+
+/** The guest cue of the head message; null when it reports no guest's PR or Issue. */
+export function guestCue(message: GuildMessage | null): GuestCue | null {
+  const guest = message?.guest;
+  return message === null || guest === undefined ? null : { id: message.id, guest };
 }
 
 /** Cues the canvas has seen: the last one, and those waiting for its loop to start. */
