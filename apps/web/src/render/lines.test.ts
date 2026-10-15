@@ -373,6 +373,7 @@ describe('showMs', () => {
       'takeChest',
       'clear',
       'seeClear',
+      'kingTakeScroll',
       'kingClear',
       'seeKingClear',
     ] as const;

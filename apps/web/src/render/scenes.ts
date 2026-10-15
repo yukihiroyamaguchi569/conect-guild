@@ -35,7 +35,8 @@ import { planToss, shouldToss, type Flight } from './toss';
  * - level-up: the member hops twice at the seat, with confetti and "LEVEL UP" over it (levelUp.ts)
  * - no department: かなめ only raises the scroll / chest at the reception (confetti stays the same)
  * - king-quest-opened (Issue #142): as issue-opened, かなめ walks the scroll to the side of the
- *   throne (PLACES.throneSide) and the king holds it up on the throne; never tossed
+ *   throne (PLACES.throneSide) and the king holds it up on the throne, with a word of his own
+ *   (Issue #146); never tossed
  * - king-quest-cleared (Issue #147): no confetti; the king says a word on the throne, and かなめ
  *   answers at the reception a moment after it ends
  * - issue-opened to a near desk, now and then: かなめ tosses the scroll from the counter and the
@@ -182,11 +183,13 @@ interface Staging {
   readonly turns: readonly Turn[];
 }
 
-/** What the one who brings `prop` says, and what the one who takes it says. */
-function linesFor(prop: Prop): { give: LineScene; take: LineScene } {
-  return prop === 'scroll'
-    ? { give: 'handOver', take: 'takeScroll' }
-    : { give: 'deliverChest', take: 'takeChest' };
+/**
+ * What the one who brings `prop` says, and what the one who takes it says: the king has lines of
+ * his own for the scroll of his quest (Issue #146).
+ */
+function linesFor(prop: Prop, receiver: MemberId): { give: LineScene; take: LineScene } {
+  if (prop === 'chest') return { give: 'deliverChest', take: 'takeChest' };
+  return { give: 'handOver', take: receiver === PRESIDENT_ID ? 'kingTakeScroll' : 'takeScroll' };
 }
 
 /** Who brings what to where in a handover. */
@@ -219,7 +222,7 @@ function deliver(item: Delivery, start: number, seats: SceneContext['seats']): S
     .stay(RECEIVE_MS, carry(prop));
   const raised = receiving.time;
   receiving.stay(HOLD_UP_MS, raise(prop));
-  const { give, take } = linesFor(prop);
+  const { give, take } = linesFor(prop, receiver);
   return {
     tracks: [giving.build(), receiving.build()],
     turns: [
@@ -234,7 +237,7 @@ function reception(start: number, seats: SceneContext['seats'], prop: Prop): Sta
     tracks: [
       new TrackBuilder('kaname', start, seats.kaname).stay(RECEPTION_MS, raise(prop)).build(),
     ],
-    turns: [{ actor: 'kaname', scene: linesFor(prop).take, at: start }],
+    turns: [{ actor: 'kaname', scene: linesFor(prop, 'kaname').take, at: start }],
   };
 }
 
