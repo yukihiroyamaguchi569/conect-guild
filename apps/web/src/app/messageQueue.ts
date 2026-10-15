@@ -18,6 +18,8 @@ export interface GuildMessage {
   /** Unique within the queue's lifetime (used as the Vue key). */
   readonly id: number;
   readonly text: string;
+  /** `text` with its title masked, for the show mode (Issue #144; MessageEntry.maskedText). */
+  readonly maskedText?: string;
   /** The event this line reports; its scene starts when the line reaches the window. */
   readonly event: GuildEvent | null;
   /** The guest whose PR or Issue this line reports: it sparkles when the line shows (Issue #108). */

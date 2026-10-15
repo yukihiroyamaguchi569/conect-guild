@@ -43,8 +43,15 @@ export type LineScene =
   | 'awaitPermission'
   /** A murmur at the desk with work to do (murmurs.ts). */
   | 'work'
-  /** A murmur at the seat with nothing to do, awake; the king's, on the throne with nothing to approve. */
+  /**
+   * A murmur at the seat with nothing to do, awake; the king's, on the throne with nothing to
+   * approve and none of his quests open (Issue #151).
+   */
   | 'idle'
+  /** The king's murmur on the throne with one or two of his quests open (Issue #151). */
+  | 'kingWork'
+  /** The king's murmur on the throne with his quests piling up (`LINES.kingPiledQuests` or more). */
+  | 'kingWorkPiled'
   /** A murmur dozing at the seat. */
   | 'doze'
   /** Talking in their sleep at the seat. */
@@ -139,6 +146,8 @@ export const LINE_BOOK = {
     seeClear: ['みごとじゃ！', 'あっぱれ！', 'ほめてつかわす'],
     kingTakeScroll: ['わしのしごと', 'やるかのう', 'ふむ、これか'],
     kingClear: ['おわったぞ！', 'やりとげた', 'どうじゃ！'],
+    kingWork: ['よいしょ', 'かきかき', 'でんわせねば', 'ふむ…ふむ…'],
+    kingWorkPiled: ['やまづみじゃ', 'ふう…', 'ひとつずつ'],
     idle: ['うむ', 'よきかな', 'へいわじゃのう', 'ふむふむ'],
     sleepTalk: ['むにゃ…', 'もうたべられぬ', 'うむ…うむ…'],
   },
@@ -188,6 +197,8 @@ const SCENES: readonly LineScene[] = [
   'awaitPermission',
   'work',
   'idle',
+  'kingWork',
+  'kingWorkPiled',
   'doze',
   'sleepTalk',
   'tea',

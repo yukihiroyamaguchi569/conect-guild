@@ -7,6 +7,7 @@ import { LINES } from './metrics';
 import { walkSegment } from './motion';
 import {
   chooseSpeaker,
+  kingQuestCountOf,
   murmurCandidates,
   murmurGap,
   murmurSceneOf,
@@ -44,7 +45,14 @@ function counting(value: number): { random: () => number; draws: () => number } 
 const NOON = 12;
 const WALL = 1_000_000;
 
-const PARTY: MurmurParty = { bubbles: {}, idleSince: {}, activities: {}, wall: WALL, hour: NOON };
+const PARTY: MurmurParty = {
+  bubbles: {},
+  idleSince: {},
+  activities: {},
+  wall: WALL,
+  hour: NOON,
+  kingQuests: 0,
+};
 
 const seat = (id: MemberId): MurmurMember => ({ id, inScene: false, atSeat: true });
 
@@ -137,6 +145,40 @@ describe('murmurSceneOf', () => {
     });
     expect(murmurSceneOf(seat('minori'), party(7))).toBe('windowMorning');
     expect(murmurSceneOf(seat('minori'), party(22))).toBe('windowNight');
+  });
+});
+
+describe('murmurSceneOf: the king’s work (Issue #151)', () => {
+  it('lets the king murmur of his work with quests open, of their pile from 3 (Issue #151)', () => {
+    const awake = { ...PARTY, idleSince: { yukihiro: 0 } };
+    expect(LINES.kingPiledQuests).toBe(3);
+    const sceneWith = (kingQuests: number) =>
+      murmurSceneOf(seat('yukihiro'), { ...awake, kingQuests });
+    expect([0, 1, 2, 3, 9].map(sceneWith)).toEqual([
+      'idle',
+      'kingWork',
+      'kingWork',
+      'kingWorkPiled',
+      'kingWorkPiled',
+    ]);
+    // Not with something to approve, nor in a scene; the members' talk does not follow his quests.
+    expect(murmurSceneOf(seat('yukihiro'), { ...PARTY, kingQuests: 2 })).toBeNull();
+    expect(
+      murmurSceneOf({ ...seat('yukihiro'), inScene: true }, { ...awake, kingQuests: 2 }),
+    ).toBeNull();
+    expect(
+      murmurSceneOf(seat('minori'), { ...PARTY, idleSince: { minori: 0 }, kingQuests: 2 }),
+    ).toBe('idle');
+  });
+
+  it('reads the king’s open quests from the party rows, 0 without his row', () => {
+    expect(
+      kingQuestCountOf([
+        { id: 'minori', quests: 0 },
+        { id: 'yukihiro', quests: 4 },
+      ]),
+    ).toBe(4);
+    expect(kingQuestCountOf([{ id: 'minori', quests: 0 }])).toBe(0);
   });
 });
 

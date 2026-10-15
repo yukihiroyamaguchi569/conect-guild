@@ -58,6 +58,8 @@ const SHOW_MS: Readonly<Record<LineScene, number>> = {
   awaitPermission: LINES.remarkMs,
   work: LINES.murmurMs,
   idle: LINES.murmurMs,
+  kingWork: LINES.murmurMs,
+  kingWorkPiled: LINES.murmurMs,
   doze: LINES.murmurMs,
   sleepTalk: LINES.murmurMs,
   tea: LINES.murmurMs,

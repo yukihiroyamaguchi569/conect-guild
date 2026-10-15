@@ -28,6 +28,8 @@ const SCENES: readonly LineScene[] = [
   'awaitPermission',
   'work',
   'idle',
+  'kingWork',
+  'kingWorkPiled',
   'doze',
   'sleepTalk',
   'tea',
@@ -39,8 +41,16 @@ const SCENES: readonly LineScene[] = [
   'windowNight',
 ];
 
-/** The king's moments: a clear, his own quest's scroll (Issue #146) and clear, his murmurs. */
-const KING_SCENES = ['seeClear', 'kingTakeScroll', 'kingClear', 'idle', 'sleepTalk'];
+/** The king's moments: a clear, his own quest's scroll (Issue #146) and clear, his murmurs (#151). */
+const KING_SCENES = [
+  'seeClear',
+  'kingTakeScroll',
+  'kingClear',
+  'kingWork',
+  'kingWorkPiled',
+  'idle',
+  'sleepTalk',
+];
 
 /** Every (member, moment, lines) in the book. */
 const ENTRIES = MEMBERS.flatMap((id) =>

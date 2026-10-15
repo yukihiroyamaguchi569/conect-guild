@@ -8,6 +8,7 @@ import { FICTIONAL_GUESTS, makeSettings } from '@conect-guild/snapshot/settings.
 import { describe, expect, it } from 'vitest';
 import { SESSION_STALE_AFTER_MS } from '../guild.config';
 import { at, minutesAfter, snapshot, T0 } from './fixtures.test-util';
+import { maskTitle } from './mask';
 import { buildGuests, guestEventMessage, guestEvents, type GuestBaseline } from './guests';
 
 const GUESTS = makeSettings(4, { guests: [...FICTIONAL_GUESTS] }).guests ?? [];
@@ -226,6 +227,13 @@ describe('guestEventMessage', () => {
     const done = { guest: 1, kind: 'issue-completed', number: 5, title: '地図を描く' } as const;
     expect(guestEventMessage(done, 'ぼうけんしゃ')).toBe(
       'ぼうけんしゃ の Issue #5「地図を描く」が完了した',
+    );
+  });
+
+  it('masks only the title for the show mode (Issue #144)', () => {
+    const merged = { guest: 0, kind: 'pr-merged', number: 12, title: '看板を直す' } as const;
+    expect(guestEventMessage(merged, 'たびびと', maskTitle)).toBe(
+      'たびびと の PR #12「＊＊＊＊＊」がマージされた',
     );
   });
 });

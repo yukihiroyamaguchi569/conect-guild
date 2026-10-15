@@ -12,6 +12,7 @@ import { createKeyValueStore, type KeyValueStore } from '../adapters/storage';
 import { parseBaseline } from '../domain/baseline';
 import { diffSnapshot } from '../domain/events';
 import { guestEventMessage, guestEvents, type GuestBaseline } from '../domain/guests';
+import { maskTitle } from '../domain/mask';
 import { diffEntries, type MessageEntry } from '../domain/message';
 import {
   comparedReading,
@@ -246,11 +247,15 @@ function createGuestWatch(guests: readonly GuildGuest[]): (snapshot: Snapshot) =
   return (snapshot) => {
     const { events, baseline } = guestEvents(seen, snapshot.guests.slice(0, guests.length));
     seen = baseline;
-    return events.map((event) => ({
-      text: guestEventMessage(event, guests[event.guest]?.name ?? ''),
-      event: null,
-      guest: event.guest,
-    }));
+    return events.map((event) => {
+      const name = guests[event.guest]?.name ?? '';
+      return {
+        text: guestEventMessage(event, name),
+        maskedText: guestEventMessage(event, name, maskTitle),
+        event: null,
+        guest: event.guest,
+      };
+    });
   };
 }
 

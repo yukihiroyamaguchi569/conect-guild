@@ -280,8 +280,9 @@ export const TOSS = {
  * `remarkChance` (remarks.ts: now and then, not every time). One member at a time murmurs
  * (murmurs.ts) for `murmurMs`; the next comes `murmurGapMinMs` to `murmurGapMaxMs` after it (drawn
  * evenly), but never while a scene, a call or a remark plays nor sooner than `murmurRestMs` after
- * one. A sleeper is chosen with the weight `sleepTalkWeight` against 1 for anyone awake. Times are
- * ms, distances logical px.
+ * one. A sleeper is chosen with the weight `sleepTalkWeight` against 1 for anyone awake. The king
+ * awake on the throne murmurs of his work with his quests open, of their pile from
+ * `kingPiledQuests` on (Issue #151). Times are ms, distances logical px.
  */
 export const LINES = {
   giveMs: 1_500,
@@ -297,6 +298,7 @@ export const LINES = {
   murmurGapMaxMs: 90_000,
   murmurRestMs: 2_000,
   sleepTalkWeight: 0.3,
+  kingPiledQuests: 3,
   recentLines: 2,
   raisedLiftPx: 34,
   tagGapPx: 2,
