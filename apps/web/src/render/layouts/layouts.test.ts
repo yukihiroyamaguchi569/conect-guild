@@ -17,6 +17,7 @@ import { seatSinkFor } from '../seating';
 import { LAYOUTS } from './index';
 import { LAYOUT5 } from './layout5';
 import { LAYOUT6 } from './layout6';
+import { PLACE_DESKS, type Place } from './slots';
 import { TILE_SIZE } from '../metrics';
 import type { GuildLayout, TilePos } from './types';
 
@@ -259,6 +260,81 @@ describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () =
     }
   });
 });
+
+/** Rule 1 of Issue #123, written out again: the order the desk places fill. */
+const RULE_1: readonly Place[] = [
+  'lowerLeft',
+  'lowerRight',
+  'upperLeft',
+  'upperRight',
+  'lowerLeftEnd',
+  'lowerRightEnd',
+];
+
+/** The order of `departments[i]`'s desks: the upper row, then the lower row, then its ends. */
+const READING_ORDER: readonly Place[] = [
+  'upperLeft',
+  'upperRight',
+  'lowerLeft',
+  'lowerRight',
+  'lowerLeftEnd',
+  'lowerRightEnd',
+];
+
+/** The desk place nearest to `pos` (by the seats of the six desks). */
+function nearestPlace(pos: TilePos): Place {
+  const distance = (place: Place): number =>
+    Math.hypot(PLACE_DESKS[place].seat.col - pos.col, PLACE_DESKS[place].seat.row - pos.row);
+  return RULE_1.reduce((best, place) => (distance(place) < distance(best) ? place : best));
+}
+
+const sortedKeys = (tiles: readonly TilePos[]): string[] =>
+  tiles.map(keyOf).sort((a, b) => a.localeCompare(b));
+
+describe.each(Object.values(LAYOUTS))(
+  'layout of $departmentCount departments: the rules of Issue #123',
+  (layout) => {
+    const count = layout.departmentCount;
+
+    it('fills the desk places in order: lower left and right, upper left and right, the ends', () => {
+      const wanted = RULE_1.slice(0, count).map((place) => PLACE_DESKS[place].seat);
+      expect(sortedKeys(layout.desks.map((desk) => desk.seat))).toEqual(sortedKeys(wanted));
+    });
+
+    it('seats the departments upper row first, left to right, as before Issue #123', () => {
+      const filled = RULE_1.slice(0, count);
+      const wanted = READING_ORDER.filter((place) => filled.includes(place));
+      expect(layout.desks.map((desk) => keyOf(desk.seat))).toEqual(
+        wanted.map((place) => keyOf(PLACE_DESKS[place].seat)),
+      );
+    });
+
+    it('stands the guests at the next desk place (two departments: the upper right tavern)', () => {
+      const next = count === 2 ? 'upperRight' : RULE_1[count];
+      expect(layout.guestSpots.length > 0).toBe(next !== undefined);
+      for (const spot of layout.guestSpots) expect(nearestPlace(spot), keyOf(spot)).toBe(next);
+    });
+
+    // Four departments keep the map table before their guests; six have none.
+    it.skipIf(count === 4 || count === 6)(
+      'puts the tavern’s round table right before a guest',
+      () => {
+        const tables = layout.decor.filter((item) => item.name === 'round-table');
+        expect(tables).toHaveLength(1);
+        const before = layout.guestSpots.filter((spot) =>
+          tables.some(
+            (table) =>
+              spot.col >= table.col &&
+              spot.col < table.col + table.w &&
+              table.row - spot.row >= 1 &&
+              table.row - spot.row <= 2,
+          ),
+        );
+        expect(before).toHaveLength(1);
+      },
+    );
+  },
+);
 
 describe('layout of 6 departments: むすび clear of the party window (Issue #121)', () => {
   const seat = LAYOUT6.desks[5]?.seat;
