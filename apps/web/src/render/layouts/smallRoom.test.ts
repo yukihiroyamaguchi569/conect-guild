@@ -110,6 +110,22 @@ describe.each([LAYOUT2, LAYOUT3])('$departmentCount departments: the guests', (l
   });
 });
 
+describe('4 departments: the guests', () => {
+  it('stand the first beside the stool, clear of the map table, and the second before it (#137)', () => {
+    const table = LAYOUT4.decor.find((item) => item.name === 'map-table');
+    const stool = LAYOUT4.decor.find((item) => item.name === 'stool');
+    const [first, second] = LAYOUT4.guestSpots;
+    if (table === undefined || stool === undefined || first === undefined || second === undefined)
+      throw new Error('no map table, stool or guest spots');
+    // Right of the stool: right of the map table, so a lone guest hides none of it.
+    expect(first).toEqual({ col: stool.col + stool.w, row: stool.row });
+    expect(first.col).toBeGreaterThanOrEqual(table.col + table.w);
+    // In front of the map table: only when a second guest comes.
+    expect(second).toEqual({ col: 4, row: 13 });
+    expect(second.row).toBe(table.row + table.h);
+  });
+});
+
 /** True when two tile rectangles share a cell. */
 const sharesCell = (a: TileRect, b: TileRect): boolean =>
   a.col < b.col + b.w && b.col < a.col + a.w && a.row < b.row + b.h && b.row < a.row + a.h;
