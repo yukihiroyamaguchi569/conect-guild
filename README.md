@@ -4,7 +4,7 @@
 
 AI だけで動く小さな会社を、レトロ RPG のギルド画面として眺めるアプリ。
 
-[conect-management](https://github.com/yukihiroyamaguchi569/conect-management) では、司令塔の AI（かなめ）が社長の依頼を GitHub Issue に分解し、部門ごとの Claude Code セッション（経理・広報・企画・総務）に渡して、PR で成果を受け取ります。conect-guild はその様子を、クエスト掲示板・パーティ・玉座の王様として描きます。
+作者の会社では、司令塔の AI（かなめ）が社長の依頼を GitHub Issue に分解し、部門ごとの Claude Code セッション（経理・広報・企画・総務）に渡して、PR で成果を受け取ります。conect-guild はその様子を、クエスト掲示板・パーティ・玉座の王様として描きます。
 
 ![デモモードの画面（架空のデータ）](assets/screenshots/demo-overview.png)
 
@@ -27,7 +27,11 @@ AI だけで動く小さな会社を、レトロ RPG のギルド画面として
 - **昼夜**: 手元の時刻で部屋の明るさが変わり、夜は灯りの周りだけが明るい
 - **暇なとき**: うとうと・寝る、お茶・窓・おしゃべり・玉座のそばのトイプードルと遊びに行く
 - **ようすのナレーション**: 出来事が無い間、メッセージ窓がギルドのようすを 20 秒ごとに語る
-- **王様の呼びかけ**: 社長がセッションに指示を出すと、王様が話しかけ、相手が「はっ！」と返す
+- **王様の呼びかけ**: 社長がセッションに指示を出すと、王様が話しかけ、相手が「はっ！」と返す。かなめが部門に仕事を振ったときは、かなめが部門に「おねがい！」と言い、部門が「はい！」と返す
+- **王様のクエスト**: ラベル「社長」を付けた Issue は、掲示板の「おうさまの クエスト」と、玉座の王様の仕事として出る
+- **お客さん**: 会社の外のセッション（最大 2 人）を、設定に名前を書いて訪ねてくる客として描く
+- **見せるモード**: 人に画面を見せるときのために、取得のようすのタブのボタン 1 つで Issue・PR の題名を伏せる
+- **取得のようすのタブ**: 最終取得の時刻や失敗、音のオン・オフと音量をメッセージ窓の上のタブに出す
 - **経験値とレベル**: クリアとマージの全履歴から数える。レベルアップでは席で跳ねて「LEVEL UP」
 - **セリフ**: 巻物の受け渡し・宝箱・クリアのときに短い一言
 - **デモモード**: 架空のクエストで一連の演出をくり返す
@@ -39,6 +43,8 @@ AI だけで動く小さな会社を、レトロ RPG のギルド画面として
 Node.js 26.10 以上で:
 
 ```bash
+git clone https://github.com/yukihiroyamaguchi569/conect-guild.git
+cd conect-guild
 npm ci --ignore-scripts
 npm run dev
 ```
@@ -52,7 +58,7 @@ http://127.0.0.1:5173 を開くだけで、架空のクエストのデモが動�
 - 設計: [docs/DESIGN.md](docs/DESIGN.md)
 - 自分のチームで使う（設定・収集・データの扱い）: [docs/setup.md](docs/setup.md)
 - 設定ファイルを Claude Code に作らせる: conect-guild の直下で `/guild-setup`（[docs/setup.md の 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える)）
-- 架空の会社を作って試す: conect-guild の直下で `/guild-trial`（GitHub に private のリポジトリを作る。[docs/setup.md](docs/setup.md)）
+- 架空の会社を作って試す: conect-guild の直下で `/guild-trial`（GitHub に private のリポジトリを作る。[docs/setup.md](docs/setup.md)）。片付けは `/guild-trial-cleanup`
 - 司令塔と部門の AI を GitHub で回す流儀と CLAUDE.md の雛形: [docs/orchestration.md](docs/orchestration.md)
 - 変更履歴: [docs/changes/](docs/changes/)
 
