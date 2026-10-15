@@ -8,9 +8,9 @@ import type { GuildLayout } from './types';
  */
 export const LAYOUT3: GuildLayout = buildLayout(3, {
   hourglassOnCounter: false,
-  // Five rows: one row (38.0 px) less than layout4 (284.5 px against 322.4 px in the demo at
-  // 1024 px, Chrome, 2026-10-14). Taken off layout4's 340 and 372.5 px and rounded up.
-  partyWindow: { bottom: 303, tallestBottom: 335 },
+  // Five rows, with the fetch status on the tab (Issue #132): the column ends at 236.5 px in the
+  // demo at 1024 px (Chrome, 2026-10-15). No note reaches it, so both are the same.
+  partyWindow: { bottom: 240, tallestBottom: 240 },
   // As in layout4: the upper desk is 5 tiles from かなめ, the lower ones 5.8.
   toss: { maxTiles: 5.5 },
 });

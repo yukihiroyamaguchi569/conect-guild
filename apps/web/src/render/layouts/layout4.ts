@@ -9,9 +9,9 @@ import type { GuildLayout } from './types';
  */
 export const LAYOUT4: GuildLayout = buildLayout(4, {
   hourglassOnCounter: false,
-  // Measured 324 px, 340 px with a failure line, 372.5 px with every rare note (Chrome,
-  // 2026-10-12).
-  partyWindow: { bottom: 340, tallestBottom: 373 },
+  // Six rows, with the fetch status on the tab (Issue #132): the column ends at 274.4 px in the
+  // demo at 1024 px (Chrome, 2026-10-15). No note reaches it, so both are the same.
+  partyWindow: { bottom: 278, tallestBottom: 278 },
   // 経理 and 広報 behind the counter are 5 tiles from かなめ; 企画 and 総務 in front of it 5.8.
   toss: { maxTiles: 5.5 },
 });

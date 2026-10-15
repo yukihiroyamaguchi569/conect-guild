@@ -8,9 +8,9 @@ import type { GuildLayout } from './types';
 export const LAYOUT2: GuildLayout = buildLayout(2, {
   hourglassOnCounter: false,
   // Four rows: the party window keeps its minimum height (GuildScreen.vue .stage__party, 21.1cqw),
-  // so the column ends 49.2 px above layout4's (273.3 px against 322.4 px in the demo at 1024 px,
-  // Chrome, 2026-10-14). Taken off layout4's 340 and 372.5 px and rounded up.
-  partyWindow: { bottom: 291, tallestBottom: 324 },
+  // and with the fetch status on the tab (Issue #132) that is the column: it ends at 225.3 px in
+  // the demo at 1024 px (Chrome, 2026-10-15). No note reaches it, so both are the same.
+  partyWindow: { bottom: 229, tallestBottom: 229 },
   // As in layout4: the lower desks are 5.8 tiles from かなめ, so she walks every scroll over.
   toss: { maxTiles: 5.5 },
 });

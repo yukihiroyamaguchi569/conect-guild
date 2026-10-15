@@ -107,11 +107,15 @@ export interface GuildLayout {
    * two with two to four departments, one with five, none with six).
    */
   readonly guestSpots: readonly TilePos[];
-  /** How far down the right-hand column (party window) reaches, logical px (render/map.ts). */
+  /**
+   * How far down the right-hand column (party window) reaches, logical px (render/map.ts). The fetch
+   * status is a tab on the message window in every layout (Issue #132), so no note reaches the
+   * column and both are the same.
+   */
   readonly partyWindow: {
-    /** Measured with a failure line: walking keeps clear of it. */
+    /** Walking keeps clear of it. */
     readonly bottom: number;
-    /** With every rare note: seats and their bubbles keep clear of it. */
+    /** Seats and their bubbles keep clear of it. */
     readonly tallestBottom: number;
     /** The rows are packed (ui/PartyStatus.vue `dense`) so that seven or eight of them fit. */
     readonly dense?: boolean;
@@ -120,11 +124,6 @@ export interface GuildLayout {
      * end above the bubble over the sales desk (Issue #121).
      */
     readonly tight?: boolean;
-    /**
-     * The fetch status leaves the column for a one-line tab on the message window's top edge
-     * (ui/GuildScreen.vue, render/map.ts FETCH_TAB): layout6, Issue #121.
-     */
-    readonly fetchTab?: boolean;
   };
   /**
    * The quest board's max-height in cqw (GuildScreen.vue; it scrolls beyond), when lower than
@@ -134,9 +133,9 @@ export interface GuildLayout {
   readonly boardMaxCqw?: number;
   /**
    * Tiles where the party window may cover the top of a member's frame and the bubble over the
-   * head: layout5's guest, whose head only its rare extra notes reach (the president accepted it,
-   * 2026-10-15). layout6's sales desk was one until its column ended above the bubble (Issue #121).
-   * Nowhere else does anything that matters go under a window.
+   * head. None today: layout6's sales desk was one until Issue #121, layout5's guest until Issue
+   * #132 moved the fetch status to the tab in every layout. Nowhere does anything that matters go
+   * under a window.
    */
   readonly underPartyWindow?: readonly TilePos[];
   readonly toss: {

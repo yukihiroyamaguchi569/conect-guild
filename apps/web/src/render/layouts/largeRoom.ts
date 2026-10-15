@@ -78,9 +78,7 @@ export const SALES_DESK: CornerDesk = {
  * The one guest of five departments (seven on stage with かなめ, Issue #122): on the lower right
  * carpet right of the 総務 desk, three columns past the alley beside it (col 24; the president
  * chose it, 2026-10-15), one row in front of the 総務 seat with the round table (GUEST_TABLE)
- * before it. The party window at its usual height ends
- * above the frame; only its rare extra notes (tallestBottom) cover the top of the head: the one
- * tile the party window may cover (underPartyWindow; six departments' sales desk was one until
- * Issue #121). Six departments leave no room for a guest.
+ * before it. The party window ends above the frame: its rare notes covered the top of the head
+ * until the fetch status became the tab (Issue #132). Six departments leave no room for a guest.
  */
 export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 27, row: 11 };

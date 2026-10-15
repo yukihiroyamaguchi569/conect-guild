@@ -42,20 +42,16 @@ const walkerSeats = (layout: GuildLayout): TilePos[] => [
 const allSeats = (layout: GuildLayout): TilePos[] => [...walkerSeats(layout), layout.kingSeat];
 
 /**
- * The windows at their tallest that must keep clear of `pos`: all but the party window on the
- * tiles the layout lets it cover (layout5's guest, the president's decision 2026-10-15; layout6's
- * sales desk was one until Issue #121).
+ * The windows at their tallest, every one of them: no tile is an exception any more (layout6's
+ * sales desk went with Issue #121, layout5's guest with Issue #132).
  */
-function windowsOver(layout: GuildLayout, pos: TilePos) {
-  const { party, ...others } = tallestWindowExtentsFor(layout);
-  return isPartyExceptionIn(layout, pos)
-    ? Object.values(others)
-    : [...Object.values(others), party];
+function windowsOver(layout: GuildLayout) {
+  return Object.values(tallestWindowExtentsFor(layout));
 }
 
 function underWindow(layout: GuildLayout, pos: TilePos): boolean {
   const sprite = spriteRect(pos);
-  return windowsOver(layout, pos).some((area) => overlaps(sprite, area));
+  return windowsOver(layout).some((area) => overlaps(sprite, area));
 }
 
 describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: seats', (layout) => {
@@ -98,7 +94,7 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: s
           'right',
           0,
         );
-        for (const area of windowsOver(layout, seat)) expect(overlaps(box, area)).toBe(false);
+        for (const area of windowsOver(layout)) expect(overlaps(box, area)).toBe(false);
       }
     }
   });
@@ -175,8 +171,8 @@ describe.each(Object.values(LAYOUTS))(
       }
     });
 
-    it('keeps the party window extents in order', () => {
-      expect(layout.partyWindow.tallestBottom).toBeGreaterThanOrEqual(layout.partyWindow.bottom);
+    it('measures one bottom for the party window: no note reaches it (Issue #132)', () => {
+      expect(layout.partyWindow.tallestBottom).toBe(layout.partyWindow.bottom);
       expect(layout.toss.maxTiles).toBeGreaterThan(0);
     });
   },
@@ -202,12 +198,9 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: d
     }
   });
 
-  it('lets the party window cover only tiles it reaches, and only in five departments', () => {
-    const listed = layout.underPartyWindow ?? [];
-    expect(listed.length > 0).toBe(layout.departmentCount === 5);
-    // At its tallest: layout5's guest is clear of it at its usual height (Issue #122).
-    const { party } = tallestWindowExtentsFor(layout);
-    for (const tile of listed) expect(overlaps(spriteRect(tile), party), keyOf(tile)).toBe(true);
+  // layout6's sales desk went with Issue #121, layout5's guest with Issue #132.
+  it('lists no tile under the party window', () => {
+    expect(layout.underPartyWindow ?? []).toEqual([]);
   });
 });
 
@@ -226,8 +219,10 @@ describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () =
     expect(groundAt(LAYOUT5, spot)).toBe('floor-carpet');
   });
 
-  it('keeps the guest clear of the party window at its usual height', () => {
-    expect(overlaps(spriteRect(spot), windowExtentsFor(LAYOUT5).party)).toBe(false);
+  // Its rare notes on the tab, the party window no longer grows over the head (Issue #132).
+  it('keeps the guest clear of the party window at its tallest', () => {
+    expect(overlaps(spriteRect(spot), tallestWindowExtentsFor(LAYOUT5).party)).toBe(false);
+    expect(isPartyExceptionIn(LAYOUT5, spot)).toBe(false);
   });
 
   it('puts the tavern’s round table on the carpet right in front of the guest', () => {
@@ -346,19 +341,17 @@ describe('layout of 6 departments: むすび clear of the party window (Issue #1
   });
 
   it('ends the column above the seat’s bubble, the fetch status gone to the tab', () => {
-    const { party, tab } = tallestWindowExtentsFor(LAYOUT6);
+    const { party } = tallestWindowExtentsFor(LAYOUT6);
     const feet = tileToPoint(seat);
     const bubble = bubbleBox(feet, { voice: 'glyph', chars: 1 }, 'right', 0);
     expect(overlaps(bubble, party)).toBe(false);
     expect(overlaps(spriteRect(seat), party)).toBe(false);
-    expect(LAYOUT6.partyWindow).toMatchObject({ tight: true, fetchTab: true });
-    expect(tab).toBeDefined();
+    expect(LAYOUT6.partyWindow).toMatchObject({ tight: true });
   });
 
-  it('keeps the party window extents of the other layouts and their fetch status in the column', () => {
+  it('packs the party window tighter in six departments only', () => {
     for (const layout of Object.values(LAYOUTS).filter((l) => l !== LAYOUT6)) {
       expect(layout.partyWindow.tight ?? false).toBe(false);
-      expect(layout.partyWindow.fetchTab ?? false).toBe(false);
     }
   });
 });
