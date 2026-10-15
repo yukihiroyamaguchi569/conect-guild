@@ -21,6 +21,7 @@ import type { GuildArt } from '../render/art';
 import { bubblesOf } from '../render/bubbles';
 import { hourFromQuery } from '../render/daylight';
 import { levelsOf } from '../render/levelTags';
+import { kingQuestCountOf } from '../render/murmurs';
 import type { GuestArt } from '../render/guestArt';
 import { stageGuestsOf } from '../render/guests';
 import { loadArt, loadGuestArt } from '../render/loadArt';
@@ -98,6 +99,7 @@ function stageParty(rows: readonly PartyRow[]): StageParty {
     // Before the first snapshot the party is empty: not one to compare with (render/remarks.ts).
     known: rows.length > 0,
     levels: levelsOf(rows),
+    kingQuests: kingQuestCountOf(rows),
   };
 }
 

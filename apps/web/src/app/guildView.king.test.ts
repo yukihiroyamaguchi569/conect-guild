@@ -58,4 +58,14 @@ describe('buildParty: the king’s row', () => {
     expect(king({ president: PRESIDENT }, false)?.stateLabel).toBe('玉座で待機');
     expect(king({})?.stateLabel).toBe('玉座で待機');
   });
+
+  it('carries how many quests are open for his murmurs (Issue #151), 0 on the other rows', () => {
+    const rows = buildParty(snapshot({ president: PRESIDENT }), now, true);
+    expect(rows.at(-1)?.quests).toBe(2);
+    expect(rows.slice(0, -1).map((row) => row.quests)).toEqual(rows.slice(0, -1).map(() => 0));
+    expect(king({ president: PRESIDENT }, false)?.quests).toBe(0);
+    expect(
+      king({ prs: [pr(10, { changedFiles: ['CLAUDE.md'] })], president: PRESIDENT })?.quests,
+    ).toBe(2);
+  });
 });

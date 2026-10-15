@@ -42,7 +42,14 @@ function counting(value: number): { random: () => number; draws: () => number } 
 const NOON = 12;
 const WALL = 1_000_000;
 
-const PARTY: MurmurParty = { bubbles: {}, idleSince: {}, activities: {}, wall: WALL, hour: NOON };
+const PARTY: MurmurParty = {
+  bubbles: {},
+  idleSince: {},
+  activities: {},
+  wall: WALL,
+  hour: NOON,
+  kingQuests: 0,
+};
 
 const seat = (id: MemberId): MurmurMember => ({ id, inScene: false, atSeat: true });
 
@@ -207,7 +214,7 @@ describe('murmurMoment', () => {
   const frame = {
     t: 5,
     hour: NOON,
-    party: { bubbles: {}, idleSince: { hibiki: 0 }, known: true, halted: false },
+    party: { bubbles: {}, idleSince: { hibiki: 0 }, kingQuests: 0, known: true, halted: false },
     members: [seat('hibiki')],
     busy: false,
   };

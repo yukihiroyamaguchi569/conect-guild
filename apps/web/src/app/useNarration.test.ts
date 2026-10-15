@@ -24,6 +24,7 @@ function rows(): PartyRow[] {
     tooltip: null,
     rewards: null,
     level: KING_LEVEL,
+    quests: 0,
   }));
 }
 

@@ -42,6 +42,8 @@ import { cutVisit } from './visit';
 export interface CastParty extends RemarkParty {
   readonly idleSince: IdleSince;
   readonly moods: AmbientMoods;
+  /** How many of the king's quests are open: what he murmurs on the throne (murmurs.ts). */
+  readonly kingQuests: number;
 }
 
 export interface Cast {
