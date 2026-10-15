@@ -5,6 +5,7 @@ import type { SnapshotLoadResult } from '../adapters/snapshot';
 import type { DemoSession } from '../app/demo';
 import { liveGuildOptions } from '../app/screenMode';
 import { useGuild } from '../app/useGuild';
+import { useMask } from '../app/useMask';
 import { useMissingLabels } from '../app/useMissingLabels';
 import { useNarration } from '../app/useNarration';
 import { useSound } from '../app/useSound';
@@ -14,6 +15,7 @@ import DemoStart from './DemoStart.vue';
 import FetchStatus from './FetchStatus.vue';
 import GuildCanvas from './GuildCanvas.vue';
 import KingBubble from './KingBubble.vue';
+import MaskControl from './MaskControl.vue';
 import MessageWindow from './MessageWindow.vue';
 import AutoDemoBanner from './AutoDemoBanner.vue';
 import MissingLabelsBanner from './MissingLabelsBanner.vue';
@@ -75,6 +77,8 @@ const {
   cycleVolume,
   callStarted,
 } = useSound({ message, party, halted: () => state.halted }, demo?.storage);
+/** The show mode (Issue #144): live screen only, the demo's titles are fictional. */
+const { masked, toggleMask } = useMask(demo === null);
 const { narration, next, idleSeeds, setIdleSince } = useNarration({
   message,
   party,
@@ -157,6 +161,7 @@ function onStageShown(shown: boolean): void {
           :groups="board"
           :guests="guestBoard"
           :loaded="state.snapshot !== null"
+          :masked="masked"
         />
         <KingBubble class="stage__king" :waiting="king.waiting" :detail="king.detail" />
         <MessageWindow
@@ -164,6 +169,7 @@ function onStageShown(shown: boolean): void {
           :message="message"
           :remaining="Math.max(state.messages.length - 1, 0)"
           :narration="narration"
+          :masked="masked"
           @next="next"
         />
         <DemoStart
@@ -194,6 +200,7 @@ function onStageShown(shown: boolean): void {
             @toggle="toggleSound"
             @cycle-volume="cycleVolume"
           />
+          <MaskControl v-if="demo === null" :masked="masked" @toggle="toggleMask" />
         </FetchStatus>
       </div>
       <FetchStatus
@@ -208,6 +215,7 @@ function onStageShown(shown: boolean): void {
         @clear-baseline="clearBaseline"
       >
         <SoundControl :settings="soundSettings" @toggle="toggleSound" @cycle-volume="cycleVolume" />
+        <MaskControl v-if="demo === null" :masked="masked" @toggle="toggleMask" />
       </FetchStatus>
     </div>
   </main>
