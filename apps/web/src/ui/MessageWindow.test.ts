@@ -56,3 +56,30 @@ describe('MessageWindow', () => {
     expect(html).toContain('&lt;b&gt;x&lt;/b&gt;');
   });
 });
+
+describe('MessageWindow: the show mode (Issue #144)', () => {
+  const line: GuildMessage = {
+    id: 2,
+    text: 'たびびと の PR #12「取引先の看板」がマージされた',
+    maskedText: 'たびびと の PR #12「＊＊＊＊＊＊」がマージされた',
+    event: null,
+    guest: 0,
+  };
+
+  function renderLine(msg: GuildMessage, masked: boolean): Promise<string> {
+    return renderToString(
+      createSSRApp(MessageWindow, { message: msg, remaining: 0, narration: null, masked }),
+    );
+  }
+
+  it('shows the masked line: no title, the name and the number stay', async () => {
+    const html = await renderLine(line, true);
+    expect(html).not.toContain('取引先の看板');
+    expect(html).toContain('たびびと の PR #12「＊＊＊＊＊＊」がマージされた');
+  });
+
+  it('shows the line as it is when not masked, and a notice as it is either way', async () => {
+    expect(await renderLine(line, false)).toContain('「取引先の看板」');
+    expect(await renderLine(message, true)).toContain('テスト');
+  });
+});

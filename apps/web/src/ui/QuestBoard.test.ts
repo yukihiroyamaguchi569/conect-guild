@@ -89,3 +89,47 @@ describe('QuestBoard: おうさまの クエスト (Issue #141)', () => {
     expect(html).not.toContain('いまは クエストが ありません');
   });
 });
+
+describe('QuestBoard: the show mode (Issue #144)', () => {
+  const groups = [
+    {
+      key: 'department:錬金',
+      label: 'みのり',
+      color: '#4caf50',
+      quests: [
+        {
+          number: 41,
+          title: '取引先との契約',
+          state: 'open',
+          closedAt: null,
+          department: '錬金',
+          multiDepartment: false,
+        },
+      ],
+    },
+  ] as const;
+
+  function renderBoard(masked: boolean): Promise<string> {
+    return renderToString(
+      createSSRApp(QuestBoard, { groups, guests: [GUEST], loaded: true, masked }),
+    );
+  }
+
+  it('masks every title while keeping the numbers and the names', async () => {
+    const html = await renderBoard(true);
+    expect(html).not.toContain('取引先との契約');
+    expect(html).not.toContain('架空の Issue');
+    expect(html).toContain('#41');
+    expect(html).toContain('#5');
+    expect(html).toContain('みのり');
+    expect(html).toContain('たびびと');
+    expect(html).toContain('＊＊＊＊＊＊＊');
+  });
+
+  it('shows the titles when not masked', async () => {
+    const html = await renderBoard(false);
+    expect(html).toContain('取引先との契約');
+    expect(html).toContain('架空の Issue');
+    expect(html).not.toContain('＊');
+  });
+});

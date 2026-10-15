@@ -74,6 +74,11 @@ describe('createGuildStore: the guests', () => {
       { text: 'たびびと の PR #13「架空の完了 13」がマージされた', event: null, guest: 0 },
       { text: 'たびびと の Issue #5「架空の完了 5」が完了した', event: null, guest: 0 },
     ]);
+    // Queued with its masked line, so the show mode masks it even when turned on later (Issue #144).
+    expect(store.state.messages.map(({ maskedText }) => maskedText)).toEqual([
+      'たびびと の PR #13「＊＊＊＊＊＊＊＊」がマージされた',
+      'たびびと の Issue #5「＊＊＊＊＊＊＊」が完了した',
+    ]);
     expect(guestCue(store.state.messages[0] ?? null)).toEqual({
       id: store.state.messages[0]?.id,
       guest: 0,

@@ -33,6 +33,25 @@ async function openDemo(page: Page, context: BrowserContext) {
   return { errors, snapshotRequests };
 }
 
+test('the demo has no show mode: no button, and its titles stay even when the live screen masks (Issue #144)', async ({
+  page,
+  context,
+}) => {
+  await context.addInitScript(() => {
+    localStorage.setItem('conect-guild:mask', '{"on":true}');
+  });
+  const { errors } = await openDemo(page, context);
+  await page.getByRole('button', { name: '▶ はじめる' }).click();
+  await expect(page.getByRole('region', { name: 'メッセージ' })).toContainText(
+    '「10 月分の請求書を作る」',
+    { timeout: FIRST_EVENT_TIMEOUT },
+  );
+  await expect(page.getByRole('region', { name: 'クエスト掲示板' })).not.toContainText('＊');
+  await expect(page.getByRole('button', { name: /^(見せる|もどす)$/ })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '取得のようす' })).not.toContainText('伏せ中');
+  expect(errors).toEqual([]);
+});
+
 test('?demo=1 plays the fictional script with sound, never reading /snapshot.json', async ({
   page,
   context,

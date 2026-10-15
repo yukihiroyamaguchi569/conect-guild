@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { GuildEvent } from './events';
 import { GAP_NOTICE_MESSAGE } from './events';
 import { closedIssue, issue, mergedPr, snapshot, T0 } from './fixtures.test-util';
-import { actorName, diffEntries, diffMessages, eventMessage } from './message';
+import { maskTitle } from './mask';
+import { actorName, diffEntries, diffMessages, eventMessage, shownText } from './message';
 
 const snap = snapshot({
   issues: [closedIssue(98, T0, ['総務']), issue(104, { title: '受付の題名' })],
@@ -108,8 +109,30 @@ describe('diffEntries', () => {
       notice: null,
     } as const;
     expect(diffEntries(diff, snap)).toEqual([
-      { text: 'ささえは PR#108「棚卸しの結果」を かなめに とどけた！', event: merged },
-      { text: 'ささえは クエスト#98「架空の依頼 98」を クリアした！', event: closed },
+      {
+        text: 'ささえは PR#108「棚卸しの結果」を かなめに とどけた！',
+        maskedText: 'ささえは PR#108「＊＊＊＊＊＊」を かなめに とどけた！',
+        event: merged,
+      },
+      {
+        text: 'ささえは クエスト#98「架空の依頼 98」を クリアした！',
+        maskedText: 'ささえは クエスト#98「＊＊＊＊＊＊＊＊」を クリアした！',
+        event: closed,
+      },
+    ]);
+  });
+
+  it('keeps no masked text for a line without a title (Issue #144)', () => {
+    const levelUp = event('level-up', 10, '経理');
+    const cleared = event('king-quest-cleared', 7, null);
+    const diff = {
+      events: [levelUp, cleared],
+      baselineUpdate: { action: 'keep' },
+      notice: null,
+    } as const;
+    expect(diffEntries(diff, snap)).toEqual([
+      { text: 'みのりは レベル 10 に あがった！', event: levelUp },
+      { text: 'おうさまは クエスト#7 を クリアした！', event: cleared },
     ]);
   });
 
@@ -122,5 +145,33 @@ describe('diffEntries', () => {
     const entries = diffEntries(diff, snap);
     expect(entries[0]).toEqual({ text: GAP_NOTICE_MESSAGE, event: null });
     expect(entries).toHaveLength(2);
+  });
+});
+
+describe('the show mode (Issue #144)', () => {
+  it('masks only the title: the sentence, the number and the names stay', () => {
+    expect(eventMessage(event('issue-opened', 104, '企画'), snap, maskTitle)).toBe(
+      'かなめは ひらめに クエスト#104「＊＊＊＊＊」を わたした！',
+    );
+  });
+
+  it('masks the king quest as it arrives, with the same sentence', () => {
+    const kingSnap = snapshot({
+      president: { issues: [{ number: 7, title: '取引先との打ち合わせ', updatedAt: T0 }] },
+    });
+    const opened = event('king-quest-opened', 7, null);
+    expect(eventMessage(opened, kingSnap)).toBe(
+      'おうさまに クエスト#7「取引先との打ち合わせ」が とどいた！',
+    );
+    expect(eventMessage(opened, kingSnap, maskTitle)).toBe(
+      'おうさまに クエスト#7「＊＊＊＊＊＊＊＊」が とどいた！',
+    );
+  });
+
+  it('shows the masked line only while masked, and the text when there is none', () => {
+    const entry = { text: 'A「題名」', maskedText: 'A「＊＊＊＊」' };
+    expect(shownText(entry, false)).toBe('A「題名」');
+    expect(shownText(entry, true)).toBe('A「＊＊＊＊」');
+    expect(shownText({ text: 'お知らせ' }, true)).toBe('お知らせ');
   });
 });

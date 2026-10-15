@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { GuildMessage } from '../app/messageQueue';
 import type { Narration } from '../app/narrator';
+import { shownText } from '../domain/message';
 
 defineProps<{
   /** The head of the queue; null when nothing new happened. */
@@ -9,6 +10,8 @@ defineProps<{
   remaining: number;
   /** How the guild looks now, shown while there is no message; null before the first snapshot. */
   narration: Narration | null;
+  /** The show mode (Issue #144): the line's title is masked. */
+  masked?: boolean;
 }>();
 
 const emit = defineEmits<{ next: [] }>();
@@ -16,7 +19,9 @@ const emit = defineEmits<{ next: [] }>();
 
 <template>
   <section class="rpg-window message" aria-label="メッセージ" aria-live="polite">
-    <p v-if="message !== null" :key="message.id" class="message__text">{{ message.text }}</p>
+    <p v-if="message !== null" :key="message.id" class="message__text">
+      {{ shownText(message, masked) }}
+    </p>
     <p
       v-else-if="narration !== null"
       :key="`narration-${narration.id}`"

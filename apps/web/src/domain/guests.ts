@@ -149,9 +149,14 @@ export function guestEvents(
 }
 
 /** The message window's line, e.g. `たびびと の PR #12「…」がマージされた`. */
-export function guestEventMessage(event: GuestEvent, name: string): string {
+export function guestEventMessage(
+  event: GuestEvent,
+  name: string,
+  shown: (title: string) => string = (title) => title,
+): string {
   const n = String(event.number);
+  const title = shown(event.title);
   return event.kind === 'pr-merged'
-    ? `${name} の PR #${n}「${event.title}」がマージされた`
-    : `${name} の Issue #${n}「${event.title}」が完了した`;
+    ? `${name} の PR #${n}「${title}」がマージされた`
+    : `${name} の Issue #${n}「${title}」が完了した`;
 }
