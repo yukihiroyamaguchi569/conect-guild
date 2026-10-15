@@ -24,6 +24,17 @@ function guestViews(store: GuildStore, checkedAt: ComputedRef<number>) {
   return { guests, guestBoard: computed(() => buildGuestBoard(guests.value)) };
 }
 
+/** The board and the party, with the king's quests when the store has them (Issue #152). */
+function questViews(store: GuildStore, checkedAt: ComputedRef<number>) {
+  const { state, kingQuests } = store;
+  return {
+    board: computed(() => (state.snapshot === null ? [] : buildBoard(state.snapshot, kingQuests))),
+    party: computed(() =>
+      state.snapshot === null ? [] : buildParty(state.snapshot, checkedAt.value, kingQuests),
+    ),
+  };
+}
+
 /** Binds the guild store to a component's lifetime and exposes what the windows render. */
 export function useGuild(options: GuildStoreOptions = {}) {
   const store = createGuildStore(options);
@@ -45,10 +56,7 @@ export function useGuild(options: GuildStoreOptions = {}) {
 
   // Judged at the time of the latest fetch, so the view only changes when data does.
   const checkedAt = computed(() => state.checkedAt ?? 0);
-  const board = computed(() => (state.snapshot === null ? [] : buildBoard(state.snapshot)));
-  const party = computed(() =>
-    state.snapshot === null ? [] : buildParty(state.snapshot, checkedAt.value),
-  );
+  const { board, party } = questViews(store, checkedAt);
   const king = computed(() => buildKingBubble(state.snapshot));
   const { guests, guestBoard } = guestViews(store, checkedAt);
   const fetchStatus = computed(() =>

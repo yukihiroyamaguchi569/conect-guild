@@ -13,6 +13,7 @@ import {
   ruleChangeFile,
 } from './demo';
 import { DEMO_LANES, DEMO_RECEPTION_TITLES, DEMO_SCRIPT, DEMO_TITLES } from './demoScript';
+import { EVENT_GAP_LIMIT_MS } from '../guild.config';
 import { diffSnapshot, type GuildEvent } from './events';
 import { isRuleChangePath } from './party';
 import { readSessions, summonedMembers } from './summons';
@@ -28,12 +29,15 @@ function stateOf(snapshot: Snapshot, number: number) {
   return snapshot.issues.find((issue) => issue.number === number)?.state ?? 'none';
 }
 
-/** Events found by reading the demo every STEP_MS from `from` to `to`, as the store does. */
+/**
+ * Events found by reading the demo every STEP_MS from `from` to `to`, as the store does: with the
+ * king's quests on, as the demo has them (app/demo.ts, Issue #152).
+ */
 function eventsBetween(from: number, to: number): GuildEvent[] {
-  let baseline = toBaseline(at(from));
+  let baseline = toBaseline(at(from), true);
   const events: GuildEvent[] = [];
   for (let t = from + STEP_MS; t <= to; t += STEP_MS) {
-    const diff = diffSnapshot(baseline, at(t));
+    const diff = diffSnapshot(baseline, at(t), EVENT_GAP_LIMIT_MS, true);
     events.push(...diff.events);
     if (diff.baselineUpdate.action === 'replace') baseline = diff.baselineUpdate.baseline;
   }

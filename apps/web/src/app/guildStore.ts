@@ -20,7 +20,7 @@ import {
   summonedMembers,
   type SessionReading,
 } from '../domain/summons';
-import type { MemberId } from '../guild.config';
+import { EVENT_GAP_LIMIT_MS, KING_QUESTS_ENABLED, type MemberId } from '../guild.config';
 import {
   createMessageQueue,
   type GuildMessage,
@@ -111,12 +111,19 @@ export interface GuildStoreOptions {
   readonly freshBaseline?: boolean;
   /** The settings' guests (Issue #108); defaults to those of the settings in use. */
   readonly guests?: readonly GuildGuest[];
+  /**
+   * Whether the king's quests are told (Issue #141); defaults to whether the settings have
+   * `president`. The demo turns them on for its fictional quests (Issue #152).
+   */
+  readonly kingQuests?: boolean;
 }
 
 export interface GuildStore {
   readonly state: Readonly<GuildState>;
   /** The guests the screen shows (GuildStoreOptions.guests). */
   readonly guests: readonly GuildGuest[];
+  /** Whether the king's quests show (GuildStoreOptions.kingQuests). */
+  readonly kingQuests: boolean;
   /** Loads once now, then every refresh interval. */
   start(): void;
   /** Stops all timers; results of a fetch still in flight are dropped. */
@@ -146,12 +153,18 @@ interface SyncOutcome {
  * Diffs against the stored baseline and stores the new one (docs/DESIGN.md 4.4).
  * Without a working localStorage there are no events, so nothing is replayed on every fetch.
  */
-function syncBaseline(storage: KeyValueStore, snapshot: Snapshot, fresh: boolean): SyncOutcome {
+function syncBaseline(
+  storage: KeyValueStore,
+  snapshot: Snapshot,
+  options: { readonly fresh: boolean; readonly kingQuests: boolean },
+): SyncOutcome {
+  const { fresh, kingQuests } = options;
   const stored = storage.read(BASELINE_STORAGE_KEY, z.unknown());
   if (!stored.ok && stored.reason === 'unavailable')
     return { effectsAvailable: false, entries: [] };
   // A fresh start counts as the first fetch: no events, only the new baseline.
-  const diff = diffSnapshot(stored.ok && !fresh ? parseBaseline(stored.value) : null, snapshot);
+  const baseline = stored.ok && !fresh ? parseBaseline(stored.value) : null;
+  const diff = diffSnapshot(baseline, snapshot, EVENT_GAP_LIMIT_MS, kingQuests);
   if (diff.baselineUpdate.action === 'replace') {
     const written = storage.write(BASELINE_STORAGE_KEY, diff.baselineUpdate.baseline);
     if (!written.ok) return { effectsAvailable: false, entries: [] };
@@ -197,9 +210,13 @@ function applyResult(
   state: GuildState,
   storage: KeyValueStore,
   result: SnapshotLoadResult,
-  at: { readonly now: number; readonly fresh: { pending: boolean } },
+  at: {
+    readonly now: number;
+    readonly fresh: { pending: boolean };
+    readonly kingQuests: boolean;
+  },
 ): readonly MessageEntry[] {
-  const { now, fresh } = at;
+  const { now, fresh, kingQuests } = at;
   if (!result.ok) {
     state.failure = result.reason;
     // Once halted, only a snapshot of the expected version and repository resumes the screen.
@@ -213,7 +230,7 @@ function applyResult(
   state.halted = false;
   state.haltReason = null;
   noteSessions(state, result, now);
-  const outcome = syncBaseline(storage, result.snapshot, fresh.pending);
+  const outcome = syncBaseline(storage, result.snapshot, { fresh: fresh.pending, kingQuests });
   // Fresh until the new baseline is really stored (localStorage may fail for a while).
   if (outcome.effectsAvailable) fresh.pending = false;
   state.effectsAvailable = outcome.effectsAvailable;
@@ -320,6 +337,7 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
   const state = shallowReactive<GuildState>(initialState());
   const queue = queueInto(state, { scheduler, now, holdMs: options.messageHoldMs });
   const guests = options.guests ?? GUILD_SETTINGS.guests ?? [];
+  const kingQuests = options.kingQuests ?? KING_QUESTS_ENABLED;
   const watchGuests = createGuestWatch(guests);
   let cancelRefresh: Cancel | null = null;
   let inFlight = false;
@@ -334,7 +352,7 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
       const result = await load();
       if (started !== generation) return;
       state.checkedAt = now();
-      const entries = applyResult(state, storage, result, { now: now(), fresh });
+      const entries = applyResult(state, storage, result, { now: now(), fresh, kingQuests });
       const guestEntries = result.ok ? watchGuests(result.snapshot) : [];
       // While halted the window is hidden: hold the messages (and their scenes) until it is back.
       if (state.halted) queue.pause();
@@ -348,6 +366,7 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
   return {
     state,
     guests,
+    kingQuests,
     start() {
       if (cancelRefresh !== null) return;
       cancelRefresh = scheduler.every(options.refreshIntervalMs ?? REFRESH_INTERVAL_MS, () => {
