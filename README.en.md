@@ -4,7 +4,7 @@
 
 An app for watching a small company run entirely by AI, drawn as a retro RPG guild hall.
 
-At [conect-management](https://github.com/yukihiroyamaguchi569/conect-management), a commander AI, Kaname (かなめ), breaks the president's requests down into GitHub Issues, hands them to one Claude Code session per department (accounting, PR, planning, general affairs), and receives the results as pull requests. conect-guild shows all of this as a quest board, a party, and a king on his throne. The on-screen text is in Japanese.
+At the author's company, a commander AI, Kaname (かなめ), breaks the president's requests down into GitHub Issues, hands them to one Claude Code session per department (accounting, PR, planning, general affairs), and receives the results as pull requests. conect-guild shows all of this as a quest board, a party, and a king on his throne. The on-screen text is in Japanese.
 
 ![The demo mode (made-up data)](assets/screenshots/demo-overview.png)
 
@@ -27,7 +27,11 @@ The demo mode with made-up data.
 - **Day and night**: the room's lighting follows your local time, and at night only the lamps glow
 - **Idle time**: idle members doze off and fall asleep, or wander off for tea, to a window, to chat with a neighbour, or to play with the toy poodle by the throne
 - **Narration**: when nothing is happening, the message window describes what the guild is up to, changing every 20 seconds
-- **The king's summons**: when the president gives a session an instruction, the king calls out to that member, who answers 「はっ！」 ("Yes, sire!")
+- **The king's summons**: when the president gives a session an instruction, the king calls out to that member, who answers 「はっ！」 ("Yes, sire!"). When Kaname hands work to a department, Kaname says 「おねがい！」 ("Please!") and the department answers 「はい！」 ("Yes!")
+- **The king's quests**: Issues with the label 「社長」 (president) show up in the 「おうさまの クエスト」 (the king's quests) section of the board, and as work for the king on his throne
+- **Visitors**: up to two sessions outside the company, named in your settings, drawn as guests who visit the hall
+- **Show mode**: for showing the screen to others, one button on the fetch-status tab masks the titles of Issues and PRs
+- **The fetch-status tab**: the time of the last fetch, any failure, and the sound on/off and volume, on a tab above the message window
 - **XP and levels**: counted from every cleared Issue and merged PR in the repository's history. On a level-up, the member jumps at their desk under a "LEVEL UP" sign
 - **Lines**: members say a short line when a scroll is handed over, a chest is delivered, or a quest is cleared
 - **Demo mode**: plays a loop of scripted, fictional quests
@@ -39,6 +43,8 @@ You can have two to six departments (one commander, two to six departments and t
 With Node.js 26.10 or later:
 
 ```bash
+git clone https://github.com/yukihiroyamaguchi569/conect-guild.git
+cd conect-guild
 npm ci --ignore-scripts
 npm run dev
 ```
@@ -52,6 +58,7 @@ To watch or film it with sound from the start, open http://127.0.0.1:5173/?demo=
 - Design: [docs/DESIGN.md](docs/DESIGN.md) (Japanese)
 - Using it with your own team (settings, collecting, data handling): [docs/setup.md](docs/setup.md) (Japanese)
 - Having Claude Code write your settings file: run `/guild-setup` in the conect-guild root ([docs/setup.md 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える), Japanese)
+- Trying a made-up company: run `/guild-trial` in the conect-guild root (it creates a private repository on GitHub; [docs/setup.md](docs/setup.md), Japanese). Clean up with `/guild-trial-cleanup`
 - How the commander and department AIs work through GitHub, with CLAUDE.md templates: [docs/orchestration.md](docs/orchestration.md) (Japanese)
 - Changelog: [docs/changes/](docs/changes/) (Japanese)
 
