@@ -58,6 +58,7 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
      - エラーに `Could not resolve to a Repository` が出た: もう無い。消すものに入れない
      - それ以外のエラー（証明書・未ログイン・通信など）: 止まり、docs/setup.md の 3 章「`gh issue list` が動かない」を案内する。何も消さない
    - 手元の設定: 1-3 でこの `<名前>` を指していたときだけ、`guild.settings.local.json` を消すものに入れる。`guild.settings.local.json.bak` があれば Read で `repo` と `commanderSessionDir` だけを見て、両方が 1-3 と同じくこのお試しを指しているときだけ入れる（違えば本物の会社の控えなので残し、一覧で「残します」と伝える）。手元の設定が別のリポジトリを指していたら、消さずに「`guild.settings.local.json` は別の設定（自分の会社など）を使っているので消しません」と一覧に書く
+   - 集めたデータ: `guild.settings.local.json` を消すものに入れたとき（画面がこのお試しを集めていたとき）だけ、`ls -d apps/web/.data/snapshot.json`（conect-guild のリポジトリ直下からの相対。collector が書いたお試しのデータ）が出たら消すものに入れる。無ければ飛ばす。手元の設定が別の会社を指しているときは、その会社のデータなので入れない
 
 ## 2. 消す前に 1 回だけ承認をもらう
 
@@ -66,6 +67,7 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
 - GitHub のリポジトリ: `<owner>/<名前>`（private。Issue・ラベルも一緒に消え、元に戻せない）
 - 手元のフォルダ: `<絶対パス>`（司令塔と部門のフォルダ。中身ごと消える）。コミットが 2 つ以上あるか、コミットしていない変更があれば、その数を添え「作ったあとに手が入っています」と書く
 - 手元の設定: `guild.settings.local.json`（と `guild.settings.local.json.bak`）。消すと conect-guild の画面はデモに戻る
+- 集めたデータ: `apps/web/.data/snapshot.json`（お試しの Issue・PR を collector が集めたもの）
 - お試しのフォルダやリポジトリを自分の仕事に使い始めていたら、消さずに止まるので言ってほしい、と添える
 - 消さないもの（あれば）: public だったリポジトリ、お試しと確かめられないリポジトリ・フォルダ、シンボリックリンク、別の設定を指す `guild.settings.local.json`、本物の会社の控えの `.bak`
 
@@ -92,6 +94,12 @@ OK をもらったら、消す直前に 1 をもう一度なぞり（聞かず�
    rm guild.settings.local.json.bak
    ```
 
+4. 集めたデータ（一覧に入れたときだけ）
+
+   ```bash
+   rm apps/web/.data/snapshot.json
+   ```
+
 ## 4. リポジトリを消す権限が無いとき
 
 `gh repo delete` には gh の `delete_repo` の権限が要る。エラーに `HTTP 403` か `delete_repo` が出たら、権限が無い。ほかは消さずに止まり、次を利用者自身に実行してもらう（Claude は実行しない。ブラウザで GitHub の確認が開く）。
@@ -104,5 +112,5 @@ OK をもらったら、消す直前に 1 をもう一度なぞり（聞かず�
 
 ## 5. 案内する
 
-- `npm run dev:all` を起動していたら、止めて起動し直す。手元の設定が無くなったので、conect-guild は既定の `guild.settings.json` を読む。ただし画面は、collector が前に書いたお試しのデータ（`apps/web/.data/snapshot.json`）を持ったままなので、デモ（[docs/setup.md の 1 章](../../../docs/setup.md#1-まずデモを見る)）には自動では戻らず、「リポジトリが違う」旨の表示になることがある。このスキルはそのファイルを消さない
+- `npm run dev:all` を起動していたら、止めて起動し直す。集めたデータ（`apps/web/.data/snapshot.json`）も消したので、画面はデモ（[docs/setup.md の 1 章](../../../docs/setup.md#1-まずデモを見る)）に戻る。ただし手元の設定が無くなると、collector は既定の `guild.settings.json` に書かれた会社（conect.llc のリポジトリ）を集めにいく。既定の設定は利用者の会社のものではないので、collector が読めずにエラーを出してもデモのままで構わないこと、自分の会社で使うときは `/guild-setup` で手元の設定を作ることを伝える
 - MulmoTerminal で開いているお試しのセッション（`~/guild-trial/<名前>` と部門のフォルダのセル）を閉じてもらう。フォルダはもう無い
