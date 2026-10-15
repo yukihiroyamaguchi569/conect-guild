@@ -98,6 +98,8 @@ export function createDemoSession(
       storage,
       now,
       refreshIntervalMs: DEMO_REFRESH_INTERVAL_MS,
+      // The demo's fictional king's quests show even without `president` (Issue #152).
+      kingQuests: true,
     },
     storage,
     block,
