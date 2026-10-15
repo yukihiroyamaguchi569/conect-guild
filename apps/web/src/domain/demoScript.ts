@@ -42,7 +42,8 @@ export interface DemoBeat {
  * over a scroll keeps かなめ about 8.5 s, delivering a chest about 12.5 s, and a message stays at
  * least 8 s (app/guildStore.ts), so each event reaches the window about when かなめ is free.
  * A session that starts working from idle or resting is the president's order: the king calls
- * that member, who answers 「はっ！」 (Issue #28, about 3.7 s).
+ * that member, who answers 「はっ！」 (Issue #28, about 3.7 s). A department that starts within 60 s
+ * of かなめ's work is her handing it on: she says 「おねがい！」, it answers 「はい！」 (Issue #155, 3 s).
  */
 export const DEMO_SCRIPT: readonly DemoBeat[] = [
   // The king's order to かなめ, who then hands out the scrolls.
@@ -50,7 +51,7 @@ export const DEMO_SCRIPT: readonly DemoBeat[] = [
   { at: 3_500, lane: 'commander', action: 'rest' },
   { at: 4_500, lane: 'quest1', action: 'open-issue' },
   { at: 13_500, lane: 'quest2', action: 'open-issue' },
-  // quest1 works (the king tells it to), asks for a permission (「？」), then sends a PR.
+  // quest1 works (かなめ hands it on), asks for a permission (「？」), then sends a PR.
   { at: 16_500, lane: 'quest1', action: 'work' },
   { at: 19_000, lane: 'quest1', action: 'ask' },
   { at: 22_000, lane: 'quest1', action: 'work' },

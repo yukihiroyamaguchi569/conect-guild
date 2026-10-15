@@ -1,5 +1,6 @@
 import { documentVisibility, type PageVisibility } from '../adapters/visibility';
 import type { GuildEvent } from '../domain/events';
+import type { SummonsFrom } from '../domain/summons';
 import type { MemberId } from '../guild.config';
 import type { AmbientMoods } from './ambient';
 import type { GuildArt } from './art';
@@ -119,9 +120,10 @@ export interface RenderLoop {
    * after the call still playing. Dropped while the page is hidden or the canvas not shown: the
    * moment has passed by the time it is seen. A call cut off by a hide goes on after it.
    * かなめ, when free at her counter, walks to the throne to hear it (visit.ts, Issue #87): says
-   * how long until she is back (stage ms), which the message queue waits for.
+   * how long until she is back (stage ms), which the message queue waits for. From かなめ
+   * (Issue #155), she asks the departments from her counter instead and nobody walks.
    */
-  summon(members: readonly MemberId[]): HomeIn;
+  summon(members: readonly MemberId[], from?: SummonsFrom): HomeIn;
   /**
    * What the party state shows on the stage: the waiting bubbles, the ambient moves, and since
    * when each member has had nothing to do (idle.ts; a member whose time changes while out playing
@@ -313,14 +315,19 @@ function seenAndPruned(
 /**
  * The king calls `members` at stage time `t` (null: drawing would not be seen, the call is dropped),
  * with かなめ's walk to the throne when she goes (visit.ts, Issue #87), and how long until she is
- * back at her counter.
+ * back at her counter. An order from かなめ (Issue #155) has her ask from her counter: nobody walks.
  */
 export function summonOn(
   cast: Pick<Cast, 'calls' | 'crew'>,
   director: Director,
-  members: readonly MemberId[],
+  order: { readonly members: readonly MemberId[]; readonly from?: SummonsFrom },
   t: number | null,
 ): { readonly director: Director; readonly homeIn: HomeIn } {
+  const { members } = order;
+  if (order.from === 'kaname') {
+    cast.calls.dispatch(members, t);
+    return { director, homeIn: {} };
+  }
   const stage = { director, idle: cast.crew.poses().kaname, seat: DEFAULT_SEATS.kaname };
   const added = cast.calls.add(members, t, (start) => visitFor(members, start, stage));
   if (t === null || added?.visit === undefined) return { director, homeIn: {} };
@@ -401,8 +408,8 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
       refresh();
       return recalled.homeIn;
     },
-    summon(members) {
-      const summoned = summonOn(cast, director, members, paused() ? null : stageNow());
+    summon(members, from) {
+      const summoned = summonOn(cast, director, { members, from }, paused() ? null : stageNow());
       director = summoned.director;
       schedule.now();
       return summoned.homeIn;

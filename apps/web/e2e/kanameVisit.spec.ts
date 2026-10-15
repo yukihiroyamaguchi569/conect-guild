@@ -7,19 +7,24 @@ import { NOW, sampleSnapshot } from './sampleSnapshot.ts';
 /**
  * かなめ hears the king's order at the throne (Issue #87): alone, she walks to the side of the
  * throne and answers 「はっ！」 there; when a scroll for her comes in the same fetch, its scene goes
- * first and she answers at the counter, so the message and its scene stay together.
+ * first and she answers at the counter, so the message and its scene stay together. Working just
+ * before a department starts, she hands the work on herself (Issue #155): 「おねがい！」, no king.
  */
 
 declare global {
   interface Window {
     /** Where 「はっ！」 was written on the canvas (backing-store px), in drawing order. */
     e2eReplies?: { x: number; y: number }[];
+    /** The words of a call written on the canvas (Issue #155), each once, in order. */
+    e2eCallWords?: string[];
   }
 }
 
 /** Runs in the page before the app: notes where each 「はっ！」 is written. */
 function installReplyRecorder(): void {
   window.e2eReplies = [];
+  window.e2eCallWords = [];
+  const callWords = new Set(['！', 'ゴニョゴニョ', 'はっ！', 'おねがい！', 'はい！']);
   const proto = CanvasRenderingContext2D.prototype;
   const original: unknown = Object.getOwnPropertyDescriptor(proto, 'fillText')?.value;
   if (typeof original !== 'function') return;
@@ -29,6 +34,9 @@ function installReplyRecorder(): void {
   ) {
     const [text, x, y] = args;
     // The words are written relative to their bubble: the transform places them on the canvas.
+    if (callWords.has(text) && !window.e2eCallWords?.includes(text)) {
+      window.e2eCallWords?.push(text);
+    }
     if (text === 'はっ！') {
       const at = this.getTransform().transformPoint({ x, y });
       window.e2eReplies?.push({ x: at.x, y: at.y });
@@ -54,18 +62,22 @@ async function firstReply(page: Page): Promise<{ x: number; y: number }> {
 /** One refresh (5 s), the walk to the throne and the whisper (about 3.4 s), and some room. */
 const REPLY_TIMEOUT = 15_000;
 
-/** The sample read `seconds` after NOW, with かなめ's session in `state`. */
+/** The sample read `seconds` after NOW, with かなめ's session in `state` (経理's in `keiri`). */
 async function reading(
   seconds: number,
   state: SessionState,
   extra: readonly SnapshotIssue[] = [],
+  keiri?: SessionState,
 ): Promise<Snapshot> {
   const snapshot = await sampleSnapshot(NOW + seconds * 1_000);
   const { sessions } = snapshot;
   if (sessions.status !== 'ok') throw new Error('the sample has no sessions');
-  const members = sessions.members.map((member) =>
-    member.department === null ? { ...member, state } : member,
-  );
+  const members = sessions.members.map((member) => {
+    if (member.department === null) return { ...member, state };
+    return member.department === '経理' && keiri !== undefined
+      ? { ...member, state: keiri }
+      : member;
+  });
   return {
     ...snapshot,
     issues: [...snapshot.issues, ...extra],
@@ -119,4 +131,25 @@ test('かなめ answers at her counter when a scroll for her comes with the orde
   await orderAfterLoad(page, snapshotServer, await reading(5, 'working', [scroll]));
   const reply = await firstReply(page);
   expect(reply.y).toBeGreaterThan(HALFWAY_Y);
+});
+
+test('かなめ asks 経理 from her counter when she was working just before (Issue #155)', async ({
+  page,
+  snapshotServer,
+}) => {
+  // She works on the first load; on the next fetch she rests and 経理 works: she handed it on.
+  snapshotServer.serve(await reading(0, 'working', [], 'idle'));
+  await page.goto('/');
+  await waitForRoom(page);
+  await waitForBaseline(page);
+  snapshotServer.serve(await reading(5, 'resting', [], 'working'));
+  const words = () => page.evaluate(() => window.e2eCallWords ?? []);
+  await expect.poll(words, { timeout: REPLY_TIMEOUT }).toContain('はい！');
+  const said = await words();
+  // かなめ asks first; the king neither calls nor whispers, and nobody answers him.
+  expect(said.indexOf('おねがい！')).toBeGreaterThanOrEqual(0);
+  expect(said.indexOf('おねがい！')).toBeLessThan(said.indexOf('はい！'));
+  expect(said).not.toContain('！');
+  expect(said).not.toContain('ゴニョゴニョ');
+  expect(said).not.toContain('はっ！');
 });

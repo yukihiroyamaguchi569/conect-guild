@@ -15,7 +15,14 @@ import type { Box } from './overhead';
 import { bodyBox, placeOverheads, placedBox, type Placed } from './overheadPlace';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH, TALLEST_WINDOW_EXTENTS } from './map';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
-import { NO_HOLDS, speechesAt, summonsEnd, withSummons, type SpeechLine } from './summons';
+import {
+  NO_HOLDS,
+  speechesAt,
+  summonsEnd,
+  withSummons,
+  type SpeechLine,
+  type Summons,
+} from './summons';
 
 /**
  * The members' line bubbles never meet the 「Lv N」 tags on the desks (levelTags.ts, Issue #19):
@@ -275,6 +282,7 @@ describe('words said holding an item up (Issue #77)', () => {
 });
 
 const EVERYONE: readonly MemberId[] = ['kaname', 'minori', 'hibiki', 'hirame', 'sasae'];
+const DEPARTMENTS_CALLED: readonly MemberId[] = ['minori', 'hibiki', 'hirame', 'sasae'];
 
 describe('the words of the king’s call and level tags', () => {
   const scenes = [
@@ -285,9 +293,9 @@ describe('the words of the king’s call and level tags', () => {
     })),
   ];
 
-  /** Checks the words over everyone at `t` of a call to everyone starting at `start`; how many. */
-  function checkCall(director: Director, start: number, t: number): number {
-    const list = [{ start, members: EVERYONE }];
+  /** Checks the words over everyone at `t` of the call `summons`; how many. */
+  function checkCall(director: Director, summons: Summons, t: number): number {
+    const list = [summons];
     const frame = withSummons(frameAt(director, t, DEFAULT_SEATS), list, t, {
       seats: DEFAULT_SEATS,
       holds: NO_HOLDS,
@@ -306,8 +314,25 @@ describe('the words of the king’s call and level tags', () => {
   it.each(scenes)('$name: calling everyone at any moment, no word meets a tag', ({ director }) => {
     let checked = 0;
     for (const start of [0, 2_000, 4_000, 6_000, 8_000]) {
-      const end = summonsEnd({ start, members: EVERYONE });
-      for (const t of momentsOf(director, end, start)) checked += checkCall(director, start, t);
+      const summons = { start, members: EVERYONE };
+      const end = summonsEnd(summons);
+      for (const t of momentsOf(director, end, start)) checked += checkCall(director, summons, t);
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+
+  // Issue #155: かなめ's 「おねがい！」 turned to each department, then their 「はい！」 turned to her.
+  it.each(scenes)('$name: かなめ handing work on at any moment, no word meets a tag', (scene) => {
+    let checked = 0;
+    // One after the other with no gap, かなめ turning left to みのり, then right to ひびき, in turn.
+    for (const [i, start] of [0, 3_000, 6_000, 9_000, 12_000].entries()) {
+      const first = i % 2 === 0 ? 'minori' : 'hibiki';
+      const others = DEPARTMENTS_CALLED.filter((id) => id !== first);
+      const summons: Summons = { start, members: [first, ...others], from: 'kaname' };
+      const end = summonsEnd(summons);
+      for (const t of momentsOf(scene.director, end, start)) {
+        checked += checkCall(scene.director, summons, t);
+      }
     }
     expect(checked).toBeGreaterThan(0);
   });
@@ -345,6 +370,13 @@ describe('the king’s own words (Issue #28) on the throne', () => {
     const king = members.find((m) => m.id === 'yukihiro');
     if (king === undefined) throw new Error('no king');
     for (const speech of ['！', 'ゴニョゴニョ'] as const) expectClear(members, king, { speech }, 0);
+  });
+
+  it('かなめ’s 「おねがい！」 at her counter clear of the tags, the windows and the edges', () => {
+    const members = frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS).members;
+    const kaname = members.find((m) => m.id === 'kaname');
+    if (kaname === undefined) throw new Error('no かなめ');
+    expectClear(members, kaname, { speech: 'おねがい！' }, 0);
   });
 });
 

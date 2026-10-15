@@ -72,3 +72,43 @@ export function comparedReading(
   if (previous === null || next === null) return next;
   return next.checkedAt > previous.checkedAt ? next : previous;
 }
+
+/**
+ * Who gave an order (Issue #155): the president (the king speaks) or かなめ, handing work on to a
+ * department while she was at work herself.
+ */
+export type SummonsFrom = 'king' | 'kaname';
+
+/** How long after かなめ was last seen working a department's start is taken as her handing it on. */
+export const KANAME_DISPATCH_WINDOW_MS = 60_000;
+
+/**
+ * When かなめ was last seen working (epoch ms of the reading), kept as the compared reading is: a
+ * missing reading (unavailable or stale) forgets it, as a halt does (the store), and a reading not
+ * later than `previous` (the compared one) is not taken (comparedReading), so nothing older than
+ * the readings compared is ever used. Null until she is seen working.
+ */
+export function lastKanameWork(
+  last: number | null,
+  previous: SessionReading | null,
+  next: SessionReading | null,
+): number | null {
+  if (next === null) return null;
+  if (comparedReading(previous, next) !== next) return last;
+  return next.states.kaname === 'working' ? next.checkedAt : last;
+}
+
+/**
+ * Who gave the order to `members`, read at `checkedAt`: かなめ when they are departments only and she
+ * was working at most `windowMs` before (`kanameWorkedAt`, lastKanameWork with this reading); the
+ * king otherwise, as when かなめ herself starts working in the same reading (everyone answers him).
+ */
+export function summonsFrom(
+  members: readonly MemberId[],
+  kanameWorkedAt: number | null,
+  checkedAt: number,
+  windowMs: number = KANAME_DISPATCH_WINDOW_MS,
+): SummonsFrom {
+  if (members.includes('kaname') || kanameWorkedAt === null) return 'king';
+  return checkedAt - kanameWorkedAt <= windowMs ? 'kaname' : 'king';
+}

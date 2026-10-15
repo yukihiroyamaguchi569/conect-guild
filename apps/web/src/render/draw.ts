@@ -98,6 +98,8 @@ const SPEECH_COLORS: Readonly<Record<SpeechLine, string>> = {
   '！': '#b0103a',
   ゴニョゴニョ: '#222222',
   'はっ！': '#1a3a8a',
+  'おねがい！': '#222222',
+  'はい！': '#1a3a8a',
 };
 
 /** The members' lines (lineBook.ts) read best in the dark ink of the king's murmur. */
