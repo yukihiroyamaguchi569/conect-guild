@@ -10,6 +10,7 @@ import type { MemberId } from '@conect-guild/snapshot/settings';
 import { drawnLevels, installCanvasTextRecorder } from './canvasText.ts';
 import { installFakeAudio } from './fakeAudio.ts';
 import { waitForRoom } from './fixtures.ts';
+import { refuseStorage, showEveryNote, withOldUnreadableSessions } from './everyNote.ts';
 import { guestsSnapshot } from './guestsSnapshot.ts';
 import { bubbleBox } from '../src/render/overhead.ts';
 import { tileToPoint } from '../src/render/path.ts';
@@ -215,33 +216,31 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
 });
 
 /**
- * The live screen on a fictional snapshot of these settings, then a failed fetch; localStorage
- * refuses every write, so the effects note and the failed baseline clear show too.
+ * The live screen on a fictional snapshot of these settings, a day old with its sessions
+ * unreadable, then a failed fetch; localStorage refuses every write and removal, so the effects
+ * note and the failed baseline clear show too (everyNote.ts).
  */
 async function openWithEveryNote(page: Page, context: BrowserContext, count: number) {
   let failing = false;
-  const snapshot = guestsSnapshot({
-    now: Date.now(),
-    states: ['idle', 'idle'],
-    settings: fictionalSettings(count),
-  });
+  const snapshot = withOldUnreadableSessions(
+    guestsSnapshot({
+      now: Date.now(),
+      states: ['idle', 'idle'],
+      settings: fictionalSettings(count),
+    }),
+  );
   await context.route('**/snapshot.json', (route) =>
     failing ? route.fulfill({ status: 500, body: '' }) : route.fulfill({ json: snapshot }),
   );
   await context.route('**/collector-status.json', (route) =>
     route.fulfill({ status: 204, body: '' }),
   );
-  await page.addInitScript(() => {
-    Storage.prototype.setItem = () => {
-      throw new DOMException('blocked', 'QuotaExceededError');
-    };
-  });
+  await page.addInitScript(refuseStorage);
   await page.goto('/');
   const fetch = page.getByRole('region', { name: '取得のようす' });
-  await expect(fetch).toContainText('localStorage が使えないため');
-  await fetch.getByRole('button', { name: '基準を消す' }).click();
-  failing = true;
-  await expect(fetch.getByRole('status')).toContainText('取得失敗', { timeout: 15_000 });
+  await showEveryNote(fetch, () => {
+    failing = true;
+  });
   return fetch;
 }
 

@@ -3,6 +3,7 @@
 // e2e/settings/guests-5.json. /snapshot.json is the fictional guestsSnapshot of those settings.
 import { drawnImages, installCanvasImageRecorder } from './canvasImages.ts';
 import { drawnTexts, installCanvasTextRecorder } from './canvasText.ts';
+import { refuseStorage, showEveryNote, withOldUnreadableSessions } from './everyNote.ts';
 import { expect, test, waitForRoom } from './fixtures.ts';
 import { fictionalSettings, guestsSnapshot } from './guestsSnapshot.ts';
 import { NOW } from './sampleSnapshot.ts';
@@ -75,20 +76,20 @@ test('the guest stays clear of the windows with every rare note shown (Issue #13
   snapshotServer,
   pageErrors,
 }) => {
-  // localStorage refuses every write, the baseline clear fails, then a fetch fails: every note.
-  await page.addInitScript(() => {
-    Storage.prototype.setItem = () => {
-      throw new DOMException('blocked', 'QuotaExceededError');
-    };
-  });
+  // A day old, sessions unreadable, localStorage refusing, then a failed fetch: every note.
+  snapshotServer.serve(
+    withOldUnreadableSessions(
+      guestsSnapshot({ now: NOW, states: ['working', 'idle'], settings: SETTINGS }),
+    ),
+  );
+  await page.addInitScript(refuseStorage);
   await page.setViewportSize({ width: 1024, height: 576 });
   await page.goto('/');
   await waitForRoom(page);
   const fetch = page.getByRole('region', { name: '取得のようす' });
-  await expect(fetch).toContainText('localStorage が使えないため');
-  await fetch.getByRole('button', { name: '基準を消す' }).click();
-  snapshotServer.failWith(500);
-  await expect(fetch.getByRole('status')).toContainText('取得失敗', { timeout: 15_000 });
+  await showEveryNote(fetch, () => {
+    snapshotServer.failWith(500);
+  });
   await expect(fetch).toHaveClass(/fetch--tab/);
 
   const spot = layoutFor(5).guestSpots[0] ?? { col: 0, row: 0 };
