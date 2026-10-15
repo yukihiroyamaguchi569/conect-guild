@@ -195,7 +195,6 @@ describe('guild store summons from かなめ (Issue #155)', () => {
     await load(ok(reading(10, 'working', 'working')), 10);
     expect(store.state.summons).toEqual({ id: 1, members: ['kaname', 'minori'], from: 'king' });
   });
-
 });
 
 describe('guild store summons from かなめ after an interruption (Issue #155)', () => {
