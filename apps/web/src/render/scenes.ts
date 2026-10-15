@@ -36,7 +36,8 @@ import { planToss, shouldToss, type Flight } from './toss';
  * - no department: かなめ only raises the scroll / chest at the reception (confetti stays the same)
  * - king-quest-opened (Issue #142): as issue-opened, かなめ walks the scroll to the side of the
  *   throne (PLACES.throneSide) and the king holds it up on the throne; never tossed
- * - king-quest-cleared: confetti over the throne; the king stays on it
+ * - king-quest-cleared (Issue #147): no confetti; the king says a word on the throne, and かなめ
+ *   answers at the reception a moment after it ends
  * - issue-opened to a near desk, now and then: かなめ tosses the scroll from the counter and the
  *   member catches it at the seat (toss.ts, Issue #12)
  *
@@ -44,7 +45,8 @@ import { planToss, shouldToss, type Flight } from './toss';
  *
  * Each scene also says who speaks at which moment (`turns`, lines.ts, Issue #47): the one who brings
  * the item as they reach the other (or lets the tossed scroll go), then the one who takes it as they
- * hold it up; on a clear the member under the confetti, then the king.
+ * hold it up; on a clear the member under the confetti, then the king; on the king's clear the king,
+ * then かなめ.
  */
 
 /** The giver takes up the item in their arms at the start before setting off. */
@@ -93,11 +95,6 @@ export interface SceneContext {
   readonly pickLine?: PickLine;
 }
 
-/** The kinds that end in confetti only: nobody's movement is taken over. */
-export function isClear(kind: GuildEvent['kind']): kind is 'issue-closed' | 'king-quest-cleared' {
-  return kind === 'issue-closed' || kind === 'king-quest-cleared';
-}
-
 /** The member who acts for an event; かなめ for the reception, the king for his quests. */
 export function actorOf(event: Pick<GuildEvent, 'kind' | 'department'>): MemberId {
   if (event.kind === 'king-quest-opened' || event.kind === 'king-quest-cleared')
@@ -107,7 +104,7 @@ export function actorOf(event: Pick<GuildEvent, 'kind' | 'department'>): MemberI
 
 /** Members whose movement a scene takes over (they must not be in two scenes at once). */
 export function castOf(event: Pick<GuildEvent, 'kind' | 'department'>): MemberId[] {
-  if (isClear(event.kind)) return [];
+  if (event.kind === 'issue-closed') return [];
   if (event.kind === 'level-up') return [actorOf(event)];
   const actor = actorOf(event);
   return actor === 'kaname' ? [actor] : [actor, 'kaname'];
@@ -305,16 +302,26 @@ function clearTurns(actor: MemberId, start: number): Turn[] {
   ];
 }
 
+/** The king speaks on the throne, then かなめ at the reception a moment after (Issue #147). */
+function kingClearTurns(start: number): Turn[] {
+  return [
+    { actor: PRESIDENT_ID, scene: 'kingClear', at: start },
+    { actor: 'kaname', scene: 'seeKingClear', at: start + LINES.clearMs + LINES.kingGapMs },
+  ];
+}
+
 export function planScene(event: GuildEvent, start: number, context: SceneContext): Scene {
   const actor = actorOf(event);
-  if (isClear(event.kind)) {
+  if (event.kind === 'issue-closed') {
     return {
       tracks: [],
       bursts: [{ actor, start, particles: createConfetti(context.random) }],
       flights: [],
-      // The king has no line of his own on his clear.
-      turns: event.kind === 'issue-closed' ? clearTurns(actor, start) : [],
+      turns: clearTurns(actor, start),
     };
+  }
+  if (event.kind === 'king-quest-cleared') {
+    return { tracks: [], bursts: [], flights: [], turns: kingClearTurns(start) };
   }
   if (event.kind === 'level-up') {
     return {

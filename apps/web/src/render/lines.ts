@@ -50,6 +50,8 @@ const SHOW_MS: Readonly<Record<LineScene, number>> = {
   takeChest: LINES.takeMs,
   clear: LINES.clearMs,
   seeClear: LINES.kingMs,
+  kingClear: LINES.clearMs,
+  seeKingClear: LINES.kingMs,
   awaitPresident: LINES.remarkMs,
   awaitKaname: LINES.remarkMs,
   awaitPermission: LINES.remarkMs,

@@ -20,6 +20,8 @@ const SCENES: readonly LineScene[] = [
   'takeChest',
   'clear',
   'seeClear',
+  'kingClear',
+  'seeKingClear',
   'awaitPresident',
   'awaitKaname',
   'awaitPermission',
@@ -84,6 +86,7 @@ describe('line book: each moment', () => {
     expect(new Set(Object.keys(LINE_BOOK.kaname))).toEqual(
       new Set([
         'clear',
+        'seeKingClear',
         'handOver',
         'takeChest',
         'takeScroll',
@@ -122,14 +125,16 @@ describe('line book: each moment', () => {
     }
   });
 
-  it('lets the king react only to a clear, and murmur on the throne and in his sleep', () => {
-    expect(Object.keys(LINE_BOOK.yukihiro)).toEqual(['seeClear', 'idle', 'sleepTalk']);
+  it('lets the king react to a clear, clear his own, and murmur on the throne and asleep', () => {
+    expect(Object.keys(LINE_BOOK.yukihiro)).toEqual(['seeClear', 'kingClear', 'idle', 'sleepTalk']);
   });
 
   it('has nothing for a member at a moment they never speak at', () => {
     expect(linesOf('yukihiro', 'handOver')).toEqual([]);
     expect(linesOf('minori', 'toss')).toEqual([]);
     expect(linesOf('kaname', 'seeClear')).toEqual([]);
+    expect(linesOf('kaname', 'kingClear')).toEqual([]);
+    expect(linesOf('yukihiro', 'seeKingClear')).toEqual([]);
     // かなめ never waits for the president's approval, and the king has no waiting bubble here.
     expect(linesOf('kaname', 'awaitPresident')).toEqual([]);
     expect(linesOf('yukihiro', 'awaitPermission')).toEqual([]);
