@@ -166,5 +166,5 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 ## 7. 案内する
 
 - MulmoTerminal で、司令塔のフォルダ（`~/guild-trial/<名前>`）と部門のフォルダ（`~/guild-trial/<名前>/accounting` など）で、それぞれセルを開いて Claude Code を起動する（フォルダそのもので起動する。[docs/orchestration.md の 3-5](../../../docs/orchestration.md#3-5-部門のセッションを開く)）
-- conect-guild の直下で `npm run dev:all` を起動し、http://127.0.0.1:5173 を開く。「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られる（[docs/setup.md の 2-3・2-4](../../../docs/setup.md#2-3-collector-と画面を起動する)）。既に起動していたら、止めて起動し直す
+- conect-guild の直下で `npm run dev:all` を起動し、http://127.0.0.1:5273 を開く。「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られる（[docs/setup.md の 2-3・2-4](../../../docs/setup.md#2-3-collector-と画面を起動する)）。既に起動していたら、止めて起動し直す
 - 片付けるときは `/guild-trial-cleanup` を使う
