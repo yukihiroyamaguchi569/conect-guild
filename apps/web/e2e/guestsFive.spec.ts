@@ -67,8 +67,40 @@ test('the one guest stands at its spot, clear of the windows, with no name or co
     await logicalBox(page, page.getByRole('region', { name: '取得のようす' })),
     await logicalBox(page, page.getByRole('region', { name: 'メッセージ' })),
   ];
-  // The party window at its usual height too: only its rare extra notes reach the head (#122).
   for (const area of windows) expect(overlaps(spriteRect(spot), area)).toBe(false);
+});
+
+test('the guest stays clear of the windows with every rare note shown (Issue #132)', async ({
+  page,
+  snapshotServer,
+  pageErrors,
+}) => {
+  // localStorage refuses every write, the baseline clear fails, then a fetch fails: every note.
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => {
+      throw new DOMException('blocked', 'QuotaExceededError');
+    };
+  });
+  await page.setViewportSize({ width: 1024, height: 576 });
+  await page.goto('/');
+  await waitForRoom(page);
+  const fetch = page.getByRole('region', { name: '取得のようす' });
+  await expect(fetch).toContainText('localStorage が使えないため');
+  await fetch.getByRole('button', { name: '基準を消す' }).click();
+  snapshotServer.failWith(500);
+  await expect(fetch.getByRole('status')).toContainText('取得失敗', { timeout: 15_000 });
+  await expect(fetch).toHaveClass(/fetch--tab/);
+
+  const spot = layoutFor(5).guestSpots[0] ?? { col: 0, row: 0 };
+  for (const name of ['クエスト掲示板', 'パーティのようす', '取得のようす', 'メッセージ']) {
+    const area = await logicalBox(page, page.getByRole('region', { name }));
+    expect(overlaps(spriteRect(spot), area), name).toBe(false);
+  }
+  // Chrome logs the failed fetch as a console error: expected here, so the fixture sees the rest.
+  const rest = pageErrors.filter(
+    (error) => !/^console: Failed to load resource: .* status of 500 /.test(error),
+  );
+  pageErrors.splice(0, pageErrors.length, ...rest);
 });
 
 test('the お客さん section stays whole under many quests; only the quests scroll (Issue #121)', async ({

@@ -19,7 +19,6 @@ import { layoutFor } from '../src/render/layouts/catalog.ts';
 import type { TilePos } from '../src/render/layouts/types.ts';
 import {
   BOARD_MAX_CQW,
-  isPartyExceptionIn,
   overlaps,
   spriteRect,
   windowExtentsFor,
@@ -167,15 +166,12 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
     page.getByRole('region', { name: 'パーティのようす' }).getByRole('listitem'),
   ).toHaveCount(count + 2);
 
-  const party = await logicalBox(page, page.getByRole('region', { name: 'パーティのようす' }));
-  const fetch = await logicalBox(page, page.getByRole('region', { name: '取得のようす' }));
-  // Six departments: the fetch status is a tab on the message window, not in the column.
-  const fetchTab = layout.partyWindow.fetchTab === true;
+  // The fetch status is a tab on the message window, not in the column (Issue #132).
   const measured = {
     board: await logicalBox(page, page.getByRole('region', { name: 'クエスト掲示板' })),
-    party: fetchTab ? party : { ...party, bottom: fetch.bottom },
+    party: await logicalBox(page, page.getByRole('region', { name: 'パーティのようす' })),
     message: await logicalBox(page, page.getByRole('region', { name: 'メッセージ' })),
-    ...(fetchTab ? { tab: fetch } : {}),
+    tab: await logicalBox(page, page.getByRole('region', { name: '取得のようす' })),
   };
   // The right-hand column ends above the layout's measured bottom (render/layouts), its rows
   // packed for seven or eight of them (five and six departments).
@@ -186,8 +182,7 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
   expect(partyClass?.includes('party--dense')).toBe(layout.partyWindow.dense === true);
 
   const modelled = windowExtentsFor(layout);
-  expect(modelled.tab === undefined).toBe(!fetchTab);
-  expectWithin(fetch, modelled.tab ?? fetch);
+  expectWithin(measured.tab, modelled.tab);
   // The quest board scrolls from the layout's max-height on (five and six departments: lower).
   const maxHeight = await page
     .getByRole('region', { name: 'クエスト掲示板' })
@@ -204,11 +199,9 @@ test('the windows stay where the layout keeps the seats clear of them', async ({
     ...layout.desks.map((desk) => desk.seat),
     ...layout.guestSpots,
   ];
+  // No exception any more: layout5's guest went with Issue #132.
+  const areas = [...Object.values(measured), ...Object.values(modelled)];
   for (const spot of spots) {
-    // The party window may cover the tiles the layout lists (layout5's guest; Issue #122).
-    const areas = isPartyExceptionIn(layout, spot)
-      ? [measured.board, measured.message, modelled.board, modelled.message]
-      : [...Object.values(measured), ...Object.values(modelled)];
     for (const area of areas) {
       expect(overlaps(spriteRect(spot), area), `${String(spot.col)},${String(spot.row)}`).toBe(
         false,
@@ -252,19 +245,23 @@ async function openWithEveryNote(page: Page, context: BrowserContext, count: num
   return fetch;
 }
 
-test('the fetch status keeps every note: in the column, or on one line as the tab (Issue #121)', async ({
+test('the fetch status keeps every note on one line as the tab (Issues #121, #132)', async ({
   page,
   context,
 }) => {
   const count = departmentCount();
-  const tabArea = windowExtentsFor(layoutFor(count)).tab;
+  const layout = layoutFor(count);
+  const tabArea = windowExtentsFor(layout).tab;
   await page.setViewportSize({ width: 1024, height: 576 });
   const fetch = await openWithEveryNote(page, context, count);
-  // Up to five departments the window stays in the column, its notes on lines of their own.
-  expect((await fetch.getAttribute('class'))?.includes('fetch--tab')).toBe(tabArea !== undefined);
-  if (tabArea === undefined) return;
+  await expect(fetch).toHaveClass(/fetch--tab/);
+  // The notes no longer make the column taller: it ends above the layout's bottom, and every
+  // desk's bubble is clear of it.
+  const party = await logicalBox(page, page.getByRole('region', { name: 'パーティのようす' }));
+  expect(party.bottom).toBeLessThanOrEqual(layout.partyWindow.tallestBottom);
+  expectBubblesClear(layout.desks, [party]);
 
-  // Six: one line inside the modelled tab, every box in it within the tab's height.
+  // One line inside the modelled tab, every box in it within the tab's height.
   expectWithin(await logicalBox(page, fetch), tabArea);
   const boxes = await fetch.evaluate((element) => {
     const outer = element.getBoundingClientRect();

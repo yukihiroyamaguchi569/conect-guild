@@ -42,6 +42,25 @@ test('the board, the party and the message window show the snapshot', async ({ p
   await expect(fetch).not.toContainText('情報が古い');
 });
 
+test('the fetch status is the tab on the message window, out of the column (Issue #132)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 576 });
+  await page.goto('/');
+  const fetch = page.getByRole('region', { name: '取得のようす' });
+  await expect(fetch).toContainText('最終取得 12:00');
+  await expect(fetch).toHaveClass(/fetch--tab/);
+  await expect(
+    page.locator('.stage__side').getByRole('region', { name: '取得のようす' }),
+  ).toHaveCount(0);
+  // On the message window's top edge, its bottom on the window's top.
+  const tab = await fetch.boundingBox();
+  const message = await page.getByRole('region', { name: 'メッセージ' }).boundingBox();
+  if (tab === null || message === null) throw new Error('the tab or the message window has no box');
+  expect(tab.y + tab.height).toBeCloseTo(message.y, 0);
+  expect(tab.x + tab.width).toBeCloseTo(message.x + message.width, 0);
+});
+
 test('the canvas draws the room, not a blank or single colour', async ({ page }) => {
   await page.goto('/');
   const stats = await waitForRoom(page);
