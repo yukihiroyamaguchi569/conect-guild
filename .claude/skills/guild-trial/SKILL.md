@@ -7,7 +7,7 @@ description: conect-guild を試すための架空の会社「お試し商会」
 
 conect-guild のリポジトリ直下で、架空の会社「お試し商会」を作り、conect-guild の画面で眺められるところまで用意する。自分の会社で使うときは `/guild-setup`（[docs/setup.md の 2 章](../../../docs/setup.md#2-自分のリポジトリで使う)）を使う。
 
-片付け（GitHub のリポジトリ・手元のフォルダ・手元の設定を消す）は別のスキルで行う（準備中）。
+片付け（GitHub のリポジトリ・手元のフォルダ・手元の設定を消す）は別のスキル `/guild-trial-cleanup`（[.claude/skills/guild-trial-cleanup/SKILL.md](../guild-trial-cleanup/SKILL.md)）で行う。
 
 ## 守ること
 
@@ -54,7 +54,7 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 
 1. `date +%Y%m%d` と `openssl rand -hex 2` で `<名前>` を `<日付>-<4 文字>`（例: `20261015-a3f9`）にする
 2. 司令塔のフォルダは `~/guild-trial/<名前>`（道具には `$HOME` を展開した絶対パスで渡す）。リポジトリは `<owner>/<名前>` の private
-3. フォルダが無いこと（`test -e "<絶対パス>" && echo exists || echo none`）と、リポジトリが無いことを確かめる。どちらかがあれば、4 文字を引き直す
+3. フォルダが無いこと（`test -e "<絶対パス>" -o -L "<絶対パス>" && echo exists || echo none`。リンク先の無いシンボリックリンクも「ある」と扱う）と、リポジトリが無いことを確かめる。どちらかがあれば、4 文字を引き直す
 
    ```bash
    gh repo view <owner>/<名前> --json name
@@ -142,7 +142,7 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 2. 書かずに確かめる
 
    ```bash
-   npm run --silent settings:write -- --dry-run --json < <入力ファイル>
+   npm run --silent settings:write -- --dry-run --json < "<入力ファイル>"
    ```
 
    - `overwrite` が `true`（その間に `guild.settings.local.json` ができた）なら、書かずに止まり、0-1 と同じことを伝える
@@ -151,7 +151,7 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 3. 書く（`--overwrite` は付けない）。結果の `written` が `true` でなければ `errors` を伝えて止まる
 
    ```bash
-   npm run --silent settings:write -- --write --json < <入力ファイル>
+   npm run --silent settings:write -- --write --json < "<入力ファイル>"
    ```
 
 4. 入力ファイルを消す
@@ -160,4 +160,4 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 
 - MulmoTerminal で、司令塔のフォルダ（`~/guild-trial/<名前>`）と部門のフォルダ（`~/guild-trial/<名前>/accounting` など）で、それぞれセルを開いて Claude Code を起動する（フォルダそのもので起動する。[docs/orchestration.md の 3-5](../../../docs/orchestration.md#3-5-部門のセッションを開く)）
 - conect-guild の直下で `npm run dev:all` を起動し、http://127.0.0.1:5173 を開く。「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られる（[docs/setup.md の 2-3・2-4](../../../docs/setup.md#2-3-collector-と画面を起動する)）。既に起動していたら、止めて起動し直す
-- 片付けは別のスキルで行う（準備中）
+- 片付けるときは `/guild-trial-cleanup` を使う
