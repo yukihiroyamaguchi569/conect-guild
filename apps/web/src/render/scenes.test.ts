@@ -120,9 +120,9 @@ const door = MAP_OBJECTS.find((o) => o.tile === 'door');
 
 describe('actorOf / castOf', () => {
   it('maps departments to their members and no department to かなめ', () => {
-    expect(actorOf({ department: '経理' })).toBe('minori');
-    expect(actorOf({ department: '総務' })).toBe('sasae');
-    expect(actorOf({ department: null })).toBe('kaname');
+    expect(actorOf(event('issue-opened', '経理'))).toBe('minori');
+    expect(actorOf(event('issue-opened', '総務'))).toBe('sasae');
+    expect(actorOf(event('issue-opened', null))).toBe('kaname');
   });
 
   it('casts the member and かなめ for every handover', () => {

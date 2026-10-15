@@ -1,4 +1,4 @@
-import { byMember } from '@conect-guild/snapshot/settings';
+import { byMember, PRESIDENT_ID } from '@conect-guild/snapshot/settings';
 import type { GuildEvent } from '../domain/events';
 import { departmentMember, MEMBERS, type MemberId, type TilePos } from '../guild.config';
 import { createConfetti, type Particle, type Random } from './confetti';
@@ -34,6 +34,9 @@ import { planToss, shouldToss, type Flight } from './toss';
  * - issue-closed: confetti over the member's seat
  * - level-up: the member hops twice at the seat, with confetti and "LEVEL UP" over it (levelUp.ts)
  * - no department: かなめ only raises the scroll / chest at the reception (confetti stays the same)
+ * - king-quest-opened (Issue #142): as issue-opened, かなめ walks the scroll to the side of the
+ *   throne (PLACES.throneSide) and the king holds it up on the throne; never tossed
+ * - king-quest-cleared: confetti over the throne; the king stays on it
  * - issue-opened to a near desk, now and then: かなめ tosses the scroll from the counter and the
  *   member catches it at the seat (toss.ts, Issue #12)
  *
@@ -90,14 +93,21 @@ export interface SceneContext {
   readonly pickLine?: PickLine;
 }
 
-/** The member who acts for an event; かなめ for the reception. */
-export function actorOf(event: Pick<GuildEvent, 'department'>): MemberId {
+/** The kinds that end in confetti only: nobody's movement is taken over. */
+export function isClear(kind: GuildEvent['kind']): kind is 'issue-closed' | 'king-quest-cleared' {
+  return kind === 'issue-closed' || kind === 'king-quest-cleared';
+}
+
+/** The member who acts for an event; かなめ for the reception, the king for his quests. */
+export function actorOf(event: Pick<GuildEvent, 'kind' | 'department'>): MemberId {
+  if (event.kind === 'king-quest-opened' || event.kind === 'king-quest-cleared')
+    return PRESIDENT_ID;
   return event.department === null ? 'kaname' : departmentMember(event.department);
 }
 
 /** Members whose movement a scene takes over (they must not be in two scenes at once). */
 export function castOf(event: Pick<GuildEvent, 'kind' | 'department'>): MemberId[] {
-  if (event.kind === 'issue-closed') return [];
+  if (isClear(event.kind)) return [];
   if (event.kind === 'level-up') return [actorOf(event)];
   const actor = actorOf(event);
   return actor === 'kaname' ? [actor] : [actor, 'kaname'];
@@ -231,7 +241,10 @@ function reception(start: number, seats: SceneContext['seats'], prop: Prop): Sta
   };
 }
 
-/** かなめ brings the scroll to the member's seat; the member brings the chest to the counter. */
+/**
+ * かなめ brings the scroll to the member's seat, or to the side of the throne for the king; the
+ * member brings the chest to the counter.
+ */
 function deliveryOf(
   kind: 'issue-opened' | 'pr-merged',
   actor: MemberId,
@@ -241,7 +254,7 @@ function deliveryOf(
     ? {
         giver: 'kaname',
         receiver: actor,
-        to: besideSeat(seats.kaname, seats[actor]),
+        to: actor === PRESIDENT_ID ? PLACES.throneSide : besideSeat(seats.kaname, seats[actor]),
         prop: 'scroll',
       }
     : { giver: actor, receiver: 'kaname', to: PLACES.counterFront, prop: 'chest' };
@@ -294,12 +307,13 @@ function clearTurns(actor: MemberId, start: number): Turn[] {
 
 export function planScene(event: GuildEvent, start: number, context: SceneContext): Scene {
   const actor = actorOf(event);
-  if (event.kind === 'issue-closed') {
+  if (isClear(event.kind)) {
     return {
       tracks: [],
       bursts: [{ actor, start, particles: createConfetti(context.random) }],
       flights: [],
-      turns: clearTurns(actor, start),
+      // The king has no line of his own on his clear.
+      turns: event.kind === 'issue-closed' ? clearTurns(actor, start) : [],
     };
   }
   if (event.kind === 'level-up') {
@@ -320,7 +334,8 @@ export function planScene(event: GuildEvent, start: number, context: SceneContex
   ) {
     return tossScene(actor, start, seats);
   }
-  return { ...handoverTracks(event.kind, actor, start, seats), bursts: [], flights: [] };
+  const kind = event.kind === 'king-quest-opened' ? 'issue-opened' : event.kind;
+  return { ...handoverTracks(kind, actor, start, seats), bursts: [], flights: [] };
 }
 
 /** Seats from the guild config (the selected office layout, render/layouts/seats.ts). */
