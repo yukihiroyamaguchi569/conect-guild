@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Snapshot } from '@conect-guild/snapshot';
-import { DEPARTMENT_LABELS, departmentMember } from '../guild.config';
+import { DEPARTMENT_LABELS, departmentMember, KING_QUESTS_ENABLED } from '../guild.config';
+import { kingQuestNumbers } from './kingQuests';
 import { LEVEL_MEMBERS, memberLevels, memberLevelsSchema } from './levelUp';
 
 /** Bump when the stored shape changes; a stored baseline with another version counts as absent. */
@@ -53,6 +54,8 @@ const fingerprintSchema = z.string().regex(/^[0-9a-f]{8}$/);
  * (Issue #18). It is optional, so a baseline stored before it still parses (as an unknown mapping).
  * Counted with the mapping in use, `levels` must have every member with a level now: one lacking a
  * member is malformed and counts as absent, as before #18.
+ * `king` is the numbers of the king's open quests (Issue #142), absent when they are not known; it
+ * is optional like `crew`, so an older baseline still parses and only the next one tells changes.
  */
 const baselineSchema = z
   .strictObject({
@@ -67,6 +70,7 @@ const baselineSchema = z
     ),
     levels: memberLevelsSchema,
     crew: fingerprintSchema.optional(),
+    king: z.array(issueNumber).optional(),
   })
   .refine(
     ({ levels, crew }) =>
@@ -81,7 +85,12 @@ export function parseBaseline(value: unknown): Baseline | null {
   return result.success ? result.data : null;
 }
 
-export function toBaseline(snapshot: Snapshot): Baseline {
+/** `kingQuests` is whether the settings have `president` (Issue #141). */
+export function toBaseline(
+  snapshot: Snapshot,
+  kingQuests: boolean = KING_QUESTS_ENABLED,
+): Baseline {
+  const king = kingQuestNumbers(snapshot.president, kingQuests);
   return {
     schemaVersion: BASELINE_SCHEMA_VERSION,
     fetchedAt: snapshot.fetchedAt,
@@ -90,5 +99,6 @@ export function toBaseline(snapshot: Snapshot): Baseline {
     prs: snapshot.prs.map(({ number, state, mergedAt }) => ({ number, state, mergedAt })),
     levels: memberLevels(snapshot),
     crew: CREW_FINGERPRINT,
+    ...(king === undefined ? {} : { king }),
   };
 }

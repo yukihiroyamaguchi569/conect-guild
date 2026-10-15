@@ -1,11 +1,18 @@
 import type { Snapshot, SnapshotIssue, SnapshotPr } from '@conect-guild/snapshot';
-import { EVENT_GAP_LIMIT_MS, type DepartmentLabel } from '../guild.config';
+import { EVENT_GAP_LIMIT_MS, KING_QUESTS_ENABLED, type DepartmentLabel } from '../guild.config';
 import { repoFingerprint, toBaseline, type Baseline } from './baseline';
+import { kingQuestChanges } from './kingQuests';
 import { levelUps } from './levelUp';
 import { assignPr, indexIssues, type IssueIndex } from './party';
 import { pickDepartment } from './quest';
 
-export type GuildEventKind = 'issue-opened' | 'pr-merged' | 'issue-closed' | 'level-up';
+export type GuildEventKind =
+  | 'issue-opened'
+  | 'pr-merged'
+  | 'issue-closed'
+  | 'level-up'
+  | 'king-quest-opened'
+  | 'king-quest-cleared';
 
 export interface GuildEvent {
   /**
@@ -14,9 +21,15 @@ export interface GuildEvent {
    */
   readonly id: string;
   readonly kind: GuildEventKind;
-  /** Issue number for issue events, PR number for `pr-merged`, the level reached for `level-up`. */
+  /**
+   * Issue number for issue and king's quest events, PR number for `pr-merged`, the level reached
+   * for `level-up`.
+   */
   readonly number: number;
-  /** Who acts in the scene; null means かなめ's reception (no department found). */
+  /**
+   * Who acts in the scene; null means かなめ's reception (no department found). Always null for the
+   * king's quests (Issue #142): the king acts in those.
+   */
   readonly department: DepartmentLabel | null;
 }
 
@@ -38,7 +51,7 @@ export interface DiffResult {
 }
 
 /** The kinds read from the Issues and PRs (a level-up is read from the levels). */
-type ItemEventKind = Exclude<GuildEventKind, 'level-up'>;
+type ItemEventKind = 'issue-opened' | 'pr-merged' | 'issue-closed';
 type ItemEvent = GuildEvent & { readonly kind: ItemEventKind };
 
 const KIND_ORDER: readonly ItemEventKind[] = ['issue-opened', 'pr-merged', 'issue-closed'];
@@ -128,13 +141,31 @@ function levelUpEvents(before: Baseline, after: Baseline): GuildEvent[] {
 }
 
 /**
+ * One event per king's quest that appeared or went away (Issue #142), the opened first, each in
+ * ascending number. None while either baseline does not know the king's quests.
+ */
+export function kingQuestEvents(before: Baseline, after: Baseline): GuildEvent[] {
+  const { opened, cleared } = kingQuestChanges(before.king, after.king);
+  const event = (kind: 'king-quest-opened' | 'king-quest-cleared', number: number): GuildEvent => ({
+    id: `${kind}#${String(number)}`,
+    kind,
+    number,
+    department: null,
+  });
+  return [
+    ...opened.map((n) => event('king-quest-opened', n)),
+    ...cleared.map((n) => event('king-quest-cleared', n)),
+  ];
+}
+
+/**
  * Compares the stored baseline with a freshly fetched and validated snapshot (docs/DESIGN.md 4.4).
  * - no baseline (absent, malformed or another version → pass null): no events, store the snapshot
  * - snapshot not newer than the baseline: nothing at all, keep the baseline (never rewind)
  * - baseline older than `gapLimitMs` before the snapshot: store it, show the gap notice, and only
  *   the level-ups (the levels are counted afresh from the whole history, so none is missed)
- * - otherwise: opened / merged / closed events, each at most once, then the level-ups, then store
- *   the snapshot
+ * - otherwise: opened / merged / closed events, each at most once, then the king's quests that
+ *   appeared or went away (Issue #142), then the level-ups, then store the snapshot
  * The level-ups are told only while the department → member mapping stays the same (Issue #18).
  * Call it only after a successful fetch; a failed fetch must leave the baseline alone.
  */
@@ -142,8 +173,9 @@ export function diffSnapshot(
   baseline: Baseline | null,
   snapshot: Snapshot,
   gapLimitMs: number = EVENT_GAP_LIMIT_MS,
+  kingQuests: boolean = KING_QUESTS_ENABLED,
 ): DiffResult {
-  const next = toBaseline(snapshot);
+  const next = toBaseline(snapshot, kingQuests);
   const replace: BaselineUpdate = { action: 'replace', baseline: next };
   // A baseline of another repository (guild.settings.json changed) counts as the first load.
   if (baseline?.repo !== repoFingerprint(snapshot.repo)) {
@@ -157,6 +189,7 @@ export function diffSnapshot(
   }
   const events = [
     ...collectEvents(baseline, snapshot, indexIssues(snapshot.issues)),
+    ...kingQuestEvents(baseline, next),
     ...levelUpEvents(baseline, next),
   ];
   return { events, baselineUpdate: replace, notice: null };
