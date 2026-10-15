@@ -20,13 +20,15 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 
 ## 0. 始める前に確かめる（聞かない）
 
-1. 手元の設定があるかを確かめる
+1. 手元の設定があるかを確かめる（`ls -d` はリンク先の無いシンボリックリンクも出す）
 
    ```bash
-   test -e guild.settings.local.json && echo exists || echo none
+   ls -d guild.settings.local.json guild.settings.local.ts
    ```
 
-   `exists` なら止まる。「`guild.settings.local.json` があるので、別の設定（自分の会社など）を使っています。お試しの会社はその設定を上書きしてしまうので作りません」と伝え、何も作らない
+   どちらか 1 つでも出たら（「No such file」でない行があれば）止まり、何も作らない
+   - `guild.settings.local.json`: 「`guild.settings.local.json` があるので、別の設定（自分の会社など）を使っています。お試しの会社はその設定を上書きしてしまうので作りません」と伝える
+   - `guild.settings.local.ts`: 古い形の手元の設定が残っていて、`settings:write` が読み込みを断るので作れない、と伝え、docs/setup.md のとおり `guild.settings.local.json` に移すよう案内する
 2. GitHub のアカウント名（`<owner>`）を取る。失敗したら docs/setup.md の 3 章「`gh issue list` が動かない」を案内して止まる
 
    ```bash
