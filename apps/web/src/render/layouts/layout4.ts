@@ -8,7 +8,6 @@ import type { GuildLayout } from './types';
  * corner. Built by the rules of slots.ts (Issue #123) as it was by hand (layout4.golden.test.ts).
  */
 export const LAYOUT4: GuildLayout = buildLayout(4, {
-  hourglassOnCounter: false,
   // Measured 324 px, 340 px with a failure line, 372.5 px with every rare note (Chrome,
   // 2026-10-12).
   partyWindow: { bottom: 340, tallestBottom: 373 },

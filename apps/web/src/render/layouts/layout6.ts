@@ -8,8 +8,6 @@ import type { GuildLayout } from './types';
  * the counter stays clear.
  */
 export const LAYOUT6: GuildLayout = buildLayout(6, {
-  // As before Issue #123: the hourglass on かなめ's counter, scrolls on the 総務 desk.
-  hourglassOnCounter: true,
   boardMaxCqw: WORKSHOP_BOARD_MAX_CQW,
   // Eight tightly packed rows, with the fetch status as a tab on the message window (Issue #121):
   // the column ends at 232.3 px in the demo at 1024 px (Chrome, 2026-10-15), above the bubble over
