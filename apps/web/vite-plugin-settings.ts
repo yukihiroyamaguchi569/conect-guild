@@ -52,6 +52,8 @@ export const E2E_SETTINGS_FILES: Readonly<Record<string, string>> = {
   'guests-2': 'apps/web/e2e/settings/guests-2.json',
   'guests-3': 'apps/web/e2e/settings/guests-3.json',
   'guests-5': 'apps/web/e2e/settings/guests-5.json',
+  // Four departments and the president's label: the king's quests (Issue #141).
+  president: 'apps/web/e2e/settings/president.json',
 };
 
 /** The fixture of the E2E department mode, checked like any settings file; it must be named. */

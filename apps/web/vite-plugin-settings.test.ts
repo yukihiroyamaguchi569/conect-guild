@@ -89,6 +89,18 @@ describe('settingsRedirect', () => {
   });
 });
 
+/**
+ * The departments of the fixtures named otherwise than by their count: the guests' (Issue #108)
+ * are of four, two, three and five departments, the king's quests' (Issue #141) of four.
+ */
+const NAMED_FIXTURES: Readonly<Record<string, number>> = {
+  guests: 4,
+  'guests-2': 2,
+  'guests-3': 3,
+  'guests-5': 5,
+  president: 4,
+};
+
 describe('the E2E department mode (Issue #18, test only)', () => {
   const FIXTURE = E2E_SETTINGS_FILES['2'] ?? '';
 
@@ -138,14 +150,7 @@ describe('the E2E department mode (Issue #18, test only)', () => {
         JSON.parse(readFileSync(join(SETTINGS_ROOT, path), 'utf8')),
       );
       const real = checkGuildSettings(JSON.parse(VALID));
-      // The guests' fixtures (Issue #108) are of four, two, three and five departments.
-      const guestFixtures: Readonly<Record<string, number>> = {
-        guests: 4,
-        'guests-2': 2,
-        'guests-3': 3,
-        'guests-5': 5,
-      };
-      const departments = guestFixtures[count] ?? Number(count);
+      const departments = NAMED_FIXTURES[count] ?? Number(count);
       expect(settings.departments).toHaveLength(departments);
       expect(settings.repo).not.toBe(real.repo);
       const realLabels = real.departments.map((d) => d.label);

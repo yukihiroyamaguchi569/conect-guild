@@ -27,6 +27,10 @@ const GUESTS_SPEC = /guests\.spec\.ts/;
 const GUESTS_FIVE_PORT = GUESTS_PORT + 1;
 const GUESTS_FIVE_URL = `http://127.0.0.1:${String(GUESTS_FIVE_PORT)}`;
 const GUESTS_FIVE_SPEC = /guestsFive\.spec\.ts/;
+/** The king's quests (Issue #141): settings president, kingQuests.spec.ts. */
+const PRESIDENT_PORT = GUESTS_PORT + 2;
+const PRESIDENT_URL = `http://127.0.0.1:${String(PRESIDENT_PORT)}`;
+const PRESIDENT_SPEC = /kingQuests\.spec\.ts/;
 
 export default defineConfig({
   testDir: './e2e',
@@ -49,7 +53,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: [DEPARTMENTS_SPEC, GUESTS_SPEC, GUESTS_FIVE_SPEC],
+      testIgnore: [DEPARTMENTS_SPEC, GUESTS_SPEC, GUESTS_FIVE_SPEC, PRESIDENT_SPEC],
       use: { ...devices['Desktop Chrome'] },
     },
     ...OTHER_COUNTS.map((count) => ({
@@ -67,6 +71,11 @@ export default defineConfig({
       name: 'guests-5',
       testMatch: GUESTS_FIVE_SPEC,
       use: { ...devices['Desktop Chrome'], baseURL: GUESTS_FIVE_URL },
+    },
+    {
+      name: 'president',
+      testMatch: PRESIDENT_SPEC,
+      use: { ...devices['Desktop Chrome'], baseURL: PRESIDENT_URL },
     },
   ],
   webServer: [
@@ -100,6 +109,14 @@ export default defineConfig({
       cwd: import.meta.dirname,
       env: { GUILD_E2E_DEPARTMENTS: 'guests-5' },
       url: GUESTS_FIVE_URL,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      command: `npx vite --port ${String(PRESIDENT_PORT)} --strictPort --mode e2e-departments`,
+      cwd: import.meta.dirname,
+      env: { GUILD_E2E_DEPARTMENTS: 'president' },
+      url: PRESIDENT_URL,
       reuseExistingServer: false,
       timeout: 60_000,
     },
