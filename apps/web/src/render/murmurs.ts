@@ -1,3 +1,4 @@
+import { PRESIDENT_ID } from '@conect-guild/snapshot/settings';
 import type { MemberId } from '../guild.config';
 import type { Bubbles } from './bubbles';
 import type { Random } from './confetti';
@@ -60,6 +61,8 @@ export interface MurmurParty {
   readonly wall: number;
   /** The local hour, 0 to 24 (daylight.hourOf). */
   readonly hour: number;
+  /** How many of the king's quests are open (the party window's 「やること N 件」, Issue #141). */
+  readonly kingQuests: number;
 }
 
 /** What a member out playing murmurs: only while staying at the spot, not on the way. */
@@ -68,6 +71,15 @@ function outingScene(activity: IdleActivity, party: MurmurParty): LineScene | nu
   const { outing } = activity;
   const staying = outing.out.end <= party.wall && party.wall < outing.back.start;
   return staying ? playScene(outing.spot.kind, party.hour) : null;
+}
+
+/**
+ * What the king murmurs awake on the throne (Issue #151): of his work while any of his quests is
+ * open, of their pile from `LINES.kingPiledQuests` on; his idle talk only with none.
+ */
+function kingSeatScene(quests: number): LineScene {
+  if (quests === 0) return 'idle';
+  return quests < LINES.kingPiledQuests ? 'kingWork' : 'kingWorkPiled';
 }
 
 /**
@@ -83,7 +95,15 @@ export function murmurSceneOf(member: MurmurMember, party: MurmurParty): LineSce
   const activity = party.activities[id];
   if (activity !== undefined) return outingScene(activity, party);
   if (!member.atSeat) return null;
-  return restful ? 'idle' : 'work';
+  if (!restful) return 'work';
+  return id === PRESIDENT_ID ? kingSeatScene(party.kingQuests) : 'idle';
+}
+
+/** How many of the king's quests are open, from the party rows (app/guildView.PartyRow). */
+export function kingQuestCountOf(
+  rows: readonly { readonly id: MemberId; readonly quests: number }[],
+): number {
+  return rows.find((row) => row.id === PRESIDENT_ID)?.quests ?? 0;
 }
 
 /** Everyone who may murmur now, in the order of `members`. */
@@ -196,7 +216,7 @@ function murmurNow(last: MemberId | null, moment: MurmurMoment): Murmurs {
 export interface MurmurFrame {
   readonly t: number;
   readonly hour: number;
-  readonly party: Pick<MurmurParty, 'bubbles' | 'idleSince'> & {
+  readonly party: Pick<MurmurParty, 'bubbles' | 'idleSince' | 'kingQuests'> & {
     /** False before the first snapshot. */
     readonly known: boolean;
     readonly halted: boolean;

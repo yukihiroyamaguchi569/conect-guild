@@ -91,6 +91,8 @@ export interface StageParty {
   readonly known: boolean;
   /** The members' levels, shown small under their seats (levelTags.ts). */
   readonly levels: Levels;
+  /** How many of the king's quests are open: what he murmurs on the throne (murmurs.ts). */
+  readonly kingQuests: number;
 }
 
 /** Before the first party: no bubbles, no moves, no levels. */
@@ -101,6 +103,7 @@ const NO_PARTY: StageParty = {
   halted: false,
   known: false,
   levels: {},
+  kingQuests: 0,
 };
 
 export interface RenderLoop {

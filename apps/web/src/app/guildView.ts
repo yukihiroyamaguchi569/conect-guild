@@ -131,6 +131,8 @@ export interface PartyRow {
   readonly rewards: number | null;
   /** The cumulative level (Issue #19); the king has none and shows おうさま. */
   readonly level: PartyLevel;
+  /** The king's open quests (Issue #141): what he murmurs on the throne (Issue #151); 0 for others. */
+  readonly quests: number;
 }
 
 /** A row before its level is attached (buildParty adds it). */
@@ -162,13 +164,15 @@ export function countWaits(snapshot: SnapshotLists): WaitCounts {
 
 function row(
   member: MemberConfig,
-  view: Pick<PartyRow, 'state' | 'stateLabel' | 'tooltip' | 'rewards'>,
+  view: Pick<PartyRow, 'state' | 'stateLabel' | 'tooltip' | 'rewards'> &
+    Partial<Pick<PartyRow, 'quests'>>,
 ): PartyRowBase {
   return {
     id: member.id,
     name: member.name,
     role: member.role,
     face: faceColors(member.id),
+    quests: 0,
     ...view,
   };
 }
@@ -227,6 +231,7 @@ function kingRow(waits: WaitCounts, quests: number): PartyRowBase {
   if (waits.president > 0) {
     const approvals = `承認まち ${String(waits.president)} 件`;
     return row(MEMBERS.yukihiro, {
+      quests,
       state: 'awaiting-president',
       stateLabel: todo === null ? approvals : `${approvals}・${todo}`,
       tooltip: `ルールを変える PR は${MEMBERS.yukihiro.role}がマージします${todoTip}`,
@@ -234,6 +239,7 @@ function kingRow(waits: WaitCounts, quests: number): PartyRowBase {
     });
   }
   return row(MEMBERS.yukihiro, {
+    quests,
     state: 'idle',
     stateLabel: todo === null ? '玉座で待機' : `しごと中・${todo}`,
     tooltip: `承認まちの PR はありません${todoTip}`,

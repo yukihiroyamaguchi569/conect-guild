@@ -234,6 +234,39 @@ describe('the king’s word as he takes the scroll of his quest (Issue #146)', (
   });
 });
 
+describe('the king’s murmurs of his work on the throne (Issue #151)', () => {
+  const members = frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS).members;
+  const king = members.find((m) => m.id === 'yukihiro');
+  const minori = members.find((m) => m.id === 'minori');
+  const murmurs = (['kingWork', 'kingWorkPiled'] as const).flatMap((scene) =>
+    linesOf('yukihiro', scene),
+  );
+
+  it.each(murmurs)('「%s」 meets no tag, no window, no edge and no bubble of みのり', (murmur) => {
+    if (king === undefined || minori === undefined) throw new Error('no king or みのり');
+    const sources = { speeches: {}, lines: {}, remarks: {}, bubbles: {}, murmurs: {} };
+    const placed = placeOverheads(
+      members,
+      { ...sources, murmurs: { yukihiro: murmur } },
+      LEVEL_TAGS,
+    ).find((p) => p.id === 'yukihiro');
+    if (placed === undefined) throw new Error('nothing over the king');
+    const box = placedBox(placed);
+    expect(TAGS.filter((tag) => meet(box, tag))).toEqual([]);
+    expect(WINDOWS.filter((area) => meet(box, area))).toEqual([]);
+    expect(box.top).toBeGreaterThanOrEqual(0);
+    expect(box.left).toBeGreaterThanOrEqual(0);
+    expect(box.right).toBeLessThanOrEqual(LOGICAL_WIDTH);
+    // Only one murmur at a time: みのり may still say a line on starting to wait, or of a scene.
+    for (const scene of ['clear', ...WAITS] as const) {
+      const line = longest('minori', scene);
+      if (line === null) continue;
+      const other = placedBox(wordsBoxOf(members, minori, { line }));
+      expect({ scene, meet: meet(box, other) }).toEqual({ scene, meet: false });
+    }
+  });
+});
+
 describe('words said holding an item up (Issue #77)', () => {
   it('go beside the item in the scenes above (the takers hold scrolls and chests up)', () => {
     // The scenes of 'line bubbles and level tags' ran first in this file.
