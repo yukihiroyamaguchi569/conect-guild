@@ -39,7 +39,7 @@ describe('buildParty: the king’s row', () => {
   const king = (over: Parameters<typeof snapshot>[0], enabled = true) =>
     buildParty(snapshot(over), now, enabled).at(-1);
 
-  it('shows やること N 件 beside the approvals, his state unchanged', () => {
+  it('shows やること N 件 beside the approvals, or しごと中 with it (Issue #142), his state unchanged', () => {
     const approvals = { prs: [pr(10, { changedFiles: ['CLAUDE.md'] })] };
     expect(king({ ...approvals, president: PRESIDENT })).toMatchObject({
       id: 'yukihiro',
@@ -48,7 +48,7 @@ describe('buildParty: the king’s row', () => {
     });
     expect(king({ president: PRESIDENT })).toMatchObject({
       state: 'idle',
-      stateLabel: 'やること 2 件',
+      stateLabel: 'しごと中・やること 2 件',
       tooltip: '承認まちの PR はありません。おうさまの クエストが 2 件あります',
     });
   });
