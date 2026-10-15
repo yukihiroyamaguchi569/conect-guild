@@ -21,14 +21,7 @@ import { DEFAULT_SEATS } from './scenes';
 import { createGuestStage } from './guestStage';
 import { LAYOUTS } from './layouts';
 import type { DecorPlacement } from './layouts/types';
-import {
-  isPartyExceptionIn,
-  overlaps,
-  spriteRect,
-  tallestWindowExtentsFor,
-  windowExtentsFor,
-  type PxRect,
-} from './map';
+import { overlaps, spriteRect, tallestWindowExtentsFor, type PxRect } from './map';
 import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
 
 const fixed: Random = () => 0.5;
@@ -247,10 +240,8 @@ describe.each(SPOTS)('guest $index of layout $count', ({ layout, spot, feet }) =
   const { board, party, message } = tallestWindowExtentsFor(layout);
 
   it('keeps its marks clear of the windows', () => {
-    // Where the layout lets the party window's rare notes cover the head (layout5, Issue #122),
-    // the marks keep clear of it at its usual height.
-    const partyOver = isPartyExceptionIn(layout, spot) ? windowExtentsFor(layout).party : party;
-    for (const area of [board, partyOver, message]) {
+    // No exception: layout5's guest is clear of the party window since Issue #132.
+    for (const area of [board, party, message]) {
       expect(overlaps(questionRect(feet), area)).toBe(false);
       expect(overlaps(zRect(feet), area)).toBe(false);
     }

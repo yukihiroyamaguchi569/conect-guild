@@ -10,8 +10,8 @@ defineProps<{
   /** The demo mode (Issue #49): its data are fictional and its baseline is not stored. */
   demo?: boolean;
   /**
-   * One line, as a tab on the message window (six departments, Issue #121): the notes shrink to an
-   * ellipsis, their whole text in the tooltip.
+   * One line, as a tab on the message window (Issue #121; every layout since Issue #132): the notes
+   * shrink to an ellipsis, their whole text in the tooltip.
    */
   tab?: boolean;
 }>();

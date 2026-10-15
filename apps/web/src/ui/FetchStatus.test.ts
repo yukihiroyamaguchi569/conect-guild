@@ -30,7 +30,7 @@ function render(tab: boolean): Promise<string> {
   );
 }
 
-describe('FetchStatus as the tab of six departments (Issue #121)', () => {
+describe('FetchStatus as the tab on the message window (Issues #121, #132)', () => {
   it('keeps every note and puts their whole text in the tooltip', async () => {
     const html = await render(true);
     expect(html).toContain('fetch--tab');
@@ -48,7 +48,7 @@ describe('FetchStatus as the tab of six departments (Issue #121)', () => {
     }
   });
 
-  it('stays the window of the column elsewhere, with no tooltips added', async () => {
+  it('stays the window of the column when halted, with no tooltips added', async () => {
     const html = await render(false);
     expect(html).not.toContain('fetch--tab');
     expect(html).toContain('取得失敗（ネットワーク）');

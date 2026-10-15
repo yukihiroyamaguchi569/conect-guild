@@ -236,9 +236,9 @@ describe('map: walkable grid', () => {
   });
 
   it('keeps heads out from under the windows too (sprites are 80 px tall)', () => {
-    // Below the party window (bottom 340 px): feet on row 12 put the head at 336 px, under it.
-    expect(isUnderWindow({ col: 24, row: 12 })).toBe(true);
-    expect(isUnderWindow({ col: 24, row: 13 })).toBe(false);
+    // Below the party window (bottom 278 px): feet on row 10 put the head at 272 px, under it.
+    expect(isUnderWindow({ col: 24, row: 10 })).toBe(true);
+    expect(isUnderWindow({ col: 24, row: 11 })).toBe(false);
     // Feet just above the message window: the head is above the feet, so this is fine.
     expect(isWalkable({ col: 24, row: 13 })).toBe(true);
   });
@@ -287,10 +287,9 @@ describe('map: windows over the canvas (GuildScreen.vue)', () => {
     expect(isUnderWindow({ col: 4, row: 12 })).toBe(false);
   });
 
-  it('takes the tallest right-hand column (rare notes) only for seats', () => {
-    expect(TALLEST_WINDOW_EXTENTS.party.bottom).toBe(373);
-    expect(TALLEST_WINDOW_EXTENTS.party.bottom).toBeGreaterThan(WINDOW_EXTENTS.party.bottom);
-    expect(TALLEST_WINDOW_EXTENTS.board).toEqual(WINDOW_EXTENTS.board);
+  it('has no taller right-hand column for seats: the rare notes are on the tab (Issue #132)', () => {
+    expect(TALLEST_WINDOW_EXTENTS).toEqual(WINDOW_EXTENTS);
+    expect(WINDOW_EXTENTS.party.bottom).toBe(278);
   });
 
   it.each(SEATED)('keeps the head and bubble of %s clear of every window at its tallest', (id) => {
@@ -306,6 +305,9 @@ describe('map: windows over the canvas (GuildScreen.vue)', () => {
     expect(OVERHEAD_TOP).toBeGreaterThan(SPRITE_SIZE);
   });
 });
+
+/** Every department count with a layout (Issue #132: the fetch tab in each). */
+const COUNTS = [2, 3, 4, 5, 6] as const;
 
 describe('map: the windows of each layout', () => {
   it('lowers the quest board where the layout says (five and six departments)', () => {
@@ -336,15 +338,14 @@ describe('map: the windows of each layout', () => {
     const underBoth = { col: 26, row: 14 };
     const layout = { ...six, partyWindow: tall, underPartyWindow: [underBoth] };
     const { party, tab } = windowExtentsFor(layout);
-    if (tab === undefined) throw new Error('no tab');
     expect(overlaps(spriteRect(underBoth), party)).toBe(true);
     expect(overlaps(spriteRect(underBoth), tab)).toBe(true);
     expect(isWalkableIn(layout, underBoth)).toBe(false);
   });
 
-  it('puts no tile under the fetch tab alone: the message window covers it too', () => {
-    const { tab, message } = windowExtentsFor(layoutFor(6));
-    if (tab === undefined) throw new Error('no tab');
+  it.each(COUNTS)('puts no tile under the fetch tab alone in %d departments', (count) => {
+    // The message window covers it too.
+    const { tab, message } = windowExtentsFor(layoutFor(count));
     for (let row = 0; row < MAP_ROWS; row += 1) {
       for (let col = 0; col < MAP_COLS; col += 1) {
         const sprite = spriteRect({ col, row });
@@ -353,22 +354,21 @@ describe('map: the windows of each layout', () => {
     }
   });
 
-  it('puts the fetch tab on the message window’s top edge in six departments only', () => {
-    for (const count of [2, 3, 4, 5])
-      expect(windowExtentsFor(layoutFor(count)).tab).toBeUndefined();
-    const { tab, message } = windowExtentsFor(layoutFor(6));
-    if (tab === undefined) throw new Error('no tab');
-    // right 9.8%, bottom on the message window, max-width 50% (512 px), height 1.6cqw (16.384 px).
-    expect(tab.right).toBeCloseTo(message.right);
-    expect(tab.bottom).toBeCloseTo(message.top);
-    expect(tab.right - tab.left).toBeCloseTo(512);
-    expect(tab.bottom - tab.top).toBeCloseTo(16.384);
-  });
+  it.each(COUNTS)(
+    'puts the fetch tab on the message window’s top edge in %d departments',
+    (count) => {
+      const { tab, message } = windowExtentsFor(layoutFor(count));
+      // right 9.8%, bottom on the message window, max-width 50% (512 px), height 1.6cqw (16.384 px).
+      expect(tab.right).toBeCloseTo(message.right);
+      expect(tab.bottom).toBeCloseTo(message.top);
+      expect(tab.right - tab.left).toBeCloseTo(512);
+      expect(tab.bottom - tab.top).toBeCloseTo(16.384);
+    },
+  );
 
   it('keeps the fetch tab under the feet on row 13, the way to the right of six departments', () => {
     const six = layoutFor(6);
     const { tab } = windowExtentsFor(six);
-    if (tab === undefined) throw new Error('no tab');
     expect(spriteRect({ col: 20, row: 13 }).bottom).toBeLessThan(tab.top);
     for (let col = 24; col <= 30; col += 1) expect(isWalkableIn(six, { col, row: 13 })).toBe(true);
   });

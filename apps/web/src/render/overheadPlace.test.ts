@@ -85,7 +85,8 @@ describe('placeOverheads: words said holding an item up (Issue #77)', () => {
 
 describe('placeOverheads: words held up near the windows and the edges', () => {
   it('go on the left when the right is under an HTML window', () => {
-    const near = { x: WINDOWS[1]?.left ?? 0, y: 400 };
+    // Beside the party window, low enough for its six rows (layout4, Issue #132).
+    const near = { x: WINDOWS[1]?.left ?? 0, y: 300 };
     const right = bubbleBox(near, { voice: 'say', chars: 5 }, 'beside-right', 0);
     expect(WINDOWS.some((w) => meet(right, w))).toBe(true);
     expect(placedOf([member('minori', near, raise('chest'))]).spot).toBe('beside-left');
@@ -208,7 +209,8 @@ describe('placeOverheads: a kept spot beside the item that no longer fits', () =
   const spotOf = (placed: readonly Placed[]) => placed.find((p) => p.id === 'minori')?.spot;
 
   it('places again when the kept spot beside would go under a window', () => {
-    const near = { x: WINDOWS[1]?.left ?? 0, y: 400 };
+    // Beside the party window, low enough for its six rows (layout4, Issue #132).
+    const near = { x: WINDOWS[1]?.left ?? 0, y: 300 };
     const memory: PlaceMemory = {
       minori: { kind: 'line', words: 'おまかせを', spot: 'beside-right' },
     };
