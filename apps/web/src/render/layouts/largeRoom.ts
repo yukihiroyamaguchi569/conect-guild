@@ -63,7 +63,7 @@ export const WORKSHOP_DESK: CornerDesk = {
  * The sales desk (むすび, 営業) on the lower right carpet, right of the 総務 desk and mirroring
  * it: letters, a ledger and mugs for the visitors.
  */
-export const SALES_DESK: CornerDesk & { readonly underPartyWindow: readonly TilePos[] } = {
+export const SALES_DESK: CornerDesk = {
   objects: [flat('chair', rect(26, 9, 1, 2)), solid('desk', rect(25, 11, 4, 2))],
   decor: [
     place('open-book', 25, 11),
@@ -72,14 +72,6 @@ export const SALES_DESK: CornerDesk & { readonly underPartyWindow: readonly Tile
     place('mugs', 28, 11),
   ],
   desk: { seat: { col: 26, row: 10 }, side: 'lower', things: [] },
-  // Every tile right of col 22 down to row 11 is under the party window of six departments (bottom
-  // 316 px): the seat and the way from it to the alley between the desks (col 24, row 12).
-  underPartyWindow: [
-    { col: 26, row: 10 },
-    { col: 25, row: 10 },
-    { col: 24, row: 10 },
-    { col: 24, row: 11 },
-  ],
 };
 
 /**
@@ -87,7 +79,8 @@ export const SALES_DESK: CornerDesk & { readonly underPartyWindow: readonly Tile
  * carpet right of the 総務 desk, three columns past the alley beside it (col 24; the president
  * chose it, 2026-10-15), one row in front of the 総務 seat with the round table (GUEST_TABLE)
  * before it. The party window at its usual height ends
- * above the frame; only its rare extra notes (tallestBottom) cover the top of the head, as at the
- * sales desk of six departments (underPartyWindow). Six departments leave no room for a guest.
+ * above the frame; only its rare extra notes (tallestBottom) cover the top of the head: the one
+ * tile the party window may cover (underPartyWindow; six departments' sales desk was one until
+ * Issue #121). Six departments leave no room for a guest.
  */
 export const RIGHT_OF_SASAE_GUEST_SPOT: TilePos = { col: 27, row: 11 };

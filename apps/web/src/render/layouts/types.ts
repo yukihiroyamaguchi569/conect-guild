@@ -115,6 +115,16 @@ export interface GuildLayout {
     readonly tallestBottom: number;
     /** The rows are packed (ui/PartyStatus.vue `dense`) so that seven or eight of them fit. */
     readonly dense?: boolean;
+    /**
+     * Packed tighter still, the type unchanged (ui/PartyStatus.vue `tight`): layout6's eight rows
+     * end above the bubble over the sales desk (Issue #121).
+     */
+    readonly tight?: boolean;
+    /**
+     * The fetch status leaves the column for a one-line tab on the message window's top edge
+     * (ui/GuildScreen.vue, render/map.ts FETCH_TAB): layout6, Issue #121.
+     */
+    readonly fetchTab?: boolean;
   };
   /**
    * The quest board's max-height in cqw (GuildScreen.vue; it scrolls beyond), when lower than
@@ -124,9 +134,9 @@ export interface GuildLayout {
   readonly boardMaxCqw?: number;
   /**
    * Tiles where the party window may cover the top of a member's frame and the bubble over the
-   * head: layout6's sales desk right of 総務 and the way from it, and layout5's guest, whose head
-   * only its rare extra notes reach (the president accepted both, 2026-10-15). Nowhere else does
-   * anything that matters go under a window.
+   * head: layout5's guest, whose head only its rare extra notes reach (the president accepted it,
+   * 2026-10-15). layout6's sales desk was one until its column ended above the bubble (Issue #121).
+   * Nowhere else does anything that matters go under a window.
    */
   readonly underPartyWindow?: readonly TilePos[];
   readonly toss: {
