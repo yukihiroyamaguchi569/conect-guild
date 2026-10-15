@@ -27,10 +27,10 @@ const GUESTS_SPEC = /guests\.spec\.ts/;
 const GUESTS_FIVE_PORT = GUESTS_PORT + 1;
 const GUESTS_FIVE_URL = `http://127.0.0.1:${String(GUESTS_FIVE_PORT)}`;
 const GUESTS_FIVE_SPEC = /guestsFive\.spec\.ts/;
-/** The king's quests (Issue #141): settings president, kingQuests.spec.ts. */
+/** The king's quests (Issues #141, #142): settings president, kingQuests and kingQuestEvents specs. */
 const PRESIDENT_PORT = GUESTS_PORT + 2;
 const PRESIDENT_URL = `http://127.0.0.1:${String(PRESIDENT_PORT)}`;
-const PRESIDENT_SPEC = /kingQuests\.spec\.ts/;
+const PRESIDENT_SPEC = /kingQuest(s|Events)\.spec\.ts/;
 
 export default defineConfig({
   testDir: './e2e',
