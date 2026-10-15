@@ -29,6 +29,8 @@ export type CycleResult =
       readonly ok: true;
       readonly issues: number;
       readonly prs: number;
+      /** Issue #141: the king's open Issues; null when the settings have no `president`. */
+      readonly president: number | null;
       /** Counts of the history: Issues ever opened, completed Issues, merged PRs. */
       readonly history: {
         readonly opened: number;

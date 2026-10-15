@@ -58,7 +58,7 @@ describe('collectSnapshot', () => {
       gh,
       REPO,
       new Date('2026-10-12T00:00:00.000Z'),
-      [],
+      { branchPrefixes: [] },
     );
     expect(fileCalls).toBe(OPEN_PR_COUNT);
     expect(peak).toBe(CHANGED_FILES_CONCURRENCY);
@@ -79,7 +79,7 @@ describe('collectSnapshot', () => {
       }
     };
     await expect(
-      collectSnapshot(gh, REPO, new Date('2026-10-12T00:00:00.000Z'), []),
+      collectSnapshot(gh, REPO, new Date('2026-10-12T00:00:00.000Z'), { branchPrefixes: [] }),
     ).rejects.toThrow('gh failed');
     expect(inFlight).toBe(0);
   });
@@ -104,7 +104,9 @@ describe('collectSnapshot: order of the lists', () => {
       await Promise.resolve();
       return '';
     };
-    const run = collectSnapshot(gh, REPO, new Date('2026-10-12T00:00:00.000Z'), []);
+    const run = collectSnapshot(gh, REPO, new Date('2026-10-12T00:00:00.000Z'), {
+      branchPrefixes: [],
+    });
     await new Promise((resolve) => setImmediate(resolve));
     expect(calls).toEqual(['prs']);
     prList.resolve(lines([{ ...openPr(10), body: 'Closes #2' }]));

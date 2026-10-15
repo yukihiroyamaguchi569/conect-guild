@@ -31,7 +31,13 @@ describe('collectOnce', () => {
   it('writes one validated snapshot built from every page', async () => {
     const deps = harness(fakeGh());
     await expect(collectOnce(deps)).resolves.toEqual({
-      github: { ok: true, issues: 1, prs: 2, history: { opened: 3, completed: 1, merged: 1 } },
+      github: {
+        ok: true,
+        issues: 1,
+        prs: 2,
+        president: null,
+        history: { opened: 3, completed: 1, merged: 1 },
+      },
       sessions: SESSIONS_OK,
       mixups: [],
       guests: [],

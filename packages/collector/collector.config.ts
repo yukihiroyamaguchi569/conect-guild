@@ -65,6 +65,8 @@ export const COLLECTOR_CONFIG = {
   repo: GUILD_SETTINGS.repo,
   // Branch name prefix → department, for the history (the branch names themselves are not kept).
   branchPrefixes: GUILD_SETTINGS.branchPrefixes,
+  // Issue #141: the label of the king's Issues; undefined without `president` in the settings.
+  presidentLabel: GUILD_SETTINGS.president?.label,
   intervalMs: 60_000,
   // Issue #85: the check that each department label exists in the repository, at the start and
   // then this often, apart from the fetch above.

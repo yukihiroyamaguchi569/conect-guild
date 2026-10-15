@@ -4,6 +4,7 @@ import type {
   SnapshotHistory,
   SnapshotIssue,
   SnapshotPr,
+  SnapshotPresident,
 } from '@conect-guild/snapshot';
 import {
   DEPARTMENT_LABELS,
@@ -59,6 +60,24 @@ export function toSnapshotIssues(raw: readonly RawIssue[], cutoff: Date): Snapsh
     updatedAt: new Date(issue.updated_at).toISOString(),
     closedAt: isoOrNull(issue.closed_at),
   }));
+}
+
+/**
+ * Issue #141: the open Issues with the president's label are the king's, even with a department
+ * label too. They leave `issues` (no department desk, no reception) for `president.issues`,
+ * the most recently updated first. Closed ones stay in `issues`. Without the label, nothing moves.
+ */
+export function splitPresidentIssues(
+  issues: readonly SnapshotIssue[],
+  label: string | undefined,
+): { readonly issues: SnapshotIssue[]; readonly president: SnapshotPresident | undefined } {
+  if (label === undefined) return { issues: [...issues], president: undefined };
+  const isKing = (issue: SnapshotIssue) => issue.state === 'open' && issue.labels.includes(label);
+  const king = issues
+    .filter(isKing)
+    .toSorted((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+    .map(({ number, title, updatedAt }) => ({ number, title, updatedAt }));
+  return { issues: issues.filter((issue) => !isKing(issue)), president: { issues: king } };
 }
 
 /** All open PRs and those closed or merged since `cutoff`. */

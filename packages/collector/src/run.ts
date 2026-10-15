@@ -51,12 +51,7 @@ async function fetchGithub(deps: RunDeps, now: Date): Promise<GithubResult> {
   try {
     return {
       ok: true,
-      ...(await collectSnapshot(
-        deps.gh,
-        COLLECTOR_CONFIG.repo,
-        now,
-        COLLECTOR_CONFIG.branchPrefixes,
-      )),
+      ...(await collectSnapshot(deps.gh, COLLECTOR_CONFIG.repo, now, COLLECTOR_CONFIG)),
     };
   } catch (error) {
     return { ok: false, kind: errorKind(error) };
@@ -114,6 +109,7 @@ function cycleResult(github: GithubResult, write: WriteResult | null): CycleResu
     ok: true,
     issues: github.part.issues.length,
     prs: github.part.prs.length,
+    president: github.part.president?.issues.length ?? null,
     history: {
       opened: history.openedIssueCount,
       completed: history.completedIssues.length,

@@ -93,6 +93,8 @@ export interface MergedSettings {
      * them against the company values.
      */
     readonly guests?: readonly { name: string; sessionDir: string; repo?: string }[];
+    /** Issue #141: written by hand, never by the input; kept as it was. */
+    readonly president?: GuildSettings['president'];
   };
   /** How many rows of `branchPrefixes` were kept from the starting settings. */
   readonly keptBranchPrefixes: number;
@@ -227,6 +229,7 @@ export function mergeSettings(
       ...company.raw,
       ruleChangePaths: base.ruleChangePaths,
       ...(chosen === undefined ? {} : { guests: chosen }),
+      ...(base.president === undefined ? {} : { president: base.president }),
     },
     keptBranchPrefixes: company.kept,
   };
