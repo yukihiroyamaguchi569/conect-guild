@@ -26,6 +26,7 @@
     "collect": "node packages/collector/src/main.ts",
     "settings:write": "node packages/collector/src/settingsWriteMain.ts",
     "settings:list-sessions": "node packages/collector/src/listSessionsMain.ts",
+    "trial:scaffold": "node packages/collector/src/trialScaffoldMain.ts",
     "dev:all": "concurrently --kill-others --names collect,web --prefix-colors auto \"npm run collect\" \"npm run dev\""
   },
   "devDependencies": {
