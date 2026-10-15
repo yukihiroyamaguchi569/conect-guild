@@ -55,7 +55,8 @@ export function kingQuestChanges(
   const now = new Set(after);
   const ascending = (a: number, b: number) => a - b;
   return {
-    opened: after.filter((n) => !was.has(n)).toSorted(ascending),
-    cleared: before.filter((n) => !now.has(n)).toSorted(ascending),
+    // From the sets: a number listed twice (a malformed stored baseline) is told once.
+    opened: [...now].filter((n) => !was.has(n)).toSorted(ascending),
+    cleared: [...was].filter((n) => !now.has(n)).toSorted(ascending),
   };
 }

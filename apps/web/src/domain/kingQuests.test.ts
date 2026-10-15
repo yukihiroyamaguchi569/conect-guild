@@ -52,6 +52,11 @@ describe('kingQuestChanges (Issue #142)', () => {
     expect(kingQuestChanges([4, 2], [])).toEqual({ opened: [], cleared: [2, 4] });
   });
 
+  it('tells a number listed twice once', () => {
+    expect(kingQuestChanges([3, 3], [])).toEqual({ opened: [], cleared: [3] });
+    expect(kingQuestChanges([], [4, 4])).toEqual({ opened: [4], cleared: [] });
+  });
+
   it('tells nothing while either side is unknown', () => {
     expect(kingQuestChanges(undefined, [1])).toEqual({ opened: [], cleared: [] });
     expect(kingQuestChanges([1], undefined)).toEqual({ opened: [], cleared: [] });
