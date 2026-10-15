@@ -33,7 +33,7 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
    - `link` が出たら（置き場そのものがシンボリックリンクで、別の場所を指している）、止まって何も消さない
    - `No such file` なら置き場の候補は無い（3 の手元の設定だけを見る）。それ以外のエラー（権限など）は止まって何も消さない
 
-3. 手元の設定を確かめる。`ls -d guild.settings.local.json` が出たら Read で開き、`repo` と `commanderSessionDir` だけを見る（ほかの値は引用しない）
+3. 手元の設定を確かめる。`ls -d guild.settings.local.json` が出たら Read で開き、`repo` と `commanderSessionDir` だけを見る（ほかの値は引用しない）。`No such file` 以外で確かめられない（`ls -d` や Read の失敗、JSON として読めない、`repo` か `commanderSessionDir` が無い）ときは止まって何も消さない。`.bak`（1-5）も同じ
    - `repo` が `<owner>/<名前>`、`commanderSessionDir` が `~/guild-trial/<名前>`（または `$HOME` を展開した絶対パス）で、`<名前>` が形に合う: その `<名前>` を候補に足す（フォルダが無くても、リポジトリと設定が残っていれば片付ける）
    - それ以外: 本物の会社などの設定。消さない
 4. 候補が無ければ「片付けるお試しの会社はありません」と伝えて止まる。候補が 2 つ以上なら、番号を付けて並べ（手元の設定が指しているものには「画面が使っている」と添える）、どれを片付けるかを番号で選んでもらう。全部でもよい
@@ -65,6 +65,7 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
 - GitHub のリポジトリ: `<owner>/<名前>`（private。Issue・ラベルも一緒に消え、元に戻せない）
 - 手元のフォルダ: `<絶対パス>`（司令塔と部門のフォルダ。中身ごと消える）
 - 手元の設定: `guild.settings.local.json`（と `guild.settings.local.json.bak`）。消すと conect-guild の画面はデモに戻る
+- お試しのフォルダやリポジトリを自分の仕事に使い始めていたら、消さずに止まるので言ってほしい、と添える
 - 消さないもの（あれば）: public だったリポジトリ、お試しと確かめられないリポジトリ・フォルダ、シンボリックリンク、別の設定を指す `guild.settings.local.json`、本物の会社の控えの `.bak`
 
 ## 3. 消す
@@ -77,10 +78,10 @@ OK をもらったら、消す直前に 1 をもう一度なぞり（聞かず�
    gh repo delete <owner>/<名前> --yes
    ```
 
-2. 手元のフォルダ。`~/guild-trial` の直下の 1 つだけを、`$HOME` を展開した絶対パスで名指しする（`~`・`*`・変数・末尾の `/` を使わない）。sandbox の中で `Operation not permitted` が出たら、同じコマンドを sandbox の外でやり直す（許可を求められる）
+2. 手元のフォルダ。`~/guild-trial` の直下の 1 つだけを、`$HOME` を展開した絶対パスで名指しする（`~`・`*`・変数・末尾の `/` を使わない）。置き場と対象がシンボリックリンクでないことを、消すのと同じ 1 行で確かめる（確かめてから消すまでの間に入れ替わらないように）。`link` が出たら消さずに止まる。sandbox の中で `Operation not permitted` が出たら、同じコマンドを sandbox の外でやり直す（許可を求められる）
 
    ```bash
-   rm -rf "/Users/<ユーザー>/guild-trial/<名前>"
+   test -L "/Users/<ユーザー>/guild-trial" -o -L "/Users/<ユーザー>/guild-trial/<名前>" && echo link || rm -rf "/Users/<ユーザー>/guild-trial/<名前>"
    ```
 
 3. 手元の設定（一覧に入れたものだけ）
