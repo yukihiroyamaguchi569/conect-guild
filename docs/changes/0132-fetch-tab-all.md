@@ -19,4 +19,5 @@
 - golden: `__golden__/layout{2,3,5,6}.txt` は `partyWindow` の行だけが変わり、`layout5.txt` からは `underPartyWindow` の行が消えた。`layout4.txt` は窓の範囲の行（`window party`・`tallest party` の下端と、新しい `window tab`・`tallest tab`）だけが変わった。歩ける道（`play`）や席は変わっていない
 - vitest: どの間取りでも `tallestBottom` と `bottom` が同じこと、窓の下に入ってよいマスが無いこと、5 部門のお客さんがいちばん伸びたパーティの窓にもかからないこと、どの間取りでもタブがメッセージ窓の上辺の右端にあり、タブだけにかかるマスが無いこと。席・お客さんの記号の検査から例外の分岐を外した。overheadPlace.test.ts の「右がパーティの窓にかかる」例は、窓が短くなったので足元を 300px に上げた
 - E2E: 2・3・5・6 部門で、注意書きをすべて出してもタブが 1 行に収まり、右の列が間取りの下端を超えず、どの机の吹き出しも窓にかからないこと（`departments.spec.ts`）。4 部門でタブがメッセージ窓の上辺の右端にあり、右の列に取得のようすが無いこと（`guild.spec.ts`）。4 部門のパーティの窓の下端が 278px 以下であること（`levels.spec.ts`）。5 部門で、注意書きをすべて出してもお客さんの絵がどの窓にもかからないこと（`guestsFive.spec.ts`）
+- 「注意書きをすべて出す」E2E（#121 からの `openWithEveryNote`）は、localStorage の removeItem が通って「基準を消しました」になり、セッションの注記も出ていなかった。snapshot を 1 日前にしてセッションを読めない形にし、removeItem も失敗させて、5 つの注記（情報が古い・セッションを読めない・取得失敗・localStorage・基準を消せなかった）が出たことを確かめてから測るようにした（`e2e/everyNote.ts`。codex の統合レビューの指摘）
 - DESIGN.md: 3 章の layouts/ の説明、4.6 の段落（6 部門だけの説明を全部門の説明に）、4.13（5 部門の例外を消す）を直した
