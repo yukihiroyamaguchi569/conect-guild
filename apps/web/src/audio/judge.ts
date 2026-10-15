@@ -9,6 +9,8 @@ const EVENT_CUES: Readonly<Record<GuildEventKind, SoundCue>> = {
   'pr-merged': 'chest',
   'issue-closed': 'clear',
   'level-up': 'levelup',
+  'king-quest-opened': 'scroll',
+  'king-quest-cleared': 'clear',
 };
 
 /**

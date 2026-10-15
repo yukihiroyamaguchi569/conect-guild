@@ -218,7 +218,8 @@ function kanameRow(waits: WaitCounts, live: LiveState | undefined): PartyRowBase
 
 /**
  * The king's row. His quests (Issue #141) show beside the approvals as 「やること N 件」, none
- * when there are none; they leave his state as it was (no scene of their own yet).
+ * when there are none. With one or more he is 「しごと中」 instead of 「玉座で待機」 (Issue #142);
+ * waiting approvals still come first, and his state (no bubble) stays as it was.
  */
 function kingRow(waits: WaitCounts, quests: number): PartyRowBase {
   const todo = quests > 0 ? `やること ${String(quests)} 件` : null;
@@ -234,7 +235,7 @@ function kingRow(waits: WaitCounts, quests: number): PartyRowBase {
   }
   return row(MEMBERS.yukihiro, {
     state: 'idle',
-    stateLabel: todo ?? '玉座で待機',
+    stateLabel: todo === null ? '玉座で待機' : `しごと中・${todo}`,
     tooltip: `承認まちの PR はありません${todoTip}`,
     rewards: null,
   });

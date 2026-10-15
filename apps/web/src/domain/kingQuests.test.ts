@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kingQuestsOf } from './kingQuests';
+import { kingQuestChanges, kingQuestNumbers, kingQuestsOf } from './kingQuests';
 
 const PRESIDENT = {
   issues: [
@@ -22,5 +22,43 @@ describe('kingQuestsOf', () => {
     expect(kingQuestsOf(PRESIDENT, false)).toEqual([]);
     expect(kingQuestsOf(undefined, true)).toEqual([]);
     expect(kingQuestsOf({ issues: [] }, true)).toEqual([]);
+  });
+});
+
+describe('kingQuestNumbers (Issue #142)', () => {
+  it('keeps the numbers only, ascending', () => {
+    expect(kingQuestNumbers(PRESIDENT, true)).toEqual([3, 5, 9]);
+    expect(kingQuestNumbers({ issues: [] }, true)).toEqual([]);
+  });
+
+  it('is unknown without president in the settings or in the snapshot', () => {
+    expect(kingQuestNumbers(PRESIDENT, false)).toBeUndefined();
+    expect(kingQuestNumbers(undefined, true)).toBeUndefined();
+  });
+});
+
+describe('kingQuestChanges (Issue #142)', () => {
+  it('tells the numbers that appeared and those that went away, ascending', () => {
+    expect(kingQuestChanges([3, 9], [12, 3, 10])).toEqual({ opened: [10, 12], cleared: [9] });
+  });
+
+  it('tells nothing when nothing changed', () => {
+    expect(kingQuestChanges([3, 9], [9, 3])).toEqual({ opened: [], cleared: [] });
+    expect(kingQuestChanges([], [])).toEqual({ opened: [], cleared: [] });
+  });
+
+  it('tells every quest from none, and every clear down to none', () => {
+    expect(kingQuestChanges([], [4, 2])).toEqual({ opened: [2, 4], cleared: [] });
+    expect(kingQuestChanges([4, 2], [])).toEqual({ opened: [], cleared: [2, 4] });
+  });
+
+  it('tells a number listed twice once', () => {
+    expect(kingQuestChanges([3, 3], [])).toEqual({ opened: [], cleared: [3] });
+    expect(kingQuestChanges([], [4, 4])).toEqual({ opened: [4], cleared: [] });
+  });
+
+  it('tells nothing while either side is unknown', () => {
+    expect(kingQuestChanges(undefined, [1])).toEqual({ opened: [], cleared: [] });
+    expect(kingQuestChanges([1], undefined)).toEqual({ opened: [], cleared: [] });
   });
 });

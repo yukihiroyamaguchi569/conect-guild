@@ -15,6 +15,8 @@ describe('cueForMessage', () => {
     ['pr-merged', 'chest'],
     ['issue-closed', 'clear'],
     ['level-up', 'levelup'],
+    ['king-quest-opened', 'scroll'],
+    ['king-quest-cleared', 'clear'],
   ] as const)('%s plays %s', (kind, cue) => {
     expect(cueForMessage({ event: event(kind) })).toBe(cue);
   });
