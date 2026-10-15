@@ -16,6 +16,8 @@ import {
   type RuleChangePath,
 } from '../guild.config';
 import {
+  DEMO_KING_QUEST,
+  DEMO_KING_TITLES,
   DEMO_LANES,
   DEMO_LOOP_MS,
   DEMO_REPO,
@@ -274,6 +276,28 @@ function loopItems(
 }
 
 /**
+ * The king's quest open at `inLoopMs` of `loop` (Issue #152): from `openAt` of a loop whose number
+ * is a multiple of `everyLoops` to `clearAt` of the next one; null otherwise. It takes the number
+ * of かなめ's lane of the loop it opens in, which has no Issue or PR of its own (demo.king.test.ts).
+ */
+export function demoKingQuestAt(
+  loop: number,
+  inLoopMs: number,
+): { readonly loop: number; readonly number: number; readonly title: string } | null {
+  const { everyLoops, openAt, clearAt } = DEMO_KING_QUEST;
+  const phase = loop % everyLoops;
+  const open = (phase === 0 && inLoopMs >= openAt) || (phase === 1 && inLoopMs < clearAt);
+  if (!open) return null;
+  const openLoop = loop - phase;
+  const turn = openLoop / everyLoops;
+  return {
+    loop: openLoop,
+    number: demoIssueNumber(openLoop, 'commander'),
+    title: DEMO_KING_TITLES[turn % DEMO_KING_TITLES.length] ?? DEMO_KING_TITLES[0],
+  };
+}
+
+/**
  * A made-up past, so the counts (and the levels of Issue #19) do not start from zero. Each
  * department's clears and merges (in the settings' order: 経理, 広報, 企画, 総務 by default) and
  * the Issues opened are picked so that, with four departments, the level-ups come one by one: in
@@ -374,7 +398,8 @@ function sessionsOf(
  * the departments `labels` (the settings' by default; tests pass made-up ones). It holds the
  * current loop as far as it has gone and the whole previous loop (so the members who cleared a
  * quest stay 完了 and keep their rewards). `fetchedAt` is always now: never stale. The settings'
- * guests (Issue #108) come too, with made-up work (domain/demoGuests.ts); without any, none.
+ * guests (Issue #108) come too, with made-up work (domain/demoGuests.ts); without any, none. So
+ * does the king's quest (Issue #152, demoKingQuestAt), whatever the settings say of `president`.
  */
 export function demoSnapshotAt(
   elapsedMs: number,
@@ -389,6 +414,7 @@ export function demoSnapshotAt(
   const previous = loop > 0 ? loopItems(loop - 1, DEMO_LOOP_MS, loopStart(loop - 1), labels) : null;
   const current = loopItems(loop, inLoop, loopStart(loop), labels);
   const visitors = demoGuestsAt(guests, { loop, inLoopMs: inLoop, nowMs });
+  const king = demoKingQuestAt(loop, inLoop);
   return {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     fetchedAt: iso(nowMs),
@@ -398,5 +424,17 @@ export function demoSnapshotAt(
     history: historyUntil(loop, inLoop, labels),
     sessions: { ...sessionsOf(loop, inLoop, nowMs, labels), guests: visitors.states },
     guests: visitors.parts,
+    president: {
+      issues:
+        king === null
+          ? []
+          : [
+              {
+                number: king.number,
+                title: king.title,
+                updatedAt: iso(loopStart(king.loop) + DEMO_KING_QUEST.openAt),
+              },
+            ],
+    },
   };
 }

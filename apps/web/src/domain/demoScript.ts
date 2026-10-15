@@ -68,6 +68,24 @@ export const DEMO_SCRIPT: readonly DemoBeat[] = [
   { at: 57_500, lane: 'quest2', action: 'close-issue' },
 ];
 
+/**
+ * The king's quest of the demo (Issue #152): one every `everyLoops` loops, so the messages (at
+ * least 8 s each, app/guildStore.ts) still fit and a late start is made up for (every two loops
+ * kept them waiting longer and longer; app/demo.lag.test.ts measures it). Opened at `openAt`
+ * of a loop whose number is a multiple of `everyLoops`, while かなめ is free between the first chest
+ * and the second (she walks it to the throne in about 7.5 s); cleared in the next loop at
+ * `clearAt`, while she is free between handing out the second scroll and taking the first chest
+ * (the two lines take about 4 s).
+ */
+export const DEMO_KING_QUEST = { everyLoops: 3, openAt: 40_500, clearAt: 22_500 } as const;
+
+/** Fictional quests of the king, in turn. Plain everyday work, as the departments'. */
+export const DEMO_KING_TITLES: readonly [string, ...string[]] = [
+  '来年の方針を決める',
+  '年始のあいさつ文を書く',
+  '社内の勉強会で話す',
+];
+
 /** A quest of the demo: the Issue's title and the title of the PR that finishes it. */
 export interface DemoQuestTitles {
   readonly issue: string;
