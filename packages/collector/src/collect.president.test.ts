@@ -103,6 +103,34 @@ describe('collectSnapshot with the president’s label', () => {
   });
 });
 
+describe('collectSnapshot: the mix-up check without the king’s Issues', () => {
+  // Three PRs of the 経理 prefix, all tied to an Issue of the king that also has 広報's label.
+  const merged = (number: number) => ({
+    number,
+    title: 'Fictional change',
+    body: 'Closes #1',
+    state: 'closed',
+    merged_at: '2026-10-11T00:00:00Z',
+    closed_at: '2026-10-11T00:00:00Z',
+    head_ref: 'accounting/fictional',
+  });
+  const mixGh: GhRunner = (args) => {
+    const path = args.at(-1) ?? '';
+    const items = path.includes('pulls?state=all')
+      ? [merged(11), merged(12), merged(13)]
+      : [rawIssue(1, [KING, '広報'], 'closed')];
+    return Promise.resolve(items.map((item) => `${JSON.stringify(item)}\n`).join(''));
+  };
+  const branchPrefixes = [{ prefix: 'accounting/', department: '経理' }];
+
+  it('does not count the king’s Issues as a department’s', async () => {
+    const without = await collectSnapshot(mixGh, 'owner/repo', NOW, { branchPrefixes });
+    expect(without.mixups).not.toEqual([]);
+    const rules = { branchPrefixes, presidentLabel: KING };
+    expect((await collectSnapshot(mixGh, 'owner/repo', NOW, rules)).mixups).toEqual([]);
+  });
+});
+
 describe('reportCycle', () => {
   const lines: string[] = [];
   const push = (line: string) => lines.push(line);

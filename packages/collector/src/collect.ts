@@ -73,5 +73,11 @@ export async function collectSnapshot(
     ...(president === undefined ? {} : { president }),
   });
   const departments = DEPARTMENT_LABELS;
-  return { part, mixups: mixupsOf(rawIssues, rawPrs, repo, { branchPrefixes, departments, now }) };
+  // The king's Issues are no department's (Issue #141), so they never tell a department's PRs.
+  const mixupIssues =
+    presidentLabel === undefined
+      ? rawIssues
+      : rawIssues.filter((issue) => !issue.labels.includes(presidentLabel));
+  const context = { branchPrefixes, departments, now };
+  return { part, mixups: mixupsOf(mixupIssues, rawPrs, repo, context) };
 }
