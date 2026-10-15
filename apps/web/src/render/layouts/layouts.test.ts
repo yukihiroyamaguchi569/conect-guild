@@ -16,6 +16,7 @@ import { DEFAULT_SEATS } from '../scenes';
 import { seatSinkFor } from '../seating';
 import { LAYOUTS } from './index';
 import { LAYOUT5 } from './layout5';
+import { LAYOUT6 } from './layout6';
 import { TILE_SIZE } from '../metrics';
 import type { GuildLayout, TilePos } from './types';
 
@@ -41,8 +42,8 @@ const allSeats = (layout: GuildLayout): TilePos[] => [...walkerSeats(layout), la
 
 /**
  * The windows at their tallest that must keep clear of `pos`: all but the party window on the
- * tiles the layout lets it cover (layout6's sales desk and layout5's guest, the president's
- * decisions 2026-10-15).
+ * tiles the layout lets it cover (layout5's guest, the president's decision 2026-10-15; layout6's
+ * sales desk was one until Issue #121).
  */
 function windowsOver(layout: GuildLayout, pos: TilePos) {
   const { party, ...others } = tallestWindowExtentsFor(layout);
@@ -200,9 +201,9 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: d
     }
   });
 
-  it('lets the party window cover only tiles it reaches, and only in five and six departments', () => {
+  it('lets the party window cover only tiles it reaches, and only in five departments', () => {
     const listed = layout.underPartyWindow ?? [];
-    expect(listed.length > 0).toBe(layout.departmentCount >= 5);
+    expect(listed.length > 0).toBe(layout.departmentCount === 5);
     // At its tallest: layout5's guest is clear of it at its usual height (Issue #122).
     const { party } = tallestWindowExtentsFor(layout);
     for (const tile of listed) expect(overlaps(spriteRect(tile), party), keyOf(tile)).toBe(true);
@@ -255,6 +256,33 @@ describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () =
   it('keeps the alley beside the 総務 desk free (col 24)', () => {
     for (let row = desk.row; row < desk.row + desk.h + 1; row += 1) {
       expect(isWalkableIn(LAYOUT5, { col: desk.col + desk.w, row })).toBe(true);
+    }
+  });
+});
+
+describe('layout of 6 departments: むすび clear of the party window (Issue #121)', () => {
+  const seat = LAYOUT6.desks[5]?.seat;
+  if (seat === undefined) throw new Error('no sales desk');
+
+  it('lists no tile under the party window', () => {
+    expect(LAYOUT6.underPartyWindow ?? []).toEqual([]);
+    expect(isPartyExceptionIn(LAYOUT6, seat)).toBe(false);
+  });
+
+  it('ends the column above the seat’s bubble, the fetch status gone to the tab', () => {
+    const { party, tab } = tallestWindowExtentsFor(LAYOUT6);
+    const feet = tileToPoint(seat);
+    const bubble = bubbleBox(feet, { voice: 'glyph', chars: 1 }, 'right', 0);
+    expect(overlaps(bubble, party)).toBe(false);
+    expect(overlaps(spriteRect(seat), party)).toBe(false);
+    expect(LAYOUT6.partyWindow).toMatchObject({ tight: true, fetchTab: true });
+    expect(tab).toBeDefined();
+  });
+
+  it('keeps the party window extents of the other layouts and their fetch status in the column', () => {
+    for (const layout of Object.values(LAYOUTS).filter((l) => l !== LAYOUT6)) {
+      expect(layout.partyWindow.tight ?? false).toBe(false);
+      expect(layout.partyWindow.fetchTab ?? false).toBe(false);
     }
   });
 });

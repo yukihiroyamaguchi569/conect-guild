@@ -44,8 +44,35 @@ const CQW = LOGICAL_WIDTH / 100;
 /** The quest board's max-height in cqw (GuildScreen.vue), unless the layout lowers it. */
 export const BOARD_MAX_CQW = 31;
 
+/**
+ * The fetch status as a tab on the message window's top edge (layouts with partyWindow.fetchTab,
+ * Issue #121): GuildScreen.vue sets its max-width (% of the stage) and height (cqw) from these, and
+ * keeps it on one line. 1.6cqw (16.4 px) keeps it under the feet of a member on row 13 (448 px), the
+ * only way along the lower carpets to the door.
+ */
+export const FETCH_TAB = { maxWidthPct: 50, heightCqw: 1.6 } as const;
+
+/** The windows over the canvas: the fetch tab only where the layout has one. */
+export type WindowExtents = Readonly<Record<'board' | 'party' | 'message', PxRect>> & {
+  readonly tab?: PxRect;
+};
+
 /** The most each window covers (logical px), from the numbers in GuildScreen.vue's styles. */
-export function windowExtentsFor(
+export function windowExtentsFor(layout: GuildLayout): WindowExtents {
+  const extents = fixedWindowExtentsFor(layout);
+  if (layout.partyWindow.fetchTab !== true) return extents;
+  const { message } = extents;
+  // .stage__tab: right 9.8%, bottom 19.3% (the message window's top), FETCH_TAB's size
+  const tab = {
+    left: message.right - FETCH_TAB.maxWidthPct * PCT_X,
+    top: message.top - FETCH_TAB.heightCqw * CQW,
+    right: message.right,
+    bottom: message.top,
+  };
+  return { ...extents, tab };
+}
+
+function fixedWindowExtentsFor(
   layout: GuildLayout,
 ): Readonly<Record<'board' | 'party' | 'message', PxRect>> {
   return {
@@ -58,7 +85,7 @@ export function windowExtentsFor(
       bottom: 1.6 * PCT_Y + (layout.boardMaxCqw ?? BOARD_MAX_CQW) * CQW,
     },
     // .stage__side: right 1.1%, top 1.6%, width 24.6%. Its height is its content (party window
-    // and fetch status), measured per layout: walking uses the height with a failure line; seats
+    // and, without the fetch tab, fetch status), measured per layout: walking uses the height with a failure line; seats
     // keep clear of the tallest (tallestWindowExtentsFor).
     party: {
       left: (100 - 1.1 - 24.6) * PCT_X,
@@ -81,9 +108,7 @@ export function windowExtentsFor(
  * gets its rare extra notes (localStorage unavailable, a failed baseline clear) on top of a failure
  * line; a member walking past may be covered for a moment in that rare state.
  */
-export function tallestWindowExtentsFor(
-  layout: GuildLayout,
-): Readonly<Record<'board' | 'party' | 'message', PxRect>> {
+export function tallestWindowExtentsFor(layout: GuildLayout): WindowExtents {
   const extents = windowExtentsFor(layout);
   return { ...extents, party: { ...extents.party, bottom: layout.partyWindow.tallestBottom } };
 }
@@ -204,12 +229,13 @@ export function isPartyExceptionIn(layout: GuildLayout, pos: TilePos): boolean {
   );
 }
 
-/** A listed tile under the party window and no other window. */
+/** A listed tile under the party window and no other window (the fetch tab included). */
 function isOnlyUnderPartyIn(layout: GuildLayout, pos: TilePos): boolean {
   if (!isPartyExceptionIn(layout, pos)) return false;
-  const { board, message } = cachedWindows(layout);
   const sprite = spriteRect(pos);
-  return !overlaps(sprite, board) && !overlaps(sprite, message);
+  return Object.entries(cachedWindows(layout)).every(
+    ([name, area]) => name === 'party' || !overlaps(sprite, area),
+  );
 }
 
 /** isWalkableIn the selected layout. */

@@ -9,7 +9,7 @@ import { useMissingLabels } from '../app/useMissingLabels';
 import { useNarration } from '../app/useNarration';
 import { useSound } from '../app/useSound';
 import { SELECTED_LAYOUT } from '../render/layouts';
-import { BOARD_MAX_CQW } from '../render/map';
+import { BOARD_MAX_CQW, FETCH_TAB } from '../render/map';
 import DemoStart from './DemoStart.vue';
 import FetchStatus from './FetchStatus.vue';
 import GuildCanvas from './GuildCanvas.vue';
@@ -90,6 +90,18 @@ watch(
   },
 );
 
+/**
+ * Six departments (Issue #121): the fetch status leaves the right-hand column for a one-line tab on
+ * the message window's top edge, so that the column ends above the sales desk's bubble.
+ */
+const fetchTab = SELECTED_LAYOUT.partyWindow.fetchTab === true;
+/** Halted, there is no message window to sit on: the fetch status goes back to the column. */
+const tabbed = computed(() => fetchTab && !state.halted);
+const fetchTabStyle = {
+  '--tab-max-width': `${String(FETCH_TAB.maxWidthPct)}%`,
+  '--tab-height': `${String(FETCH_TAB.heightCqw)}cqw`,
+};
+
 /** The canvas on screen or not: the messages stop waiting for scenes, the demo cannot start. */
 function onStageShown(shown: boolean): void {
   setStageShown(shown);
@@ -168,8 +180,10 @@ function onStageShown(shown: boolean): void {
           class="stage__party"
           :rows="party"
           :dense="SELECTED_LAYOUT.partyWindow.dense"
+          :tight="SELECTED_LAYOUT.partyWindow.tight"
         />
         <FetchStatus
+          v-if="!tabbed"
           :status="fetchStatus"
           :effects-available="state.effectsAvailable"
           :baseline-notice="state.baselineNotice"
@@ -183,6 +197,19 @@ function onStageShown(shown: boolean): void {
           />
         </FetchStatus>
       </div>
+      <FetchStatus
+        v-if="tabbed"
+        class="stage__tab"
+        :style="fetchTabStyle"
+        tab
+        :status="fetchStatus"
+        :effects-available="state.effectsAvailable"
+        :baseline-notice="state.baselineNotice"
+        :demo="demo !== null"
+        @clear-baseline="clearBaseline"
+      >
+        <SoundControl :settings="soundSettings" @toggle="toggleSound" @cycle-volume="cycleVolume" />
+      </FetchStatus>
     </div>
   </main>
 </template>
@@ -224,6 +251,7 @@ function onStageShown(shown: boolean): void {
 
 .stage__board,
 .stage__side,
+.stage__tab,
 .stage__message,
 .stage__king,
 .stage__halt,
@@ -264,6 +292,17 @@ function onStageShown(shown: boolean): void {
   height: 7%;
 }
 
+/*
+ * Six departments: the fetch status as a tab on the message window's top edge, at its right end
+ * (render/map.ts FETCH_TAB sets its max-width and height).
+ */
+.stage__tab {
+  right: 9.8%;
+  bottom: 19.3%;
+  max-width: var(--tab-max-width);
+  height: var(--tab-height);
+}
+
 .stage__message {
   left: 9.8%;
   bottom: 1.9%;
@@ -298,6 +337,7 @@ function onStageShown(shown: boolean): void {
 
   .stage__board,
   .stage__side,
+  .stage__tab,
   .stage__message,
   .stage__halt,
   .stage__demo {
@@ -305,6 +345,7 @@ function onStageShown(shown: boolean): void {
     width: auto;
     min-height: 0;
     max-height: none;
+    max-width: none;
     height: auto;
     margin: 0.6em;
     font-size: 14px;
