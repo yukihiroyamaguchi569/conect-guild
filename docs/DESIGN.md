@@ -610,7 +610,7 @@ M4 の後に足したもの: 部門の数 2〜6（Issue #18）と、お客さん
 ## 10. 決めたこと（2026-10-12）
 
 1. zod を入れる（実行時の依存は Vue と zod の 2 つ）
-2. 置き場所は `~/my-apps/conect-guild`。`~/.claude/repos.md` に行を足す
+2. （欠番。作者の手元の運用の項だったため削った。ほかの項の番号は参照されるので振り直さない）
 3. タイルもキャラ 6 体も codex 生成（タイルは当初 CC0 素材の予定だったが、2026-10-12 に社長の判断でコンセプト画に雰囲気を合わせるため codex 生成に変えた）
 4. M3 の hooks は、着手前に改めて承認を取る → 2026-10-12 に社長が判断: hooks は足さず、MulmoTerminal のファイルを読む（10 章 7）
 5. メンバーの名前は確定（1 章の表。かなめ・みのり・ひびき・ひらめ・ささえ・ゆきひろ）
@@ -620,7 +620,7 @@ M4 の後に足したもの: 部門の数 2〜6（Issue #18）と、お客さん
 9. ほかのチームが使えるように、チームごとの値をリポジトリ直下の `guild.settings.json` 1 つに集める（Issue #10。手元で変えるときはコピーの `guild.settings.local.json` に書く。下の Issue #76 の項。社長の判断で、部門の数に応じた席の並べ方は Issue #18 に分けた）
    - 置く値: 対象リポジトリ（`repo`）、かなめ・王様と部門のメンバーの名前・役・色（`members`。Issue #18 から部門で使わないメンバーは書かなくてよい）、部門のラベル・担当・固定の順・セッションの起動ディレクトリ（`departments`）、司令塔のセッションの起動ディレクトリ（`commanderSessionDir`）、ブランチ接頭辞 → 部門（`branchPrefixes`）、ルール変更のパスの規則（`ruleChangePaths`。`exact`・`suffix`・`prefix` の 3 種類で、glob は使わない）
    - 置かない値: 席の位置（Issue #18）、間隔・時間の窓、出力先、MulmoTerminal のファイルのパス（チームで変わらない）
-   - TS の値として書き（`as const satisfies`）、collector は Node の型除去で、画面は Vite で読む。JSON にしないのは、書き間違いを型検査でも拾え、ラベルのリテラル型を画面の型に使えるため。schema は `packages/snapshot/src/settings.ts` に置き、型は schema から推論する。読み込んだ時点で zod で検証し、合わなければ collector も画面も項目を挙げて止まる（Issue #89 で JSON に変えた。下の Issue #89 の項）
+   - 当初は TS の値（`as const satisfies`）で書いていたが、Issue #89 で JSON に変えた（下の Issue #89 の項）。collector は Node の型除去で、画面は Vite で読む。schema は `packages/snapshot/src/settings.ts` に置き、型は schema から推論する。読み込んだ時点で zod で検証し、合わなければ collector も画面も項目を挙げて止まる
    - **手元だけの設定ファイル（Issue #76）**: ほかのチームは `guild.settings.json` をコピーして `guild.settings.local.json`（リポジトリ直下、gitignore）にし、そちらを書き換える。`guild.settings.json` を直接書き換えると、差分が `git status` に残り続けて pull で衝突しうる、PR に混ざりうる、conect.llc の値を前提にしたテストが通らなくなる、のため（メンターの提案、Issue #67）
      - どちらを読むか: `guild.settings.local.json` があればそれ、無ければ `guild.settings.json`。判定は `packages/snapshot/src/settingsFile.ts` の 1 か所。引数・環境変数では変えられない（4.1）。検証は同じ schema（`settings.ts`）で、どちらを読んでも同じにかかる。エラーの文言は、画面からはどちらを読んだか分からないので両方の名前を出す
      - collector: `src/main.ts` が判定し、Node の `module.registerHooks` の resolve で、`settings.ts` が読む `guild.settings.json` を `guild.settings.local.json` に向けてから、残り（`src/start.ts`）を動的 import する。静的 import は評価の前にすべて解決されるので、先に hook を入れてから読み込む必要がある。`snapshot.json` の schema（部門ラベル）も同じ設定から作られるので、モジュールごと差し替える
@@ -650,7 +650,7 @@ M4 の後に足したもの: 部門の数 2〜6（Issue #18）と、お客さん
    - メンバーの id（`kaname` など）は変えられない。絵（`assets/sprites/<id>.png`）、手の位置、席がこの id で引かれるため。司令塔は `kaname`、王は `yukihiro`
    - 引数・環境変数では変えられない方針（4.1）は保つ。変えるときは設定ファイルを書き換える
    - 画面のバンドルにも設定ファイル全体（対象リポジトリの名前と起動ディレクトリを含む）が入る。`dist/` は配布しない（5 章）ので扱いは変えない
-   - テスト（`npm run verify`）は conect.llc の設定を前提にする。部門ラベルの型を設定の値から作っているので、ほかのチーム向けに設定を変えると型検査とテストが通らない。その場合は `npm run collect` と `npm run dev` だけを使う（docs/setup.md。司令塔の判断。設定に依存しないテストは Issue #18 とあわせて考える）
+   - テスト（`npm run verify`）は `guild.settings.local.json` を読まず、いつも conect.llc の設定（`guild.settings.json`）で動く。手元の設定を書き換えても通る（docs/setup.md）
 
 ## 11. 作り方の体制
 
