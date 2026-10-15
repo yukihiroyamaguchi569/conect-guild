@@ -1,14 +1,17 @@
 // The king's quests told on the stage (Issue #142). Runs only in the president project of
 // playwright.config.ts, whose dev server reads the fictional settings e2e/settings/president.json.
 // /snapshot.json is the fictional guestsSnapshot with the king's Issues, served by the route of
-// fixtures.ts; a later write adds one of them, and a third one takes it away again.
+// fixtures.ts; a later write adds one of them, and a third one takes it away again. Its clear
+// (Issue #147) throws no confetti: the king says a word on the throne and かなめ answers.
 import type { Page } from '@playwright/test';
 import type { Snapshot } from '@conect-guild/snapshot';
 import { drawnImages, installCanvasImageRecorder } from './canvasImages.ts';
+import { drawnTexts, installCanvasTextRecorder } from './canvasText.ts';
 import { expect, test, waitForBaseline, waitForRoom } from './fixtures.ts';
 import { fictionalSettings, guestsSnapshot } from './guestsSnapshot.ts';
 import { NOW } from './sampleSnapshot.ts';
 import { layoutFor } from '../src/render/layouts/catalog.ts';
+import { LINE_BOOK } from '../src/render/lineBook.ts';
 import { LOGICAL_WIDTH } from '../src/render/map.ts';
 import { tileToPoint } from '../src/render/path.ts';
 
@@ -80,13 +83,16 @@ async function confettiOverThrone(page: Page): Promise<number> {
 test.beforeEach(async ({ page, snapshotServer }) => {
   await page.addInitScript(installCanvasImageRecorder);
   await page.addInitScript(installConfettiRecorder);
+  await page.addInitScript(installCanvasTextRecorder);
   snapshotServer.serve(reading(NOW, [STANDING]));
 });
 
-test('a new king’s quest is brought to the throne, and its clear rains confetti over it', async ({
+test('a new king’s quest is brought to the throne, and its clear is a word with no confetti', async ({
   page,
   snapshotServer,
 }) => {
+  // The clear waits until the king has held the scroll up and かなめ is back at the counter.
+  test.setTimeout(60_000);
   await page.goto('/');
   await waitForBaseline(page);
   await waitForRoom(page);
@@ -124,6 +130,11 @@ test('a new king’s quest is brought to the throne, and its clear rains confett
       timeout: EVENT_TIMEOUT,
     },
   );
-  await expect.poll(() => confettiOverThrone(page)).toBeGreaterThan(10);
+  const said = (lines: readonly string[]) => async () =>
+    (await drawnTexts(page)).some((text) => lines.includes(text));
+  await expect.poll(said(LINE_BOOK.yukihiro.kingClear)).toBe(true);
+  // かなめ answers 0.4 s after the king's word is gone: by then confetti would have flown.
+  await expect.poll(said(LINE_BOOK.kaname.seeKingClear)).toBe(true);
+  expect(await confettiOverThrone(page)).toBe(0);
   await expect(king).toContainText('しごと中・やること 1 件');
 });
