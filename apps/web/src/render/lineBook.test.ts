@@ -20,6 +20,7 @@ const SCENES: readonly LineScene[] = [
   'takeChest',
   'clear',
   'seeClear',
+  'kingTakeScroll',
   'kingClear',
   'seeKingClear',
   'awaitPresident',
@@ -37,6 +38,9 @@ const SCENES: readonly LineScene[] = [
   'windowEvening',
   'windowNight',
 ];
+
+/** The king's moments: a clear, his own quest's scroll (Issue #146) and clear, his murmurs. */
+const KING_SCENES = ['seeClear', 'kingTakeScroll', 'kingClear', 'idle', 'sleepTalk'];
 
 /** Every (member, moment, lines) in the book. */
 const ENTRIES = MEMBERS.flatMap((id) =>
@@ -125,8 +129,8 @@ describe('line book: each moment', () => {
     }
   });
 
-  it('lets the king react to a clear, clear his own, and murmur on the throne and asleep', () => {
-    expect(Object.keys(LINE_BOOK.yukihiro)).toEqual(['seeClear', 'kingClear', 'idle', 'sleepTalk']);
+  it('lets the king react to a clear, take and clear his own, and murmur on the throne and asleep', () => {
+    expect(Object.keys(LINE_BOOK.yukihiro)).toEqual(KING_SCENES);
   });
 
   it('has nothing for a member at a moment they never speak at', () => {
@@ -134,6 +138,8 @@ describe('line book: each moment', () => {
     expect(linesOf('minori', 'toss')).toEqual([]);
     expect(linesOf('kaname', 'seeClear')).toEqual([]);
     expect(linesOf('kaname', 'kingClear')).toEqual([]);
+    expect(linesOf('kaname', 'kingTakeScroll')).toEqual([]);
+    expect(linesOf('yukihiro', 'takeScroll')).toEqual([]);
     expect(linesOf('yukihiro', 'seeKingClear')).toEqual([]);
     // かなめ never waits for the president's approval, and the king has no waiting bubble here.
     expect(linesOf('kaname', 'awaitPresident')).toEqual([]);

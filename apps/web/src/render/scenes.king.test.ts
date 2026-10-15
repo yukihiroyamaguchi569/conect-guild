@@ -84,7 +84,7 @@ describe('planScene: king-quest-opened', () => {
     });
     expect(scene.turns).toEqual([
       { actor: 'kaname', scene: 'handOver', at: arrived },
-      { actor: 'yukihiro', scene: 'takeScroll', at: handover + RECEIVE_MS },
+      { actor: 'yukihiro', scene: 'kingTakeScroll', at: handover + RECEIVE_MS },
     ]);
   });
 

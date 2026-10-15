@@ -29,6 +29,8 @@ export type LineScene =
   | 'clear'
   /** The king, after the member's line on a clear. */
   | 'seeClear'
+  /** The king on the throne as he takes the scroll of his own quest (Issue #146). */
+  | 'kingTakeScroll'
   /** The king on the throne when his own quest is cleared (Issue #147). */
   | 'kingClear'
   /** かなめ at the reception, after the king's line on his clear. */
@@ -135,6 +137,7 @@ export const LINE_BOOK = {
   },
   yukihiro: {
     seeClear: ['みごとじゃ！', 'あっぱれ！', 'ほめてつかわす'],
+    kingTakeScroll: ['わしのしごと', 'やるかのう', 'ふむ、これか'],
     kingClear: ['おわったぞ！', 'やりとげた', 'どうじゃ！'],
     idle: ['うむ', 'よきかな', 'へいわじゃのう', 'ふむふむ'],
     sleepTalk: ['むにゃ…', 'もうたべられぬ', 'うむ…うむ…'],
@@ -177,6 +180,7 @@ const SCENES: readonly LineScene[] = [
   'takeChest',
   'clear',
   'seeClear',
+  'kingTakeScroll',
   'kingClear',
   'seeKingClear',
   'awaitPresident',
