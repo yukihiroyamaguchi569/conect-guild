@@ -20,7 +20,14 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 
 ## 0. 始める前に確かめる（聞かない）
 
-1. 手元の設定があるかを確かめる（`ls -d` はリンク先の無いシンボリックリンクも出す）
+1. 依存パッケージが入っているかを確かめる（`trial:scaffold` と `settings:write` がワークスペースのパッケージを import する）
+
+   ```bash
+   ls -d node_modules
+   ```
+
+   「No such file」なら、「先に `npm ci --ignore-scripts` を済ませてから、もう一度呼んでください」と案内し、何も作らずに止まる
+2. 手元の設定があるかを確かめる（`ls -d` はリンク先の無いシンボリックリンクも出す）
 
    ```bash
    ls -d guild.settings.local.json guild.settings.local.ts
@@ -29,7 +36,7 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
    どちらか 1 つでも出たら（「No such file」でない行があれば）止まり、何も作らない
    - `guild.settings.local.json`: 「`guild.settings.local.json` があるので、別の設定（自分の会社など）を使っています。お試しの会社はその設定を上書きしてしまうので作りません」と伝える
    - `guild.settings.local.ts`: 古い形の手元の設定が残っていて、`settings:write` が読み込みを断るので作れない、と伝え、docs/setup.md のとおり `guild.settings.local.json` に移すよう案内する
-2. GitHub のアカウント名（`<owner>`）を取る。失敗したら docs/setup.md の 3 章「`gh issue list` が動かない」を案内して止まる
+3. GitHub のアカウント名（`<owner>`）を取る。失敗したら docs/setup.md の 3 章「`gh issue list` が動かない」を案内して止まる
 
    ```bash
    gh api user --jq .login
@@ -76,7 +83,7 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 
 ## 4. 手元に作る
 
-1. フォルダと `CLAUDE.md` を書く
+1. フォルダと `CLAUDE.md` を書く。`~/guild-trial/` に書くので、この 1 行は初めから sandbox の外で実行する（許可を求められる。sandbox の中で失敗してからやり直さない）
 
    ```bash
    npm run --silent trial:scaffold -- --dir "<司令塔のフォルダの絶対パス>" --departments <部門の数>
@@ -84,7 +91,7 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 
    司令塔の `CLAUDE.md`、部門のフォルダとその `CLAUDE.md`（docs/orchestration.md の 4 章の雛形と 5 章の部門の形を「お試し商会」の値で埋めたもの）、`.gitignore`（`.claude/worktrees/`）を書き、部門（`name`・`label`・`folder`・`prefix`）を JSON で出す。終了コードが 0 でなければ、出た文を伝えて止まる（フォルダが空でないときは何も書かない）
 2. 司令塔の `CLAUDE.md` の `<owner/name>` を、Edit の replace_all で `<owner>/<名前>` に置き換える。ほかは書き換えない。置き換えたあと `grep -c '<owner/name>' "<司令塔のフォルダの絶対パス>/CLAUDE.md"` が `0` を出すことを確かめる
-3. git に入れる
+3. git に入れる。これも `~/guild-trial/` に書くので、3 行とも初めから sandbox の外で実行する（許可を求められる）
 
    ```bash
    git -C "<司令塔のフォルダの絶対パス>" init -b main
