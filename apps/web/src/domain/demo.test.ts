@@ -16,7 +16,13 @@ import { DEMO_LANES, DEMO_RECEPTION_TITLES, DEMO_SCRIPT, DEMO_TITLES } from './d
 import { EVENT_GAP_LIMIT_MS } from '../guild.config';
 import { diffSnapshot, type GuildEvent } from './events';
 import { isRuleChangePath } from './party';
-import { readSessions, summonedMembers } from './summons';
+import {
+  lastKanameWork,
+  readSessions,
+  summonedMembers,
+  summonsFrom,
+  type SummonsFrom,
+} from './summons';
 import { countXp, levelOf } from './xp';
 
 const NOW = Date.parse('2026-10-12T03:00:00.000Z');
@@ -208,6 +214,24 @@ describe('what the screen makes of the demo', () => {
     }
     expect(called[0]).toBe('kaname');
     expect(called).toEqual(['kaname', 'minori', 'hirame', 'hibiki']);
+  });
+});
+
+describe('demo orders from かなめ', () => {
+  it('has かなめ hand the work on to the departments after the king’s order (Issue #155)', () => {
+    const from: SummonsFrom[] = [];
+    let previous = readSessions(at(0).sessions, NOW);
+    let kanameWorkedAt = lastKanameWork(null, previous);
+    for (let t = STEP_MS; t < DEMO_LOOP_MS; t += STEP_MS) {
+      const next = readSessions(at(t).sessions, NOW + t);
+      const members = summonedMembers(previous, next);
+      kanameWorkedAt = lastKanameWork(kanameWorkedAt, next);
+      if (members.length > 0 && next !== null) {
+        from.push(summonsFrom(members, kanameWorkedAt, next.checkedAt));
+      }
+      previous = next;
+    }
+    expect(from).toEqual(['king', 'kaname', 'kaname', 'kaname']);
   });
 });
 

@@ -16,9 +16,12 @@ import { maskTitle } from '../domain/mask';
 import { diffEntries, type MessageEntry } from '../domain/message';
 import {
   comparedReading,
+  lastKanameWork,
   readSessions,
   summonedMembers,
+  summonsFrom,
   type SessionReading,
+  type SummonsFrom,
 } from '../domain/summons';
 import { EVENT_GAP_LIMIT_MS, KING_QUESTS_ENABLED, type MemberId } from '../guild.config';
 import {
@@ -74,6 +77,8 @@ export interface GuildState {
   summons: Summons | null;
   /** The last session reading, which the next one is compared with; null after a halt. */
   sessionReading: SessionReading | null;
+  /** When かなめ was last seen working (Issue #155), kept and forgotten with the reading. */
+  kanameWorkedAt: number | null;
 }
 
 /**
@@ -83,6 +88,8 @@ export interface GuildState {
 export interface Summons {
   readonly id: number;
   readonly members: readonly MemberId[];
+  /** The king, or かなめ handing work on to departments (Issue #155). */
+  readonly from: SummonsFrom;
 }
 
 export type HaltReason = Extract<SnapshotLoadFailure, 'schema-version' | 'repo-mismatch'>;
@@ -184,6 +191,7 @@ function initialState(): GuildState {
     baselineNotice: null,
     summons: null,
     sessionReading: null,
+    kanameWorkedAt: null,
   };
 }
 
@@ -193,13 +201,19 @@ function initialState(): GuildState {
  */
 function noteSessions(state: GuildState, result: SnapshotLoadResult, now: number): void {
   if (!result.ok) {
-    if (state.halted) state.sessionReading = null;
+    if (state.halted) {
+      state.sessionReading = null;
+      state.kanameWorkedAt = null;
+    }
     return;
   }
   const next = readSessions(result.snapshot.sessions, now);
   const members = summonedMembers(state.sessionReading, next);
   state.sessionReading = comparedReading(state.sessionReading, next);
-  if (members.length > 0) state.summons = { id: (state.summons?.id ?? 0) + 1, members };
+  state.kanameWorkedAt = lastKanameWork(state.kanameWorkedAt, next);
+  if (members.length === 0 || next === null) return;
+  const from = summonsFrom(members, state.kanameWorkedAt, next.checkedAt);
+  state.summons = { id: (state.summons?.id ?? 0) + 1, members, from };
 }
 
 /**

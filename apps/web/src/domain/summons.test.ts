@@ -2,7 +2,15 @@ import type { SessionState, SnapshotSessions } from '@conect-guild/snapshot';
 import { describe, expect, it } from 'vitest';
 import { SESSION_STALE_AFTER_MS } from '../guild.config';
 import { at, T0 } from './fixtures.test-util';
-import { comparedReading, readSessions, summonedMembers, type SessionReading } from './summons';
+import {
+  comparedReading,
+  KANAME_DISPATCH_WINDOW_MS,
+  lastKanameWork,
+  readSessions,
+  summonedMembers,
+  summonsFrom,
+  type SessionReading,
+} from './summons';
 
 /** かなめ, 経理, 広報, 企画, 総務 in this order. */
 type Five = readonly [SessionState, SessionState, SessionState, SessionState, SessionState];
@@ -142,5 +150,55 @@ describe('comparedReading', () => {
   it('starts over from a missing reading, and from nothing', () => {
     expect(comparedReading(before, null)).toBeNull();
     expect(comparedReading(null, before)).toBe(before);
+  });
+});
+
+describe('lastKanameWork (Issue #155)', () => {
+  const t = at(T0);
+  const working: Five = ['working', 'idle', 'idle', 'idle', 'idle'];
+
+  it('notes the time of a reading with かなめ working', () => {
+    expect(lastKanameWork(null, reading(working, t))).toBe(t);
+    expect(lastKanameWork(t, reading(working, t + 5_000))).toBe(t + 5_000);
+  });
+
+  it('keeps the last time while she waits or asks for a permission', () => {
+    expect(lastKanameWork(t, reading(ALL_IDLE, t + 5_000))).toBe(t);
+    expect(lastKanameWork(t, reading(['resting', 'idle', 'idle', 'idle', 'idle'], t + 5_000))).toBe(
+      t,
+    );
+    const asking: Five = ['awaiting-permission', 'idle', 'idle', 'idle', 'idle'];
+    expect(lastKanameWork(null, reading(asking, t))).toBeNull();
+  });
+
+  it('never goes back to an older reading', () => {
+    expect(lastKanameWork(t + 5_000, reading(working, t))).toBe(t + 5_000);
+  });
+
+  it('forgets her work on a missing reading (unavailable or stale)', () => {
+    expect(lastKanameWork(t, null)).toBeNull();
+  });
+});
+
+describe('summonsFrom (Issue #155)', () => {
+  const t = at(T0);
+
+  it('is かなめ for departments up to the window after she was working, the king past it', () => {
+    expect(summonsFrom(['minori'], t, t + KANAME_DISPATCH_WINDOW_MS)).toBe('kaname');
+    expect(summonsFrom(['minori'], t, t + KANAME_DISPATCH_WINDOW_MS + 1)).toBe('king');
+    expect(summonsFrom(['minori', 'sasae'], t, t)).toBe('kaname');
+  });
+
+  it('is the king when かなめ starts working in the same reading', () => {
+    expect(summonsFrom(['kaname', 'minori'], t, t)).toBe('king');
+    expect(summonsFrom(['kaname'], t, t)).toBe('king');
+  });
+
+  it('is the king when かなめ has not been seen working', () => {
+    expect(summonsFrom(['minori'], null, t)).toBe('king');
+  });
+
+  it('has a window of 60 s', () => {
+    expect(KANAME_DISPATCH_WINDOW_MS).toBe(60_000);
   });
 });

@@ -85,16 +85,16 @@ describe('guild store summons', () => {
     const { store, load } = setup();
     await load(ok(reading(0, 'idle')), 0);
     await load(ok(reading(5, 'working')), 5);
-    expect(store.state.summons).toEqual({ id: 1, members: ['kaname'] });
+    expect(store.state.summons).toEqual({ id: 1, members: ['kaname'], from: 'king' });
     await load(ok(reading(10, 'working')), 10);
-    expect(store.state.summons).toEqual({ id: 1, members: ['kaname'] });
+    expect(store.state.summons).toEqual({ id: 1, members: ['kaname'], from: 'king' });
   });
 
   it('reports several sessions of one fetch together', async () => {
     const { store, load } = setup();
     await load(ok(reading(0, 'resting', 'idle')), 0);
     await load(ok(reading(5, 'working', 'working')), 5);
-    expect(store.state.summons).toEqual({ id: 1, members: ['kaname', 'minori'] });
+    expect(store.state.summons).toEqual({ id: 1, members: ['kaname', 'minori'], from: 'king' });
   });
 
   it('gives each new order a new id', async () => {
@@ -103,7 +103,7 @@ describe('guild store summons', () => {
     await load(ok(reading(5, 'working')), 5);
     await load(ok(reading(10, 'resting')), 10);
     await load(ok(reading(15, 'working')), 15);
-    expect(store.state.summons).toEqual({ id: 2, members: ['kaname'] });
+    expect(store.state.summons).toEqual({ id: 2, members: ['kaname'], from: 'king' });
   });
 
   it('does not report work stopping', async () => {
@@ -130,7 +130,7 @@ describe('guild store summons after an interruption', () => {
     await load(ok(reading(0, 'idle')), 0);
     await load(network, 5);
     await load(ok(reading(10, 'working')), 10);
-    expect(store.state.summons).toEqual({ id: 1, members: ['kaname'] });
+    expect(store.state.summons).toEqual({ id: 1, members: ['kaname'], from: 'king' });
   });
 
   it('stays quiet coming back from stale sessions', async () => {
@@ -158,5 +158,68 @@ describe('guild store summons after an interruption', () => {
     await load(ok(snapshot({ sessions: { status: 'unavailable', checkedAt: T0 } })), 5);
     await load(ok(reading(10, 'working')), 10);
     expect(store.state.summons).toBeNull();
+  });
+});
+
+describe('guild store summons from かなめ (Issue #155)', () => {
+  it('has かなめ hand the work on when she was working just before the department starts', async () => {
+    const { store, load } = setup();
+    await load(ok(reading(0, 'working', 'idle')), 0);
+    await load(ok(reading(5, 'resting', 'idle')), 5);
+    await load(ok(reading(10, 'idle', 'working')), 10);
+    expect(store.state.summons).toEqual({ id: 1, members: ['minori'], from: 'kaname' });
+  });
+
+  it.each([
+    { startsAt: 60, from: 'kaname' },
+    { startsAt: 65, from: 'king' },
+  ])('a department starting $startsAt s after かなめ was last seen working: $from', async (c) => {
+    const { store, load } = setup();
+    await load(ok(reading(0, 'working', 'idle')), 0);
+    for (let s = 5; s < c.startsAt; s += 5) await load(ok(reading(s, 'idle', 'idle')), s);
+    await load(ok(reading(c.startsAt, 'idle', 'working')), c.startsAt);
+    expect(store.state.summons).toEqual({ id: 1, members: ['minori'], from: c.from });
+  });
+
+  it('keeps the king when かなめ was waiting all along', async () => {
+    const { store, load } = setup();
+    await load(ok(reading(0, 'idle', 'idle')), 0);
+    await load(ok(reading(5, 'idle', 'working')), 5);
+    expect(store.state.summons).toEqual({ id: 1, members: ['minori'], from: 'king' });
+  });
+
+  it('keeps the king when かなめ starts working in the same fetch', async () => {
+    const { store, load } = setup();
+    await load(ok(reading(0, 'working', 'idle')), 0);
+    await load(ok(reading(5, 'idle', 'idle')), 5);
+    await load(ok(reading(10, 'working', 'working')), 10);
+    expect(store.state.summons).toEqual({ id: 1, members: ['kaname', 'minori'], from: 'king' });
+  });
+
+  it('forgets かなめ’s work over a halt', async () => {
+    const { store, load } = setup();
+    await load(ok(reading(0, 'working', 'idle')), 0);
+    await load(halt, 5);
+    await load(ok(reading(10, 'idle', 'idle')), 10);
+    await load(ok(reading(15, 'idle', 'working')), 15);
+    expect(store.state.summons).toEqual({ id: 1, members: ['minori'], from: 'king' });
+  });
+
+  it('forgets かなめ’s work over a stale reading', async () => {
+    const { store, load } = setup();
+    await load(ok(reading(0, 'working', 'idle')), 0);
+    const stale = SESSION_STALE_AFTER_MS / 1000 + 5;
+    await load(ok(reading(0, 'working', 'idle')), stale);
+    await load(ok(reading(stale + 5, 'idle', 'idle')), stale + 5);
+    await load(ok(reading(stale + 10, 'idle', 'working')), stale + 10);
+    expect(store.state.summons).toEqual({ id: 1, members: ['minori'], from: 'king' });
+  });
+
+  it('keeps かなめ’s work across a short network failure', async () => {
+    const { store, load } = setup();
+    await load(ok(reading(0, 'working', 'idle')), 0);
+    await load(network, 5);
+    await load(ok(reading(10, 'idle', 'working')), 10);
+    expect(store.state.summons).toEqual({ id: 1, members: ['minori'], from: 'kaname' });
   });
 });
