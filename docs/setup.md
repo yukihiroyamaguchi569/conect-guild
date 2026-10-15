@@ -91,7 +91,7 @@ cp guild.settings.json guild.settings.local.json
 3. 古い `guild.settings.local.ts` で変えていた値だけを、コピーした JSON の同じ項目に書き写します。`.ts` のブロックをそのまま貼らないでください。一重引用符、引用符の無い項目名、最後の要素の後ろの `,`、コメント、`as const satisfies` が残ると JSON として読めません（書き方は上の段落のとおり）
 4. `guild.settings.local.ts` を消して、collector と開発サーバーを起動し直します
 
-書き換える項目は次の 6 つと、任意の `guests`（[2-5](#2-5-お客さんを足す任意)）です。
+書き換える項目は次の 6 つと、任意の `guests`（[2-5](#2-5-お客さんを足す任意)）・`president` です。
 
 | 項目 | 中身 |
 |---|---|
@@ -101,6 +101,7 @@ cp guild.settings.json guild.settings.local.json
 | `departments` | 2〜6 の部門。それぞれ GitHub のラベル（`label`）・担当のメンバー（`member`。部門の机に座れる 6 人のどれかで、部門どうしで重ならない）・セッションを起動するフォルダ（`sessionDir`）。並び順が、Issue に部門ラベルが複数あるときの優先順になる。部門の数に合わせた間取りに切り替わる |
 | `branchPrefixes` | ブランチ名の接頭辞（`prefix`）→ 部門のラベル（`department`）。部門ラベルの付いた Issue に結べない PR の担当を推定する。上から順に見て、ブランチ名が最初に当てはまったものを使う |
 | `ruleChangePaths` | 変えると社長の承認が要るファイル。`exact`（パスが等しい）・`suffix`（で終わる）・`prefix`（で始まる）の 3 種類で書き、glob は使えない。既定は `CLAUDE.md`・`/CLAUDE.md` で終わるもの・`.claude/agents/` で始まるもので、そのままでよければ変えない |
+| `president` | 任意。王様（社長）がやる Issue の印のラベル（例 `{ "label": "社長" }`）。このラベルが付いた open の Issue は、部門のラベルが一緒に付いていても王様のものになり、掲示板のいちばん上の「おうさまの クエスト」の欄と、パーティの窓のゆきひろの行の「やること N 件」に出る（部門の机・かなめの受付には出ない）。部門の `label` と同じ名前にはできない。`/guild-setup` と `settings:write` は書かないので、`guild.settings.local.json` に手で足す（`settings:write` は、いまの設定の `president` をそのまま保つ）。足したら `npm run dev:all` を起動し直す。無ければこの欄と行は出ない（Issue #141） |
 
 たとえば、リポジトリ `your-name/my-company` を `~/my-company` に clone し、その下の 4 つのフォルダで 4 つの部門の AI を動かすなら、次のようになります（`members` と `ruleChangePaths` は省略）。
 

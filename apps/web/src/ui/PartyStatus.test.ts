@@ -41,3 +41,27 @@ describe('PartyStatus names', () => {
     expect(html).toContain('title="むすび 遠い国々との交渉をまとめる使節"');
   });
 });
+
+describe('PartyStatus: the king’s row (Issue #141)', () => {
+  it('shows やること N 件 beside the approvals', async () => {
+    const html = await renderToString(
+      createSSRApp(PartyStatus, {
+        rows: [
+          {
+            id: 'yukihiro',
+            name: 'ゆきひろ',
+            role: '社長',
+            face: { fill: '#eeeeee', ink: '#000000' },
+            state: 'awaiting-president',
+            stateLabel: '承認まち 1 件・やること 2 件',
+            tooltip: null,
+            rewards: null,
+            level: { label: 'おうさま', detail: '', progress: null },
+          },
+        ],
+      }),
+    );
+    expect(html).toContain('承認まち 1 件・やること 2 件');
+    expect(html).toContain('member--awaiting-president');
+  });
+});

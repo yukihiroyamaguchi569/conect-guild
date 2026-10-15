@@ -64,3 +64,28 @@ describe('QuestBoard: the お客さん section (Issue #121)', () => {
     expect(between.split('<div')).toHaveLength(between.split('</div>').length);
   });
 });
+
+describe('QuestBoard: おうさまの クエスト (Issue #141)', () => {
+  it('lists the king’s quests as a group like the departments’, with the title as text', async () => {
+    const html = await renderToString(
+      createSSRApp(QuestBoard, {
+        groups: [
+          {
+            key: 'king',
+            label: 'おうさまの クエスト',
+            color: '#8e44ad',
+            quests: [{ number: 7, title: '<b>架空の勅命</b>' }],
+          },
+        ],
+        guests: [],
+        loaded: true,
+      }),
+    );
+    expect(html).toContain('background:#8e44ad');
+    expect(html).toContain('おうさまの クエスト');
+    expect(html).toContain('#7');
+    expect(html).toContain('&lt;b&gt;架空の勅命&lt;/b&gt;');
+    expect(html).not.toContain('複数部門');
+    expect(html).not.toContain('いまは クエストが ありません');
+  });
+});

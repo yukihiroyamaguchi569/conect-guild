@@ -26,8 +26,10 @@ const GH_FAILED_NEXT_STEP =
 export function reportCycle(deps: ReportDeps, result: CycleResult): void {
   if (result.ok) {
     const { opened, completed, merged } = result.history;
+    // Issue #141: the count only, and only with `president` in the settings.
+    const president = result.president === null ? '' : ` president=${String(result.president)}`;
     deps.log(
-      `${prefix(deps)} ok: issues=${String(result.issues)} prs=${String(result.prs)}` +
+      `${prefix(deps)} ok: issues=${String(result.issues)} prs=${String(result.prs)}${president}` +
         ` history: opened=${String(opened)} completed=${String(completed)} merged=${String(merged)}`,
     );
   } else {

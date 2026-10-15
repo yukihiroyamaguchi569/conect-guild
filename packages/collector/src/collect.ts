@@ -5,6 +5,7 @@ import {
   issueNumbersOf,
   recentCutoff,
   selectRecentPrs,
+  splitPresidentIssues,
   toHistory,
   toSnapshotIssues,
   toSnapshotPr,
@@ -24,6 +25,13 @@ export interface GithubCollected {
   readonly mixups: readonly Mixup[];
 }
 
+/** What the settings say about sorting the company's Issues and PRs. */
+export interface CollectRules {
+  readonly branchPrefixes: readonly BranchPrefixRule[];
+  /** Issue #141: the open Issues with this label go to `president` instead of `issues`. */
+  readonly presidentLabel?: string;
+}
+
 /**
  * Fetch issues and PRs of `repo` and build the validated GitHub part of the snapshot.
  * Throws a CollectorError if any request or validation fails.
@@ -32,7 +40,7 @@ export async function collectSnapshot(
   gh: GhRunner,
   repo: string,
   now: Date,
-  branchPrefixes: readonly BranchPrefixRule[],
+  { branchPrefixes, presidentLabel }: CollectRules,
 ): Promise<GithubCollected> {
   const cutoff = recentCutoff(now);
   // PRs first, then Issues: every Issue that exists when the PRs are read is in the Issue list
@@ -51,14 +59,25 @@ export async function collectSnapshot(
         pr.state === 'open' ? await fetchChangedFiles(gh, repo, pr.number) : [],
       ),
   );
+  const { issues, president } = splitPresidentIssues(
+    toSnapshotIssues(rawIssues, cutoff),
+    presidentLabel,
+  );
   const part = parseOrThrow(githubPartSchema, {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     fetchedAt: now.toISOString(),
     repo,
-    issues: toSnapshotIssues(rawIssues, cutoff),
+    issues,
     prs,
     history: toHistory(rawIssues, rawPrs, repo, branchPrefixes),
+    ...(president === undefined ? {} : { president }),
   });
   const departments = DEPARTMENT_LABELS;
-  return { part, mixups: mixupsOf(rawIssues, rawPrs, repo, { branchPrefixes, departments, now }) };
+  // The king's Issues are no department's (Issue #141), so they never tell a department's PRs.
+  const mixupIssues =
+    presidentLabel === undefined
+      ? rawIssues
+      : rawIssues.filter((issue) => !issue.labels.includes(presidentLabel));
+  const context = { branchPrefixes, departments, now };
+  return { part, mixups: mixupsOf(mixupIssues, rawPrs, repo, context) };
 }
