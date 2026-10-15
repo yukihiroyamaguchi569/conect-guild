@@ -216,10 +216,13 @@ export const MAP_CORNER: DeskCorner = {
   decor: [place('map-table', 3, 11), place('stool', 6, 12)],
 };
 
-/** The guests of four departments, in front of the map table and beside its stool (Issue #108). */
+/**
+ * The guests of four departments, beside the map table's stool and in front of the map table
+ * (Issue #108). The first stands beside the stool so a lone guest leaves the map in sight (#137).
+ */
 export const MAP_CORNER_GUEST_SPOTS: readonly [TilePos, TilePos] = [
-  { col: 4, row: 13 },
   { col: 7, row: 12 },
+  { col: 4, row: 13 },
 ];
 
 /** layout4's lower right corner, right of the 総務 desk: the files and the crates. */
