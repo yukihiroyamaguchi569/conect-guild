@@ -204,6 +204,31 @@ describe('calls: かなめ hands work on', () => {
     expect(calls.view(() => frame, KING_END).speeches).toEqual({ kaname: 'おねがい！' });
   });
 
+  it('wakes the king between his calls when かなめ’s comes in between', () => {
+    const onActive = vi.fn();
+    const calls = createCalls({ onActive, wallNow: () => 7 });
+    calls.add(['sasae'], 0);
+    calls.dispatch(['minori'], 0);
+    calls.add(['hibiki'], 0);
+    calls.view(() => frame, KING_END);
+    expect(onActive).toHaveBeenCalledTimes(1);
+    calls.view(() => frame, KING_END + END);
+    expect(onActive).toHaveBeenCalledTimes(1);
+    calls.view(() => frame, 2 * KING_END + END);
+    expect(onActive).toHaveBeenCalledTimes(2);
+  });
+
+  it('wakes the king only after the last of his calls in a row (no regression)', () => {
+    const onActive = vi.fn();
+    const calls = createCalls({ onActive, wallNow: () => 7 });
+    calls.add(['sasae'], 0);
+    calls.add(['hibiki'], 0);
+    calls.view(() => frame, KING_END);
+    expect(onActive).not.toHaveBeenCalled();
+    calls.view(() => frame, 2 * KING_END);
+    expect(onActive).toHaveBeenCalledTimes(1);
+  });
+
   it('takes none while halted, for a null time or for no members', () => {
     const calls = createCalls({});
     expect(calls.dispatch(['minori'], null)).toBeNull();

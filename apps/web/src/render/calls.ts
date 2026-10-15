@@ -97,11 +97,11 @@ export function createCalls(options: CallsOptions): Calls {
     view(build, t) {
       const ended = endedSummons(list, t).some(fromKing);
       list = pruneSummons(list, t);
-      // After the last call of the king in a row (his pose stays put through all of them; かなめ's
-      // handing work on does not hold him), and before the frame is built, so he is drawn awake at
-      // once and not asleep for one more frame.
-      if (ended && !list.some(fromKing))
-        options.onActive?.(['yukihiro'], (options.wallNow ?? Date.now)());
+      // After the last call of the king in a row (his pose stays put through all of them), and
+      // before the frame is built, so he is drawn awake at once and not asleep for one more frame.
+      // かなめ's handing work on next does not hold him: he is woken before it.
+      const nextByKing = list[0] !== undefined && fromKing(list[0]);
+      if (ended && !nextByKing) options.onActive?.(['yukihiro'], (options.wallNow ?? Date.now)());
       const frame = build();
       holds = holdsAt(holds, frame, list, t);
       const speeches = speechesAt(list, t, holds.done);
