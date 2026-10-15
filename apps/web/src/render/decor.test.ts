@@ -153,6 +153,14 @@ describe('decor drawing lists', () => {
     ]);
   });
 
+  it('runs the sand of the hourglass on かなめ’s counter, left of the vase (Issue #133)', () => {
+    const hourglass = ANIMATED_DECOR.filter((item) => item.placement.name === 'hourglass');
+    expect(
+      hourglass.map(({ placement, motion }) => [placement.col, placement.row, motion]),
+    ).toEqual([[17, 8, 'sand']]);
+    expect(names({ col: 22, row: 11, w: 1, h: 1 })).not.toContain('hourglass');
+  });
+
   it('draws lower still things last, so they overlap the ones behind them', () => {
     const bottoms = STILL_DECOR.map((item) => item.row + item.h);
     expect(bottoms).toEqual(bottoms.toSorted((a, b) => a - b));

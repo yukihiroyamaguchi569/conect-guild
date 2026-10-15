@@ -6,7 +6,6 @@ import type { GuildLayout } from './types';
  * library in the upper left, where layout4 has the 経理 desk (slots.ts: rule 2's exception).
  */
 export const LAYOUT2: GuildLayout = buildLayout(2, {
-  hourglassOnCounter: false,
   // Four rows: the party window keeps its minimum height (GuildScreen.vue .stage__party, 21.1cqw),
   // so the column ends 49.2 px above layout4's (273.3 px against 322.4 px in the demo at 1024 px,
   // Chrome, 2026-10-14). Taken off layout4's 340 and 372.5 px and rounded up.

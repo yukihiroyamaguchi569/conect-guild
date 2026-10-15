@@ -7,7 +7,6 @@ import type { GuildLayout } from './types';
  * (chats go both ways); the lower ones chat across the counter as in layout4.
  */
 export const LAYOUT3: GuildLayout = buildLayout(3, {
-  hourglassOnCounter: false,
   // Five rows: one row (38.0 px) less than layout4 (284.5 px against 322.4 px in the demo at
   // 1024 px, Chrome, 2026-10-14). Taken off layout4's 340 and 372.5 px and rounded up.
   partyWindow: { bottom: 303, tallestBottom: 335 },

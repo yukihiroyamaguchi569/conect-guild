@@ -11,7 +11,7 @@ import type { Point } from './path';
  * The small things that move with the members (Issue #11), without new pictures: a glint on 経理's
  * abacus and coins, notes and "!" from 広報's megaphone, a band of light turning 企画's globe and
  * the papers sorted on ささえ's file stack (総務) while that department works; the hourglass
- * running while the king has PRs to approve (it stands on ささえ's desk, but it is the king's
+ * running while the king has PRs to approve (it stands on かなめ's counter and is the king's
  * sign); a banner fluttering when a quest of its side of the room is cleared; the pet waking
  * to sit up now and then, and the light patches drifting with the sun. Pure: the time, each
  * thing's phase and what the members do are passed in. Distances are px of the decor pictures
