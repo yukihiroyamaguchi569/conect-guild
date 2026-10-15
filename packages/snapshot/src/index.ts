@@ -123,8 +123,8 @@ export const presidentIssueSchema = z.strictObject({
 });
 
 /**
- * Issue #141: the king's quests, only when the settings have `president`. Those open Issues are
- * left out of `issues`, so no department or reception gets them; closed ones stay in `issues`.
+ * Issue #141: the king's quests, only when the settings have `president`. The Issues with the
+ * label (open or closed) are left out of `issues`, so no department or reception gets them.
  */
 export const snapshotPresidentSchema = z.strictObject({
   issues: z.array(presidentIssueSchema).refine(hasUniqueNumbers, 'unique numbers'),

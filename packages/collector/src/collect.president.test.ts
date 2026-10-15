@@ -28,7 +28,7 @@ function issue(
 }
 
 describe('splitPresidentIssues', () => {
-  it('moves the open Issues with the label, with a department label too, newest updated first', () => {
+  it('takes the Issues with the label out, a department label or not; lists the open ones', () => {
     const issues = [
       issue(1, [KING]),
       issue(2, ['経理']),
@@ -37,7 +37,8 @@ describe('splitPresidentIssues', () => {
       issue(5, [KING], { state: 'closed', closedAt: '2026-10-11T09:00:00.000Z' }),
     ];
     const split = splitPresidentIssues(issues, KING);
-    expect(split.issues.map((i) => i.number)).toEqual([2, 4, 5]);
+    // The closed one leaves too: no clear at a desk or the reception (the king's scene is #142).
+    expect(split.issues.map((i) => i.number)).toEqual([2, 4]);
     expect(split.president).toEqual({
       issues: [
         { number: 3, title: '架空の題 3', updatedAt: '2026-10-11T03:00:00.000Z' },
@@ -89,7 +90,7 @@ describe('collectSnapshot with the president’s label', () => {
       branchPrefixes: [],
       presidentLabel: KING,
     });
-    expect(part.issues.map((i) => i.number)).toEqual([2, 3]);
+    expect(part.issues.map((i) => i.number)).toEqual([2]);
     expect(part.president?.issues.map((i) => i.number)).toEqual([1]);
     expect(part.history.openedIssueCount).toBe(3);
     expect(part.history.completedIssues.map((i) => i.number)).toEqual([3]);
