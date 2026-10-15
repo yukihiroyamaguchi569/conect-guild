@@ -101,11 +101,13 @@ member yukihiro 16,3
 place counterFront 16,10
 place throneSide 14,4
 window board {"left":12.288,"top":9.216,"right":309.248,"bottom":326.656}
-window party {"left":760.8320000000001,"top":9.216,"right":1012.7360000000001,"bottom":340}
+window party {"left":760.8320000000001,"top":9.216,"right":1012.7360000000001,"bottom":278}
 window message {"left":100.352,"top":464.83199999999994,"right":923.648,"bottom":565.0559999999999}
+window tab {"left":411.648,"top":448.4479999999999,"right":923.648,"bottom":464.83199999999994}
 tallest board {"left":12.288,"top":9.216,"right":309.248,"bottom":326.656}
-tallest party {"left":760.8320000000001,"top":9.216,"right":1012.7360000000001,"bottom":373}
+tallest party {"left":760.8320000000001,"top":9.216,"right":1012.7360000000001,"bottom":278}
 tallest message {"left":100.352,"top":464.83199999999994,"right":923.648,"bottom":565.0559999999999}
+tallest tab {"left":411.648,"top":448.4479999999999,"right":923.648,"bottom":464.83199999999994}
 toss maxTiles 5.5
 sink 16,3 26
 sink 13,7 30

@@ -45,22 +45,19 @@ const CQW = LOGICAL_WIDTH / 100;
 export const BOARD_MAX_CQW = 31;
 
 /**
- * The fetch status as a tab on the message window's top edge (layouts with partyWindow.fetchTab,
- * Issue #121): GuildScreen.vue sets its max-width (% of the stage) and height (cqw) from these, and
+ * The fetch status as a tab on the message window's top edge (Issue #121; every layout since Issue
+ * #132): GuildScreen.vue sets its max-width (% of the stage) and height (cqw) from these, and
  * keeps it on one line. 1.6cqw (16.4 px) keeps it under the feet of a member on row 13 (448 px), the
  * only way along the lower carpets to the door.
  */
 export const FETCH_TAB = { maxWidthPct: 50, heightCqw: 1.6 } as const;
 
-/** The windows over the canvas: the fetch tab only where the layout has one. */
-export type WindowExtents = Readonly<Record<'board' | 'party' | 'message', PxRect>> & {
-  readonly tab?: PxRect;
-};
+/** The windows over the canvas, the fetch tab included. */
+export type WindowExtents = Readonly<Record<'board' | 'party' | 'message' | 'tab', PxRect>>;
 
 /** The most each window covers (logical px), from the numbers in GuildScreen.vue's styles. */
 export function windowExtentsFor(layout: GuildLayout): WindowExtents {
   const extents = fixedWindowExtentsFor(layout);
-  if (layout.partyWindow.fetchTab !== true) return extents;
   const { message } = extents;
   // .stage__tab: right 9.8%, bottom 19.3% (the message window's top), FETCH_TAB's size
   const tab = {
@@ -84,9 +81,8 @@ function fixedWindowExtentsFor(
       right: (1.2 + 29) * PCT_X,
       bottom: 1.6 * PCT_Y + (layout.boardMaxCqw ?? BOARD_MAX_CQW) * CQW,
     },
-    // .stage__side: right 1.1%, top 1.6%, width 24.6%. Its height is its content (party window
-    // and, without the fetch tab, fetch status), measured per layout: walking uses the height with a failure line; seats
-    // keep clear of the tallest (tallestWindowExtentsFor).
+    // .stage__side: right 1.1%, top 1.6%, width 24.6%. Its height is its content (the party
+    // window; the fetch status is the tab), measured per layout (tallestWindowExtentsFor).
     party: {
       left: (100 - 1.1 - 24.6) * PCT_X,
       top: 1.6 * PCT_Y,
@@ -104,9 +100,9 @@ function fixedWindowExtentsFor(
 }
 
 /**
- * The windows at their tallest: what seats and bubbles must stay clear of. The right-hand column
- * gets its rare extra notes (localStorage unavailable, a failed baseline clear) on top of a failure
- * line; a member walking past may be covered for a moment in that rare state.
+ * The windows at their tallest: what seats and bubbles must stay clear of. Since the fetch status
+ * and its rare notes went to the tab (Issue #132), no note makes the right-hand column taller, so
+ * every layout measures the same bottom for both.
  */
 export function tallestWindowExtentsFor(layout: GuildLayout): WindowExtents {
   const extents = windowExtentsFor(layout);

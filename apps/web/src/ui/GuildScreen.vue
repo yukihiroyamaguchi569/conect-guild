@@ -91,12 +91,11 @@ watch(
 );
 
 /**
- * Six departments (Issue #121): the fetch status leaves the right-hand column for a one-line tab on
- * the message window's top edge, so that the column ends above the sales desk's bubble.
+ * The fetch status is a one-line tab on the message window's top edge (Issue #121; every layout
+ * since Issue #132), so that its notes never make the right-hand column taller. Halted, there is no
+ * message window to sit on: the fetch status goes back to the column.
  */
-const fetchTab = SELECTED_LAYOUT.partyWindow.fetchTab === true;
-/** Halted, there is no message window to sit on: the fetch status goes back to the column. */
-const tabbed = computed(() => fetchTab && !state.halted);
+const tabbed = computed(() => !state.halted);
 const fetchTabStyle = {
   '--tab-max-width': `${String(FETCH_TAB.maxWidthPct)}%`,
   '--tab-height': `${String(FETCH_TAB.heightCqw)}cqw`,
@@ -270,7 +269,7 @@ function onStageShown(shown: boolean): void {
   max-height: var(--board-max-height, 31cqw);
 }
 
-/* Party and fetch status share the right column so they never overlap. */
+/* The party window; the fetch status joins it only when the screen halts. */
 .stage__side {
   right: 1.1%;
   top: 1.6%;
@@ -293,8 +292,8 @@ function onStageShown(shown: boolean): void {
 }
 
 /*
- * Six departments: the fetch status as a tab on the message window's top edge, at its right end
- * (render/map.ts FETCH_TAB sets its max-width and height).
+ * The fetch status as a tab on the message window's top edge, at its right end (render/map.ts
+ * FETCH_TAB sets its max-width and height).
  */
 .stage__tab {
   right: 9.8%;

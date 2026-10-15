@@ -41,7 +41,7 @@ test('the party window shows each level with its gauge, and おうさま for the
 test('the levels do not make the party column taller than the room keeps free', async ({
   page,
 }) => {
-  // At 1024 px wide the stage is the canvas's logical size (render/map.ts WINDOW_EXTENTS: 340).
+  // At 1024 px wide the stage is the canvas's logical size (render/map.ts WINDOW_EXTENTS: 278).
   await page.setViewportSize({ width: 1024, height: 576 });
   await page.goto('/');
   await waitForRoom(page);
@@ -49,10 +49,10 @@ test('the levels do not make the party column taller than the room keeps free', 
   await expect(
     page.getByRole('region', { name: 'パーティのようす' }).getByRole('listitem'),
   ).toHaveCount(6);
-  // The fetch status sits under the party window: its bottom is the column's.
-  const side = await page.getByRole('region', { name: '取得のようす' }).boundingBox();
-  if (side === null) throw new Error('the fetch status has no box');
-  expect(side.y + side.height).toBeLessThanOrEqual(340);
+  // The fetch status is the tab on the message window (Issue #132): the party window is the column.
+  const side = await page.getByRole('region', { name: 'パーティのようす' }).boundingBox();
+  if (side === null) throw new Error('the party window has no box');
+  expect(side.y + side.height).toBeLessThanOrEqual(278);
 });
 
 for (const hour of ['12', '21.5']) {
