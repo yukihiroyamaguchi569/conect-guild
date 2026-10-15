@@ -3,6 +3,7 @@ import type { SnapshotLoadFailure } from '../adapters/snapshot';
 import {
   DEPARTMENT_LABELS,
   departmentMember,
+  KING_QUESTS_ENABLED,
   MEMBERS,
   type MemberConfig,
   type MemberId,
@@ -11,6 +12,7 @@ import type { GuildEvent } from '../domain/events';
 import { faceColors, type FaceColors } from '../domain/faceColor';
 import { isSnapshotStale } from '../domain/freshness';
 import type { GuestItem, GuestView } from '../domain/guests';
+import { kingQuestsOf, type KingQuest } from '../domain/kingQuests';
 import {
   assignPr,
   deriveMemberStatuses,
@@ -31,14 +33,18 @@ import { buildPartyLevels, type PartyLevel } from './partyLevel';
 
 type SnapshotLists = Pick<Snapshot, 'issues' | 'prs'>;
 
+/** A scroll on the board: a department's or the reception's quest, or the king's (Issue #141). */
+export type BoardQuest = KingQuest & Partial<Pick<Quest, 'multiDepartment'>>;
+
 export interface BoardGroup {
   /**
-   * Unique key: 'reception', or `department:` + the label (a label may itself be "reception").
+   * Unique key: 'king', 'reception', or `department:` + the label (a label may itself be
+   * "reception" or "king").
    */
-  readonly key: 'reception' | `department:${string}`;
+  readonly key: 'king' | 'reception' | `department:${string}`;
   readonly label: string;
   readonly color: string;
-  readonly quests: readonly Quest[];
+  readonly quests: readonly BoardQuest[];
 }
 
 export const STATE_LABELS: Readonly<Record<MemberState, string>> = {
@@ -51,9 +57,21 @@ export const STATE_LABELS: Readonly<Record<MemberState, string>> = {
   idle: '待機中',
 };
 
-/** Open quests grouped as the board shows them: かなめの受付 first, then each department. */
-export function buildBoard(snapshot: SnapshotLists): BoardGroup[] {
+/**
+ * Open quests grouped as the board shows them: the king's first (Issue #141; only with
+ * `president` in the settings), then かなめの受付, then each department.
+ */
+export function buildBoard(
+  snapshot: Pick<Snapshot, 'issues' | 'president'>,
+  kingQuests: boolean = KING_QUESTS_ENABLED,
+): BoardGroup[] {
   const open = toQuests(snapshot.issues).filter((quest) => quest.state === 'open');
+  const king: BoardGroup = {
+    key: 'king',
+    label: 'おうさまの クエスト',
+    color: MEMBERS.yukihiro.color,
+    quests: kingQuestsOf(snapshot.president, kingQuests),
+  };
   const reception: BoardGroup = {
     key: 'reception',
     label: `${MEMBERS.kaname.name}の受付`,
@@ -69,7 +87,7 @@ export function buildBoard(snapshot: SnapshotLists): BoardGroup[] {
       quests: open.filter((quest) => quest.department === department),
     };
   });
-  return [reception, ...departments].filter((group) => group.quests.length > 0);
+  return [king, reception, ...departments].filter((group) => group.quests.length > 0);
 }
 
 /** How many open items of each guest the board lists (the most recently updated). */
@@ -198,19 +216,26 @@ function kanameRow(waits: WaitCounts, live: LiveState | undefined): PartyRowBase
   return row(MEMBERS.kaname, { state: 'idle', stateLabel: '受付で待機', tooltip, rewards: null });
 }
 
-function kingRow(waits: WaitCounts): PartyRowBase {
+/**
+ * The king's row. His quests (Issue #141) show beside the approvals as 「やること N 件」, none
+ * when there are none; they leave his state as it was (no scene of their own yet).
+ */
+function kingRow(waits: WaitCounts, quests: number): PartyRowBase {
+  const todo = quests > 0 ? `やること ${String(quests)} 件` : null;
+  const todoTip = todo === null ? '' : `。おうさまの クエストが ${String(quests)} 件あります`;
   if (waits.president > 0) {
+    const approvals = `承認まち ${String(waits.president)} 件`;
     return row(MEMBERS.yukihiro, {
       state: 'awaiting-president',
-      stateLabel: `承認まち ${String(waits.president)} 件`,
-      tooltip: `ルールを変える PR は${MEMBERS.yukihiro.role}がマージします`,
+      stateLabel: todo === null ? approvals : `${approvals}・${todo}`,
+      tooltip: `ルールを変える PR は${MEMBERS.yukihiro.role}がマージします${todoTip}`,
       rewards: null,
     });
   }
   return row(MEMBERS.yukihiro, {
     state: 'idle',
-    stateLabel: '玉座で待機',
-    tooltip: '承認まちの PR はありません',
+    stateLabel: todo ?? '玉座で待機',
+    tooltip: `承認まちの PR はありません${todoTip}`,
     rewards: null,
   });
 }
@@ -224,11 +249,12 @@ function memberTooltip(state: MemberState, reason: string | null): string | null
 /**
  * One row each: かなめ, the departments (fixed order), then the king. The live session states
  * join in while they are fresh (docs/DESIGN.md 4.7); the levels come from the history (4.6).
- * `now` is epoch ms.
+ * `now` is epoch ms; `kingQuests` is whether the settings have `president` (Issue #141).
  */
 export function buildParty(
-  snapshot: Pick<Snapshot, 'issues' | 'prs' | 'sessions' | 'history'>,
+  snapshot: Pick<Snapshot, 'issues' | 'prs' | 'sessions' | 'history' | 'president'>,
   now: number,
+  kingQuests: boolean = KING_QUESTS_ENABLED,
 ): PartyRow[] {
   const waits = countWaits(snapshot);
   const rewards = countRecentRewards(snapshot, now);
@@ -242,7 +268,8 @@ export function buildParty(
     }),
   );
   const levels = buildPartyLevels(snapshot);
-  return [kanameRow(waits, live.kaname), ...members, kingRow(waits)].map((base) => ({
+  const quests = kingQuestsOf(snapshot.president, kingQuests).length;
+  return [kanameRow(waits, live.kaname), ...members, kingRow(waits, quests)].map((base) => ({
     ...base,
     level: levels[base.id],
   }));

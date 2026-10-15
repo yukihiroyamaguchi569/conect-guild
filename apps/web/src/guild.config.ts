@@ -77,3 +77,9 @@ export const STALE_AFTER_MS = 5 * MINUTE_MS;
 export const SESSION_STALE_AFTER_MS = 30_000;
 /** A gap between baselines longer than this may have lost events (the collector keeps 7 days). */
 export const EVENT_GAP_LIMIT_MS = 7 * DAY_MS;
+
+/**
+ * Issue #141: the king's quests are shown only with `president` in the settings (its label sorts
+ * them out in the collector).
+ */
+export const KING_QUESTS_ENABLED: boolean = GUILD_SETTINGS.president !== undefined;
