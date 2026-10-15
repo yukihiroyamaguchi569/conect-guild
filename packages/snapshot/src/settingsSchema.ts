@@ -190,6 +190,12 @@ function checkGuests(
   });
 }
 
+/**
+ * Issue #141: the king's (president's) Issues carry this label in the company's repository. Without
+ * `president` the king has no quests. It differs from every department label (checked below).
+ */
+const presidentSchema = z.strictObject({ label: z.string().min(1) });
+
 export const guildSettingsSchema = z
   .strictObject({
     repo: z.string().regex(REPO_PATTERN, 'owner/name'),
@@ -201,6 +207,7 @@ export const guildSettingsSchema = z
     branchPrefixes: z.array(branchPrefixSchema).readonly(),
     ruleChangePaths: z.array(ruleChangePathSchema).readonly(),
     guests: z.array(guestSchema).max(MAX_GUESTS).readonly().optional(),
+    president: presidentSchema.optional(),
   })
   .superRefine((settings, ctx) => {
     const labels = settings.departments.map((d) => d.label);
@@ -229,6 +236,9 @@ export const guildSettingsSchema = z
         issue(['branchPrefixes', i, 'department'], 'not a department label');
       }
     });
+    if (settings.president !== undefined && labels.includes(settings.president.label)) {
+      issue(['president', 'label'], 'a department label');
+    }
     checkGuests(settings, issue);
   });
 

@@ -115,6 +115,21 @@ export const snapshotHistorySchema = z
     'more completed Issues than opened ones',
   );
 
+/** Issue #141: an open Issue with the president's label (the settings' `president.label`). */
+export const presidentIssueSchema = z.strictObject({
+  number: issueNumber,
+  title: z.string(),
+  updatedAt: isoDateTime,
+});
+
+/**
+ * Issue #141: the king's quests, only when the settings have `president`. Those open Issues are
+ * left out of `issues`, so no department or reception gets them; closed ones stay in `issues`.
+ */
+export const snapshotPresidentSchema = z.strictObject({
+  issues: z.array(presidentIssueSchema).refine(hasUniqueNumbers, 'unique numbers'),
+});
+
 /** The GitHub part, written at most once a minute. `fetchedAt` is the time of that fetch. */
 export const githubPartSchema = z.strictObject({
   schemaVersion: z.literal(SNAPSHOT_SCHEMA_VERSION),
@@ -123,6 +138,8 @@ export const githubPartSchema = z.strictObject({
   issues: z.array(snapshotIssueSchema),
   prs: z.array(snapshotPrSchema),
   history: snapshotHistorySchema,
+  // Optional, with the same schemaVersion: a snapshot of an older collector still reads (#141).
+  president: snapshotPresidentSchema.optional(),
 });
 
 /** An open Issue or PR of a guest's repository (Issue #108). The title is shown on the screen. */
@@ -262,6 +279,8 @@ export type HistoryPr = z.infer<typeof historyPrSchema>;
 export type SnapshotHistory = z.infer<typeof snapshotHistorySchema>;
 export type GithubPart = z.infer<typeof githubPartSchema>;
 export type Snapshot = z.infer<typeof snapshotSchema>;
+export type PresidentIssue = z.infer<typeof presidentIssueSchema>;
+export type SnapshotPresident = z.infer<typeof snapshotPresidentSchema>;
 export type GuestOpenItem = z.infer<typeof guestOpenItemSchema>;
 export type GuestRecentItem = z.infer<typeof guestRecentItemSchema>;
 export type GuestGithubPart = z.infer<typeof guestGithubPartSchema>;
