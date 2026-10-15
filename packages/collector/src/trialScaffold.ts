@@ -76,6 +76,24 @@ export const TRIAL_DEPARTMENTS: readonly TrialDepartment[] = [
 
 const MIN_DEPARTMENTS = 2;
 
+const CATCH_ALL_DUTY = 'ほかに引き取り手のない仕事';
+
+/**
+ * The first `count` departments. Without 総務 (2 or 3), the last one takes what fits nowhere: its
+ * 担当 and 担当範囲 say so, so it does not send back what the 司令塔 gives it as such.
+ */
+export function trialDepartments(count: number): TrialDepartment[] {
+  const departments = TRIAL_DEPARTMENTS.slice(0, count);
+  const last = departments.at(-1);
+  if (last === undefined || departments.some((d) => d.name === '総務')) return departments;
+  const catchAll = {
+    ...last,
+    duty: `${last.duty}、${CATCH_ALL_DUTY}`,
+    scope: [...last.scope, `${CATCH_ALL_DUTY}（司令塔から振られたもの）`],
+  };
+  return [...departments.slice(0, -1), catchAll];
+}
+
 const TRIAL_NOTE =
   'これは conect-guild を試すための架空の会社「お試し商会」のものである。実在の会社・人・取引とは関係ない。';
 
@@ -191,7 +209,7 @@ export interface TrialFile {
 export function trialFiles(doc: string, count: number): TrialFile[] | null {
   const templates = extractTemplates(doc);
   if (templates === null) return null;
-  const departments = TRIAL_DEPARTMENTS.slice(0, count);
+  const departments = trialDepartments(count);
   const commander = commanderClaudeMd(templates.commander, departments);
   const files: TrialFile[] = [];
   if (commander === null) return null;

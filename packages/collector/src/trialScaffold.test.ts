@@ -6,6 +6,7 @@ import {
   TRIAL_DEPARTMENTS,
   parseScaffoldArgs,
   runTrialScaffold,
+  trialDepartments,
   trialFiles,
   type ScaffoldDeps,
   type TrialFile,
@@ -77,7 +78,7 @@ describe('trialFiles', () => {
   it.each([2, 4, 6])('the 司令塔 table has one row per department (%i)', (count) => {
     const rows = tableRows(contentOf(filesFor(count), 'CLAUDE.md'));
     expect(rows).toEqual(
-      TRIAL_DEPARTMENTS.slice(0, count).map(
+      trialDepartments(count).map(
         (d) => `| ${d.name} | ${d.duty} | \`${d.folder}/\` | \`${d.label}\` | \`${d.folder}/\` |`,
       ),
     );
@@ -110,6 +111,21 @@ describe('trialFiles', () => {
     const commander = contentOf(filesFor(count), 'CLAUDE.md');
     expect(commander).toContain(`どこにも当てはまらない依頼は${last}に振る`);
     expect(commander).not.toContain('総務');
+    const d = TRIAL_DEPARTMENTS[count - 1];
+    if (d === undefined) throw new Error('no department');
+    expect(tableRows(commander).at(-1)).toContain(`| ${d.duty}、ほかに引き取り手のない仕事 |`);
+    expect(contentOf(filesFor(count), `${d.folder}/CLAUDE.md`)).toContain(
+      '- ほかに引き取り手のない仕事（司令塔から振られたもの）\n',
+    );
+  });
+
+  it('with 総務 (4 and up), no other department takes what fits nowhere', () => {
+    for (const count of [4, 5, 6]) {
+      const files = filesFor(count);
+      for (const d of TRIAL_DEPARTMENTS.slice(0, count).filter((x) => x.name !== '総務')) {
+        expect(contentOf(files, `${d.folder}/CLAUDE.md`)).not.toContain('ほかに引き取り手のない');
+      }
+    }
   });
 });
 
