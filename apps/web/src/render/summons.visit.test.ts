@@ -166,14 +166,22 @@ describe('summonOn: the stage takes the call', () => {
   }
 
   it('sends her to the throne and says when she is back', () => {
-    const summoned = summonOn(cast(), EMPTY_DIRECTOR, ['kaname', 'minori'], 1_000);
+    const summoned = summonOn(cast(), EMPTY_DIRECTOR, { members: ['kaname', 'minori'] }, 1_000);
     expect(summoned.homeIn).toEqual({ kaname: BACK });
     expect(summoned.director.busyUntil.kaname).toBe(1_000 + BACK);
   });
 
   it('calls a department alone without moving anyone', () => {
-    const summoned = summonOn(cast(), EMPTY_DIRECTOR, ['minori'], 0);
+    const summoned = summonOn(cast(), EMPTY_DIRECTOR, { members: ['minori'] }, 0);
     expect(summoned).toEqual({ director: EMPTY_DIRECTOR, homeIn: {} });
+  });
+
+  it('has かなめ ask from her counter for her own order (Issue #155): no walk', () => {
+    const stage = cast();
+    const summoned = summonOn(stage, EMPTY_DIRECTOR, { members: ['minori'], from: 'kaname' }, 0);
+    expect(summoned).toEqual({ director: EMPTY_DIRECTOR, homeIn: {} });
+    const view = stage.calls.view(() => frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS), 0);
+    expect(view.speeches).toEqual({ kaname: 'おねがい！' });
   });
 
   it('lets her answer where she is when a scene has her (no visit)', () => {
@@ -188,19 +196,19 @@ describe('summonOn: the stage takes the call', () => {
       random: () => 0.5,
     });
     const stage = cast();
-    const summoned = summonOn(stage, busy, ['kaname'], 1_000);
+    const summoned = summonOn(stage, busy, { members: ['kaname'] }, 1_000);
     expect(summoned).toEqual({ director: busy, homeIn: {} });
     expect(stage.calls.view(() => frameAt(busy, 1_000, DEFAULT_SEATS), 1_000).calling).toBe(true);
   });
 
   it('drops the call while drawing would not be seen, or while halted', () => {
     const stage = cast();
-    expect(summonOn(stage, EMPTY_DIRECTOR, ['kaname'], null)).toEqual({
+    expect(summonOn(stage, EMPTY_DIRECTOR, { members: ['kaname'] }, null)).toEqual({
       director: EMPTY_DIRECTOR,
       homeIn: {},
     });
     stage.calls.setHalted(true);
-    expect(summonOn(stage, EMPTY_DIRECTOR, ['kaname'], 0)).toEqual({
+    expect(summonOn(stage, EMPTY_DIRECTOR, { members: ['kaname'] }, 0)).toEqual({
       director: EMPTY_DIRECTOR,
       homeIn: {},
     });

@@ -2,8 +2,10 @@ import type { MemberId } from '../guild.config';
 import type { StageFrame } from './director';
 import { DEFAULT_SEATS } from './scenes';
 import {
+  addDispatch,
   addSummons,
   endedSummons,
+  fromKing,
   holdsAt,
   isSummoning,
   newCallStart,
@@ -45,6 +47,8 @@ export interface Calls {
     t: number | null,
     visit?: (start: number) => Visit | null,
   ): Summons | null;
+  /** かなめ hands work on to the departments `members` (Issue #155), as `add` does; the king is quiet. */
+  dispatch(members: readonly MemberId[], t: number | null): Summons | null;
   /**
    * Halted (the screen is not live): the calls to come and the one playing are dropped. Returns
    * かなめ's visits dropped with them, to cut short on the stage (visit.cutVisit).
@@ -59,7 +63,7 @@ export interface Calls {
 }
 
 /**
- * The king's calls (summons.ts, Issue #28) on the stage clock. Nobody's idle time moves while a
+ * The king's calls (summons.ts, Issue #28), and かなめ's handing work on (Issue #155), on the stage clock. Nobody's idle time moves while a
  * call plays, so a sleeper's pose stays where it is drawn. Once the last call is over the king, who gave
  * the order, is reported active (`onActive`): his doze starts over (idle.ts). The members are not:
  * their own session's work ends their idle spell (and brings them back from play), not the call.
@@ -75,6 +79,11 @@ export function createCalls(options: CallsOptions): Calls {
       list = addSummons(list, members, t, visit);
       return list.at(-1) ?? null;
     },
+    dispatch(members, t) {
+      if (halted || t === null || members.length === 0) return null;
+      list = addDispatch(list, members, t);
+      return list.at(-1) ?? null;
+    },
     setHalted(next) {
       halted = next;
       if (!halted) return [];
@@ -86,11 +95,12 @@ export function createCalls(options: CallsOptions): Calls {
       return visits;
     },
     view(build, t) {
-      const ended = endedSummons(list, t).length > 0;
+      const ended = endedSummons(list, t).some(fromKing);
       list = pruneSummons(list, t);
-      // After the last call of a row (the king's pose stays put through all of them), and before
-      // the frame is built, so he is drawn awake at once and not asleep for one more frame.
-      if (ended && list.length === 0)
+      // After the last call of the king in a row (his pose stays put through all of them; かなめ's
+      // handing work on does not hold him), and before the frame is built, so he is drawn awake at
+      // once and not asleep for one more frame.
+      if (ended && !list.some(fromKing))
         options.onActive?.(['yukihiro'], (options.wallNow ?? Date.now)());
       const frame = build();
       holds = holdsAt(holds, frame, list, t);

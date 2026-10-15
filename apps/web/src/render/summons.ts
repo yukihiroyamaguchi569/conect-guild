@@ -1,3 +1,4 @@
+import type { SummonsFrom } from '../domain/summons';
 import type { MemberId, TilePos } from '../guild.config';
 import type { MemberPose, StageFrame } from './director';
 import { SUMMONS } from './metrics';
@@ -20,9 +21,13 @@ import type { Visit } from './visit';
  * - かなめ, when free at her counter, walks to the side of the throne after the "！" instead
  *   (visit.ts, Issue #87): the king whispers once she is there, everyone called answers together,
  *   she facing the king, and the call ends when she is back at the counter.
+ *
+ * When かなめ hands work on to departments (Issue #155) the king keeps quiet: she turns at her
+ * counter to the (first) department and says "おねがい！", then each department called turns to her
+ * and answers "はい！". Who cannot turn (in a scene, away from the seat) speaks where they are.
  */
 
-export type SpeechLine = '！' | 'ゴニョゴニョ' | 'はっ！';
+export type SpeechLine = '！' | 'ゴニョゴニョ' | 'はっ！' | 'おねがい！' | 'はい！';
 
 export type Speeches = Readonly<Partial<Record<MemberId, SpeechLine>>>;
 
@@ -32,17 +37,26 @@ export interface Summons {
   readonly members: readonly MemberId[];
   /** かなめ's walk to the side of the throne and back, when she goes (visit.ts). */
   readonly visit?: Visit;
+  /** Who gives it; absent: the king. かなめ's has no visit (she is not among the members). */
+  readonly from?: SummonsFrom;
 }
 
 const KING: MemberId = 'yukihiro';
+const KANAME: MemberId = 'kaname';
+
+/** True for an order the king gives (not かなめ handing work on). */
+export function fromKing(summons: Summons): boolean {
+  return summons.from !== 'kaname';
+}
 
 /** When the king whispers "ゴニョゴニョ": after his "！", or once かなめ is beside him. */
 function murmurStart(summons: Summons): number {
   return summons.visit?.arrive ?? summons.start + SUMMONS.callMs;
 }
 
-/** When the members answer: after the king's "！" and "ゴニョゴニョ". */
+/** When the members answer: after the king's "！" and "ゴニョゴニョ", or かなめ's "おねがい！". */
 export function replyStart(summons: Summons): number {
+  if (!fromKing(summons)) return summons.start + SUMMONS.askMs;
   return murmurStart(summons) + SUMMONS.murmurMs;
 }
 
@@ -71,6 +85,17 @@ export function addSummons(
   const start = Math.max(now, ...list.map(summonsEnd));
   const going = visit(start);
   return [...list, going === null ? { start, members } : { start, members, visit: going }];
+}
+
+/** Adds かなめ's order to departments (Issue #155) as addSummons does: never over another. */
+export function addDispatch(
+  list: readonly Summons[],
+  members: readonly MemberId[],
+  now: number,
+): Summons[] {
+  if (members.length === 0) return [...list];
+  const start = Math.max(now, ...list.map(summonsEnd));
+  return [...list, { start, members, from: 'kaname' }];
 }
 
 /** True while an order plays or is still to come. */
@@ -114,12 +139,22 @@ export function speechesAt(
 ): Speeches {
   const summons = playing(list, now);
   if (summons === undefined) return {};
+  if (!fromKing(summons)) return dispatchSpeeches(summons, now, done);
   if (now < summons.start + SUMMONS.callMs) return { [KING]: '！' };
   // かなめ on her way to the throne, or back to her counter: nobody speaks.
   if (now < murmurStart(summons) || now >= replyEnd(summons)) return {};
   if (now < replyStart(summons)) return { [KING]: 'ゴニョゴニョ' };
   const answers: Partial<Record<MemberId, SpeechLine>> = {};
   for (const id of summons.members) if (!done.includes(id)) answers[id] = 'はっ！';
+  return answers;
+}
+
+/** かなめ's "おねがい！", then the departments' "はい！"; those in `done` have stopped. */
+function dispatchSpeeches(summons: Summons, now: number, done: readonly MemberId[]): Speeches {
+  if (now >= replyEnd(summons)) return {};
+  if (now < replyStart(summons)) return done.includes(KANAME) ? {} : { [KANAME]: 'おねがい！' };
+  const answers: Partial<Record<MemberId, SpeechLine>> = {};
+  for (const id of summons.members) if (!done.includes(id)) answers[id] = 'はい！';
   return answers;
 }
 
@@ -151,13 +186,11 @@ export const NO_HOLDS: Holds = { start: null, end: null, points: {}, done: [] };
 
 /** True while `member` takes part at the seat at `now`: the king all along, a member answering. */
 function heldAt(summons: Summons, member: MemberPose, now: number): boolean {
-  if (member.id === KING) return true;
-  return (
-    now >= replyStart(summons) &&
-    summons.members.includes(member.id) &&
-    member.atSeat &&
-    !member.inScene
-  );
+  if (member.id === KING) return fromKing(summons);
+  const free = member.atSeat && !member.inScene;
+  // かなめ handing work on: at her counter from her "おねがい！" to the end of the answers.
+  if (member.id === KANAME && !fromKing(summons)) return free;
+  return now >= replyStart(summons) && summons.members.includes(member.id) && free;
 }
 
 /**
@@ -168,7 +201,8 @@ function carriedOver(holds: Holds, summons: Summons): Pick<Holds, 'points' | 'do
   if (summons.start === holds.start) return holds;
   const king = holds.points[KING];
   const follows = holds.end === summons.start;
-  return follows && king !== undefined ? { points: { [KING]: king }, done: [] } : NO_HOLDS;
+  if (!follows || king === undefined || !fromKing(summons)) return NO_HOLDS;
+  return { points: { [KING]: king }, done: [] };
 }
 
 /** The holds at `now`: those of `holds` for the same call, plus anyone whose part begins now. */
@@ -217,14 +251,15 @@ function sitting(
   };
 }
 
+/** A member at the seat turned to `toward` (the throne, or whom they talk with), `since` ms in. */
 function answering(
   member: MemberPose,
-  seats: Readonly<Record<MemberId, TilePos>>,
+  seats: { readonly seat: TilePos; readonly toward: TilePos },
   since: number,
   at: Point | undefined,
 ): MemberPose {
   if (!member.atSeat || member.inScene) return member;
-  const face = faceThrone(seats[member.id], seats[KING]);
+  const face = faceThrone(seats.seat, seats.toward);
   const hop = face.frame === 0 && since < SUMMONS.hopMs ? SUMMONS.hopPx : 0;
   return sitting(member, { ...face, lift: hop, at });
 }
@@ -261,6 +296,7 @@ export function withSummons(
 ): StageFrame {
   const summons = playing(list, now);
   if (summons === undefined) return frame;
+  if (!fromKing(summons)) return withDispatch(frame, summons, now, context);
   const reply = replyStart(summons);
   const { seats, holds } = context;
   const members = frame.members.map((member) => {
@@ -274,7 +310,36 @@ export function withSummons(
     if (now < reply || now >= replyEnd(summons) || !summons.members.includes(member.id))
       return member;
     if (holds.start === summons.start && holds.done.includes(member.id)) return member;
-    return answering(member, seats, now - reply, at);
+    const toward = { seat: seats[member.id], toward: seats[KING] };
+    return answering(member, toward, now - reply, at);
+  });
+  return { ...frame, members };
+}
+
+/**
+ * The frame with かなめ handing work on (Issue #155): the king as he is; かなめ at her counter turned
+ * to the first department called; the departments, while they answer, turned to her counter. Each
+ * held where `holds` keeps them; one a scene took (`done`) is left to it.
+ */
+function withDispatch(
+  frame: StageFrame,
+  summons: Summons,
+  now: number,
+  context: { readonly seats: Readonly<Record<MemberId, TilePos>>; readonly holds: Holds },
+): StageFrame {
+  const { seats, holds } = context;
+  const reply = replyStart(summons);
+  const first = summons.members[0];
+  const members = frame.members.map((member) => {
+    const same = holds.start === summons.start;
+    if (same && holds.done.includes(member.id)) return member;
+    const at = same ? holds.points[member.id] : undefined;
+    if (member.id === KANAME && first !== undefined) {
+      const toward = { seat: seats[KANAME], toward: seats[first] };
+      return answering(member, toward, now - summons.start, at);
+    }
+    if (now < reply || !summons.members.includes(member.id)) return member;
+    return answering(member, { seat: seats[member.id], toward: seats[KANAME] }, now - reply, at);
   });
   return { ...frame, members };
 }

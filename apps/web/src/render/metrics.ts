@@ -128,10 +128,13 @@ export const IDLE = {
  * to the throne and answer "はっ！" for `replyMs` (one facing the throne head-on hops `hopPx` for
  * `hopMs` instead). Times are ms, distances logical px. When かなめ goes to the throne to hear
  * it (visit.ts, Issue #87) she sets off after `callMs`, walks at motion.MS_PER_TILE (5 tiles, 1.25 s
- * each way), and the whisper starts once she is there: about 6.2 s in all.
+ * each way), and the whisper starts once she is there: about 6.2 s in all. When かなめ hands work
+ * on to departments (Issue #155) she says "おねがい！" for `askMs`, then they answer "はい！" for
+ * `replyMs`: 3 s in all.
  */
 export const SUMMONS = {
   callMs: 700,
+  askMs: 1_400,
   kingRisePx: 4,
   murmurMs: 1_400,
   replyMs: 1_600,

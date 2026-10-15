@@ -235,7 +235,7 @@ watch(
   () => {
     takeCue();
     if (props.summons === null || loop === null) return;
-    const homeIn = loop.summon(props.summons.members);
+    const homeIn = loop.summon(props.summons.members, props.summons.from);
     if (Object.keys(homeIn).length > 0) emit('away', homeIn);
   },
 );
