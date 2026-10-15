@@ -8,6 +8,9 @@ export default defineConfig({
   server: {
     // Never expose the dev server to the LAN (see docs/DESIGN.md 5).
     host: '127.0.0.1',
+    // Vite's default 5173 is also MulmoClaude's; fail instead of drifting to another port.
+    port: 5273,
+    strictPort: true,
     // The real snapshot is reachable only through the plugin's /snapshot.json route.
     fs: {
       deny: [

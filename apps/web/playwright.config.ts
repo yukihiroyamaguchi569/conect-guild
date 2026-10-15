@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/** A port of its own, so the tests never meet a dev server already running (5173 etc.). */
+/** A port of its own, so the tests never meet a dev server already running (5273 etc.). */
 const PORT = 5196;
 const BASE_URL = `http://127.0.0.1:${String(PORT)}`;
 const ON_CI = process.env.CI !== undefined;

@@ -45,7 +45,7 @@ npm ci --ignore-scripts
 npm run dev
 ```
 
-ブラウザで http://127.0.0.1:5173 を開きます。
+ブラウザで http://127.0.0.1:5273 を開きます。
 
 **確かめること**
 
@@ -77,7 +77,7 @@ conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行し
 **確かめること**
 
 - `npm run dev:all` を起動し（動いていたら止めて起動し直す）、ログの `settings:` の行が `guild.settings.local.json` で、`ok:` の行が出ること
-- ブラウザで http://127.0.0.1:5173 を開くと「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られること
+- ブラウザで http://127.0.0.1:5273 を開くと「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られること
 - MulmoTerminal などの端末で、司令塔のフォルダと部門のフォルダをそれぞれ開いて Claude Code を起動すること（フォルダそのもので起動します。[orchestration.md の 3-5](orchestration.md#3-5-部門のセッションを開く)）。MulmoTerminal なら `sessions=<部門の数 + 1> ok` になります
 
 **片付け**
@@ -227,7 +227,7 @@ npm run dev:all   # collector と開発サーバーを一緒に起動する。Ct
 
 ```text
 [collect] [collector] settings: guild.settings.local.json
-[web]   ➜  Local:   http://127.0.0.1:5173/
+[web]   ➜  Local:   http://127.0.0.1:5273/
 [collect] [collector] 2026-10-12T01:23:45.678Z ok: issues=12 prs=8 president=2 history: opened=40 completed=31 merged=27
 [collect] [collector] 2026-10-12T01:23:45.690Z sessions=5 ok
 ```
@@ -242,7 +242,7 @@ collector は GitHub を 60 秒ごと、MulmoTerminal を 5 秒ごとに読み�
 
 **やること**
 
-ブラウザで http://127.0.0.1:5173 を開きます（デモを開いたままなら、そのままで構いません）。
+ブラウザで http://127.0.0.1:5273 を開きます（デモを開いたままなら、そのままで構いません）。
 
 **確かめること**
 
