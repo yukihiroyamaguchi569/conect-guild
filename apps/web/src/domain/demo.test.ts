@@ -150,7 +150,7 @@ describe('demoSnapshotAt over the loops', () => {
 });
 
 describe('what the screen makes of the demo', () => {
-  it('each loop: two quests handed out, delivered and cleared; the king’s every two loops', () => {
+  it('each loop: two quests handed out, delivered and cleared, in this order', () => {
     const events = eventsBetween(0, DEMO_LOOP_MS - 1);
     expect(events.map((e) => `${e.kind} ${String(e.department)}`)).toEqual([
       'issue-opened 経理',
@@ -159,7 +159,6 @@ describe('what the screen makes of the demo', () => {
       'pr-merged 経理',
       'level-up 経理',
       'issue-closed 経理',
-      'king-quest-opened null',
       'pr-merged 企画',
       'issue-closed 企画',
       'level-up 企画',
@@ -168,7 +167,6 @@ describe('what the screen makes of the demo', () => {
     expect(next.map((e) => `${e.kind} ${String(e.department)}`)).toEqual([
       'issue-opened 広報',
       'issue-opened 総務',
-      'king-quest-cleared null',
       'pr-merged 広報',
       'issue-closed 広報',
       'pr-merged 総務',

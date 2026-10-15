@@ -1,3 +1,4 @@
+import { makeSettings } from '@conect-guild/snapshot/settings.fixtures';
 import { describe, expect, it } from 'vitest';
 import { createDemoSession } from '../app/demo';
 import { createGuildStore } from '../app/guildStore';
@@ -16,7 +17,7 @@ import {
 import { DEMO_KING_QUEST, DEMO_SCRIPT } from './demoScript';
 import { diffSnapshot, type GuildEvent } from './events';
 
-/** Issue #152: the king's quest of the demo, one every DEMO_KING_QUEST.everyLoops loops. */
+/** Issue #152: the king's quest of the demo, every five loops from the third. */
 
 const NOW = Date.parse('2026-10-12T03:00:00.000Z');
 const STEP_MS = 1_000;
@@ -35,51 +36,68 @@ function timedEvents(from: number, to: number): { t: number; event: GuildEvent }
 }
 
 describe('the king’s quest in the demo script', () => {
-  it('opens once and is cleared once every three loops, the clear in the loop after', () => {
-    expect(DEMO_KING_QUEST.everyLoops).toBe(3);
-    const king = timedEvents(0, 6 * DEMO_LOOP_MS - 1).filter(({ event }) =>
+  it('opens once and is cleared once every five loops from the third, the clear in the next', () => {
+    expect(DEMO_KING_QUEST).toMatchObject({ everyLoops: 5, firstLoop: 2 });
+    const king = timedEvents(0, 10 * DEMO_LOOP_MS - 1).filter(({ event }) =>
       event.kind.startsWith('king-quest-'),
     );
     expect(king.map(({ t, event }) => [Math.floor(t / DEMO_LOOP_MS), event.kind])).toEqual([
-      [0, 'king-quest-opened'],
-      [1, 'king-quest-cleared'],
-      [3, 'king-quest-opened'],
-      [4, 'king-quest-cleared'],
+      [2, 'king-quest-opened'],
+      [3, 'king-quest-cleared'],
+      [7, 'king-quest-opened'],
+      [8, 'king-quest-cleared'],
     ]);
     // Read on the first second after the beat, as the store reads the demo every second.
     expect(king.map(({ t }) => t % DEMO_LOOP_MS)).toEqual([41_000, 23_000, 41_000, 23_000]);
     expect(king.map(({ event }) => event.number)).toEqual([
-      demoIssueNumber(0, 'commander'),
-      demoIssueNumber(0, 'commander'),
-      demoIssueNumber(3, 'commander'),
-      demoIssueNumber(3, 'commander'),
+      demoIssueNumber(2, 'commander'),
+      demoIssueNumber(2, 'commander'),
+      demoIssueNumber(7, 'commander'),
+      demoIssueNumber(7, 'commander'),
     ]);
   });
 
   it('is open from openAt of its loop up to clearAt of the next', () => {
     const { openAt, clearAt } = DEMO_KING_QUEST;
-    expect(demoKingQuestAt(0, openAt - 1)).toBeNull();
-    expect(demoKingQuestAt(0, openAt)?.number).toBe(demoIssueNumber(0, 'commander'));
-    expect(demoKingQuestAt(1, clearAt - 1)?.number).toBe(demoIssueNumber(0, 'commander'));
-    expect(demoKingQuestAt(1, clearAt)).toBeNull();
-    expect(demoKingQuestAt(1, openAt)).toBeNull();
-    expect(demoKingQuestAt(2, openAt)).toBeNull();
-    expect(demoKingQuestAt(3, openAt)?.number).toBe(demoIssueNumber(3, 'commander'));
-    expect(at(openAt).president?.issues.map((i) => i.number)).toEqual([101]);
+    for (const loop of [0, 1]) {
+      expect(demoKingQuestAt(loop, openAt)).toBeNull();
+      expect(demoKingQuestAt(loop, clearAt - 1)).toBeNull();
+    }
+    expect(demoKingQuestAt(2, openAt - 1)).toBeNull();
+    expect(demoKingQuestAt(2, openAt)?.number).toBe(demoIssueNumber(2, 'commander'));
+    expect(demoKingQuestAt(3, clearAt - 1)?.number).toBe(demoIssueNumber(2, 'commander'));
+    expect(demoKingQuestAt(3, clearAt)).toBeNull();
+    expect(demoKingQuestAt(3, openAt)).toBeNull();
+    expect(demoKingQuestAt(6, clearAt - 1)).toBeNull();
+    expect(demoKingQuestAt(7, openAt)?.title).toBe('年始のあいさつ文を書く');
+    const opened = at(2 * DEMO_LOOP_MS + openAt).president?.issues;
+    expect(opened?.map((i) => [i.number, i.title])).toEqual([[121, '来年の方針を決める']]);
     expect(at(0).president).toEqual({ issues: [] });
   });
 
-  it('takes a number no Issue or PR of the demo uses (かなめ’s lane has none)', () => {
-    expect(DEMO_SCRIPT.filter((beat) => beat.lane === 'commander').map((b) => b.action)).toEqual([
-      'work',
-      'rest',
-    ]);
-    for (let loop = 0; loop < 4; loop += 1) {
-      const end = at(loop * DEMO_LOOP_MS + DEMO_LOOP_MS - 1);
-      const used = [...end.issues.map((i) => i.number), ...end.prs.map((p) => p.number)];
-      expect(used).not.toContain(demoIssueNumber(loop, 'commander'));
-    }
-  });
+  it.each([2, 3, 4, 5, 6])(
+    'with %i departments: takes a number no Issue or PR of the demo, past or now, uses',
+    (count) => {
+      // かなめ's lane has no Issue or PR of its own.
+      expect(DEMO_SCRIPT.filter((b) => b.lane === 'commander').map((b) => b.action)).toEqual([
+        'work',
+        'rest',
+      ]);
+      const labels = [...makeSettings(4).departments.map((d) => d.label), '予備一', '予備二'];
+      for (const loop of [2, 3, 7, 8]) {
+        const end = loop * DEMO_LOOP_MS + DEMO_LOOP_MS - 1;
+        const snapshot = demoSnapshotAt(end, NOW + end, labels.slice(0, count));
+        const { history } = snapshot;
+        const used = [
+          ...snapshot.issues.map((i) => i.number),
+          ...snapshot.prs.map((p) => p.number),
+          ...history.completedIssues.map((i) => i.number),
+          ...history.mergedPrs.map((p) => p.number),
+        ];
+        expect(used).not.toContain(demoIssueNumber(loop - ((loop - 2) % 5), 'commander'));
+      }
+    },
+  );
 });
 
 interface Window {

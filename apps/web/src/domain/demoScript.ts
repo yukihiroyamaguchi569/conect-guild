@@ -69,15 +69,20 @@ export const DEMO_SCRIPT: readonly DemoBeat[] = [
 ];
 
 /**
- * The king's quest of the demo (Issue #152): one every `everyLoops` loops, so the messages (at
- * least 8 s each, app/guildStore.ts) still fit and a late start is made up for (every two loops
- * kept them waiting longer and longer; app/demo.lag.test.ts measures it). Opened at `openAt`
- * of a loop whose number is a multiple of `everyLoops`, while かなめ is free between the first chest
- * and the second (she walks it to the throne in about 7.5 s); cleared in the next loop at
- * `clearAt`, while she is free between handing out the second scroll and taking the first chest
- * (the two lines take about 4 s).
+ * The king's quest of the demo (Issue #152): one every `everyLoops` loops from `firstLoop`, so the
+ * messages (at least 8 s each, in turn: app/guildStore.ts) keep up with the script about as well as
+ * without it (app/demo.lag.test.ts measures it; docs/changes/0152-demo-king.md has the figures).
+ * Opened at `openAt`, while かなめ is free between the first chest and the second (she walks it to
+ * the throne in about 7.5 s); cleared in the next loop at `clearAt`, while she is free between
+ * handing out the second scroll and taking the first chest (the two lines take about 4 s). The
+ * first loops are left to the level-ups (domain/demo.ts PAST_WORK).
  */
-export const DEMO_KING_QUEST = { everyLoops: 3, openAt: 40_500, clearAt: 22_500 } as const;
+export const DEMO_KING_QUEST = {
+  everyLoops: 5,
+  firstLoop: 2,
+  openAt: 40_500,
+  clearAt: 22_500,
+} as const;
 
 /** Fictional quests of the king, in turn. Plain everyday work, as the departments'. */
 export const DEMO_KING_TITLES: readonly [string, ...string[]] = [

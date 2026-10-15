@@ -276,20 +276,22 @@ function loopItems(
 }
 
 /**
- * The king's quest open at `inLoopMs` of `loop` (Issue #152): from `openAt` of a loop whose number
- * is a multiple of `everyLoops` to `clearAt` of the next one; null otherwise. It takes the number
- * of かなめ's lane of the loop it opens in, which has no Issue or PR of its own (demo.king.test.ts).
+ * The king's quest open at `inLoopMs` of `loop` (Issue #152): from `openAt` of every
+ * `everyLoops`-th loop from `firstLoop` to `clearAt` of the next one; null otherwise. It takes the
+ * number of かなめ's lane of the loop it opens in, which has no Issue or PR of its own
+ * (demo.king.test.ts).
  */
 export function demoKingQuestAt(
   loop: number,
   inLoopMs: number,
 ): { readonly loop: number; readonly number: number; readonly title: string } | null {
-  const { everyLoops, openAt, clearAt } = DEMO_KING_QUEST;
-  const phase = loop % everyLoops;
+  const { everyLoops, firstLoop, openAt, clearAt } = DEMO_KING_QUEST;
+  if (loop < firstLoop) return null;
+  const phase = (loop - firstLoop) % everyLoops;
   const open = (phase === 0 && inLoopMs >= openAt) || (phase === 1 && inLoopMs < clearAt);
   if (!open) return null;
   const openLoop = loop - phase;
-  const turn = openLoop / everyLoops;
+  const turn = (openLoop - firstLoop) / everyLoops;
   return {
     loop: openLoop,
     number: demoIssueNumber(openLoop, 'commander'),

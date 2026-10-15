@@ -99,16 +99,15 @@ describe('the demo session', () => {
     demo.setStageShown(true);
     demo.start();
     await run(2 * DEMO_LOOP_MS);
-    // Two loops: six messages each, all from the fictional script, three level-ups in the first
-    // (Issue #19) and the king's quest, opened in the first and cleared in the second (Issue #152).
-    // They hold the window longer, so the last messages still wait their turn.
+    // Two loops: six messages each, all from the fictional script, and three level-ups in the
+    // first (Issue #19). They hold the window longer, so the last clear still waits its turn.
+    // The king's first quest comes in the third loop (Issue #152).
     expect(heads).toHaveLength(14);
     expect(heads[0]).toContain('「10 月分の請求書を作る」');
     expect(heads.some((text) => text.includes('クリアした！'))).toBe(true);
     expect(heads.filter((text) => text.includes('あがった！'))).toEqual(FIRST_LOOP_LEVEL_UPS);
-    expect(heads[6]).toContain('おうさまに クエスト#101「来年の方針を決める」が とどいた！');
-    expect(heads[10]).toContain('「秋の講座の告知文を書く」');
-    expect(heads[12]).toBe('おうさまは クエスト#101 を クリアした！');
+    expect(heads[9]).toContain('「秋の講座の告知文を書く」');
+    expect(heads.some((text) => text.startsWith('おうさま'))).toBe(false);
     expect(store.state.halted).toBe(false);
     expect(store.state.effectsAvailable).toBe(true);
     expect(store.state.summons?.members).toBeDefined();
