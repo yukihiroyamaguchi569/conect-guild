@@ -209,8 +209,8 @@ function noteSessions(state: GuildState, result: SnapshotLoadResult, now: number
   }
   const next = readSessions(result.snapshot.sessions, now);
   const members = summonedMembers(state.sessionReading, next);
+  state.kanameWorkedAt = lastKanameWork(state.kanameWorkedAt, state.sessionReading, next);
   state.sessionReading = comparedReading(state.sessionReading, next);
-  state.kanameWorkedAt = lastKanameWork(state.kanameWorkedAt, next);
   if (members.length === 0 || next === null) return;
   const from = summonsFrom(members, state.kanameWorkedAt, next.checkedAt);
   state.summons = { id: (state.summons?.id ?? 0) + 1, members, from };

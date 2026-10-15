@@ -156,27 +156,30 @@ describe('comparedReading', () => {
 describe('lastKanameWork (Issue #155)', () => {
   const t = at(T0);
   const working: Five = ['working', 'idle', 'idle', 'idle', 'idle'];
+  const before = reading(ALL_IDLE, t - 5_000);
 
   it('notes the time of a reading with かなめ working', () => {
-    expect(lastKanameWork(null, reading(working, t))).toBe(t);
-    expect(lastKanameWork(t, reading(working, t + 5_000))).toBe(t + 5_000);
+    expect(lastKanameWork(null, null, reading(working, t))).toBe(t);
+    expect(lastKanameWork(t - 10_000, before, reading(working, t))).toBe(t);
   });
 
   it('keeps the last time while she waits or asks for a permission', () => {
-    expect(lastKanameWork(t, reading(ALL_IDLE, t + 5_000))).toBe(t);
-    expect(lastKanameWork(t, reading(['resting', 'idle', 'idle', 'idle', 'idle'], t + 5_000))).toBe(
-      t,
-    );
+    expect(lastKanameWork(t - 10_000, before, reading(ALL_IDLE, t))).toBe(t - 10_000);
+    const resting: Five = ['resting', 'idle', 'idle', 'idle', 'idle'];
+    expect(lastKanameWork(t - 10_000, before, reading(resting, t))).toBe(t - 10_000);
     const asking: Five = ['awaiting-permission', 'idle', 'idle', 'idle', 'idle'];
-    expect(lastKanameWork(null, reading(asking, t))).toBeNull();
+    expect(lastKanameWork(null, before, reading(asking, t))).toBeNull();
   });
 
-  it('never goes back to an older reading', () => {
-    expect(lastKanameWork(t + 5_000, reading(working, t))).toBe(t + 5_000);
+  it('does not take a reading not later than the compared one (same time, or a late one)', () => {
+    const compared = reading(ALL_IDLE, t);
+    expect(lastKanameWork(null, compared, reading(working, t))).toBeNull();
+    expect(lastKanameWork(null, compared, reading(working, t - 5_000))).toBeNull();
+    expect(lastKanameWork(t - 20_000, compared, reading(working, t - 5_000))).toBe(t - 20_000);
   });
 
   it('forgets her work on a missing reading (unavailable or stale)', () => {
-    expect(lastKanameWork(t, null)).toBeNull();
+    expect(lastKanameWork(t, before, null)).toBeNull();
   });
 });
 

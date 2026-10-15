@@ -221,11 +221,11 @@ describe('demo orders from かなめ', () => {
   it('has かなめ hand the work on to the departments after the king’s order (Issue #155)', () => {
     const from: SummonsFrom[] = [];
     let previous = readSessions(at(0).sessions, NOW);
-    let kanameWorkedAt = lastKanameWork(null, previous);
+    let kanameWorkedAt = lastKanameWork(null, null, previous);
     for (let t = STEP_MS; t < DEMO_LOOP_MS; t += STEP_MS) {
       const next = readSessions(at(t).sessions, NOW + t);
       const members = summonedMembers(previous, next);
-      kanameWorkedAt = lastKanameWork(kanameWorkedAt, next);
+      kanameWorkedAt = lastKanameWork(kanameWorkedAt, previous, next);
       if (members.length > 0 && next !== null) {
         from.push(summonsFrom(members, kanameWorkedAt, next.checkedAt));
       }

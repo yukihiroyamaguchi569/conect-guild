@@ -84,13 +84,18 @@ export const KANAME_DISPATCH_WINDOW_MS = 60_000;
 
 /**
  * When かなめ was last seen working (epoch ms of the reading), kept as the compared reading is: a
- * missing reading (unavailable or stale) forgets it, as a halt does (the store), so nothing older
- * than the readings compared is ever used. Null until she is seen working.
+ * missing reading (unavailable or stale) forgets it, as a halt does (the store), and a reading not
+ * later than `previous` (the compared one) is not taken (comparedReading), so nothing older than
+ * the readings compared is ever used. Null until she is seen working.
  */
-export function lastKanameWork(last: number | null, next: SessionReading | null): number | null {
+export function lastKanameWork(
+  last: number | null,
+  previous: SessionReading | null,
+  next: SessionReading | null,
+): number | null {
   if (next === null) return null;
-  if (next.states.kaname !== 'working') return last;
-  return last === null ? next.checkedAt : Math.max(last, next.checkedAt);
+  if (comparedReading(previous, next) !== next) return last;
+  return next.states.kaname === 'working' ? next.checkedAt : last;
 }
 
 /**

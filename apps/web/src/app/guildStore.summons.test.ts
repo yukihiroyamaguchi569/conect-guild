@@ -215,6 +215,15 @@ describe('guild store summons from かなめ (Issue #155)', () => {
     expect(store.state.summons).toEqual({ id: 1, members: ['minori'], from: 'king' });
   });
 
+  it('does not take かなめ’s work from a reading older than the compared one', async () => {
+    const { store, load } = setup();
+    // Waiting at 10 s; an older reading (at work, at 5 s) comes in late; then 経理 at 15 s.
+    await load(ok(reading(10, 'idle', 'idle')), 10);
+    await load(ok(reading(5, 'working', 'idle')), 12);
+    await load(ok(reading(15, 'idle', 'working')), 15);
+    expect(store.state.summons).toEqual({ id: 1, members: ['minori'], from: 'king' });
+  });
+
   it('keeps かなめ’s work across a short network failure', async () => {
     const { store, load } = setup();
     await load(ok(reading(0, 'working', 'idle')), 0);
