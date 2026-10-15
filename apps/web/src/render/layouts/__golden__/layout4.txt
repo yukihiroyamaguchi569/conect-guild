@@ -65,6 +65,7 @@ decor plant-tall 10,7 1x2 solid=true
 decor book-pile-tall 10,9 1x1 solid=true
 decor plant-large 22,8 1x2 solid=true
 decor sacks 22,10 1x1 solid=true
+decor hourglass 17,8 1x1 solid=true
 decor map-table 3,11 3x2 solid=true
 decor stool 6,12 1x1 solid=true
 decor globe 9,11 1x1 solid=true
@@ -73,7 +74,7 @@ decor blueprint-rolls 11,11 1x1 solid=true
 decor lantern 12,11 1x1 solid=true
 decor inkwell 20,11 1x1 solid=true
 decor file-stack 21,11 1x1 solid=true
-decor hourglass 22,11 1x1 solid=true
+decor scroll-pile 22,11 1x1 solid=true
 decor toolbox 23,11 1x1 solid=true
 decor file-cabinet 26,11 2x2 solid=true
 decor crate-stack 28,11 2x2 solid=true
@@ -141,10 +142,10 @@ play sasae window 21,3 partner=null path=21,10 20,10 20,9 20,8 20,7 19,7 18,7 18
 play sasae chat 12,10 partner=hirame path=21,10 20,10 19,10 18,10 17,10 16,10 15,10 14,10 13,10 12,10
 layer 160 objects= parts=1 still= animated=
 layer 224 objects=10,5 4x2|19,5 4x2 parts=0 still=ledger-stack,open-book,flyers,mugs animated=candlestick,abacus,coin-pile,megaphone
-layer 320 objects=13,8 1x2|14,8 5x2|19,8 1x2 parts=0 still=jar,flower-vase animated=
-layer 416 objects=9,11 4x2|20,11 4x2 parts=0 still=model,blueprint-rolls,inkwell,toolbox animated=globe,lantern,file-stack,hourglass
+layer 320 objects=13,8 1x2|14,8 5x2|19,8 1x2 parts=0 still=jar,flower-vase animated=hourglass
+layer 416 objects=9,11 4x2|20,11 4x2 parts=0 still=model,blueprint-rolls,inkwell,scroll-pile,toolbox animated=globe,lantern,file-stack
 back window,window,board,throne,door,chair,chair,plant,shelf,chair,chair,crate
-still poster-cat@19,1,plant-hanging@20,1,poster-stripes@19,2,plant-small@14,3,safe@10,3,easel@22,3,ledger-stack@12,5,open-book@20,5,flyers@21,5,mugs@22,5,jar@14,8,flower-vase@18,8,plant-tall@10,7,book-pile-tall@10,9,plant-large@22,8,sacks@22,10,model@10,11,blueprint-rolls@11,11,inkwell@20,11,toolbox@23,11,key-board@31,12,map-table@3,11,stool@6,12,file-cabinet@26,11,crate-stack@28,11,barrel@30,11,barrel-small@29,14,barrel-pair@1,14,sacks@2,15,barrel-small@2,16,plant-large@29,15
+still poster-cat@19,1,plant-hanging@20,1,poster-stripes@19,2,plant-small@14,3,safe@10,3,easel@22,3,ledger-stack@12,5,open-book@20,5,flyers@21,5,mugs@22,5,jar@14,8,flower-vase@18,8,plant-tall@10,7,book-pile-tall@10,9,plant-large@22,8,sacks@22,10,model@10,11,blueprint-rolls@11,11,inkwell@20,11,scroll-pile@22,11,toolbox@23,11,key-board@31,12,map-table@3,11,stool@6,12,file-cabinet@26,11,crate-stack@28,11,barrel@30,11,barrel-small@29,14,barrel-pair@1,14,sacks@2,15,barrel-small@2,16,plant-large@29,15
 animated sconce@15,1 flame phase=0 trigger=null
 animated sconce@17,1 flame phase=377 trigger=null
 animated banner@18,1 flutter phase=754 trigger={"kind":"cleared","members":["kaname","minori","hibiki"]}
@@ -158,7 +159,7 @@ animated megaphone@19,5 notes phase=3393 trigger={"kind":"working","member":"hib
 animated sleeping-poodle@18,3 breath phase=3770 trigger=null
 animated pillar-lamp@11,7 flame phase=4147 trigger=null
 animated pillar-lamp@21,7 flame phase=4524 trigger=null
-animated globe@9,11 spin phase=4901 trigger={"kind":"working","member":"hirame"}
-animated lantern@12,11 flame phase=5278 trigger=null
-animated file-stack@21,11 papers phase=5655 trigger={"kind":"working","member":"sasae"}
-animated hourglass@22,11 sand phase=6032 trigger={"kind":"awaiting-president"}
+animated hourglass@17,8 sand phase=4901 trigger={"kind":"awaiting-president"}
+animated globe@9,11 spin phase=5278 trigger={"kind":"working","member":"hirame"}
+animated lantern@12,11 flame phase=5655 trigger=null
+animated file-stack@21,11 papers phase=6032 trigger={"kind":"working","member":"sasae"}

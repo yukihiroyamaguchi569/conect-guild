@@ -54,8 +54,6 @@ export interface RoomCorners {
   readonly upperRight: DeskCorner;
   readonly lowerLeftEnd: DeskCorner;
   readonly lowerRightEnd: DeskCorner;
-  /** Five and six departments: the hourglass on かなめ's counter, scrolls in its place on 総務's desk. */
-  readonly hourglassOnCounter: boolean;
 }
 
 /** The windows, the quest board, the throne, the counter and the door, as in layout4. */
@@ -85,7 +83,10 @@ const WALL_DECOR: readonly DecorPlacement[] = [
   place('lantern', 31, 13),
 ];
 
-/** かなめ's counter and the hall. */
+/**
+ * かなめ's counter and the hall. The hourglass on the counter, left of the vase, turns while the
+ * king's approval is awaited, whatever the number of departments (the president, 2026-10-15, #133).
+ */
 const HALL_DECOR: readonly DecorPlacement[] = [
   place('jar', 14, 8),
   place('flower-vase', 18, 8),
@@ -120,25 +121,22 @@ const LOWER_LEFT_DESK: DeskCorner = {
   ],
 };
 
-/** layout4's lower right (総務) desk; the hourglass turns while the king's approval is awaited. */
-function lowerRightDesk(hourglassOnCounter: boolean): DeskCorner {
-  return {
-    objects: [flat('chair', rect(21, 9, 1, 2)), solid('desk', rect(20, 11, 4, 2))],
-    decor: [
-      place('inkwell', 20, 11),
-      place('file-stack', 21, 11),
-      place(hourglassOnCounter ? 'scroll-pile' : 'hourglass', 22, 11),
-      place('toolbox', 23, 11),
-    ],
-  };
-}
+/** layout4's lower right (総務) desk, with its inkwell, files, scrolls and toolbox. */
+const LOWER_RIGHT_DESK: DeskCorner = {
+  objects: [flat('chair', rect(21, 9, 1, 2)), solid('desk', rect(20, 11, 4, 2))],
+  decor: [
+    place('inkwell', 20, 11),
+    place('file-stack', 21, 11),
+    place('scroll-pile', 22, 11),
+    place('toolbox', 23, 11),
+  ],
+};
 
 /**
  * The whole room with `corners` in it, in layout4's order (layout4.golden.test.ts records it):
  * the furniture and the small things of each corner go where layout4 lists its own.
  */
 export function roomWith(corners: RoomCorners): DeskCorner {
-  const lowerRight = lowerRightDesk(corners.hourglassOnCounter);
   return {
     objects: [
       ...ROOM_OBJECTS,
@@ -147,7 +145,7 @@ export function roomWith(corners: RoomCorners): DeskCorner {
       solid('plant', rect(22, 7, 1, 1)),
       ...corners.lowerLeftEnd.objects,
       ...LOWER_LEFT_DESK.objects,
-      ...lowerRight.objects,
+      ...LOWER_RIGHT_DESK.objects,
       ...corners.lowerRightEnd.objects,
       // The bottom-left corner, left of the message window
       solid('crate', rect(2, 14, 1, 1)),
@@ -159,10 +157,10 @@ export function roomWith(corners: RoomCorners): DeskCorner {
       ...corners.upperRight.decor,
       place('sleeping-poodle', 18, 3),
       ...HALL_DECOR,
-      ...(corners.hourglassOnCounter ? [place('hourglass', 17, 8)] : []),
+      place('hourglass', 17, 8),
       ...corners.lowerLeftEnd.decor,
       ...LOWER_LEFT_DESK.decor,
-      ...lowerRight.decor,
+      ...LOWER_RIGHT_DESK.decor,
       ...corners.lowerRightEnd.decor,
       ...FLOOR_DECOR,
     ],

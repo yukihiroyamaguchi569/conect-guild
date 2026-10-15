@@ -20,7 +20,6 @@ import {
   UPPER_LEFT_DESK,
   type CornerDesk,
   type DeskCorner,
-  type RoomCorners,
 } from './smallRoom';
 import type { Desk, GuildLayout, TilePos } from './types';
 
@@ -150,12 +149,10 @@ function guestSpotsFor(departmentCount: number): readonly TilePos[] {
 export type LayoutSpecials = Pick<
   GuildLayout,
   'partyWindow' | 'toss' | 'boardMaxCqw' | 'underPartyWindow'
-> &
-  Pick<RoomCorners, 'hourglassOnCounter'>;
+>;
 
 /** The office of `departmentCount` departments, by rules 1 and 2, with its own `specials`. */
 export function buildLayout(departmentCount: number, specials: LayoutSpecials): GuildLayout {
-  const { hourglassOnCounter, ...own } = specials;
   return {
     departmentCount,
     groundFills: SMALL_ROOM_GROUND,
@@ -164,11 +161,10 @@ export function buildLayout(departmentCount: number, specials: LayoutSpecials): 
       upperRight: cornerFor('upperRight', departmentCount),
       lowerLeftEnd: cornerFor('lowerLeftEnd', departmentCount),
       lowerRightEnd: cornerFor('lowerRightEnd', departmentCount),
-      hourglassOnCounter,
     }),
     desks: desksAt(deskPlacesFor(departmentCount)),
     ...SMALL_ROOM_SEATS,
     guestSpots: guestSpotsFor(departmentCount),
-    ...own,
+    ...specials,
   };
 }

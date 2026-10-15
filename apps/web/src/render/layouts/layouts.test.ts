@@ -202,6 +202,13 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: d
   it('lists no tile under the party window', () => {
     expect(layout.underPartyWindow ?? []).toEqual([]);
   });
+
+  it('puts one hourglass on かなめ’s counter, left of the vase (Issue #133)', () => {
+    const hourglasses = layout.decor.filter((item) => item.name === 'hourglass').map(keyOf);
+    expect(hourglasses).toEqual(['17,8']);
+    const counter = layout.objects.filter((object) => object.tile.startsWith('counter-'));
+    expect(counter.some((part) => contains(part, { col: 17, row: 8 }))).toBe(true);
+  });
 });
 
 describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () => {

@@ -8,7 +8,6 @@ import type { GuildLayout } from './types';
  * corner. Built by the rules of slots.ts (Issue #123) as it was by hand (layout4.golden.test.ts).
  */
 export const LAYOUT4: GuildLayout = buildLayout(4, {
-  hourglassOnCounter: false,
   // Six rows, with the fetch status on the tab (Issue #132): the column ends at 274.4 px in the
   // demo at 1024 px (Chrome, 2026-10-15). No note reaches it, so both are the same.
   partyWindow: { bottom: 278, tallestBottom: 278 },
