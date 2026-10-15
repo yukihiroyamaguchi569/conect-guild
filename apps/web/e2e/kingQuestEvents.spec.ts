@@ -1,8 +1,9 @@
 // The king's quests told on the stage (Issue #142). Runs only in the president project of
 // playwright.config.ts, whose dev server reads the fictional settings e2e/settings/president.json.
 // /snapshot.json is the fictional guestsSnapshot with the king's Issues, served by the route of
-// fixtures.ts; a later write adds one of them, and a third one takes it away again. Its clear
-// (Issue #147) throws no confetti: the king says a word on the throne and かなめ answers.
+// fixtures.ts; a later write adds one of them, and a third one takes it away again. The king says a
+// word as he takes its scroll (Issue #146). Its clear (Issue #147) throws no confetti: the king says
+// a word on the throne and かなめ answers.
 import type { Page } from '@playwright/test';
 import type { Snapshot } from '@conect-guild/snapshot';
 import { drawnImages, installCanvasImageRecorder } from './canvasImages.ts';
@@ -102,6 +103,8 @@ test('a new king’s quest is brought to the throne, and its clear is a word wit
     .getByRole('listitem')
     .filter({ hasText: 'ゆきひろ' });
   await expect(king).toContainText('しごと中・やること 1 件');
+  const said = (lines: readonly string[]) => async () =>
+    (await drawnTexts(page)).some((text) => lines.includes(text));
 
   snapshotServer.serve(reading(NOW + 60_000, [QUEST, STANDING]));
   await expect(message).toContainText(
@@ -118,6 +121,8 @@ test('a new king’s quest is brought to the throne, and its clear is a word wit
       ),
     )
     .toBe(true);
+  // The king says a word of his own as he takes the scroll on the throne (Issue #146).
+  await expect.poll(said(LINE_BOOK.yukihiro.kingTakeScroll)).toBe(true);
   await expect(king).toContainText('しごと中・やること 2 件');
 
   await page.evaluate(() => {
@@ -130,8 +135,6 @@ test('a new king’s quest is brought to the throne, and its clear is a word wit
       timeout: EVENT_TIMEOUT,
     },
   );
-  const said = (lines: readonly string[]) => async () =>
-    (await drawnTexts(page)).some((text) => lines.includes(text));
   await expect.poll(said(LINE_BOOK.yukihiro.kingClear)).toBe(true);
   // かなめ answers 0.4 s after the king's word is gone: by then confetti would have flown.
   await expect.poll(said(LINE_BOOK.kaname.seeKingClear)).toBe(true);
