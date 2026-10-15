@@ -94,7 +94,7 @@ OK をもらったら、消す直前に 1 をもう一度なぞり（聞かず�
    rm guild.settings.local.json.bak
    ```
 
-4. 集めたデータ（一覧に入れたときだけ）
+4. 集めたデータ（一覧に入れたときだけ）。先に `npm run dev:all` を止めてもらう（動いたままだと collector が 60 秒ごとに書き直すので、消してもすぐ戻る）。止まったことを聞いてから消す
 
    ```bash
    rm apps/web/.data/snapshot.json
