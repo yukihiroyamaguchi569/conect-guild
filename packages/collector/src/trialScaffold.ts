@@ -59,7 +59,7 @@ export const TRIAL_DEPARTMENTS: readonly TrialDepartment[] = [
   {
     name: '開発',
     folder: 'dev',
-    label: 'dev',
+    label: '開発',
     duty: '社内の道具やウェブの小さな改修',
     scope: ['社内の道具やウェブの小さな改修'],
     rule: '公開しているものへの反映は社長の承認を取ってから行う',

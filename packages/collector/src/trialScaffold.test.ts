@@ -65,6 +65,20 @@ describe('parseScaffoldArgs', () => {
   });
 });
 
+describe('TRIAL_DEPARTMENTS', () => {
+  it('labels each department with its own name, folders and prefixes in English', () => {
+    expect(TRIAL_DEPARTMENTS.map((d) => [d.label, d.folder])).toEqual([
+      ['経理', 'accounting'],
+      ['広報', 'pr'],
+      ['企画', 'planning'],
+      ['総務', 'general-affairs'],
+      ['開発', 'dev'],
+      ['営業', 'sales'],
+    ]);
+    for (const d of TRIAL_DEPARTMENTS) expect(d.label).toBe(d.name);
+  });
+});
+
 describe('trialFiles', () => {
   it.each([2, 4, 6])('writes the 司令塔, %i department folders and .gitignore', (count) => {
     const departments = TRIAL_DEPARTMENTS.slice(0, count);
