@@ -12,7 +12,7 @@ import {
   type IdleSeeds,
   type IdleSince,
 } from './idle';
-import { actorOf, castOf, DEFAULT_SEATS, isClear, type SceneContext } from './scenes';
+import { actorOf, castOf, DEFAULT_SEATS, type SceneContext } from './scenes';
 
 /**
  * The render loop's memory of the long idle spells (idle.ts): since when each member has had
@@ -124,7 +124,7 @@ export function playEvent(
   event: GuildEvent,
   at: { t: number; context: SceneContext },
 ): Director {
-  if (!isClear(event.kind)) {
+  if (event.kind !== 'issue-closed') {
     return scheduleEvent(crew.callCast(director, castOf(event), at.t), event, at.t, at.context);
   }
   const actor = actorOf(event);

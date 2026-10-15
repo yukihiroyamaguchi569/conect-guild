@@ -174,6 +174,35 @@ describe('line bubbles and level tags', () => {
   });
 });
 
+describe('the king’s word on his clear and かなめ’s answer (Issue #147)', () => {
+  it('meet no tag, no window and no edge, and the king’s is clear of みのり’s bubble', () => {
+    const clear = {
+      id: 'king-quest-cleared#1',
+      kind: 'king-quest-cleared',
+      number: 1,
+      department: null,
+    } as const;
+    const director = scheduleEvent(EMPTY_DIRECTOR, clear, 0, contextFor(0));
+    expect(director.lines.map((said) => said.actor)).toEqual(['yukihiro', 'kaname']);
+    const end = Math.max(...director.lines.map((said) => said.end));
+    expect(checkLines(director, end)).toBeGreaterThan(0);
+    // みのり, at the desk down left of the throne, says her longest remark while the king speaks.
+    const members = frameAt(director, 0, DEFAULT_SEATS).members;
+    const king = members.find((m) => m.id === 'yukihiro');
+    const minori = members.find((m) => m.id === 'minori');
+    if (king === undefined || minori === undefined) throw new Error('no king or みのり');
+    const kingWords = longest('yukihiro', 'kingClear');
+    if (kingWords === null) throw new Error('no word for the king');
+    const kingBox = placedBox(wordsBoxOf(members, king, { line: kingWords }));
+    for (const scene of ['clear', ...WAITS, 'work', 'idle'] as const) {
+      const line = longest('minori', scene);
+      if (line === null) continue;
+      const box = placedBox(wordsBoxOf(members, minori, { line }));
+      expect({ scene, meet: meet(kingBox, box) }).toEqual({ scene, meet: false });
+    }
+  });
+});
+
 describe('words said holding an item up (Issue #77)', () => {
   it('go beside the item in the scenes above (the takers hold scrolls and chests up)', () => {
     // The scenes of 'line bubbles and level tags' ran first in this file.

@@ -373,6 +373,8 @@ describe('showMs', () => {
       'takeChest',
       'clear',
       'seeClear',
+      'kingClear',
+      'seeKingClear',
     ] as const;
     for (const scene of scenes) {
       expect(showMs(scene)).toBeGreaterThanOrEqual(1_200);

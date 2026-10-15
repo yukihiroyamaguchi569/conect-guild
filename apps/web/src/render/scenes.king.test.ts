@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { GuildEvent, GuildEventKind } from '../domain/events';
-import { CONFETTI_MS } from './confetti';
-import { EMPTY_DIRECTOR, isAnimating, scheduleEvent } from './director';
+import { EMPTY_DIRECTOR, frameAt, isAnimating, scheduleEvent } from './director';
+import { linesOf } from './lineBook';
+import type { PickLine } from './lines';
 import { PLACES } from './map';
+import { LINES } from './metrics';
 import { carry, raise, type Segment } from './motion';
 import {
   actorOf,
@@ -16,7 +18,10 @@ import {
   type Track,
 } from './scenes';
 
-/** Issue #142: かなめ brings the king's quest to the throne; its clear is confetti over it. */
+/**
+ * Issue #142: かなめ brings the king's quest to the throne. Issue #147: its clear is no confetti,
+ * only the king's word on the throne and かなめ's answer at the reception.
+ */
 
 const event = (kind: GuildEventKind, number = 7): GuildEvent => ({
   id: `${kind}#${String(number)}`,
@@ -37,11 +42,11 @@ function trackOf(tracks: readonly Track[], actor: string): Track {
 const tiles = (segments: readonly Segment[]) => segments.flatMap((s) => s.path);
 
 describe('actorOf / castOf: the king’s quests', () => {
-  it('makes the king the actor, with かなめ for the scroll and nobody for the confetti', () => {
+  it('makes the king the actor, with かなめ for the scroll and for the answer on a clear', () => {
     expect(actorOf(event('king-quest-opened'))).toBe('yukihiro');
     expect(actorOf(event('king-quest-cleared'))).toBe('yukihiro');
     expect(castOf(event('king-quest-opened'))).toEqual(['yukihiro', 'kaname']);
-    expect(castOf(event('king-quest-cleared'))).toEqual([]);
+    expect(castOf(event('king-quest-cleared'))).toEqual(['yukihiro', 'kaname']);
   });
 });
 
@@ -91,23 +96,32 @@ describe('planScene: king-quest-opened', () => {
 });
 
 describe('planScene: king-quest-cleared', () => {
-  it('is the confetti of a cleared quest over the throne, with nobody moving or speaking', () => {
+  it('throws no confetti and moves nobody: the king speaks, then かなめ', () => {
     const scene = planScene(event('king-quest-cleared'), 2_000, context);
-    const quest = planScene(
-      { id: 'issue-closed#7', kind: 'issue-closed', number: 7, department: null },
-      2_000,
-      context,
-    );
     expect(scene.tracks).toEqual([]);
     expect(scene.flights).toEqual([]);
-    expect(scene.turns).toEqual([]);
-    expect(scene.bursts).toEqual([{ ...quest.bursts[0], actor: 'yukihiro' }]);
+    expect(scene.bursts).toEqual([]);
+    expect(scene.turns).toEqual([
+      { actor: 'yukihiro', scene: 'kingClear', at: 2_000 },
+      { actor: 'kaname', scene: 'seeKingClear', at: 2_000 + LINES.clearMs + LINES.kingGapMs },
+    ]);
   });
 
-  it('lasts as long as any confetti on the stage', () => {
-    const director = scheduleEvent(EMPTY_DIRECTOR, event('king-quest-cleared'), 0, context);
+  it('shows かなめ’s answer 0.4 s after the king’s word is gone, and ends with it', () => {
+    /** The first line of each moment (the random numbers are injected through the picker). */
+    const pick: PickLine = (actor, scene) => linesOf(actor, scene)[0] ?? null;
+    const director = scheduleEvent(EMPTY_DIRECTOR, event('king-quest-cleared'), 0, {
+      ...context,
+      pickLine: pick,
+    });
+    const answer = LINES.clearMs + LINES.kingGapMs;
+    expect(director.bursts).toEqual([]);
     expect(director.busyUntil).toEqual({});
-    expect(isAnimating(director, CONFETTI_MS - 1)).toBe(true);
-    expect(isAnimating(director, CONFETTI_MS)).toBe(false);
+    expect(frameAt(director, 0, DEFAULT_SEATS).lines).toEqual({ yukihiro: 'おわったぞ！' });
+    expect(frameAt(director, LINES.clearMs, DEFAULT_SEATS).lines).toEqual({});
+    expect(frameAt(director, answer - 1, DEFAULT_SEATS).lines).toEqual({});
+    expect(frameAt(director, answer, DEFAULT_SEATS).lines).toEqual({ kaname: 'さすがです' });
+    expect(isAnimating(director, answer + LINES.kingMs - 1)).toBe(true);
+    expect(isAnimating(director, answer + LINES.kingMs)).toBe(false);
   });
 });

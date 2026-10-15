@@ -29,6 +29,10 @@ export type LineScene =
   | 'clear'
   /** The king, after the member's line on a clear. */
   | 'seeClear'
+  /** The king on the throne when his own quest is cleared (Issue #147). */
+  | 'kingClear'
+  /** かなめ at the reception, after the king's line on his clear. */
+  | 'seeKingClear'
   /** Now waiting for the president's approval (remarks.ts: now and then, at the seat). */
   | 'awaitPresident'
   /** Now waiting for かなめ's review; for かなめ, now with pull requests to review. */
@@ -63,6 +67,7 @@ export const LINE_BOOK = {
     takeScroll: ['うけつけました', 'おあずかり！', 'きろく、よし'],
     takeChest: ['おつかれさま！', 'たしかに！', 'おみごとです', 'うけとりました'],
     clear: ['かんりょうです', 'やりましたね', 'クリアです！'],
+    seeKingClear: ['さすがです', 'おみごと！', 'おつかれさま'],
     awaitKaname: ['かくにんします', 'みておきますね', 'チェックします'],
     awaitPermission: ['よろしいですか', 'ごかくにんを！', 'きょかを…'],
     work: ['てきぱきと！', 'じゅんばんに', 'ととのえて…', 'よし、つぎ'],
@@ -130,6 +135,7 @@ export const LINE_BOOK = {
   },
   yukihiro: {
     seeClear: ['みごとじゃ！', 'あっぱれ！', 'ほめてつかわす'],
+    kingClear: ['おわったぞ！', 'やりとげた', 'どうじゃ！'],
     idle: ['うむ', 'よきかな', 'へいわじゃのう', 'ふむふむ'],
     sleepTalk: ['むにゃ…', 'もうたべられぬ', 'うむ…うむ…'],
   },
@@ -171,6 +177,8 @@ const SCENES: readonly LineScene[] = [
   'takeChest',
   'clear',
   'seeClear',
+  'kingClear',
+  'seeKingClear',
   'awaitPresident',
   'awaitKaname',
   'awaitPermission',
