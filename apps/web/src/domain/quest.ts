@@ -29,21 +29,28 @@ export function pickDepartment(labels: readonly string[]): DepartmentPick {
   return { department: found[0] ?? null, multiDepartment: found.length >= 2 };
 }
 
-/** Issue number → department from linked open PRs' branch prefixes (party.ts, Issue #164). */
-export type BranchDepartments = ReadonlyMap<number, DepartmentLabel>;
+/**
+ * Issue number → department from linked PRs' branch prefixes (party.ts, Issue #164): `open` counts
+ * open PRs only and places open Issues; `closed` also counts merged PRs, for closed Issues.
+ */
+export interface BranchDepartments {
+  readonly open: ReadonlyMap<number, DepartmentLabel>;
+  readonly closed: ReadonlyMap<number, DepartmentLabel>;
+}
 
-const NO_BRANCH_DEPARTMENTS: BranchDepartments = new Map();
+const NO_BRANCH_DEPARTMENTS: BranchDepartments = { open: new Map(), closed: new Map() };
 
 /**
  * The department of an Issue: its department labels first; without one, the branch prefixes of its
- * linked open PRs (Issue #164), also for an Issue just closed while its PR is still open, so the
- * clear lands where the scroll was; otherwise null (かなめの受付).
+ * linked open PRs (Issue #164). A closed Issue also counts merged PRs, so the clear lands where the
+ * scroll was even when the merge closed it. Otherwise null (かなめの受付).
  */
 export function issueDepartment(
   issue: SnapshotIssue,
   fromBranches: BranchDepartments = NO_BRANCH_DEPARTMENTS,
 ): DepartmentLabel | null {
-  return pickDepartment(issue.labels).department ?? fromBranches.get(issue.number) ?? null;
+  const byPrs = issue.state === 'open' ? fromBranches.open : fromBranches.closed;
+  return pickDepartment(issue.labels).department ?? byPrs.get(issue.number) ?? null;
 }
 
 export function toQuest(

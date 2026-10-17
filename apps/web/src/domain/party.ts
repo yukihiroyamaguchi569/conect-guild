@@ -53,16 +53,11 @@ export function departmentFromBranch(headRef: string): DepartmentLabel | null {
   return departmentFromBranchIn(headRef, BRANCH_PREFIX_RULES);
 }
 
-/**
- * For each Issue linked from an open PR, the department its open PRs' branch prefixes agree on
- * (Issue #164). PRs whose prefix matches no department are ignored; Issues whose PRs point at two
- * or more departments are left out. Closed PRs do not count. Labels are not looked at here: the
- * Issue's own department labels win (quest.ts issueDepartment).
- */
-export function branchDepartmentsOfIssues(prs: readonly SnapshotPr[]): BranchDepartments {
+/** Issue number → the one department the given PRs' branch prefixes agree on (see below). */
+function agreedDepartments(prs: readonly SnapshotPr[]): Map<number, DepartmentLabel> {
   const found = new Map<number, Set<DepartmentLabel>>();
   for (const pr of prs) {
-    const department = pr.state === 'open' ? departmentFromBranch(pr.headRef) : null;
+    const department = departmentFromBranch(pr.headRef);
     if (department === null) continue;
     for (const n of pr.linkedIssues) found.set(n, (found.get(n) ?? new Set()).add(department));
   }
@@ -72,6 +67,21 @@ export function branchDepartmentsOfIssues(prs: readonly SnapshotPr[]): BranchDep
     if (departments.size === 1 && only !== undefined) agreed.set(n, only);
   }
   return agreed;
+}
+
+/**
+ * For each Issue linked from a PR, the department its PRs' branch prefixes agree on (Issue #164).
+ * `open` counts open PRs (where an open Issue sits); `closed` counts open and merged PRs (where a
+ * closed Issue is cleared, as the merge usually closes it). Closed PRs that were not merged never
+ * count. PRs whose prefix matches no department are ignored; Issues whose PRs point at two or more
+ * departments are left out. Labels are not looked at here: the Issue's own department labels win
+ * (quest.ts issueDepartment).
+ */
+export function branchDepartmentsOfIssues(prs: readonly SnapshotPr[]): BranchDepartments {
+  return {
+    open: agreedDepartments(prs.filter((pr) => pr.state === 'open')),
+    closed: agreedDepartments(prs.filter((pr) => pr.state === 'open' || pr.mergedAt !== null)),
+  };
 }
 
 /** linked Issues' department labels (fixed order) → branch prefix → unknown (かなめの受付). */

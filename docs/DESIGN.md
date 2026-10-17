@@ -264,7 +264,7 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 ### 4.5 担当の決め方（domain/quest.ts, domain/party.ts）
 
 - **Issue の担当**: 部門ラベル（`経理`・`広報`・`企画`・`総務`。読み込んだ設定ファイル（`guild.settings.local.json`、無ければ `guild.settings.json`）の `departments`）で決める
-  - 部門ラベルが 0 個 → その Issue に結び付いた開いている PR（`linkedIssues` にその番号があるもの）のブランチ名を `branchPrefixes` に当て、当たった部門が 1 つにそろえばその部門の担当にする（Issue #164。社長の判断、2026-10-17）。接頭辞が部門に当たらない PR は見ない。閉じた PR・マージ済みの PR は数えない。結び付いた開いている PR が無い、どの PR の接頭辞も部門に当たらない、当たる部門が 2 つ以上に割れるときは「かなめの受付（担当なし）」の巻物として受付に置く。掲示板の欄、メンバーの working・done、受付の件数、Issue が開いた・閉じたときの演出がこの部門を使う。閉じた Issue も、結び付いた PR がまだ開いていればその部門で数える（巻物のあった机でクリアを出すため。レビューの指摘）。PR のマージで閉じたときは PR も閉じているので受付になる。ラベル「社長」の Issue は王様のクエストとして `issues` から外れている（4.1）ので対象にならない。純粋関数は `domain/party.ts` の `branchDepartmentsOfIssues` と `domain/quest.ts` の `issueDepartment`
+  - 部門ラベルが 0 個 → その Issue に結び付いた開いている PR（`linkedIssues` にその番号があるもの）のブランチ名を `branchPrefixes` に当て、当たった部門が 1 つにそろえばその部門の担当にする（Issue #164。社長の判断、2026-10-17）。接頭辞が部門に当たらない PR は見ない。閉じた PR・マージ済みの PR は数えない。結び付いた開いている PR が無い、どの PR の接頭辞も部門に当たらない、当たる部門が 2 つ以上に割れるときは「かなめの受付（担当なし）」の巻物として受付に置く。掲示板の欄、メンバーの working・done、受付の件数、Issue が開いた・閉じたときの演出がこの部門を使う。閉じた Issue（クリアの演出・done）は、結び付いた開いている PR に加えてマージ済みの PR（snapshot の `prs` にある、直近 7 日にマージしたもの）の接頭辞も数える（巻物のあった机でクリアを出すため。PR のマージで閉じるのがふつうなので。司令塔の判断、2026-10-17）。マージせずに閉じた PR は数えない。ラベル「社長」の Issue は王様のクエストとして `issues` から外れている（4.1）ので対象にならない。純粋関数は `domain/party.ts` の `branchDepartmentsOfIssues` と `domain/quest.ts` の `issueDepartment`
   - 2 個以上 → 固定の順（設定ファイルの `departments` の並び順。既定は経理 → 広報 → 企画 → 総務）で最初のものを担当にし、巻物に「複数部門」の印を付ける
 - **PR の担当**: 次の順で決める
   1. `linkedIssues` のうち snapshot にある Issue の部門ラベル（複数あれば上と同じ固定の順）
