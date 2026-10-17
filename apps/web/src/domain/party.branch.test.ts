@@ -79,10 +79,13 @@ describe('issueDepartment', () => {
     expect(issueDepartment(issue(1, { labels: ['bug'] }), fromBranches)).toBe('広報');
   });
 
-  it('keeps the reception without a linked PR or for a closed Issue', () => {
+  it('keeps the reception without a linked open PR', () => {
     expect(issueDepartment(issue(2), fromBranches)).toBeNull();
     expect(issueDepartment(issue(1))).toBeNull();
-    expect(issueDepartment(closedIssue(1, T0), fromBranches)).toBeNull();
+  });
+
+  it('keeps the department of a closed Issue while its PR is still open', () => {
+    expect(issueDepartment(closedIssue(1, T0), fromBranches)).toBe('広報');
   });
 });
 
@@ -122,5 +125,25 @@ describe('diffSnapshot with branch prefixes', () => {
     });
     const opened = diffSnapshot(base, next).events.find((e) => e.id === 'issue-opened#1');
     expect(opened?.department).toBe('企画');
+  });
+
+  it('clears an unlabelled Issue at the desk while its PR is still open (review)', () => {
+    const prs = [pr(2, { headRef: 'planning/x', linkedIssues: [1] })];
+    const base = toBaseline(snapshot({ fetchedAt: T0, issues: [issue(1)], prs }));
+    const T1 = minutesAfter(T0, 1);
+    const next = snapshot({ fetchedAt: T1, issues: [closedIssue(1, T1)], prs });
+    const closed = diffSnapshot(base, next).events.find((e) => e.id === 'issue-closed#1');
+    expect(closed?.department).toBe('企画');
+  });
+
+  it('clears at the reception once the PR that closed the Issue is merged', () => {
+    const base = toBaseline(
+      snapshot({ fetchedAt: T0, issues: [issue(1)], prs: [pr(2, { headRef: 'planning/x' })] }),
+    );
+    const T1 = minutesAfter(T0, 1);
+    const merged = mergedPr(2, T1, { headRef: 'planning/x', linkedIssues: [1] });
+    const next = snapshot({ fetchedAt: T1, issues: [closedIssue(1, T1)], prs: [merged] });
+    const closed = diffSnapshot(base, next).events.find((e) => e.id === 'issue-closed#1');
+    expect(closed?.department).toBeNull();
   });
 });

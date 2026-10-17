@@ -35,16 +35,15 @@ export type BranchDepartments = ReadonlyMap<number, DepartmentLabel>;
 const NO_BRANCH_DEPARTMENTS: BranchDepartments = new Map();
 
 /**
- * The department of an Issue: its department labels first; an open Issue without one falls back to
- * the branch prefixes of its linked open PRs (Issue #164); otherwise null (かなめの受付).
+ * The department of an Issue: its department labels first; without one, the branch prefixes of its
+ * linked open PRs (Issue #164), also for an Issue just closed while its PR is still open, so the
+ * clear lands where the scroll was; otherwise null (かなめの受付).
  */
 export function issueDepartment(
   issue: SnapshotIssue,
   fromBranches: BranchDepartments = NO_BRANCH_DEPARTMENTS,
 ): DepartmentLabel | null {
-  const fromLabels = pickDepartment(issue.labels).department;
-  if (fromLabels !== null || issue.state !== 'open') return fromLabels;
-  return fromBranches.get(issue.number) ?? null;
+  return pickDepartment(issue.labels).department ?? fromBranches.get(issue.number) ?? null;
 }
 
 export function toQuest(
