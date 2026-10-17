@@ -1,22 +1,46 @@
 <script setup lang="ts">
 import type { BoardGroup, GuestBoardGroup } from '../app/guildView';
+import type { BoardFilter } from '../app/useBoardFilter';
 import { maskTitle } from '../domain/mask';
 
-defineProps<{
-  groups: readonly BoardGroup[];
-  /** The お客さん section (Issue #108); empty without guests, and then not shown. */
-  guests: readonly GuestBoardGroup[];
-  /** False until the first snapshot arrives. */
-  loaded: boolean;
-  /** The show mode (Issue #144): titles are masked, numbers and names are not. */
-  masked?: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    groups: readonly BoardGroup[];
+    /** The お客さん section (Issue #108); empty without guests, and then not shown. */
+    guests: readonly GuestBoardGroup[];
+    /** False until the first snapshot arrives. */
+    loaded: boolean;
+    /** The show mode (Issue #144): titles are masked, numbers and names are not. */
+    masked?: boolean;
+    /** The filter (Issue #174): near quests only (the default) or all. */
+    show?: BoardFilter;
+    /** Quests the near filter left out (「ほか N 件」). */
+    hidden?: number;
+  }>(),
+  { masked: false, show: 'near', hidden: 0 },
+);
+
+const emit = defineEmits<{ 'toggle-show': [] }>();
 </script>
 
 <template>
   <section class="rpg-window board" aria-label="クエスト掲示板">
     <h2 class="rpg-window__title board__title">クエスト掲示板</h2>
+    <p class="board__filter">
+      <button
+        type="button"
+        class="rpg-button"
+        :aria-pressed="show === 'all'"
+        title="ちかいもの: 締め切り（題名の 〆M/D）が 7 日以内か過ぎたもの、締め切りのないものだけを出します。押すと切り替えます（この端末にだけ保存します）"
+        @click="emit('toggle-show')"
+      >
+        {{ show === 'near' ? 'ちかいもの' : 'すべて' }}
+      </button>
+    </p>
     <p v-if="!loaded" class="board__empty">よみこみちゅう…</p>
+    <p v-else-if="groups.length === 0 && hidden > 0" class="board__empty">
+      ちかい クエストは ありません
+    </p>
     <p v-else-if="groups.length === 0" class="board__empty">
       {{
         guests.length > 0 ? '会社の クエストは いまは ありません' : 'いまは クエストが ありません'
@@ -40,6 +64,7 @@ defineProps<{
           </li>
         </ul>
       </div>
+      <p v-if="hidden > 0" class="board__more">ほか {{ hidden }} 件（締め切りが 先）</p>
     </div>
     <section v-if="guests.length > 0" class="board__guests" aria-label="お客さん">
       <h3 class="board__section">お客さん</h3>
@@ -72,6 +97,12 @@ defineProps<{
   border: 0.12em solid #e8c66a;
   border-radius: 0.3em;
   padding: 0.15em 0;
+}
+
+.board__filter {
+  margin: 0.2em 0.3em 0;
+  text-align: right;
+  font-size: 0.75em;
 }
 
 .board__empty {

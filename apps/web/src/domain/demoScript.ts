@@ -106,7 +106,8 @@ export const DEMO_RECEPTION_TITLES: readonly DemoQuestTitles[] = [
 /**
  * Fictional quests per department, in the order of guild.settings.json (経理, 広報, 企画, 総務,
  * then two more for the larger offices). Plain everyday work: no client, product or real project
- * names.
+ * names. Two have a deadline (Issue #174) half a year apart, so that through the year the near
+ * filter of the board leaves one of them out in the first two loops.
  */
 export const DEMO_TITLES: readonly (readonly DemoQuestTitles[])[] = [
   [
@@ -120,12 +121,12 @@ export const DEMO_TITLES: readonly (readonly DemoQuestTitles[])[] = [
     { issue: '新しいチラシを作る', pr: 'チラシの原稿' },
   ],
   [
-    { issue: '新サービスの市場を調べる', pr: '市場調査のまとめ' },
+    { issue: '〆3/31 新サービスの市場を調べる', pr: '市場調査のまとめ' },
     { issue: '冬のイベント案を練る', pr: 'イベント案のまとめ' },
     { issue: '勉強会の企画書を書く', pr: '企画書の下書き' },
   ],
   [
-    { issue: '備品の棚卸しをする', pr: '棚卸しの結果' },
+    { issue: '〆9/30 備品の棚卸しをする', pr: '棚卸しの結果' },
     { issue: '会議室の予約表を作る', pr: '予約表のひな形' },
     { issue: '防災用品を点検する', pr: '点検の記録' },
   ],

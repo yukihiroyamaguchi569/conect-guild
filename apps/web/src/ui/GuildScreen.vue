@@ -5,6 +5,7 @@ import type { SnapshotLoadResult } from '../adapters/snapshot';
 import type { DemoSession } from '../app/demo';
 import { liveGuildOptions } from '../app/screenMode';
 import { useGuild } from '../app/useGuild';
+import { filterBoard, useBoardFilter } from '../app/useBoardFilter';
 import { useMask } from '../app/useMask';
 import { useMissingLabels } from '../app/useMissingLabels';
 import { useNarration } from '../app/useNarration';
@@ -79,6 +80,15 @@ const {
 } = useSound({ message, party, halted: () => state.halted }, demo?.storage);
 /** The show mode (Issue #144): live screen only, the demo's titles are fictional. */
 const { masked, toggleMask } = useMask(demo === null);
+/** The board's near-or-all filter (Issue #174), judged at the snapshot's fetch. */
+const { show, toggleShow } = useBoardFilter(demo?.storage);
+const shownBoard = computed(() =>
+  filterBoard(
+    board.value,
+    show.value,
+    state.snapshot === null ? 0 : Date.parse(state.snapshot.fetchedAt),
+  ),
+);
 const { narration, next, idleSeeds, setIdleSince } = useNarration({
   message,
   party,
@@ -158,10 +168,13 @@ function onStageShown(shown: boolean): void {
         <QuestBoard
           class="stage__board"
           :style="{ '--board-max-height': `${SELECTED_LAYOUT.boardMaxCqw ?? BOARD_MAX_CQW}cqw` }"
-          :groups="board"
+          :groups="shownBoard.groups"
           :guests="guestBoard"
           :loaded="state.snapshot !== null"
           :masked="masked"
+          :show="show"
+          :hidden="shownBoard.hidden"
+          @toggle-show="toggleShow"
         />
         <KingBubble class="stage__king" :waiting="king.waiting" :detail="king.detail" />
         <MessageWindow

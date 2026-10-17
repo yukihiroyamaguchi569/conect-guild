@@ -133,3 +133,47 @@ describe('QuestBoard: the show mode (Issue #144)', () => {
     expect(html).not.toContain('＊');
   });
 });
+
+describe('QuestBoard: the near filter (Issue #174)', () => {
+  const groups = [
+    {
+      key: 'king',
+      label: 'おうさまの クエスト',
+      color: '#8e44ad',
+      quests: [{ number: 7, title: '〆10/20 架空の勅命' }],
+    },
+  ] as const;
+
+  function renderBoard(props: Record<string, unknown>): Promise<string> {
+    return renderToString(
+      createSSRApp(QuestBoard, { groups: [], guests: [], loaded: true, ...props }),
+    );
+  }
+
+  it('shows the switch as ちかいもの and how many quests it left out', async () => {
+    const html = await renderBoard({ groups, show: 'near', hidden: 2 });
+    expect(html).toMatch(/>ちかいもの<\/button>/);
+    expect(html).toContain('aria-pressed="false"');
+    expect(html).toContain('ほか 2 件（締め切りが 先）');
+    expect(html).toContain('〆10/20 架空の勅命');
+  });
+
+  it('starts as ちかいもの without the props and says nothing of hidden quests', async () => {
+    const html = await renderBoard({ groups });
+    expect(html).toMatch(/>ちかいもの<\/button>/);
+    expect(html).not.toContain('ほか');
+  });
+
+  it('shows すべて when showing all', async () => {
+    const html = await renderBoard({ groups, show: 'all' });
+    expect(html).toMatch(/>すべて<\/button>/);
+    expect(html).toContain('aria-pressed="true"');
+  });
+
+  it('says no near quest instead of none when every quest was left out', async () => {
+    const html = await renderBoard({ show: 'near', hidden: 1 });
+    expect(html).toContain('ちかい クエストは ありません');
+    expect(html).toContain('ほか 1 件');
+    expect(html).not.toContain('いまは クエストが ありません');
+  });
+});
