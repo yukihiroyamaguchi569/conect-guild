@@ -83,15 +83,22 @@ function kingSeatScene(quests: number): LineScene {
 }
 
 /**
+ * The king with something to approve (his 「承認まち」 bubble in the page): he is not restful then,
+ * the only state the king has besides it. He says nothing then, and stops a murmur he is saying.
+ */
+function kingAwaiting(id: MemberId, idleSince: IdleSince): boolean {
+  return id === 'yukihiro' && idleSince[id] === undefined;
+}
+
+/**
  * What `member` would murmur now, or null when they say nothing: in a scene, with a waiting bubble,
- * on the way to or from a play spot, or the king with something to approve (his 「承認まち」 bubble
- * in the page: he is not restful then, the only state the king has besides it).
+ * on the way to or from a play spot, or the king with something to approve (kingAwaiting).
  */
 export function murmurSceneOf(member: MurmurMember, party: MurmurParty): LineScene | null {
   const { id } = member;
   if (member.inScene || party.bubbles[id] !== undefined) return null;
+  if (kingAwaiting(id, party.idleSince)) return null;
   const restful = party.idleSince[id] !== undefined;
-  if (id === 'yukihiro' && !restful) return null;
   const activity = party.activities[id];
   if (activity !== undefined) return outingScene(activity, party);
   if (!member.atSeat) return null;
@@ -170,6 +177,8 @@ export interface MurmurMoment {
   readonly busy: boolean;
   /** Who may murmur now; asked only when one is due. */
   readonly candidates: () => readonly MurmurCandidate[];
+  /** Whether `actor` must stop the murmur they are saying now (the king awaiting approval). */
+  readonly hushed: (actor: MemberId) => boolean;
   readonly random: Random;
   /** Without one nothing is said. */
   readonly pick: PickLine | undefined;
@@ -185,12 +194,19 @@ function utter(
   return line === null ? null : { actor: candidate.id, line, start: t, end: t + LINES.murmurMs };
 }
 
+/** The murmur `said` while it lasts and its speaker is not hushed (Issue #165), else null. */
+function stillSaid(said: Utterance | null, moment: MurmurMoment): Utterance | null {
+  if (said === null || said.end <= moment.t) return null;
+  return moment.hushed(said.actor) ? null : said;
+}
+
 /**
  * The murmurs at `moment.t`, called on every frame. The first frame plans the first one; a busy
  * frame drops the one showing, and the first quiet frame after it puts the next off to at least
  * `murmurRestMs` from then (however long the frames were apart); once one is due someone says a
  * line, and the next is planned from its end. When nobody may, or has nothing left to say, nothing
- * is said and the next is planned from now.
+ * is said and the next is planned from now. A frame where the speaker is hushed (the king awaiting
+ * approval, Issue #165) drops the murmur too; the next stays planned from its end.
  */
 export function stepMurmurs(murmurs: Murmurs, moment: MurmurMoment): Murmurs {
   const { t, random } = moment;
@@ -198,7 +214,7 @@ export function stepMurmurs(murmurs: Murmurs, moment: MurmurMoment): Murmurs {
   const planned = murmurs.next ?? t + murmurGap(random);
   if (moment.busy) return { ...murmurs, said: null, next: planned, busy: true };
   const next = murmurs.busy ? Math.max(planned, t + LINES.murmurRestMs) : planned;
-  const said = murmurs.said !== null && murmurs.said.end > t ? murmurs.said : null;
+  const said = stillSaid(murmurs.said, moment);
   if (said !== null || t < next) return { ...murmurs, said, next, busy: false };
   return murmurNow(murmurs.last, moment);
 }
@@ -237,7 +253,8 @@ export function murmurMoment(
 ): MurmurMoment {
   const { t, hour, party, members, busy } = frame;
   const candidates = () => murmurCandidates(members, { ...party, ...idle(), hour });
-  return { t, off: party.halted || !party.known, busy, candidates, ...talk };
+  const hushed = (actor: MemberId) => kingAwaiting(actor, party.idleSince);
+  return { t, off: party.halted || !party.known, busy, candidates, hushed, ...talk };
 }
 
 /**
