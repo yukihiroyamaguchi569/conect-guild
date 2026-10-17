@@ -29,6 +29,8 @@ export interface NarrationMember {
   readonly id: MemberId;
   readonly name: string;
   readonly state: MemberState;
+  /** The king's open quests (Issue #141); 0 for the others (app/guildView.ts PartyRow). */
+  readonly quests: number;
 }
 
 /** Lines of one member: the A pool is drawn member first, so each member is as likely. */
@@ -146,8 +148,12 @@ function kanameLines(member: NarrationMember): LineGroup {
 }
 
 function kingLines(member: NarrationMember): LineGroup {
-  return member.state === 'awaiting-president'
-    ? [`${KING_TITLE}は しょうにんを まつ PRに めを とおしている。`]
+  if (member.state === 'awaiting-president') {
+    return [`${KING_TITLE}は しょうにんを まつ PRに めを とおしている。`];
+  }
+  // His own quests (Issue #166), as a department member's working line; never the title.
+  return member.quests > 0
+    ? [`${KING_TITLE}は ぎょくざで クエストに とりくんでいる。`]
     : [`${KING_TITLE}は ぎょくざから へやを みわたしている。`];
 }
 
