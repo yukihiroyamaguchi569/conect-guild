@@ -29,18 +29,47 @@ export function pickDepartment(labels: readonly string[]): DepartmentPick {
   return { department: found[0] ?? null, multiDepartment: found.length >= 2 };
 }
 
-export function toQuest(issue: SnapshotIssue): Quest {
-  const { department, multiDepartment } = pickDepartment(issue.labels);
+/**
+ * Issue number → department from linked PRs' branch prefixes (party.ts, Issue #164): `open` counts
+ * open PRs only and places open Issues; `closed` also counts merged PRs, for closed Issues.
+ */
+export interface BranchDepartments {
+  readonly open: ReadonlyMap<number, DepartmentLabel>;
+  readonly closed: ReadonlyMap<number, DepartmentLabel>;
+}
+
+const NO_BRANCH_DEPARTMENTS: BranchDepartments = { open: new Map(), closed: new Map() };
+
+/**
+ * The department of an Issue: its department labels first; without one, the branch prefixes of its
+ * linked open PRs (Issue #164). A closed Issue also counts merged PRs, so the clear lands where the
+ * scroll was even when the merge closed it. Otherwise null (かなめの受付).
+ */
+export function issueDepartment(
+  issue: SnapshotIssue,
+  fromBranches: BranchDepartments = NO_BRANCH_DEPARTMENTS,
+): DepartmentLabel | null {
+  const byPrs = issue.state === 'open' ? fromBranches.open : fromBranches.closed;
+  return pickDepartment(issue.labels).department ?? byPrs.get(issue.number) ?? null;
+}
+
+export function toQuest(
+  issue: SnapshotIssue,
+  fromBranches: BranchDepartments = NO_BRANCH_DEPARTMENTS,
+): Quest {
   return {
     number: issue.number,
     title: issue.title,
     state: issue.state,
     closedAt: issue.closedAt,
-    department,
-    multiDepartment,
+    department: issueDepartment(issue, fromBranches),
+    multiDepartment: pickDepartment(issue.labels).multiDepartment,
   };
 }
 
-export function toQuests(issues: readonly SnapshotIssue[]): Quest[] {
-  return issues.map(toQuest);
+export function toQuests(
+  issues: readonly SnapshotIssue[],
+  fromBranches: BranchDepartments = NO_BRANCH_DEPARTMENTS,
+): Quest[] {
+  return issues.map((issue) => toQuest(issue, fromBranches));
 }
