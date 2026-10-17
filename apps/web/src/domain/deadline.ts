@@ -1,6 +1,7 @@
 /**
- * Deadlines written in an Issue's title as 「〆M/D」 (Issue #174), e.g. 「〆10/24 資料を作る」. Pure:
- * the time to judge from (the snapshot's fetch) is passed in. Dates are local calendar days.
+ * Dates written in an Issue's title: the deadline 「〆M/D」 (Issue #174), e.g. 「〆10/24 資料を作る」,
+ * and the day to do it 「@M/D」 (Issue #176), e.g. 「@10/24 資料を作る」. Pure: the time to judge
+ * from (the snapshot's fetch) is passed in. Dates are local calendar days.
  */
 
 /** How many days ahead a deadline still counts as near; past deadlines are always near. */
@@ -16,6 +17,12 @@ const YEARS_AROUND = 4;
  * digit right after the day (〆10/245) is not a date.
  */
 const DEADLINE = /〆\s*([0-9０-９]{1,2})[/／]([0-9０-９]{1,2})(?![0-9０-９])/u;
+
+/**
+ * The first @M/D of a title, read as 〆M/D is; ＠ too. An @ not followed by M/D (an e-mail
+ * address, @username) is no mark, and a later @M/D is still read.
+ */
+const DO_DAY = /[@＠]\s*([0-9０-９]{1,2})[/／]([0-9０-９]{1,2})(?![0-9０-９])/u;
 
 /** Full-width digits to ASCII ones. */
 function toAsciiDigits(text: string): string {
@@ -50,7 +57,19 @@ function localDayOf(nowMs: number): { readonly year: number; readonly day: numbe
  * to the later, the coming one.
  */
 export function daysToDeadline(title: string, nowMs: number): number | null {
-  const match = DEADLINE.exec(title);
+  return daysToMark(DEADLINE, title, nowMs);
+}
+
+/**
+ * Days from the day of `nowMs` to the title's day to do it (@M/D; negative: past); null when it
+ * has none. The year is chosen as daysToDeadline's.
+ */
+export function daysToDoDay(title: string, nowMs: number): number | null {
+  return daysToMark(DO_DAY, title, nowMs);
+}
+
+function daysToMark(mark: RegExp, title: string, nowMs: number): number | null {
+  const match = mark.exec(title);
   if (match === null) return null;
   const month = Number(toAsciiDigits(match[1] ?? ''));
   const day = Number(toAsciiDigits(match[2] ?? ''));
@@ -68,9 +87,12 @@ export function daysToDeadline(title: string, nowMs: number): number | null {
 
 /**
  * Whether the board shows the quest while it lists the near ones only: a deadline within
- * NEAR_DEADLINE_DAYS days (today and past ones included) or no deadline at all.
+ * NEAR_DEADLINE_DAYS days (today and past ones included), a day to do it that has come (until the
+ * Issue is closed), or neither mark. With both marks, either one is enough.
  */
-export function isNearOrNoDeadline(title: string, nowMs: number): boolean {
-  const days = daysToDeadline(title, nowMs);
-  return days === null || days <= NEAR_DEADLINE_DAYS;
+export function isNearQuest(title: string, nowMs: number): boolean {
+  const deadline = daysToDeadline(title, nowMs);
+  const doDay = daysToDoDay(title, nowMs);
+  if (deadline === null && doDay === null) return true;
+  return (deadline !== null && deadline <= NEAR_DEADLINE_DAYS) || (doDay !== null && doDay <= 0);
 }

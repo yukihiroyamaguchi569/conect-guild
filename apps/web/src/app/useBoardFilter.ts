@@ -1,7 +1,7 @@
 import { shallowRef, type Ref } from 'vue';
 import { z } from 'zod';
 import { createKeyValueStore, type KeyValueStore } from '../adapters/storage';
-import { isNearOrNoDeadline } from '../domain/deadline';
+import { isNearQuest } from '../domain/deadline';
 import type { BoardGroup } from './guildView';
 
 /** localStorage key of the board's filter (Issue #174): near quests only or all, nothing else. */
@@ -26,14 +26,14 @@ export function saveBoardFilter(storage: KeyValueStore, show: BoardFilter): bool
 
 export interface FilteredBoard {
   readonly groups: readonly BoardGroup[];
-  /** Quests left out for a deadline further than a week (「ほか N 件」); 0 when showing all. */
+  /** Quests left out for a date ahead (deadline or day to do it; 「ほか N 件」); 0 when showing all. */
   readonly hidden: number;
 }
 
 /**
  * The board's groups as `show` lists them, judged at `nowMs` (the snapshot's fetch). Near: each
- * group (the king's too) keeps the quests due within a week, past due or without a deadline, and
- * a group left empty goes. Pure.
+ * group (the king's too) keeps the quests domain/deadline.ts isNearQuest keeps (due within a week
+ * or past due, their day to do it come, or no mark), and a group left empty goes. Pure.
  */
 export function filterBoard(
   groups: readonly BoardGroup[],
@@ -44,7 +44,7 @@ export function filterBoard(
   let hidden = 0;
   const kept: BoardGroup[] = [];
   for (const group of groups) {
-    const quests = group.quests.filter((quest) => isNearOrNoDeadline(quest.title, nowMs));
+    const quests = group.quests.filter((quest) => isNearQuest(quest.title, nowMs));
     hidden += group.quests.length - quests.length;
     if (quests.length > 0) kept.push({ ...group, quests });
   }

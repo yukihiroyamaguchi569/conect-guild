@@ -31,7 +31,7 @@ const emit = defineEmits<{ 'toggle-show': [] }>();
         type="button"
         class="rpg-button"
         :aria-pressed="show === 'all'"
-        title="ちかいもの: 締め切り（題名の 〆M/D）が 7 日以内か過ぎたもの、締め切りのないものだけを出します。押すと切り替えます（この端末にだけ保存します）"
+        title="ちかいもの: 締め切り（題名の 〆M/D）が 7 日以内か過ぎたもの、やる日（@M/D）が来たもの、どちらの印もないものだけを出します。押すと切り替えます（この端末にだけ保存します）"
         @click="emit('toggle-show')"
       >
         {{ show === 'near' ? 'ちかいもの' : 'すべて' }}
@@ -64,7 +64,7 @@ const emit = defineEmits<{ 'toggle-show': [] }>();
           </li>
         </ul>
       </div>
-      <p v-if="hidden > 0" class="board__more">ほか {{ hidden }} 件（締め切りが 先）</p>
+      <p v-if="hidden > 0" class="board__more">ほか {{ hidden }} 件（日付が 先）</p>
     </div>
     <section v-if="guests.length > 0" class="board__guests" aria-label="お客さん">
       <h3 class="board__section">お客さん</h3>

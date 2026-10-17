@@ -57,6 +57,13 @@ describe('filterBoard (Issue #174)', () => {
     expect(hidden).toBe(3);
   });
 
+  it('hides a quest until its day to do it (Issue #176)', () => {
+    const reception = group('reception', ['@10/20 下見', '@10/1 片付け', '@10/20 〆10/22 発送']);
+    const { groups, hidden } = filterBoard([reception], 'near', OCT_17);
+    expect(groups[0]?.quests.map((q) => q.title)).toEqual(['@10/1 片付け', '@10/20 〆10/22 発送']);
+    expect(hidden).toBe(1);
+  });
+
   it('drops a group left empty and keeps its label, colour and the quests’ other fields', () => {
     const { groups } = filterBoard([accounting], 'near', OCT_17);
     expect(groups[0]).toMatchObject({ key: 'department:経理', label: 'department:経理' });

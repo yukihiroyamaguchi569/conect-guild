@@ -154,7 +154,7 @@ describe('QuestBoard: the near filter (Issue #174)', () => {
     const html = await renderBoard({ groups, show: 'near', hidden: 2 });
     expect(html).toMatch(/>ちかいもの<\/button>/);
     expect(html).toContain('aria-pressed="false"');
-    expect(html).toContain('ほか 2 件（締め切りが 先）');
+    expect(html).toContain('ほか 2 件（日付が 先）');
     expect(html).toContain('〆10/20 架空の勅命');
   });
 
