@@ -65,7 +65,8 @@ export function toSnapshotIssues(raw: readonly RawIssue[], cutoff: Date): Snapsh
 /**
  * Issue #141: the Issues with the president's label are the king's, even with a department label
  * too. They all leave `issues` (no department desk, no reception, no clear there when one closes);
- * the open ones go to `president.issues`, the most recently updated first. The history is counted
+ * the open ones go to `president.issues`, the most recently updated first, and the closed ones to
+ * `president.closed` (number and time only, Issue #172). The history is counted
  * from the raw lists apart (toHistory), so it stays as it was. Without the label, nothing moves.
  */
 export function splitPresidentIssues(
@@ -78,7 +79,15 @@ export function splitPresidentIssues(
     .filter((issue) => issue.state === 'open' && isKing(issue))
     .toSorted((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
     .map(({ number, title, updatedAt }) => ({ number, title, updatedAt }));
-  return { issues: issues.filter((issue) => !isKing(issue)), president: { issues: king } };
+  // Issue #172: the closed ones (since the cutoff of `issues`) count in the week's clears.
+  const closed = issues
+    .filter((issue) => issue.state === 'closed' && isKing(issue))
+    .flatMap(({ number, closedAt }) => (closedAt === null ? [] : [{ number, closedAt }]))
+    .toSorted(byNumber);
+  return {
+    issues: issues.filter((issue) => !isKing(issue)),
+    president: { issues: king, closed },
+  };
 }
 
 /** All open PRs and those closed or merged since `cutoff`. */

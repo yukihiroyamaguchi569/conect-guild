@@ -33,8 +33,28 @@ describe('snapshotSchema: president', () => {
     expect(parsed.data?.president?.issues.map((issue) => issue.number)).toEqual([7, 8]);
   });
 
+  it('accepts the king’s closed Issues (Issue #172), and none of them (an older collector)', () => {
+    const closed = [{ number: 9, closedAt: T }];
+    expect(withPresident({ issues: [], closed: [] }).success).toBe(true);
+    expect(withPresident({ issues: [ISSUE], closed }).data?.president?.closed).toEqual(closed);
+    expect(withPresident({ issues: [ISSUE] }).data?.president?.closed).toBeUndefined();
+  });
+
   it.each([
     ['a repeated number', { issues: [ISSUE, ISSUE] }],
+    [
+      'a repeated closed number',
+      {
+        issues: [],
+        closed: [
+          { number: 9, closedAt: T },
+          { number: 9, closedAt: T },
+        ],
+      },
+    ],
+    ['a title on a closed one', { issues: [], closed: [{ number: 9, closedAt: T, title: 't' }] }],
+    ['a closed one without closedAt', { issues: [], closed: [{ number: 9 }] }],
+    ['a closed one with closedAt null', { issues: [], closed: [{ number: 9, closedAt: null }] }],
     ['labels', { issues: [{ ...ISSUE, labels: ['社長'] }] }],
     ['a body', { issues: [{ ...ISSUE, body: 'secret' }] }],
     ['a missing updatedAt', { issues: [{ number: 7, title: 't' }] }],

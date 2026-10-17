@@ -14,7 +14,7 @@ export interface NarrationSources {
   /** The head of the message queue: while there is one, it is shown instead of the narration. */
   readonly message: Readonly<Ref<GuildMessage | null>>;
   readonly party: Readonly<Ref<readonly PartyRow[]>>;
-  readonly snapshot: () => Pick<Snapshot, 'issues' | 'prs'> | null;
+  readonly snapshot: () => Pick<Snapshot, 'issues' | 'prs' | 'president'> | null;
   /** The ▼ button while an event message is shown. */
   readonly nextMessage: () => void;
   /** The screen is halted: the window is not shown, so the narration waits (reactive). */

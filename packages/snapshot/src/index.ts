@@ -122,12 +122,20 @@ export const presidentIssueSchema = z.strictObject({
   updatedAt: isoDateTime,
 });
 
+/** Issue #172: a closed Issue with the president's label, for the week's clears. No title. */
+export const presidentClosedIssueSchema = z.strictObject({
+  number: issueNumber,
+  closedAt: isoDateTime,
+});
+
 /**
  * Issue #141: the king's quests, only when the settings have `president`. The Issues with the
  * label (open or closed) are left out of `issues`, so no department or reception gets them.
  */
 export const snapshotPresidentSchema = z.strictObject({
   issues: z.array(presidentIssueSchema).refine(hasUniqueNumbers, 'unique numbers'),
+  // Issue #172: those closed within the last 7 days. Optional: an older collector's still reads.
+  closed: z.array(presidentClosedIssueSchema).refine(hasUniqueNumbers, 'unique numbers').optional(),
 });
 
 /** The GitHub part, written at most once a minute. `fetchedAt` is the time of that fetch. */
