@@ -29,18 +29,41 @@ export function pickDepartment(labels: readonly string[]): DepartmentPick {
   return { department: found[0] ?? null, multiDepartment: found.length >= 2 };
 }
 
-export function toQuest(issue: SnapshotIssue): Quest {
-  const { department, multiDepartment } = pickDepartment(issue.labels);
+/** Issue number → department from linked open PRs' branch prefixes (party.ts, Issue #164). */
+export type BranchDepartments = ReadonlyMap<number, DepartmentLabel>;
+
+const NO_BRANCH_DEPARTMENTS: BranchDepartments = new Map();
+
+/**
+ * The department of an Issue: its department labels first; an open Issue without one falls back to
+ * the branch prefixes of its linked open PRs (Issue #164); otherwise null (かなめの受付).
+ */
+export function issueDepartment(
+  issue: SnapshotIssue,
+  fromBranches: BranchDepartments = NO_BRANCH_DEPARTMENTS,
+): DepartmentLabel | null {
+  const fromLabels = pickDepartment(issue.labels).department;
+  if (fromLabels !== null || issue.state !== 'open') return fromLabels;
+  return fromBranches.get(issue.number) ?? null;
+}
+
+export function toQuest(
+  issue: SnapshotIssue,
+  fromBranches: BranchDepartments = NO_BRANCH_DEPARTMENTS,
+): Quest {
   return {
     number: issue.number,
     title: issue.title,
     state: issue.state,
     closedAt: issue.closedAt,
-    department,
-    multiDepartment,
+    department: issueDepartment(issue, fromBranches),
+    multiDepartment: pickDepartment(issue.labels).multiDepartment,
   };
 }
 
-export function toQuests(issues: readonly SnapshotIssue[]): Quest[] {
-  return issues.map(toQuest);
+export function toQuests(
+  issues: readonly SnapshotIssue[],
+  fromBranches: BranchDepartments = NO_BRANCH_DEPARTMENTS,
+): Quest[] {
+  return issues.map((issue) => toQuest(issue, fromBranches));
 }

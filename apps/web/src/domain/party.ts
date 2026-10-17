@@ -11,7 +11,7 @@ import {
   type MemberId,
   type RuleChangePath,
 } from '../guild.config';
-import { departmentLabelsOf, pickDepartment } from './quest';
+import { issueDepartment, pickDepartment, type BranchDepartments } from './quest';
 import { NO_LIVE_STATES, type LiveState, type LiveStates } from './session';
 
 export type PrAssignment =
@@ -51,6 +51,27 @@ export function indexIssues(issues: readonly SnapshotIssue[]): IssueIndex {
 /** Department from the branch name prefix table, or null when no rule matches. */
 export function departmentFromBranch(headRef: string): DepartmentLabel | null {
   return departmentFromBranchIn(headRef, BRANCH_PREFIX_RULES);
+}
+
+/**
+ * For each Issue linked from an open PR, the department its open PRs' branch prefixes agree on
+ * (Issue #164). PRs whose prefix matches no department are ignored; Issues whose PRs point at two
+ * or more departments are left out. Closed PRs do not count. Labels are not looked at here: the
+ * Issue's own department labels win (quest.ts issueDepartment).
+ */
+export function branchDepartmentsOfIssues(prs: readonly SnapshotPr[]): BranchDepartments {
+  const found = new Map<number, Set<DepartmentLabel>>();
+  for (const pr of prs) {
+    const department = pr.state === 'open' ? departmentFromBranch(pr.headRef) : null;
+    if (department === null) continue;
+    for (const n of pr.linkedIssues) found.set(n, (found.get(n) ?? new Set()).add(department));
+  }
+  const agreed = new Map<number, DepartmentLabel>();
+  for (const [n, departments] of found) {
+    const [only] = departments;
+    if (departments.size === 1 && only !== undefined) agreed.set(n, only);
+  }
+  return agreed;
 }
 
 /** linked Issues' department labels (fixed order) → branch prefix → unknown (かなめの受付). */
@@ -165,10 +186,11 @@ function idleReason(load: Workload, unassigned: Unassigned): string {
 function countUnassigned(
   snapshot: Pick<Snapshot, 'issues' | 'prs'>,
   issues: IssueIndex,
+  fromBranches: BranchDepartments,
 ): Unassigned {
   return {
     issues: snapshot.issues.filter(
-      (i) => i.state === 'open' && departmentLabelsOf(i.labels).length === 0,
+      (i) => i.state === 'open' && issueDepartment(i, fromBranches) === null,
     ).length,
     prs: snapshot.prs.filter((p) => p.state === 'open' && assignPr(p, issues).department === null)
       .length,
@@ -191,15 +213,16 @@ export function deriveMemberStatuses(
   const loads = new Map<DepartmentLabel, Workload>(
     DEPARTMENT_LABELS.map((department) => [department, emptyWorkload()]),
   );
+  const fromBranches = branchDepartmentsOfIssues(snapshot.prs);
   for (const issue of snapshot.issues) {
-    const load = loadOf(loads, pickDepartment(issue.labels).department);
+    const load = loadOf(loads, issueDepartment(issue, fromBranches));
     if (load !== undefined) addIssue(load, issue, now, doneWindowMs);
   }
   for (const pr of snapshot.prs) {
     const load = loadOf(loads, assignPr(pr, index).department);
     if (load !== undefined) addPr(load, pr);
   }
-  const unassigned = countUnassigned(snapshot, index);
+  const unassigned = countUnassigned(snapshot, index, fromBranches);
   return DEPARTMENT_LABELS.map((department) => {
     const load = loads.get(department) ?? emptyWorkload();
     const state = stateOf(load, live[departmentMember(department)]);

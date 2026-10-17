@@ -15,6 +15,7 @@ import type { GuestItem, GuestView } from '../domain/guests';
 import { kingQuestsOf, type KingQuest } from '../domain/kingQuests';
 import {
   assignPr,
+  branchDepartmentsOfIssues,
   deriveMemberStatuses,
   indexIssues,
   prWaitKind,
@@ -57,15 +58,21 @@ export const STATE_LABELS: Readonly<Record<MemberState, string>> = {
   idle: '待機中',
 };
 
+/** Open quests; an Issue without department labels may sit at a desk by its PRs (Issue #164). */
+function openQuestsOf(snapshot: SnapshotLists): Quest[] {
+  const fromBranches = branchDepartmentsOfIssues(snapshot.prs);
+  return toQuests(snapshot.issues, fromBranches).filter((quest) => quest.state === 'open');
+}
+
 /**
  * Open quests grouped as the board shows them: the king's first (Issue #141; only with
  * `president` in the settings), then かなめの受付, then each department.
  */
 export function buildBoard(
-  snapshot: Pick<Snapshot, 'issues' | 'president'>,
+  snapshot: Pick<Snapshot, 'issues' | 'prs' | 'president'>,
   kingQuests: boolean = KING_QUESTS_ENABLED,
 ): BoardGroup[] {
-  const open = toQuests(snapshot.issues).filter((quest) => quest.state === 'open');
+  const open = openQuestsOf(snapshot);
   const king: BoardGroup = {
     key: 'king',
     label: 'おうさまの クエスト',
@@ -150,7 +157,7 @@ export interface WaitCounts {
 export function countWaits(snapshot: SnapshotLists): WaitCounts {
   const index = indexIssues(snapshot.issues);
   const waits = snapshot.prs.map(prWaitKind);
-  const openQuests = toQuests(snapshot.issues).filter((quest) => quest.state === 'open');
+  const openQuests = openQuestsOf(snapshot);
   const unassignedPrs = snapshot.prs.filter(
     (pr) => pr.state === 'open' && assignPr(pr, index).department === null,
   );

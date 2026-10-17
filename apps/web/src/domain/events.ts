@@ -3,8 +3,8 @@ import { EVENT_GAP_LIMIT_MS, KING_QUESTS_ENABLED, type DepartmentLabel } from '.
 import { repoFingerprint, toBaseline, type Baseline } from './baseline';
 import { kingQuestChanges } from './kingQuests';
 import { levelUps } from './levelUp';
-import { assignPr, indexIssues, type IssueIndex } from './party';
-import { pickDepartment } from './quest';
+import { assignPr, branchDepartmentsOfIssues, indexIssues, type IssueIndex } from './party';
+import { issueDepartment } from './quest';
 
 export type GuildEventKind =
   | 'issue-opened'
@@ -108,10 +108,11 @@ function collectEvents(baseline: Baseline, snapshot: Snapshot, index: IssueIndex
   const issuesBefore = new Map(baseline.issues.map((i) => [i.number, i]));
   const prsBefore = new Map(baseline.prs.map((p) => [p.number, p]));
   const byId = new Map<string, ItemEvent>();
+  const fromBranches = branchDepartmentsOfIssues(snapshot.prs);
   for (const issue of snapshot.issues) {
     const kind = issueEvent(issue, issuesBefore.get(issue.number), baselineAt);
     if (kind === null) continue;
-    const event = makeEvent(kind, issue.number, pickDepartment(issue.labels).department);
+    const event = makeEvent(kind, issue.number, issueDepartment(issue, fromBranches));
     byId.set(event.id, event);
   }
   for (const pr of snapshot.prs) {
