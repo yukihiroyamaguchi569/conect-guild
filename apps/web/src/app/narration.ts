@@ -198,14 +198,23 @@ export const DAY_LINES: Readonly<Record<DayPhase, LineGroup>> = {
   ],
 };
 
-/** Issues closed within `windowMs` before `now` (the collector keeps 7 days of them). */
-function countRecentClears(issues: Snapshot['issues'], now: number, windowMs: number): number {
-  return issues.filter(
-    (issue) =>
-      issue.state === 'closed' &&
-      issue.closedAt !== null &&
-      now - Date.parse(issue.closedAt) <= windowMs,
-  ).length;
+/**
+ * Issues closed within `windowMs` before `now` (the collector keeps 7 days of them), the king's
+ * among them (Issue #172: `president.closed`, kept apart from `issues`).
+ */
+function countRecentClears(
+  snapshot: Pick<Snapshot, 'issues' | 'president'>,
+  now: number,
+  windowMs: number,
+): number {
+  const isRecent = (at: string | null) => at !== null && now - Date.parse(at) <= windowMs;
+  const closed = [
+    ...snapshot.issues.filter((issue) => issue.state === 'closed'),
+    ...(snapshot.president?.closed ?? []),
+  ];
+  // Each number once, even twice in `issues` or in both lists (no collector writes either).
+  return new Set(closed.filter((issue) => isRecent(issue.closedAt)).map((issue) => issue.number))
+    .size;
 }
 
 /** The members who brought the most chests (ties share the line); none when nobody brought one. */
@@ -225,9 +234,12 @@ function topCollectors(
  * The week's record (C): the quests cleared, the chests brought, and who brought the most. A count
  * of 0 gives no line, so a quiet week says nothing.
  */
-export function recordLines(snapshot: Pick<Snapshot, 'issues' | 'prs'>, now: number): LineGroup[] {
+export function recordLines(
+  snapshot: Pick<Snapshot, 'issues' | 'prs' | 'president'>,
+  now: number,
+): LineGroup[] {
   const windowMs = RECENT_REWARD_WINDOW_MS;
-  const clears = countRecentClears(snapshot.issues, now, windowMs);
+  const clears = countRecentClears(snapshot, now, windowMs);
   const chests = snapshot.prs.filter(
     (pr) => pr.mergedAt !== null && now - Date.parse(pr.mergedAt) <= windowMs,
   ).length;
@@ -267,7 +279,7 @@ export interface NarrationInput {
   readonly activities: Readonly<Partial<Record<MemberId, IdleActivity>>>;
   /** The local time of day, 0 to 24. */
   readonly phase: DayPhase;
-  readonly snapshot: Pick<Snapshot, 'issues' | 'prs'>;
+  readonly snapshot: Pick<Snapshot, 'issues' | 'prs' | 'president'>;
   /** Epoch ms. */
   readonly now: number;
 }

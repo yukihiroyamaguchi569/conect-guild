@@ -306,6 +306,45 @@ describe('recordLines: the week (C)', () => {
   });
 });
 
+describe('recordLines: the king’s clears (Issue #172)', () => {
+  it('counts the king’s quests closed within 7 days too (Issue #172)', () => {
+    const president = {
+      issues: [],
+      closed: [
+        { number: 20, closedAt: daysAgo(1) },
+        { number: 21, closedAt: daysAgo(7.5) },
+      ],
+    };
+    const snapshot = { issues: [closedIssue(1, daysAgo(2))], prs: [], president };
+    expect(recordLines(snapshot, NOW).flat()).toEqual([
+      'この 1 しゅうかんで クエストを 2 こ クリアした！',
+    ]);
+    const kingOnly = { issues: [], prs: [], president };
+    expect(recordLines(kingOnly, NOW).flat()).toEqual([
+      'この 1 しゅうかんで クエストを 1 こ クリアした！',
+    ]);
+  });
+
+  it('counts a number once, in both `issues` and `president.closed` or twice in `issues`', () => {
+    const president = { issues: [], closed: [{ number: 1, closedAt: daysAgo(1) }] };
+    const snapshot = { issues: [closedIssue(1, daysAgo(2))], prs: [], president };
+    expect(recordLines(snapshot, NOW).flat()).toEqual([
+      'この 1 しゅうかんで クエストを 1 こ クリアした！',
+    ]);
+    const twice = { issues: [closedIssue(2, daysAgo(1)), closedIssue(2, daysAgo(1))], prs: [] };
+    expect(recordLines(twice, NOW).flat()).toEqual([
+      'この 1 しゅうかんで クエストを 1 こ クリアした！',
+    ]);
+  });
+
+  it('counts no king’s clear from an older collector (no `closed`) or without president', () => {
+    const issues = [closedIssue(1, daysAgo(2))];
+    const line = 'この 1 しゅうかんで クエストを 1 こ クリアした！';
+    expect(recordLines({ issues, prs: [], president: { issues: [] } }, NOW).flat()).toEqual([line]);
+    expect(recordLines({ issues, prs: [] }, NOW).flat()).toEqual([line]);
+  });
+});
+
 describe('narrationPools', () => {
   const snapshot = {
     issues: [closedIssue(1, minutesAfter(T0, -60), ['経理']), issue(2, { labels: ['広報'] })],

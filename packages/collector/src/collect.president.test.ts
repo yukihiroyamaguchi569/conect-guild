@@ -39,24 +39,50 @@ describe('splitPresidentIssues', () => {
     const split = splitPresidentIssues(issues, KING);
     // The closed one leaves too: no clear at a desk or the reception (the king's scene is #142).
     expect(split.issues.map((i) => i.number)).toEqual([2, 4]);
-    expect(split.president).toEqual({
+    expect(split.president).toStrictEqual({
       issues: [
         { number: 3, title: '架空の題 3', updatedAt: '2026-10-11T03:00:00.000Z' },
         { number: 1, title: '架空の題 1', updatedAt: '2026-10-11T01:00:00.000Z' },
       ],
+      // Issue #172: the closed one goes to `closed`, number and time only (no title).
+      closed: [{ number: 5, closedAt: '2026-10-11T09:00:00.000Z' }],
     });
   });
 
   it('gives an empty list with the label and none on it, and nothing without the label', () => {
     const issues = [issue(1, [KING]), issue(2, ['経理'])];
-    expect(splitPresidentIssues([issue(2, ['経理'])], KING).president).toEqual({ issues: [] });
+    expect(splitPresidentIssues([issue(2, ['経理'])], KING).president).toEqual({
+      issues: [],
+      closed: [],
+    });
     const without = splitPresidentIssues(issues, undefined);
     expect(without.president).toBeUndefined();
     expect(without.issues).toEqual(issues);
   });
 
+  it('lists the closed ones by number, and leaves out those with no closing time', () => {
+    const closed = (number: number, closedAt: string | null) =>
+      issue(number, [KING], { state: 'closed', closedAt });
+    const split = splitPresidentIssues(
+      [
+        closed(9, '2026-10-11T02:00:00.000Z'),
+        closed(6, '2026-10-11T03:00:00.000Z'),
+        closed(8, null),
+      ],
+      KING,
+    );
+    expect(split.president?.closed).toEqual([
+      { number: 6, closedAt: '2026-10-11T03:00:00.000Z' },
+      { number: 9, closedAt: '2026-10-11T02:00:00.000Z' },
+    ]);
+    expect(split.issues).toEqual([]);
+  });
+
   it('compares the label exactly', () => {
-    expect(splitPresidentIssues([issue(1, ['社長 '])], KING).president).toEqual({ issues: [] });
+    expect(splitPresidentIssues([issue(1, ['社長 '])], KING).president).toEqual({
+      issues: [],
+      closed: [],
+    });
   });
 });
 
@@ -92,6 +118,7 @@ describe('collectSnapshot with the president’s label', () => {
     });
     expect(part.issues.map((i) => i.number)).toEqual([2]);
     expect(part.president?.issues.map((i) => i.number)).toEqual([1]);
+    expect(part.president?.closed).toEqual([{ number: 3, closedAt: '2026-10-11T00:00:00.000Z' }]);
     expect(part.history.openedIssueCount).toBe(3);
     expect(part.history.completedIssues.map((i) => i.number)).toEqual([3]);
   });
