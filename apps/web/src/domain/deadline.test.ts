@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { daysToDeadline, isNearOrNoDeadline, NEAR_DEADLINE_DAYS } from './deadline';
+import { daysToDeadline, daysToDoDay, isNearQuest, NEAR_DEADLINE_DAYS } from './deadline';
 
 /** Local time, so the tests hold in any time zone. */
 const at = (year: number, month: number, day: number, hour = 12) =>
@@ -85,7 +85,7 @@ describe('daysToDeadline: the year is the one nearest to the day of the fetch', 
     expect(daysToDeadline('〆2/29', at(2028, 3, 5))).toBe(-5);
     // From 2026-10-17: 2028-02-29 is 500 days ahead, 2024-02-29 was 961 days ago.
     expect(daysToDeadline('〆2/29', OCT_17)).toBe(500);
-    expect(isNearOrNoDeadline('〆2/29', OCT_17)).toBe(false);
+    expect(isNearQuest('〆2/29', OCT_17)).toBe(false);
   });
 
   it('has no deadline for a day no year has', () => {
@@ -104,21 +104,21 @@ describe('daysToDeadline: the year is the one nearest to the day of the fetch', 
   });
 });
 
-describe('isNearOrNoDeadline', () => {
+describe('isNearQuest', () => {
   it(`keeps deadlines up to ${String(NEAR_DEADLINE_DAYS)} days ahead, today and past ones`, () => {
-    expect(isNearOrNoDeadline('〆10/24', OCT_17)).toBe(true);
-    expect(isNearOrNoDeadline('〆10/17', OCT_17)).toBe(true);
-    expect(isNearOrNoDeadline('〆9/30', OCT_17)).toBe(true);
+    expect(isNearQuest('〆10/24', OCT_17)).toBe(true);
+    expect(isNearQuest('〆10/17', OCT_17)).toBe(true);
+    expect(isNearQuest('〆9/30', OCT_17)).toBe(true);
   });
 
   it('drops a deadline 8 days ahead or later', () => {
-    expect(isNearOrNoDeadline('〆10/25', OCT_17)).toBe(false);
-    expect(isNearOrNoDeadline('〆12/1', OCT_17)).toBe(false);
+    expect(isNearQuest('〆10/25', OCT_17)).toBe(false);
+    expect(isNearQuest('〆12/1', OCT_17)).toBe(false);
   });
 
   it('keeps quests with no deadline, or one that is not a date', () => {
-    expect(isNearOrNoDeadline('資料を作る', OCT_17)).toBe(true);
-    expect(isNearOrNoDeadline('〆2/30 資料', OCT_17)).toBe(true);
+    expect(isNearQuest('資料を作る', OCT_17)).toBe(true);
+    expect(isNearQuest('〆2/30 資料', OCT_17)).toBe(true);
   });
 });
 
@@ -138,5 +138,81 @@ describe('daysToDeadline in a given time zone (Node reads TZ when it changes)', 
     // Clocks go back on 2026-11-01 and forward on 2027-03-14.
     expect(daysToDeadline('〆11/2', Date.parse('2026-10-31T23:30:00-04:00'))).toBe(2);
     expect(daysToDeadline('〆3/15', Date.parse('2027-03-13T23:30:00-05:00'))).toBe(2);
+  });
+});
+
+describe('daysToDoDay: reading @M/D (Issue #176)', () => {
+  it.each([
+    ['@10/24 資料を作る', 7],
+    ['@ 10/24 資料を作る', 7],
+    ['＠１０／２４ 資料を作る', 7],
+    ['＠10/24 資料を作る', 7],
+    ['資料を作る @10/20', 3],
+    ['@10/17 今日から', 0],
+    ['@9/30 もう来た', -17],
+  ])('reads %s', (title, days) => {
+    expect(daysToDoDay(title, OCT_17)).toBe(days);
+  });
+
+  it('chooses the year as 〆 does', () => {
+    expect(daysToDoDay('@1/5', at(2026, 12, 20))).toBe(16);
+    expect(daysToDoDay('@2/29', OCT_17)).toBe(500);
+  });
+
+  it.each([
+    ['taro@example.com に送る', 'an e-mail address'],
+    ['@yukihiro に聞く', '@username'],
+    ['@ 資料', 'nothing after @'],
+    ['@10-24 資料', 'another separator'],
+    ['@2/30 資料', 'a day no year has'],
+    ['@10/245 資料', 'three digits'],
+    ['〆10/24 資料', 'a deadline only'],
+  ])('has no day to do it: %s (%s)', (title) => {
+    expect(daysToDoDay(title, OCT_17)).toBeNull();
+  });
+
+  it('reads the first @M/D, past an e-mail address or @username', () => {
+    expect(daysToDoDay('taro@example.com に @10/20 送る', OCT_17)).toBe(3);
+    expect(daysToDoDay('@yukihiro と @10/20、@11/1', OCT_17)).toBe(3);
+  });
+
+  it('keeps the two marks apart', () => {
+    expect(daysToDeadline('@10/20 〆10/30', OCT_17)).toBe(13);
+    expect(daysToDoDay('〆10/30 @10/20', OCT_17)).toBe(3);
+  });
+});
+
+describe('isNearQuest with a day to do it (Issue #176)', () => {
+  it('hides a quest until its day, then keeps it however long it has passed', () => {
+    expect(isNearQuest('@10/18 資料', OCT_17)).toBe(false);
+    expect(isNearQuest('@10/18 資料', at(2026, 10, 18, 0))).toBe(true);
+    expect(isNearQuest('@10/17 資料', OCT_17)).toBe(true);
+    expect(isNearQuest('@9/1 資料', OCT_17)).toBe(true);
+  });
+
+  it('reads a day passed by half a year as next year’s: hidden again (a known limit)', () => {
+    // From 2027-04-20, 2027-10-17 (180 days ahead) is nearer than 2026-10-17 (185 days ago).
+    expect(daysToDoDay('@10/17 資料', at(2027, 4, 20))).toBe(180);
+    expect(isNearQuest('@10/17 資料', at(2027, 4, 20))).toBe(false);
+  });
+
+  it('does not let a day to do it within a week show it early', () => {
+    expect(isNearQuest('@10/20 資料', OCT_17)).toBe(false);
+  });
+
+  it('shows a quest with both marks when either one allows it', () => {
+    // Deadline near, day to do it ahead.
+    expect(isNearQuest('@10/20 〆10/22 資料', OCT_17)).toBe(true);
+    // Deadline far, day to do it come.
+    expect(isNearQuest('@10/15 〆11/30 資料', OCT_17)).toBe(true);
+    // Both ahead.
+    expect(isNearQuest('@10/20 〆10/30 資料', OCT_17)).toBe(false);
+  });
+
+  it('treats a mark that is not a date as none', () => {
+    expect(isNearQuest('@2/30 資料', OCT_17)).toBe(true);
+    expect(isNearQuest('@2/30 〆11/30 資料', OCT_17)).toBe(false);
+    expect(isNearQuest('〆2/30 @10/20 資料', OCT_17)).toBe(false);
+    expect(isNearQuest('taro@example.com に送る', OCT_17)).toBe(true);
   });
 });
