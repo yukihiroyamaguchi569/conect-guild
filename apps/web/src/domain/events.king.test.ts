@@ -106,6 +106,39 @@ describe('diffSnapshot: the king’s quests', () => {
   });
 });
 
+describe('diffSnapshot: a label moved between a department and the king (Issue #167)', () => {
+  it('does not tell an open department Issue relabelled to the king as arrived', () => {
+    const base = baselineOf({ issues: [issue(4, { labels: ['経理'] })], president: president(3) });
+    const next = snapshot({ fetchedAt: T1, president: president(3, 4) });
+    expect(ids(diffSnapshot(base, next, undefined, true))).toEqual([]);
+  });
+
+  it('does not tell a king’s quest relabelled to a department as opened', () => {
+    const base = baselineOf({ president: president(3, 4) });
+    const next = snapshot({
+      fetchedAt: T1,
+      issues: [issue(4, { labels: ['経理'] })],
+      president: president(3),
+    });
+    // Losing the label is told as a clear (docs/DESIGN.md 4.4, accepted in #142).
+    expect(ids(diffSnapshot(base, next, undefined, true))).toEqual(['king-quest-cleared#4']);
+  });
+
+  it('still tells a newly opened one, and a closed department Issue reopened for the king', () => {
+    const base = baselineOf({ issues: [closedIssue(5, T0)], president: president(3) });
+    const next = snapshot({
+      fetchedAt: T1,
+      issues: [issue(6, { labels: ['経理'] })],
+      president: president(3, 4, 5),
+    });
+    expect(ids(diffSnapshot(base, next, undefined, true))).toEqual([
+      'issue-opened#6',
+      'king-quest-opened#4',
+      'king-quest-opened#5',
+    ]);
+  });
+});
+
 describe('eventMessage: the king’s quests', () => {
   it('says the scroll reached the king, with its title, and the clear without one', () => {
     const base = baselineOf({ president: president(3) });
