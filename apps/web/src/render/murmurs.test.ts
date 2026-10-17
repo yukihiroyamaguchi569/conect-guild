@@ -61,6 +61,7 @@ function moment(t: number, extra: Partial<MurmurMoment> = {}): MurmurMoment {
     off: false,
     busy: false,
     candidates: () => [{ id: 'minori', scene: 'work' }],
+    hushed: () => false,
     random: () => 0,
     pick: say,
     ...extra,
