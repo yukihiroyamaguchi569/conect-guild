@@ -33,8 +33,8 @@ const NOW = at(T0);
 const DAY = 24 * 60 * 60_000;
 const daysAgo = (days: number) => new Date(NOW - days * DAY).toISOString();
 
-function member(id: MemberId, state: MemberState): NarrationMember {
-  return { id, name: MEMBERS[id].name, state };
+function member(id: MemberId, state: MemberState, quests = 0): NarrationMember {
+  return { id, name: MEMBERS[id].name, state, quests };
 }
 
 const IDS: readonly MemberId[] = ['kaname', 'minori', 'hibiki', 'hirame', 'sasae', 'yukihiro'];
@@ -110,6 +110,43 @@ describe('memberLines: by state (A)', () => {
     ]);
     for (const line of memberLines(member('yukihiro', 'idle'), { kind: 'sleep' }, NOW)) {
       expect(line).toMatch(/^おうさまは ぎょくざで /);
+    }
+  });
+
+  it('tells the king works on his quests while he has one (Issue #166)', () => {
+    const working = ['おうさまは ぎょくざで クエストに とりくんでいる。'];
+    expect(memberLines(member('yukihiro', 'idle', 1), undefined, NOW)).toEqual(working);
+    expect(memberLines(member('yukihiro', 'idle', 5), undefined, NOW)).toEqual(working);
+    // None left: back to looking round the room.
+    expect(memberLines(member('yukihiro', 'idle', 0), undefined, NOW)).toEqual([
+      'おうさまは ぎょくざから へやを みわたしている。',
+    ]);
+  });
+
+  it("puts the PR to approve before the king's quests", () => {
+    expect(memberLines(member('yukihiro', 'awaiting-president', 2), undefined, NOW)).toEqual([
+      'おうさまは しょうにんを まつ PRに めを とおしている。',
+    ]);
+  });
+
+  it('keeps the dozing and sleeping king as they are while he has quests', () => {
+    expect(memberLines(member('yukihiro', 'idle', 2), { kind: 'doze' }, NOW)).toEqual([
+      'おうさまは ぎょくざで まどろんでいる。',
+    ]);
+    expect(memberLines(member('yukihiro', 'idle', 2), { kind: 'sleep' }, NOW)).toEqual([
+      'おうさまは ぎょくざで すやすや ねむっている…',
+      'おうさまは ぎょくざで いびきを かいている…',
+    ]);
+  });
+
+  it("never tells a department member the king's quest line, nor a number or a title", () => {
+    for (const id of IDS.filter((i) => i !== 'yukihiro')) {
+      for (const line of memberLines(member(id, 'idle', 3), undefined, NOW)) {
+        expect(line).not.toContain('ぎょくざで クエスト');
+      }
+    }
+    for (const line of memberLines(member('yukihiro', 'idle', 3), undefined, NOW)) {
+      expect(line).not.toMatch(/[#「0-9]/);
     }
   });
 });
@@ -191,7 +228,7 @@ describe('names come from the settings', () => {
   });
 
   it('uses the name passed in the row', () => {
-    const renamed = { id: 'sasae', name: 'テスト名', state: 'busy' } as const;
+    const renamed = { id: 'sasae', name: 'テスト名', state: 'busy', quests: 0 } as const;
     for (const line of memberLines(renamed, undefined, NOW)) expect(line).toMatch(/^テスト名は /);
   });
 });
