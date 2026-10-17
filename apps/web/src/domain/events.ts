@@ -108,10 +108,12 @@ function collectEvents(baseline: Baseline, snapshot: Snapshot, index: IssueIndex
   const issuesBefore = new Map(baseline.issues.map((i) => [i.number, i]));
   const prsBefore = new Map(baseline.prs.map((p) => [p.number, p]));
   const byId = new Map<string, ItemEvent>();
+  // A king's quest relabelled to a department was not opened now (Issue #167).
+  const wasKings = new Set(baseline.king);
   const fromBranches = branchDepartmentsOfIssues(snapshot.prs);
   for (const issue of snapshot.issues) {
     const kind = issueEvent(issue, issuesBefore.get(issue.number), baselineAt);
-    if (kind === null) continue;
+    if (kind === null || (kind === 'issue-opened' && wasKings.has(issue.number))) continue;
     const event = makeEvent(kind, issue.number, issueDepartment(issue, fromBranches));
     byId.set(event.id, event);
   }
@@ -143,10 +145,14 @@ function levelUpEvents(before: Baseline, after: Baseline): GuildEvent[] {
 
 /**
  * One event per king's quest that appeared or went away (Issue #142), the opened first, each in
- * ascending number. None while either baseline does not know the king's quests.
+ * ascending number. None while either baseline does not know the king's quests. A quest that was
+ * an open department Issue in `before` was relabelled, not opened, so it is not told (Issue #167).
  */
 export function kingQuestEvents(before: Baseline, after: Baseline): GuildEvent[] {
-  const { opened, cleared } = kingQuestChanges(before.king, after.king);
+  const changes = kingQuestChanges(before.king, after.king);
+  const wasOpen = new Set(before.issues.filter((i) => i.state === 'open').map((i) => i.number));
+  const opened = changes.opened.filter((n) => !wasOpen.has(n));
+  const { cleared } = changes;
   const event = (kind: 'king-quest-opened' | 'king-quest-cleared', number: number): GuildEvent => ({
     id: `${kind}#${String(number)}`,
     kind,
