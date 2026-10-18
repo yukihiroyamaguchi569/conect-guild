@@ -74,6 +74,7 @@ conect-guild/
 │       │   ├── events.ts     基準状態と今回の snapshot の差分 → ゲームのイベント列
 │       │   ├── summons.ts    セッションの待機 → 作業中の変化 → 社長の指示（4.10）
 │       │   ├── guests.ts     設定のお客さん + snapshot → 表示の形、前回との差分 → マージ・完了の出来事（4.13、Issue #108）
+│       │   ├── visitors.ts   日付 → その日の訪問者の日程（いつ・だれが・だれのところへ）（4.15、Issue #195）
 │       │   └── demoScript.ts / demo.ts / demoLanes.ts / demoGuests.ts  デモモードの台本（出来事の列）と、時刻 → 架空の snapshot（4.11）。お客さんの架空の仕事は demoGuests.ts、レーンの状態とどの部門が運ぶかは demoLanes.ts（Issue #198）
 │       ├── adapters/
 │       │   ├── snapshot.ts   /snapshot.json を no-store で fetch して zod で検証
@@ -95,6 +96,7 @@ conect-guild/
 │       │   ├── lineBook.ts / lines.ts / remarks.ts / murmurs.ts / overhead.ts  メンバーのセリフの一覧、選び方と出す時刻、状態の変わり目の一言、つぶやき（どれも純粋関数）、頭上に何を出すかの優先順位。4.12
 │       │   ├── idle.ts / idleSpots.ts / idleCrew.ts  暇が長いときのうとうと・寝る・遊ぶ（Issue #23）。段階と行き先は純粋関数、idleCrew は遊びからの帰り道を台本に足す
 │       │   ├── guests.ts / guestStage.ts / guestArt.ts / drawGuests.ts  お客さんの見た目・きらめき（純粋関数）、ループが持つきらめき、お客さんの絵（MemberId ではない）、描画（4.13）
+│       │   ├── visitors.ts   訪問者の道のり（扉 → 席の前 → 扉）・言葉・途中で引き返す道（純粋関数。4.15）
 │       │   ├── art.ts        絵の差し替え境界（TileArt / SpriteArt / DecorArt）と仮の矩形
 │       │   ├── tileArt.ts / spriteArt.ts / decorArt.ts / loadArt.ts  assets/ の絵で描く実装と読み込み
 │       │   ├── draw.ts / loop.ts  描画と requestAnimationFrame（動かないものはキャッシュの canvas に 1 回だけ。演出中は毎フレーム、それ以外はアンビエントだけ約 7fps、非表示の間は止める）
@@ -556,6 +558,16 @@ X と note の動画を撮るため、架空のクエストで一連の演出を
 - **切り替え**: 取得のようすのタブ（halted のときは右の列の窓）の音のボタンの隣に「見せる」のボタン（`aria-pressed`）を 1 つだけ置く。伏せ中は「もどす」になり、隣に小さな「伏せ中」の印を出す。URL の引数・キー操作では切り替えない（社長の判断）
 - **保存**: localStorage の `conect-guild:mask` に `{ "on": 真偽値 }` だけを残す（zod の strictObject で読む）。無い・壊れている・読めないときは伏せない。保存に失敗しても、その表示の間は切り替わる
 - **デモ**: `?demo=1` と自動のデモではボタンを出さず、伏せず、`conect-guild:mask` を読まない（4.11）
+
+### 4.15 訪問者（Issue #195。domain/visitors.ts、render/visitors.ts）
+
+1 日に数回、ギルドに訪問者が来て、だれかの席の前でひとこと話して帰る（遊びの機能。社長の判断、2026-10-18）。仕事のデータとは関係なく、時刻だけで決まる。
+
+- **だれが**: 旅の商人（merchant）・郵便屋（postman）・吟遊詩人（bard）・占い師のおばあさん（fortune）の 4 種。絵は `assets/sprites/visitor-<種類>.png`（8 章、assets/README.md）
+- **いつ**: 1 日に 3 回か 4 回、9〜21 時（ローカル時刻）。営業時間を回数で等しく区切り、区切りごとにその最後の 30 分を除いた中のランダムな分に 1 回ずつ来る（続けて来ない。間は 30 分以上）。続く 2 回は同じ種類にしない。日程は日付（年・月・日）を種にした乱数（`seededRandom`、mulberry32）で決まる純粋関数 `visitsOn` で、同じ日ならいつ開いても・どの画面でも同じ。乱数の源はテストで差し替えられる
+- **どこへ**: 部門には席の横（かなめが巻物を手渡す場所と同じ `besideSeat`）、かなめには受付のカウンターの前（`PLACES.counterFront`）に行く。王様のところへは行かない
+- **道のり**: 扉のそば（間取りの `offstage`）から既存の経路探索（`findPath`）で歩き（メンバーと同じ速さ、`MS_PER_TILE`）、お客さんの立つマスは通らない。着いたら相手の席のほうを横向きの絵で向き（左なら右向きのコマを反転。真上・真下なら正面。呼びかけの `faceThrone` と同じ）、2.4 秒（`VISITOR.talkMs`）ひとこと言って、扉へ歩いて帰る。途中で引き返すときは、いる場所から（歩いている途中の 1 マスはそのまま歩き終えるか戻るかの近いほう。`idle.homeWalk`）扉へ戻り、もう話さない
+- **言葉**: 種類ごとに固定の 3 つ（`VISITOR_LINES`。商人「やすいよ〜！」「まいど〜！」「かっていって！」、郵便屋「おてがみです！」「ゆうびんです〜」「おとどけもの！」、吟遊詩人「いっきょく♪」「ららら〜♪」「うたいます♪」、占い師「みえるぞよ…」「きちじゃ！」「よいひじゃのう」）。セリフ（4.12）と同じ決まり（かなとわずかな記号だけ、最大 7 文字、名前を入れない）。どれを言うかは日程が引いた数（`say`）で決まる
 
 ## 5. 公開範囲
 
