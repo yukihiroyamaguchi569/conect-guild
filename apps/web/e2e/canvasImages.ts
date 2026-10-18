@@ -8,6 +8,9 @@ export interface DrawnImage {
   readonly sy: number;
   readonly dx: number;
   readonly dy: number;
+  /** The size it was drawn at (logical px). */
+  readonly dw: number;
+  readonly dh: number;
 }
 
 declare global {
@@ -35,19 +38,21 @@ export function installCanvasImageRecorder(): void {
   const original: unknown = Object.getOwnPropertyDescriptor(proto, 'drawImage')?.value;
   if (typeof original !== 'function') return;
   proto.drawImage = function (this: CanvasRenderingContext2D, ...args: unknown[]) {
-    const [image, sx, sy, , , dx, dy] = args;
+    const [image, sx, sy, , , dx, dy, dw, dh] = args;
     if (
       image instanceof HTMLImageElement &&
       typeof sx === 'number' &&
       typeof sy === 'number' &&
       typeof dx === 'number' &&
-      typeof dy === 'number'
+      typeof dy === 'number' &&
+      typeof dw === 'number' &&
+      typeof dh === 'number'
     ) {
       const file = new URL(image.src).pathname.split('/').pop() ?? '';
       const key = `${file}@${String(dx)},${String(dy)}`;
       if (!seen.has(key)) {
         seen.add(key);
-        window.e2eCanvasImages?.push({ file, sx, sy, dx, dy });
+        window.e2eCanvasImages?.push({ file, sx, sy, dx, dy, dw, dh });
       }
     }
     Reflect.apply(original, this, args);

@@ -25,7 +25,7 @@ async function snapshotAt(time: string) {
   return withClosedIssues(await sampleSnapshot(at(time)), [101], at('10:00:00'));
 }
 
-/** True once the medal has been drawn on みのり's desk. */
+/** True once the medal has been drawn on みのり's desk, half as big again as its own size. */
 async function medalDrawn(page: Page): Promise<boolean> {
   if (PLACED === null) throw new Error('no desk for みのり');
   const piece = DECOR.medal;
@@ -34,7 +34,9 @@ async function medalDrawn(page: Page): Promise<boolean> {
       image.sx === piece.col * DECOR_TILE_SIZE &&
       image.sy === piece.row * DECOR_TILE_SIZE &&
       image.dx === PLACED.x &&
-      image.dy === PLACED.y,
+      image.dy === PLACED.y &&
+      image.dw === DECOR_TILE_SIZE * PLACED.scale &&
+      image.dh === DECOR_TILE_SIZE * PLACED.scale,
   );
 }
 

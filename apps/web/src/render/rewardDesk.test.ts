@@ -13,6 +13,17 @@ import { DEFAULT_SEATS } from './scenes';
 /** The king's reward of the day on a desk (Issues #194, #208). */
 
 const SIDE = TILE_SIZE * REWARD_SCALE;
+/**
+ * Where each picture has ink in its 32 px cell (measured on assets/decor/decor.png: alpha > 20),
+ * and how far the widest member reaches either side of the seat's middle (measured on
+ * assets/sprites: ひびき's hair, 36 px). Measured values: re-measure when the art changes.
+ */
+const INK = {
+  onigiri: { left: 5, top: 14, right: 27, bottom: 32 },
+  dango: { left: 3, top: 19, right: 29, bottom: 32 },
+  medal: { left: 9, top: 8, right: 23, bottom: 32 },
+} as const;
+const SEATED_REACH = 36;
 const SPOTS: readonly Spot[] = ['right', 'left', 'beside-right', 'beside-left'];
 /** Around the 「Lv 10」 under `seat` (levelTags.ts; drawLevelTags.ts draws it 10 px bold). */
 function tagArea(seat: TilePos): PxRect {
@@ -45,15 +56,25 @@ describe.each(Object.values(LAYOUTS))(
         expect(box.right).toBeLessThanOrEqual((desk.col + desk.w) * TILE_SIZE);
         expect(box.bottom).toBeGreaterThan(desk.row * TILE_SIZE);
         expect(box.bottom).toBeLessThanOrEqual((desk.row + 1) * TILE_SIZE);
-        // Beside the member in the chair, not over them.
+        // Beside the member in the chair: above the desk top, where the member shows, no ink of
+        // any of the pictures meets the widest member.
         const middle = seat.col * TILE_SIZE + TILE_SIZE / 2;
         const member = {
-          left: middle - TILE_SIZE / 2,
+          left: middle - SEATED_REACH,
           top: 0,
-          right: middle + TILE_SIZE / 2,
-          bottom: box.bottom,
+          right: middle + SEATED_REACH,
+          bottom: desk.row * TILE_SIZE,
         };
-        expect(overlaps(box, member)).toBe(false);
+        for (const [kind, ink] of Object.entries(INK)) {
+          const at = { left: placed.x, top: placed.y };
+          const drawn = {
+            left: at.left + ink.left * REWARD_SCALE,
+            top: at.top + ink.top * REWARD_SCALE,
+            right: at.left + ink.right * REWARD_SCALE,
+            bottom: at.top + ink.bottom * REWARD_SCALE,
+          };
+          expect(overlaps(drawn, member), kind).toBe(false);
+        }
         const feet = tileToPoint(seat);
         expect(overlaps(box, tagArea(seat))).toBe(false);
         for (const spot of SPOTS) {
