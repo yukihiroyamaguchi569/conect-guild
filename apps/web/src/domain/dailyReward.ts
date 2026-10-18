@@ -17,7 +17,7 @@ import { issueDepartment } from './quest';
  */
 
 /** When the reward comes, local time (the president's decision, 2026-10-18). */
-export const REWARD_HOUR = 17;
+const REWARD_HOUR = 17;
 
 export const REWARD_KINDS = ['onigiri', 'dango', 'medal'] as const;
 export type RewardKind = (typeof REWARD_KINDS)[number];
@@ -40,6 +40,11 @@ export function deliveryOf(now: number): number {
   const date = new Date(now);
   date.setHours(REWARD_HOUR, 0, 0, 0);
   return date.getTime();
+}
+
+/** The next local midnight after `now` (epoch ms): the end of its day. */
+export function dayEndOf(now: number): number {
+  return new Date(now).setHours(24, 0, 0, 0);
 }
 
 /**
@@ -144,10 +149,11 @@ export function watchReward(
   if (held !== null && seenAt >= held.delivery && seenAt < held.until) {
     return { watch: { awaited, kept: held }, told: null };
   }
-  const until = new Date(now).setHours(24, 0, 0, 0);
+  const until = dayEndOf(now);
   // A snapshot of a day already over when seen changes nothing (nor tells anything).
   if (seenAt >= until) return { watch: { ...watch, awaited }, told: null };
-  if (now < delivery) return { watch: { awaited, kept: null }, told: null };
+  // Not before REWARD_HOUR by the snapshot, nor by the browser (a collector's clock a little ahead).
+  if (now < delivery || seenAt < delivery) return { watch: { awaited, kept: null }, told: null };
   const reward = rewardAt(snapshot, now, dayRandom(now));
   if (reward === null) return { watch: { awaited, kept: null }, told: null };
   const kept: KeptReward = { ...reward, delivery, until };

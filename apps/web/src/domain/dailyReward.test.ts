@@ -216,6 +216,15 @@ describe('watchReward: days over', () => {
     expect(kept).toBeNull();
   });
 
+  it('keeps nothing from a snapshot of 17:00 seen before 17:00 (a clock ahead)', () => {
+    const { told, kept } = runSeen(
+      { snapshot: fetched(local(16)), seenAt: local(16) },
+      { snapshot: fetched(local(17)), seenAt: local(16, 59) },
+    );
+    expect(told).toEqual([null, null]);
+    expect(kept).toBeNull();
+  });
+
   it('keeps the new day’s reward when the day before’s snapshot comes late', () => {
     const tomorrow = (hour: number) => new Date(2026, 9, 13, hour).getTime();
     const nextDay = fetched(tomorrow(18), [
