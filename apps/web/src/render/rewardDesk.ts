@@ -27,16 +27,26 @@ export interface PlacedReward {
   /** Top-left of the picture, logical px. */
   readonly x: number;
   readonly y: number;
-  /** The bottom of its desk: it is drawn with the desk's front layer (layers.ts FrontLayer.depth). */
-  readonly depth: number;
+  /** How many times its own size it is drawn (REWARD_SCALE). */
+  readonly scale: number;
 }
 
-/** How far right of the member's middle the picture starts, and how far over the desk top, px. */
-const OFFSET = { x: 8, y: -6 } as const;
+/**
+ * Drawn half as big again as the things on the desk, so it stands out among them (Issue #208).
+ * The picture is a decor piece of one tile (assets/decor).
+ */
+export const REWARD_SCALE = 1.5;
+const SIDE = TILE_SIZE * REWARD_SCALE;
+/** Half the width of a seated member, px from the middle of their seat. */
+const MEMBER_HALF = TILE_SIZE / 2;
+/** Where the bottom of the picture rests, px below the top of the desk (on its top). */
+const REST_BELOW_DESK_TOP = 28;
 
 /**
- * The reward `kind` on the desk in front of `seat` in `layout`: on the desk top, just right of the
- * member in the chair, over the things there. null when no desk stands in front of the seat.
+ * The reward `kind` on the desk in front of `seat` in `layout`: on the desk top, in the middle of
+ * the wider of the two stretches of desk left and right of the member in the chair, over the things
+ * there (Issue #208: drawn bigger, after the shade, with a glow). null when no desk stands in front
+ * of the seat.
  */
 export function rewardOnDesk(
   layout: Pick<GuildLayout, 'objects'>,
@@ -46,10 +56,34 @@ export function rewardOnDesk(
   const front = { col: seat.col, row: seat.row + 1 };
   const desk = layout.objects.find((item) => item.tile === 'desk' && contains(item, front));
   if (desk === undefined) return null;
+  const middle = seat.col * TILE_SIZE + TILE_SIZE / 2;
+  const left = { from: desk.col * TILE_SIZE, to: middle - MEMBER_HALF };
+  const right = { from: middle + MEMBER_HALF, to: (desk.col + desk.w) * TILE_SIZE };
+  const wider = left.to - left.from > right.to - right.from ? left : right;
   return {
     name: kind,
-    x: seat.col * TILE_SIZE + TILE_SIZE / 2 + OFFSET.x,
-    y: desk.row * TILE_SIZE + OFFSET.y,
-    depth: (desk.row + desk.h) * TILE_SIZE,
+    x: (wider.from + wider.to - SIDE) / 2,
+    y: desk.row * TILE_SIZE + REST_BELOW_DESK_TOP - SIDE,
+    scale: REWARD_SCALE,
+  };
+}
+
+/** The little ✦ over the reward: where (its middle, logical px) and how bright now. */
+export interface RewardSparkle {
+  readonly x: number;
+  readonly y: number;
+  readonly alpha: number;
+}
+
+/** One twinkle of the ✦, ms. */
+const TWINKLE_MS = 1_200;
+
+/** The ✦ at the top-right of the picture, twinkling at `now` (ms). Pure. */
+export function rewardSparkle(placed: PlacedReward, now: number): RewardSparkle {
+  const phase = (now % TWINKLE_MS) / TWINKLE_MS;
+  return {
+    x: placed.x + SIDE - 6,
+    y: placed.y + 10,
+    alpha: 0.55 + 0.45 * Math.cos(phase * 2 * Math.PI),
   };
 }
