@@ -36,6 +36,8 @@ export interface DecorCues {
   readonly clearedAt: Readonly<Partial<Record<MemberId, number>>>;
   /** Someone out playing stays by the pet now (IdlePose.withPet): it is up and sitting. */
   readonly petCompany: boolean;
+  /** The pet was clicked and is up wagging its tail (petting.ts, Issue #186). */
+  readonly petted: boolean;
 }
 
 export const NO_CUES: DecorCues = {
@@ -43,6 +45,7 @@ export const NO_CUES: DecorCues = {
   awaitingPresident: false,
   clearedAt: {},
   petCompany: false,
+  petted: false,
 };
 
 /**
@@ -81,6 +84,8 @@ export function decorCuesOf(
     awaitingPresident: moods.yukihiro === 'fidget',
     clearedAt,
     petCompany: members.some((m) => m.withPet),
+    // The render loop knows the presses (cast.stageAt, petting.ts).
+    petted: false,
   };
 }
 
@@ -316,6 +321,15 @@ export function waveAt(fromTop: number, elapsed: number): number {
 /** The pet's picture while it is up and sitting. */
 export const PET_AWAKE_DECOR: DecorName = 'awake-poodle';
 
+/** Its two pictures while it wags after a click (petting.ts), the tail to the left and the right. */
+export const PET_WAG_DECOR: readonly [DecorName, DecorName] = ['wag-poodle-a', 'wag-poodle-b'];
+
+/** The wagging picture at `now`: the tail changes side every TRINKETS.wagMs. */
+export function wagDecorAt(now: number): DecorName {
+  const [left, right] = PET_WAG_DECOR;
+  return Math.floor(now / TRINKETS.wagMs) % 2 === 0 ? left : right;
+}
+
 /** The pet wakes and sits up at the start of every TRINKETS.petIntervalMs, for TRINKETS.petSitMs. */
 export function petAwakeAt(phaseMs: number, now: number): boolean {
   return (now + phaseMs) % TRINKETS.petIntervalMs < TRINKETS.petSitMs;
@@ -340,6 +354,20 @@ export function petPoseAt(
 ): PetPose {
   if (company || petAwakeAt(phaseMs, now)) return { name: PET_AWAKE_DECOR, dy: 0 };
   return { name: asleep, dy: decorPose('breath', phaseMs, now).dy };
+}
+
+/**
+ * The pet's pose with `cues`: wagging its tail while it is up from a click (DecorCues.petted,
+ * petting.ts), else as petPoseAt.
+ */
+export function petLookAt(
+  asleep: DecorName,
+  phaseMs: number,
+  now: number,
+  cues: Pick<DecorCues, 'petCompany' | 'petted'>,
+): PetPose {
+  if (cues.petted) return { name: wagDecorAt(now), dy: 0 };
+  return petPoseAt(asleep, phaseMs, now, cues.petCompany);
 }
 
 export interface PatchLook {

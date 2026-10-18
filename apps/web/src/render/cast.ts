@@ -29,6 +29,7 @@ import {
   type RemarkParty,
   type Remarks,
 } from './remarks';
+import { createPetting, type Petting } from './petting';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
 import { decorCuesOf, type DecorCues } from './trinkets';
 import { cutVisit } from './visit';
@@ -50,6 +51,8 @@ export interface CastParty extends RemarkParty {
 export interface Cast {
   readonly crew: IdleCrew;
   readonly calls: Calls;
+  /** The pet's clicks (Issue #186): whether it is up from one now (petting.ts). */
+  readonly petting: Petting;
   frame(director: Director, t: number, moods: AmbientMoods): StageFrame;
   /**
    * Takes a new party at stage time `t`: the idle times (members whose time changed walk back), the
@@ -119,11 +122,13 @@ export function createCast(
     onActive: options.onActive,
   });
   const calls = createCalls(options);
+  const petting = createPetting();
   let remarks: Remarks = NO_REMARKS;
   let murmurs: Murmurs = NO_MURMURS;
   return {
     crew,
     calls,
+    petting,
     receive: (director, party, at) => {
       // かなめ's visits to the throne dropped with the calls turn back to her counter (visit.ts).
       const cut = calls
@@ -181,7 +186,10 @@ export function stageAt(
   const { t, party } = at;
   // The king woken by the end of a call (onActive) never leaves the throne: `director` stays good.
   const view = cast.calls.view(() => cast.frame(director, t, party.moods), t);
-  const cues = decorCuesOf(party.moods, director.bursts, t, view.frame.members);
+  const cues = {
+    ...decorCuesOf(party.moods, director.bursts, t, view.frame.members),
+    petted: cast.petting.isPetted(t, party.halted),
+  };
   const { remarks, remarking } = cast.remarksAt(t, view);
   const animating = isAnimating(director, t) || remarking;
   const frame = { ...at, members: view.frame.members, busy: animating || view.calling };

@@ -3,6 +3,7 @@ import type { TilePos } from '../guild.config';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH, type PxRect } from './map';
 import { SPRITE_SIZE } from './metrics';
 import { tileToPoint, type Point } from './path';
+import { PET_RECT } from './petting';
 import { DEFAULT_SEATS } from './scenes';
 import { seatedPoint } from './seating';
 
@@ -12,7 +13,7 @@ import { seatedPoint } from './seating';
  * click is passed in.
  */
 
-export type ClickableId = 'king';
+export type ClickableId = 'king' | 'dog';
 
 export interface Clickable {
   readonly id: ClickableId;
@@ -33,14 +34,22 @@ export function seatedSpriteRect(seat: TilePos): PxRect {
   };
 }
 
-/** Front first: the first that holds a point is the one pressed. The king never leaves the throne. */
-export const CLICKABLES: readonly Clickable[] = [
-  {
+/**
+ * What can be pressed with the pet in `pet` (petting.petRectIn; null: the layout has none, nothing
+ * to pet). Front first: the first that holds a point is the one pressed. The king never leaves the
+ * throne; the pet (Issue #186) never leaves its place.
+ */
+export function clickablesWith(pet: PxRect | null): readonly Clickable[] {
+  const king: Clickable = {
     id: 'king',
     rect: seatedSpriteRect(DEFAULT_SEATS[PRESIDENT_ID]),
     label: '王様に話しかける',
-  },
-];
+  };
+  return pet === null ? [king] : [king, { id: 'dog', rect: pet, label: '犬をなでる' }];
+}
+
+/** What can be pressed in the selected layout (clickablesWith). */
+export const CLICKABLES: readonly Clickable[] = clickablesWith(PET_RECT);
 
 /**
  * The logical point of `offset` (CSS px from the canvas's top left) on a canvas displayed `size`

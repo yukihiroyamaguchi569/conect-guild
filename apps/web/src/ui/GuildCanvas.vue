@@ -273,10 +273,13 @@ function takeSparkle(): void {
 
 watch(() => props.sparkle?.id, takeSparkle);
 
-/** What a press on each thing on the canvas does (render/clickables.ts, Issue #187). */
+/** What a press on each thing on the canvas does (render/clickables.ts, Issues #187 and #186). */
 const PRESS: Readonly<Record<ClickableId, () => void>> = {
   king: () => {
     loop?.bless();
+  },
+  dog: () => {
+    loop?.pet();
   },
 };
 

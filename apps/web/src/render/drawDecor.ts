@@ -4,7 +4,11 @@ import type { GuildArt } from './art';
 import type { AnimatedDecor } from './animatedDecor';
 import { decorDraw } from './decorArt';
 import { decorPoint } from './decorPoint';
+import { drawBubble } from './drawBubble';
+import type { PxRect } from './map';
 import { TILE_SIZE, TRINKETS } from './metrics';
+import type { Box } from './overhead';
+import { BARK, BARK_BUBBLE, barkClear, barkFeet } from './petting';
 import {
   activeSince,
   FILE_TOP,
@@ -14,7 +18,7 @@ import {
   glintAt,
   notesAt,
   papersAt,
-  petPoseAt,
+  petLookAt,
   SAND_STREAM,
   sandGrainAt,
   spinBandAt,
@@ -34,8 +38,8 @@ interface Drawing {
   readonly ctx: CanvasRenderingContext2D;
   readonly art: GuildArt;
   readonly now: number;
-  /** Someone stays by the pet (DecorCues.petCompany). */
-  readonly petCompany: boolean;
+  /** Someone stays by the pet, or it was clicked (DecorCues.petCompany, DecorCues.petted). */
+  readonly pet: Pick<DecorCues, 'petCompany' | 'petted'>;
 }
 
 /** One thing at its place, with the time it has been moving since (its trigger). */
@@ -82,12 +86,15 @@ function drawFlame(d: Drawing, thing: Thing): void {
 
 /**
  * The pet breathes, and now and then wakes and sits up (its awake picture, not scaled); it sits up
- * all the while someone stays by it.
+ * all the while someone stays by it, and wags its tail while it is up from a click.
  */
 function drawPet(d: Drawing, thing: Thing): void {
-  const { name, dy } = petPoseAt(thing.name, thing.phaseMs, d.now, d.petCompany);
+  const { name, dy } = petLookAt(thing.name, thing.phaseMs, d.now, d.pet);
   d.art.decor.drawDecor(d.ctx, name, thing.x, thing.y + dy);
 }
+
+/** The ink of the pet's 「わん」, as of the members' lines (draw.ts LINE_COLOR). */
+const BARK_COLOR = '#222222';
 
 /** A four-pointed star in pale gold, `arm` px each way from its centre. */
 function drawStar(ctx: CanvasRenderingContext2D, x: number, y: number, arm: number): void {
@@ -234,7 +241,7 @@ export function drawAnimatedDecor(
   stage: { readonly now: number; readonly cues: DecorCues },
   items: readonly AnimatedDecor[],
 ): void {
-  const d: Drawing = { ctx, art, now: stage.now, petCompany: stage.cues.petCompany };
+  const d: Drawing = { ctx, art, now: stage.now, pet: stage.cues };
   for (const { placement, motion, phaseMs, trigger } of items) {
     const { x, y } = decorPoint(placement);
     const since = activeSince(trigger, stage.cues);
@@ -244,4 +251,17 @@ export function drawAnimatedDecor(
     }
     DRAW[motion](d, { name: placement.name, x, y, phaseMs, since });
   }
+}
+
+/**
+ * The pet's 「わん」 (petting.ts) in a murmur's bubble just over its head in `rect`, when it meets
+ * none of `bubbles` (petting.barkClear).
+ */
+export function drawPetBark(
+  ctx: CanvasRenderingContext2D,
+  rect: PxRect,
+  bubbles: readonly Box[],
+): void {
+  if (!barkClear(rect, bubbles)) return;
+  drawBubble(ctx, { text: BARK, color: BARK_COLOR, ...BARK_BUBBLE }, barkFeet(rect), 'right');
 }

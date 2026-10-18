@@ -231,6 +231,12 @@ export const TRINKETS = {
   /** The pet wakes once every `petIntervalMs` and sits up for `petSitMs`. */
   petIntervalMs: 21_000,
   petSitMs: 1_680,
+  /**
+   * The pet clicked (Issue #186, petting.ts) is up for `pettedMs` from the latest press, wagging its
+   * tail from one side to the other every `wagMs` (two ambient frames), and says 「わん」.
+   */
+  pettedMs: 3_000,
+  wagMs: 280,
   /** The light patches drift with the sun (from morning to evening) and sway a little. */
   patchDriftPx: 16,
   patchSwayPx: 2,
