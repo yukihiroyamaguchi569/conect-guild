@@ -1,7 +1,10 @@
 name: CI
 
 on:
+  # Pull requests are checked on their own trigger; a push re-runs the checks only on main.
   push:
+    branches:
+      - main
   pull_request:
 
 permissions:
