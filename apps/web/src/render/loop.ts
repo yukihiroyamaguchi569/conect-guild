@@ -29,7 +29,8 @@ import { createScheduler, follow, nextDraw, type Scheduler } from './scheduler';
 import { monthAt } from './ornament';
 import type { StageReward } from './rewardDesk';
 import type { Speeches } from './summons';
-import { createToastStage, type ToastStage } from './toastStage';
+import { createGatheringsStage } from './monthEvent';
+import type { ToastStage } from './toastStage';
 import {
   createVisitorStage,
   visitorControls,
@@ -81,7 +82,10 @@ export interface RenderLoopOptions {
   readonly guestArt?: GuestArt;
   /** The visitors' pictures (Issue #195), in the order of VISITOR_KINDS; plain boxes when absent. */
   readonly visitorArt?: GuestArt;
-  /** Where the day of the last toast is kept (Issue #193); localStorage when absent. */
+  /**
+   * Where the day of the last toast (Issue #193) and of the month's gathering (Issue #214) is kept;
+   * localStorage when absent.
+   */
   readonly toastStore?: KeyValueStore;
 }
 
@@ -206,13 +210,13 @@ function stageOf(
   const visitors = createVisitorStage(options.wallNow, {
     onVisitor: (kind) => options.onVisitor?.(kind),
   });
-  const toast = createToastStage(options.toastStore ?? createKeyValueStore(), options.wallNow);
+  const toast = createGatheringsStage(options.toastStore ?? createKeyValueStore(), options.wallNow);
   return { painter, room: { guests, visitors, toast }, cast };
 }
 
 /**
  * Who is in the room besides the members' scenes: the guests (Issue #108), the visitor (Issue
- * #195) and the Friday toast (Issue #193).
+ * #195) and the Friday toast (Issue #193) with the month's gathering (Issue #214, monthEvent.ts).
  */
 interface Room {
   readonly guests: GuestStage;
