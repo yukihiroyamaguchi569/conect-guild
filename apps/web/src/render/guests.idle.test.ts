@@ -58,7 +58,9 @@ describe('a guest with nothing to do', () => {
       expect(look.mark?.kind).toBe('z');
     }
   });
+});
 
+describe('a guest’s clocks and waking up', () => {
   it('raises the 「Z」 by the wall clock, as the members do, not by the stage clock', () => {
     const wall = Math.ceil(IDLE.sleepAfterMs / IDLE.zRiseMs) * IDLE.zRiseMs + IDLE.zRiseMs / 4;
     for (const t of [0, 1_234, IDLE.zRiseMs / 2]) {
