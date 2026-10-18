@@ -2,8 +2,8 @@
 export const MASK_CHAR = '＊';
 
 /** The row's length is the title's, kept within these bounds so it tells little of the title. */
-export const MASK_MIN_LENGTH = 4;
-export const MASK_MAX_LENGTH = 8;
+const MASK_MIN_LENGTH = 4;
+const MASK_MAX_LENGTH = 8;
 
 const graphemes = new Intl.Segmenter('ja', { granularity: 'grapheme' });
 

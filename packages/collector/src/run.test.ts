@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { snapshotSchema } from '@conect-guild/snapshot';
 import { describe, expect, it } from 'vitest';
-import type { Seat } from '../collector.config.ts';
+import type { Seat } from './seat.ts';
 import { CollectorError } from './errors.ts';
 import { collectOnce, runCollector } from './run.ts';
 import {

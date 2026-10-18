@@ -1,7 +1,7 @@
 import type { LevelTag } from './levelTags';
 
 /** Canvas side effects only (levelTags.ts decides). Faint, so the room stays the picture. */
-export const LEVEL_TAG_ALPHA = 0.7;
+const LEVEL_TAG_ALPHA = 0.7;
 
 export function drawLevelTags(ctx: CanvasRenderingContext2D, tags: readonly LevelTag[]): void {
   if (tags.length === 0) return;

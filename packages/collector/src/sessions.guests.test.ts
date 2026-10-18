@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { Seat } from '../collector.config.ts';
+import type { Seat } from './seat.ts';
 import { sessionsSummary } from './report.ts';
 import { createCompanySessionsReader } from './sessionFiles.ts';
 import { latestCompanySessionIds, readSeatStates } from './sessions.ts';
