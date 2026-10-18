@@ -419,3 +419,17 @@ describe('messageQueue: the last message closes by itself (hidden, halted, ▼)'
     queue.dispose();
   });
 });
+
+describe('messageQueue: lines with a time limit (Issue #194)', () => {
+  it('drops a line whose turn comes after its time, unshown', async () => {
+    const { queue, shown } = setup();
+    queue.push([
+      entry(null, 'a'),
+      { text: 'b', event: null, until: T0 + HOLD_MS / 2 },
+      { text: 'c', event: null, until: T0 + HOLD_MS * 2 },
+    ]);
+    await vi.advanceTimersByTimeAsync(HOLD_MS * 3);
+    expect(shown.map((s) => s.message.text)).toEqual(['a', 'c']);
+    queue.dispose();
+  });
+});
