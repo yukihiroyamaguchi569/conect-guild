@@ -14,7 +14,7 @@ import { DEFAULT_SEATS } from './scenes';
 
 /** What can be pressed on the canvas (Issue #187). */
 
-const KING = CLICKABLES.find((clickable) => clickable.id === 'king');
+const [KING] = CLICKABLES;
 if (KING === undefined) throw new Error('the king cannot be pressed');
 const { rect } = KING;
 const MIDDLE = { x: (rect.left + rect.right) / 2, y: (rect.top + rect.bottom) / 2 };

@@ -143,24 +143,24 @@ describe('createCalls: the words for a click', () => {
   });
 });
 
+const PARTY: CastParty = {
+  bubbles: {},
+  known: true,
+  halted: false,
+  idleSince: { yukihiro: 0 },
+  moods: {},
+  kingQuests: 0,
+};
+const FREE = { t: 0, paused: false };
+
+function setup(random = () => 0) {
+  const calls = createCalls({ wallNow: () => WALL });
+  const frame = frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS);
+  const said = (t: number) => calls.view(() => frame, t).speeches.yukihiro;
+  return { calls, said, bless: createBless(calls, random) };
+}
+
 describe('createBless: a click on the king', () => {
-  const PARTY: CastParty = {
-    bubbles: {},
-    known: true,
-    halted: false,
-    idleSince: { yukihiro: 0 },
-    moods: {},
-    kingQuests: 0,
-  };
-  const FREE = { t: 0, paused: false };
-
-  function setup(random = () => 0) {
-    const calls = createCalls({ wallNow: () => WALL });
-    const frame = frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS);
-    const said = (t: number) => calls.view(() => frame, t).speeches.yukihiro;
-    return { calls, said, bless: createBless(calls, random) };
-  }
-
   it('says a word now', () => {
     const { bless, said } = setup();
     expect(bless(EMPTY_DIRECTOR, PARTY, FREE)).toBe(true);
@@ -201,7 +201,9 @@ describe('createBless: a click on the king', () => {
     calls.dispatch(['minori'], 0);
     expect(bless(EMPTY_DIRECTOR, PARTY, { t: 10, paused: false })).toBe(false);
   });
+});
 
+describe('createBless: scenes and the stage', () => {
   it('drops a click while the king has a part in a scene (a clear: his word to come)', () => {
     const { bless } = setup();
     const context = {

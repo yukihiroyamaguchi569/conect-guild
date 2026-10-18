@@ -53,7 +53,9 @@ describe('BLESSINGS: fixed words, like the line book', () => {
   it('shares no word with the line book (a word tells where it came from)', () => {
     const book = new Set<string>([
       ...Object.values(SHARED_LINES).flat(),
-      ...Object.values(LINE_BOOK).flatMap((lines) => Object.values(lines).flat()),
+      ...Object.values(LINE_BOOK).flatMap((lines) =>
+        Object.values<readonly string[]>(lines).flat(),
+      ),
     ]);
     expect(BLESSINGS.filter((words) => book.has(words))).toEqual([]);
   });
