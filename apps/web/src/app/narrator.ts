@@ -22,6 +22,8 @@ export interface NarratorOptions {
 export interface Narrator {
   /** Tells a new line now and starts the interval over. */
   next(): void;
+  /** Tells `text` now instead of a composed line (a thing examined, Issue #190); as next(). */
+  say(text: string): void;
   /** Tells a line now if none is shown (e.g. the first snapshot came); else does nothing. */
   wake(): void;
   /**
@@ -48,10 +50,13 @@ export function createNarrator(options: NarratorOptions): Narrator {
   /** When the running timer started counting `remaining` down; null while none runs. */
   let armedAt: number | null = null;
 
-  function tell(): void {
-    const text = compose(current?.text ?? null);
+  function show(text: string | null): void {
     current = text === null ? null : { id: nextId++, text };
     publish(current);
+  }
+
+  function tell(): void {
+    show(compose(current?.text ?? null));
   }
 
   function disarm(): void {
@@ -73,15 +78,21 @@ export function createNarrator(options: NarratorOptions): Narrator {
     });
   }
 
-  function next(): void {
+  /** Shows `text` now and starts the interval over. */
+  function restart(text: string | null): void {
     disarm();
-    tell();
+    show(text);
     remaining = intervalMs;
     arm();
   }
 
+  function next(): void {
+    restart(compose(current?.text ?? null));
+  }
+
   return {
     next,
+    say: restart,
     wake() {
       if (current === null) next();
     },

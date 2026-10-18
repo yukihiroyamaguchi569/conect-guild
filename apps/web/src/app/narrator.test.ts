@@ -143,3 +143,34 @@ describe('narrator: paused while the window cannot be seen', () => {
     expect(published).toHaveLength(1);
   });
 });
+
+describe('narrator: a given line (Issue #190)', () => {
+  it('says a given line at once, with a new id, and counts a whole interval from it', async () => {
+    const { narrator, published, previous } = setup(['a', 'b']);
+    narrator.next();
+    await vi.advanceTimersByTimeAsync(INTERVAL - 1_000);
+    narrator.say('x');
+    expect(published.map((n) => n?.text)).toEqual(['a', 'x']);
+    expect(published.map((n) => n?.id)).toEqual([1, 2]);
+    await vi.advanceTimersByTimeAsync(INTERVAL - 1);
+    expect(published).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(published.map((n) => n?.text)).toEqual(['a', 'x', 'b']);
+    // compose hears the line said, as any line on screen.
+    expect(previous).toEqual([null, 'x']);
+    narrator.stop();
+  });
+
+  it('says a line while paused, and counts a whole interval from the resume', async () => {
+    const { narrator, published } = setup(['a', 'b']);
+    narrator.next();
+    narrator.setPaused(true);
+    narrator.say('x');
+    await vi.advanceTimersByTimeAsync(INTERVAL * 3);
+    expect(published.map((n) => n?.text)).toEqual(['a', 'x']);
+    narrator.setPaused(false);
+    await vi.advanceTimersByTimeAsync(INTERVAL);
+    expect(published.map((n) => n?.text)).toEqual(['a', 'x', 'b']);
+    narrator.stop();
+  });
+});
