@@ -56,6 +56,23 @@ export const DECOR = {
   'awake-poodle': { col: 7, row: 9, w: 1, h: 1 },
   'wag-poodle-a': { col: 0, row: 10, w: 1, h: 1 },
   'wag-poodle-b': { col: 1, row: 10, w: 1, h: 1 },
+  // The month decorations, January to December (Issue #192).
+  kadomatsu: { col: 2, row: 10, w: 2, h: 2 },
+  setsubun: { col: 0, row: 11, w: 2, h: 1 },
+  'hina-dolls': { col: 4, row: 10, w: 2, h: 2 },
+  'sakura-vase': { col: 6, row: 10, w: 2, h: 2 },
+  kabuto: { col: 0, row: 12, w: 2, h: 2 },
+  hydrangea: { col: 2, row: 12, w: 2, h: 2 },
+  tanabata: { col: 4, row: 12, w: 2, h: 2 },
+  watermelon: { col: 6, row: 12, w: 2, h: 2 },
+  tsukimi: { col: 0, row: 14, w: 2, h: 2 },
+  'jack-o-lantern': { col: 6, row: 14, w: 1, h: 1 },
+  'autumn-leaves': { col: 2, row: 14, w: 2, h: 2 },
+  'christmas-tree': { col: 4, row: 14, w: 2, h: 2 },
+  // The rewards on a desk (Issue #194).
+  onigiri: { col: 7, row: 14, w: 1, h: 1 },
+  dango: { col: 6, row: 15, w: 1, h: 1 },
+  medal: { col: 7, row: 15, w: 1, h: 1 },
 } as const;
 
 export type DecorName = keyof typeof DECOR;

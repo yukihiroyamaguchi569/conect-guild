@@ -1,6 +1,7 @@
-"""Normalize the codex-generated decor sheets (decor_raw_a/b/poodle/poodle_wag.png) into decor.png.
+"""Normalize the codex-generated decor sheets (decor_raw_a/b/poodle/poodle_wag/month/small.png) into decor.png.
 
-Usage: python build_decor.py <decor_raw_a.png> <decor_raw_b.png> <decor_raw_poodle.png> <decor_raw_poodle_wag.png> <decor.png>
+Usage: python build_decor.py <decor_raw_a.png> <decor_raw_b.png> <decor_raw_poodle.png> <decor_raw_poodle_wag.png>
+       <decor_raw_month.png> <decor_raw_small.png> <decor.png>
 Ran with Python 3.14.7 and Pillow 12.3.0 (installed in a throwaway venv,
 not a project dependency).
 
@@ -15,6 +16,11 @@ its slot is shrunk to fit, up to MAX_FIT_SHRINK; beyond that the build fails.
 The two frames of the wagging poodle (decor_raw_poodle_wag.png, prompt-poodle-wag.txt) are drawn
 larger than their cells instead: each is scaled to FIT_HEIGHT and centred on its head (see
 build_fitted), so the body stays put between them and only the tail moves.
+The month decorations (decor_raw_month.png, prompt-month.txt) and the rewards (decor_raw_small.png,
+prompt-small.txt) are drawn on 256px cells, each a little off the scale of the others, so each is
+scaled to its own FIT_SIZE (about 1/4 of the height the prompt asked for) and placed bottom-center
+in the smallest slot it fits. The tankard at the left of decor_raw_small.png is held, so it goes to
+props.png (build_props.py); its part of the sheet is outside RAW's window here and ignored.
 Keep LAYOUT in sync with decor.ts (checked before building).
 """
 
@@ -30,12 +36,34 @@ from PIL import Image, ImageChops, ImageFilter
 TILE = 32
 SCALE = TILE / 128
 SHEET_COLS = 8
-SHEET_ROWS = 11
+SHEET_ROWS = 16
 # Pieces scaled to this height in px instead of by SCALE, centred on the head: the middle of the
 # opaque run HEAD_ROW of the way down the piece (the wagging poodle's two frames, as tall as
 # awake-poodle).
 FIT_HEIGHT = {"wag-poodle-a": 27, "wag-poodle-b": 27}
 HEAD_ROW = 0.3
+# Pieces cut at their region's edge instead of failing when they reach past it: tsukimi as it was
+# cut when the drawings were approved (the tip of the pampas grass right of x 265 left out).
+CLIP_TO_REGION = {"tsukimi"}
+# Pieces scaled so one side (h = height, w = width) is this many px instead of by SCALE: the month
+# decorations (Issue #192) and the rewards (Issue #194), at the sizes chosen when they were drawn.
+FIT_SIZE = {
+    "kadomatsu": ("h", 50),
+    "setsubun": ("h", 32),
+    "hina-dolls": ("h", 44),
+    "sakura-vase": ("h", 46),
+    "kabuto": ("h", 38),
+    "hydrangea": ("h", 44),
+    "tanabata": ("h", 52),
+    "watermelon": ("h", 40),
+    "tsukimi": ("h", 42),
+    "jack-o-lantern": ("h", 30),
+    "autumn-leaves": ("h", 40),
+    "christmas-tree": ("h", 52),
+    "onigiri": ("w", 22),
+    "dango": ("w", 26),
+    "medal": ("h", 24),
+}
 MAX_FIT_SHRINK = 0.15
 # Components smaller than this many raw pixels are specks: kept when they lie
 # in a piece's region, dropped otherwise.
@@ -47,11 +75,15 @@ OUTLINE = (44, 26, 20)
 
 # The search regions below are measured on these exact files; refuse others.
 # After regenerating a raw sheet, re-measure its regions and update the hash.
+# sheet id: (size, sha256, window (left, top, right, bottom) of the sheet that is read, or None
+#            for all of it)
 RAW = {
-    "a": ((1024, 512), "9673ecba0fd0b78f92677afd9c4717d759621a58787ce28e5bd8096e97ad393e"),
-    "b": ((1024, 1024), "97b2046314d540e58399ef7154750d458e171fb6e48852f47467dc5158ccf62e"),
-    "poodle": ((1024, 512), "f534f72914c6036cd2ed0f8485eb02e1a853d09383e4550d85393d8428569261"),
-    "poodle_wag": ((1024, 512), "3b981b93a6db79a4d4bba3fa67e5b0530700ca299bde3766a7a07a9f6e1a4f4d"),
+    "a": ((1024, 512), "9673ecba0fd0b78f92677afd9c4717d759621a58787ce28e5bd8096e97ad393e", None),
+    "b": ((1024, 1024), "97b2046314d540e58399ef7154750d458e171fb6e48852f47467dc5158ccf62e", None),
+    "poodle": ((1024, 512), "f534f72914c6036cd2ed0f8485eb02e1a853d09383e4550d85393d8428569261", None),
+    "poodle_wag": ((1024, 512), "3b981b93a6db79a4d4bba3fa67e5b0530700ca299bde3766a7a07a9f6e1a4f4d", None),
+    "month": ((1024, 768), "70cf30b4afb7b2021113e7c19bb85ec357c2f0689f010342e0f9a5aa047df678", None),
+    "small": ((1024, 256), "ff71645d8e9c4e7f333cd9938a6a6ec235fbaff6bb4565e42be501048c5f96ae", (325, 0, 1024, 256)),
 }
 
 # name: (raw sheet, search region (left, top, right, bottom) in raw pixels,
@@ -110,6 +142,24 @@ LAYOUT = {
     "awake-poodle": ("poodle", (650, 260, 760, 390), 7, 9, 1, 1),
     "wag-poodle-a": ("poodle_wag", (200, 170, 420, 400), 0, 10, 1, 1),
     "wag-poodle-b": ("poodle_wag", (600, 170, 820, 400), 1, 10, 1, 1),
+    # The month decorations, January to December (Issue #192). Some reach across the 256px grid
+    # (the pampas grass of tsukimi, the edge of the leaves), so the regions follow the drawing.
+    "kadomatsu": ("month", (0, 0, 256, 256), 2, 10, 2, 2),
+    "setsubun": ("month", (256, 0, 512, 256), 0, 11, 2, 1),
+    "hina-dolls": ("month", (512, 0, 768, 256), 4, 10, 2, 2),
+    "sakura-vase": ("month", (768, 0, 1024, 256), 6, 10, 2, 2),
+    "kabuto": ("month", (0, 256, 256, 496), 0, 12, 2, 2),
+    "hydrangea": ("month", (256, 256, 512, 496), 2, 12, 2, 2),
+    "tanabata": ("month", (512, 256, 768, 496), 4, 12, 2, 2),
+    "watermelon": ("month", (768, 256, 1024, 496), 6, 12, 2, 2),
+    "tsukimi": ("month", (0, 496, 265, 768), 0, 14, 2, 2),
+    "jack-o-lantern": ("month", (265, 496, 500, 768), 6, 14, 1, 1),
+    "autumn-leaves": ("month", (500, 496, 780, 768), 2, 14, 2, 2),
+    "christmas-tree": ("month", (780, 496, 1024, 768), 4, 14, 2, 2),
+    # The rewards on a desk (Issue #194).
+    "onigiri": ("small", (325, 0, 512, 256), 7, 14, 1, 1),
+    "dango": ("small", (512, 0, 735, 256), 6, 15, 1, 1),
+    "medal": ("small", (735, 0, 1024, 256), 7, 15, 1, 1),
 }
 
 
@@ -214,7 +264,9 @@ def find_pieces(sheet_id, img):
             max(regions[i][0][3] for i in mine),
         )
         region = LAYOUT[name][1]
-        if not (region[0] <= bbox[0] and region[1] <= bbox[1] and bbox[2] <= region[2] and bbox[3] <= region[3]):
+        if name in CLIP_TO_REGION:
+            bbox = (max(bbox[0], region[0]), max(bbox[1], region[1]), min(bbox[2], region[2]), min(bbox[3], region[3]))
+        elif not (region[0] <= bbox[0] and region[1] <= bbox[1] and bbox[2] <= region[2] and bbox[3] <= region[3]):
             raise SystemExit(f"{name}: drawn pixels {bbox} reach outside its region {region}")
         mask = Image.new("L", img.size)
         wanted = set(mine)
@@ -275,6 +327,19 @@ def build_fitted(crop, name, size):
     return tile
 
 
+def build_sized(crop, name, size):
+    """A FIT_SIZE piece: one side scaled to its px, in the smallest slot it fits, bottom-center."""
+    axis, px = FIT_SIZE[name]
+    scale = px / (crop.height if axis == "h" else crop.width)
+    small = shrink(crop, (max(1, round(crop.width * scale)), max(1, round(crop.height * scale))))
+    tightest = (math.ceil(small.width / TILE) * TILE, math.ceil(small.height / TILE) * TILE)
+    if size != tightest:
+        raise SystemExit(f"{name}: a {small.size} piece needs a {tightest} slot, not {size}")
+    tile = Image.new("RGBA", size, (0, 0, 0, 0))
+    tile.paste(small, ((size[0] - small.width) // 2, size[1] - small.height))
+    return tile
+
+
 def check_slots():
     taken = {}
     for name, (sheet_id, _, col, row, w, h) in LAYOUT.items():
@@ -306,7 +371,7 @@ def check_decor_ts():
 
 
 def load_raw(sheet_id, path):
-    size, sha = RAW[sheet_id]
+    size, sha, window = RAW[sheet_id]
     with open(path, "rb") as f:
         digest = hashlib.sha256(f.read()).hexdigest()
     if digest != sha:
@@ -314,15 +379,20 @@ def load_raw(sheet_id, path):
     img = Image.open(path)
     if img.size != size:
         raise SystemExit(f"expected a {size} raw sheet {sheet_id}, got {img.size}")
-    return keyed(img)
+    img = keyed(img)
+    if window is None:
+        return img
+    read = Image.new("RGBA", size, (0, 0, 0, 0))
+    read.paste(img.crop(window), window[:2])
+    return read
 
 
 def same_file(a, b):
     return os.path.realpath(a) == os.path.realpath(b) or (os.path.exists(b) and os.path.samefile(a, b))
 
 
-def main(src_a, src_b, src_poodle, src_wag, dst):
-    if any(same_file(src, dst) for src in (src_a, src_b, src_poodle, src_wag)):
+def main(src_a, src_b, src_poodle, src_wag, src_month, src_small, dst):
+    if any(same_file(src, dst) for src in (src_a, src_b, src_poodle, src_wag, src_month, src_small)):
         raise SystemExit("output path must differ from the source images")
     check_slots()
     check_decor_ts()
@@ -331,13 +401,15 @@ def main(src_a, src_b, src_poodle, src_wag, dst):
         "b": load_raw("b", src_b),
         "poodle": load_raw("poodle", src_poodle),
         "poodle_wag": load_raw("poodle_wag", src_wag),
+        "month": load_raw("month", src_month),
+        "small": load_raw("small", src_small),
     }
     sheet = Image.new("RGBA", (SHEET_COLS * TILE, SHEET_ROWS * TILE), (0, 0, 0, 0))
     placed = set()
     for sheet_id, raw in raws.items():
         for name, crop in find_pieces(sheet_id, raw).items():
             _, _, col, row, w, h = LAYOUT[name]
-            build = build_fitted if name in FIT_HEIGHT else build_piece
+            build = build_fitted if name in FIT_HEIGHT else build_sized if name in FIT_SIZE else build_piece
             sheet.paste(build(crop, name, (w * TILE, h * TILE)), (col * TILE, row * TILE))
             placed.add(name)
     if placed != set(LAYOUT):
@@ -346,9 +418,9 @@ def main(src_a, src_b, src_poodle, src_wag, dst):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 8:
         raise SystemExit(
             "usage: python build_decor.py <decor_raw_a.png> <decor_raw_b.png> <decor_raw_poodle.png>"
-            " <decor_raw_poodle_wag.png> <decor.png>"
+            " <decor_raw_poodle_wag.png> <decor_raw_month.png> <decor_raw_small.png> <decor.png>"
         )
-    main(*sys.argv[1:6])
+    main(*sys.argv[1:8])
