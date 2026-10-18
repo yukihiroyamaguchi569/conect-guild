@@ -6,6 +6,8 @@ import { drawnTexts, installCanvasTextRecorder, strokedTexts } from './canvasTex
 import { expect, test, waitForRoom } from './fixtures.ts';
 import { FIRST_GUEST_OPEN, guestsSnapshot, SECOND_GUEST_OPEN } from './guestsSnapshot.ts';
 import { NOW } from './sampleSnapshot.ts';
+import { decorDraw } from '../src/render/decorArt.ts';
+import { benchPoint, guestFeet } from '../src/render/guests.ts';
 import { layoutFor } from '../src/render/layouts/catalog.ts';
 import { tileToPoint } from '../src/render/path.ts';
 
@@ -59,6 +61,44 @@ test('the guests stand at their spots, with no name or counts under them', async
   for (const text of ['たびびと', 'Issue 3 / PR 1', 'ぼうけんしゃ', 'Issue 0 / PR 1']) {
     expect(texts).not.toContain(text);
   }
+});
+
+test('each guest is drawn in front of its bench (Issue #182)', async ({ page }) => {
+  await page.goto('/');
+  await waitForRoom(page);
+  const layout = layoutFor(4);
+  const picture = decorDraw('bench');
+  for (const [index, file] of ['guest1', 'guest2'].entries()) {
+    const feet = guestFeet(layout.guestSpots[index] ?? { col: 0, row: 0 });
+    const bench = benchPoint(feet);
+    const order = async () => {
+      const drawn = await drawnImages(page, '');
+      const benchAt = drawn.findIndex(
+        (image) =>
+          image.file.startsWith('decor') &&
+          image.sx === picture.sx &&
+          image.sy === picture.sy &&
+          image.dx === bench.x &&
+          image.dy === bench.y,
+      );
+      const bodyAt = drawn.findIndex(
+        (image) => image.file.startsWith(file) && image.dx === feet.x - SPRITE / 2,
+      );
+      return benchAt >= 0 && bodyAt > benchAt;
+    };
+    await expect.poll(order).toBe(true);
+  }
+});
+
+test('the guests still show when the small things cannot be loaded', async ({ page }) => {
+  // Not a picture: decoding fails and the stage falls back to plain boxes (loadArt.ts).
+  await page.route('**/decor.png', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: 'not a png' }),
+  );
+  await page.goto('/');
+  await waitForRoom(page);
+  await expect.poll(async () => (await drawnImages(page, 'guest1')).length).toBeGreaterThan(0);
+  expect(await drawnImages(page, 'decor')).toEqual([]);
 });
 
 test('a guest’s merged PR is told in the message window', async ({ page, snapshotServer }) => {

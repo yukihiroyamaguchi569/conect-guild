@@ -1,21 +1,31 @@
-import type { SpriteArt } from './art';
+import type { DecorArt, SpriteArt } from './art';
 import { drawSleepZ } from './draw';
 import { drawBubble } from './drawBubble';
 import { readingPoint, type GuestArt } from './guestArt';
-import { markFeet, type GuestFrame, type SparkleView } from './guests';
+import { benchPoint, markFeet, type GuestFrame, type SparkleView } from './guests';
 
 /**
  * Canvas side effects only (guests.ts decides): the guests at their spots, then what is over
  * them. No name or counts are drawn under a guest (Issue #122).
  */
 
-/** The guests, after the members and the furniture; a reading guest holds a scroll. */
+/**
+ * The guests, after the members and the furniture, each in front of a bench (Issue #182; the
+ * placeholder box when the small things' pictures cannot be loaded); a reading guest holds a
+ * scroll.
+ */
 export function drawGuestBodies(
   ctx: CanvasRenderingContext2D,
   frame: GuestFrame,
-  art: { readonly guests: GuestArt; readonly sprites: Pick<SpriteArt, 'drawProp'> },
+  art: {
+    readonly guests: GuestArt;
+    readonly sprites: Pick<SpriteArt, 'drawProp'>;
+    readonly decor: DecorArt;
+  },
 ): void {
   for (const { guest, feet, look } of frame.poses) {
+    const bench = benchPoint(feet);
+    art.decor.drawDecor(ctx, 'bench', bench.x, bench.y);
     const at = { x: feet.x, y: feet.y + look.dy };
     art.guests.drawGuest(ctx, guest.index, look, at);
     if (look.reading) art.sprites.drawProp(ctx, 'scroll', readingPoint(guest.index, at), 'carry');
