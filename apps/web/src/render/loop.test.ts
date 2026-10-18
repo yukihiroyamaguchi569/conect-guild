@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AMBIENT } from './metrics';
 import { EMPTY_DIRECTOR, scheduleEvent } from './director';
-import { isPaused, isShown, scenesShown } from './loop';
+import { calendarOf, isPaused, isShown, scenesShown } from './loop';
 import { createScheduler, nextDraw } from './scheduler';
 import { DEFAULT_SEATS } from './scenes';
 
@@ -142,5 +142,23 @@ describe('scenes while the canvas is out of sight', () => {
   it('drops the scenes while the canvas has no width, so they never play late', () => {
     expect(scenesShown(scene, 0)).toBe(EMPTY_DIRECTOR);
     expect(scenesShown(scene, 320)).toBe(scene);
+  });
+});
+
+describe('calendarOf (Issue #192)', () => {
+  it('reads the month of the ornament from the injected wall clock', () => {
+    const calendar = calendarOf({
+      localHour: () => 23.5,
+      wallNow: () => new Date(2026, 10, 1, 0, 0, 5).getTime(),
+    });
+    expect(calendar()).toEqual({ hour: 23.5, month: 11 });
+  });
+
+  it('reads it again on every frame, so an open page turns to the next month', () => {
+    let now = new Date(2026, 11, 31, 23, 59, 59).getTime();
+    const calendar = calendarOf({ localHour: () => 0, wallNow: () => now });
+    expect(calendar().month).toBe(12);
+    now += 1000;
+    expect(calendar().month).toBe(1);
   });
 });
