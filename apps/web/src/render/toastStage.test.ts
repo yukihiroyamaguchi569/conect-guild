@@ -10,7 +10,7 @@ import { createToastStage, localDayOf, TOAST_DAY_KEY } from './toastStage';
 /** Friday 16 October 2026, local time. */
 const friday = (hour: number, minute = 0) => new Date(2026, 9, 16, hour, minute).getTime();
 const FREE: AmbientMoods = { minori: 'idle', hibiki: 'idle', hirame: 'desk-work' };
-const QUIET = { t: 0, moods: FREE, idle: {}, calling: false, halted: false };
+const QUIET = { t: 0, moods: FREE, idle: {}, calling: false, halted: false, visiting: false };
 
 function stageAt(wall: number, stored?: unknown) {
   const memory = createMemoryStorage();
@@ -52,12 +52,25 @@ describe('createToastStage', () => {
     );
   });
 
+  it('does not start when another tab raised it since this one was opened', () => {
+    const { stage, store } = stageAt(friday(17, 50));
+    expect(started(stage.start(EMPTY_DIRECTOR, QUIET))).toBe(false);
+    store.write(TOAST_DAY_KEY, '2026-10-16');
+    const late = createToastStage(store, () => friday(19));
+    expect(started(late.start(EMPTY_DIRECTOR, QUIET))).toBe(false);
+    const { stage: early, store: shared } = stageAt(friday(19));
+    shared.write(TOAST_DAY_KEY, '2026-10-16');
+    expect(started(early.start(EMPTY_DIRECTOR, QUIET))).toBe(false);
+  });
+
   it('reads a broken stored day as none', () => {
     expect(started(stageAt(friday(19), { day: 'x' }).stage.start(EMPTY_DIRECTOR, QUIET))).toBe(
       true,
     );
   });
+});
 
+describe('createToastStage, waiting', () => {
   it('waits while a scene or a call plays, or the screen is halted', () => {
     const seat = DEFAULT_SEATS.kaname;
     const walk = walkSegment([seat, { col: seat.col + 1, row: seat.row }, seat], 0);
@@ -66,6 +79,7 @@ describe('createToastStage', () => {
     expect(stage.start(busy, QUIET)).toBe(busy);
     expect(started(stage.start(EMPTY_DIRECTOR, { ...QUIET, calling: true }))).toBe(false);
     expect(started(stage.start(EMPTY_DIRECTOR, { ...QUIET, halted: true }))).toBe(false);
+    expect(started(stage.start(EMPTY_DIRECTOR, { ...QUIET, visiting: true }))).toBe(false);
     expect(started(stage.start(EMPTY_DIRECTOR, QUIET))).toBe(true);
   });
 

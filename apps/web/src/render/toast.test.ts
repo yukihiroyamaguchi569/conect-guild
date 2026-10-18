@@ -3,6 +3,7 @@ import type { MemberId } from '../guild.config';
 import type { AmbientMoods } from './ambient';
 import { EMPTY_DIRECTOR, isAnimating, poseAt, sendHome, trackEnd } from './director';
 import type { IdlePose } from './idle';
+import { SHARED_LINES } from './lineBook';
 import { linesAt } from './lines';
 import { isWalkable, PLACES } from './map';
 import { walkSegment } from './motion';
@@ -127,7 +128,8 @@ describe('planToast', () => {
   it('has the first say 「かんぱーい！」 when all are there, and nobody else', () => {
     const toast = planned(['minori', 'hibiki', 'hirame']);
     expect(toast.lines).toHaveLength(1);
-    expect(toast.lines[0]).toMatchObject({ actor: 'minori', line: 'かんぱーい！' });
+    expect(toast.lines[0]).toMatchObject({ actor: 'minori', line: SHARED_LINES.toast[0] });
+    expect(SHARED_LINES.toast).toEqual(['かんぱーい！']);
   });
 });
 

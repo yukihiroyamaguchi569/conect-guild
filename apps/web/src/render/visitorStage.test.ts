@@ -133,8 +133,11 @@ describe('createVisitorStage, turning back', () => {
 
   it('drops the visitor at once when the canvas goes out of sight, and it does not come back', () => {
     const { stage } = stageAt(FIRST.at);
+    expect(stage.isVisiting()).toBe(false);
     expect(stage.frameAt(0, QUIET)).not.toBeNull();
+    expect(stage.isVisiting()).toBe(true);
     stage.clear();
+    expect(stage.isVisiting()).toBe(false);
     expect(stage.frameAt(100, QUIET)).toBeNull();
   });
 });

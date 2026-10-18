@@ -12,7 +12,8 @@ import { planToast, releaseFromToast, toasters, withToast, type Toast } from './
  * The toast the loop keeps (Issue #193): whether it was raised this Friday, kept in localStorage as
  * the local date only (`conect-guild:toast-day`, read with zod), and the toast on the stage, so
  * that its members can be released. It starts once the stage is quiet: no scene, no call, not
- * halted. Fewer than two free hands: it waits for more that evening.
+ * halted, no visitor in the room. Fewer than two free hands: it waits for more that evening. The day
+ * is read again just before it starts, so two tabs do not both raise it.
  */
 
 export const TOAST_DAY_KEY = 'conect-guild:toast-day';
@@ -27,6 +28,8 @@ export interface ToastStage {
       readonly idle: IdlePoses;
       readonly calling: boolean;
       readonly halted: boolean;
+      /** A visitor is in the room (visitorStage.ts): the toast waits until it has gone. */
+      readonly visiting: boolean;
     },
   ): Director;
   /** The director with `ids` out of the toast at `t` (toast.releaseFromToast). */
@@ -44,14 +47,20 @@ export function createToastStage(
   store: KeyValueStore,
   wallNow: () => number = () => Date.now(),
 ): ToastStage {
-  const read = store.read(TOAST_DAY_KEY, toastDaySchema);
-  let lastDay = read.ok ? read.value : null;
+  const stored = (): string | null => {
+    const read = store.read(TOAST_DAY_KEY, toastDaySchema);
+    return read.ok ? read.value : null;
+  };
+  let lastDay = stored();
   let toast: Toast | null = null;
   return {
     start(director, at) {
       const { t } = at;
-      if (at.halted || at.calling || isAnimating(director, t)) return director;
+      if (at.halted || at.calling || at.visiting || isAnimating(director, t)) return director;
       const local = localDayOf(wallNow());
+      if (!isToastTime(local, lastDay)) return director;
+      // Another tab may have raised it since this one was opened.
+      lastDay = stored() ?? lastDay;
       if (!isToastTime(local, lastDay)) return director;
       const ids = toasters(director, t, { moods: at.moods, idle: at.idle, seats: DEFAULT_SEATS });
       const planned = planToast(ids, t, DEFAULT_SEATS);

@@ -216,7 +216,15 @@ function toastAt(room: Room, cast: Cast, director: Director, at: { t: number; pa
   const { t, party } = at;
   const { moods, halted } = party;
   const calling = cast.calls.isCalling(t);
-  return room.toast.start(director, { t, moods, halted, calling, idle: cast.crew.poses() });
+  const visiting = room.visitors.isVisiting();
+  return room.toast.start(director, {
+    t,
+    moods,
+    halted,
+    calling,
+    visiting,
+    idle: cast.crew.poses(),
+  });
 }
 
 /**

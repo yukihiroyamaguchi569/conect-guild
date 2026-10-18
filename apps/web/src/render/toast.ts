@@ -4,6 +4,7 @@ import { ACTIVE_MEMBER_IDS, type MemberId, type TilePos } from '../guild.config'
 import type { AmbientMoods } from './ambient';
 import { inScene, trackEnd, type Director } from './director';
 import { homeWalk, type IdlePoses } from './idle';
+import { SHARED_LINES } from './lineBook';
 import { showMs, type Utterance } from './lines';
 import { isWalkable } from './map';
 import { carry, raise, staySegment, walkSegment, type Segment } from './motion';
@@ -14,9 +15,9 @@ import { stepAt } from './visitors';
 /**
  * The Friday evening toast on the stage (Issue #193), pure: those with nothing to do walk to the
  * red rug in front of the counter with a tankard, wait for one another, raise it together (the
- * one in the middle says 「かんぱーい！」), stand a while and walk back. Their parts are tracks of the director, so a
- * scene that needs one of them is not started on top of it: they are released (walk back now from
- * where they are) first. Times are the stage clock's.
+ * one in the middle says 「かんぱーい！」), stand a while and walk back. Their parts are tracks of
+ * the director, so a scene that needs one of them is not started on top of it: they are released
+ * (walk back now from where they are) first. Times are the stage clock's.
  */
 
 export const TOAST = {
@@ -36,6 +37,9 @@ export const TOAST_SPOTS: readonly TilePos[] = SPOT_COLS.map((col) => ({
   col,
   row: SPOT_ROW,
 })).filter(isWalkable);
+
+/** What the first of them says as the tankards go up (lineBook.SHARED_LINES). */
+const [TOAST_LINE] = SHARED_LINES.toast;
 
 /** Moods of a member with nothing to do (ambient.ambientMoodOf): no work, no PR to look at. */
 const FREE_MOODS: ReadonlySet<string> = new Set(['idle', 'fan']);
@@ -101,7 +105,7 @@ export function planToast(
   // One says it for all: side by side, every bubble would cover the next.
   const lines = walks.slice(0, 1).map(({ id }): Utterance => ({
     actor: id,
-    line: 'かんぱーい！',
+    line: TOAST_LINE,
     start: all,
     end: all + showMs('toast'),
   }));

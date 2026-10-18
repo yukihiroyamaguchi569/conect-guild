@@ -45,6 +45,7 @@ const SCENES: readonly LineScene[] = [
   'askDoze',
   'askSleep',
   'askPlay',
+  'toast',
 ];
 
 /** The king's moments: a clear, his own quest's scroll (Issue #146) and clear, his murmurs (#151). */
@@ -65,6 +66,8 @@ const ENTRIES = MEMBERS.flatMap((id) =>
   ),
 );
 const ALL_LINES = ENTRIES.flatMap((entry) => entry.lines);
+/** The moments a line is chosen at: the toast (Issue #193) has its one fixed shout. */
+const CHOSEN = ENTRIES.filter((entry) => entry.scene !== 'toast');
 
 /** Hiragana, katakana (with the long-vowel mark) and the few signs a bubble may carry. */
 const ALLOWED = /^[ぁ-ゖァ-ヺー〜！？…、♪]+$/u;
@@ -114,7 +117,7 @@ describe('line book: answers to a click', () => {
 });
 
 describe('line book: each moment', () => {
-  it.each(ENTRIES)('$id at $scene has at least 3 lines, none twice', ({ lines }) => {
+  it.each(CHOSEN)('$id at $scene has at least 3 lines, none twice', ({ lines }) => {
     expect(lines.length).toBeGreaterThanOrEqual(3);
     expect(new Set(lines).size).toBe(lines.length);
   });
