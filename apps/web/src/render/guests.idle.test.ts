@@ -59,6 +59,13 @@ describe('a guest with nothing to do', () => {
     }
   });
 
+  it('raises the 「Z」 by the wall clock, as the members do, not by the stage clock', () => {
+    const wall = Math.ceil(IDLE.sleepAfterMs / IDLE.zRiseMs) * IDLE.zRiseMs + IDLE.zRiseMs / 4;
+    for (const t of [0, 1_234, IDLE.zRiseMs / 2]) {
+      expect(guestLook(idleGuest(0), { t, wall }, true).mark).toEqual({ kind: 'z', rise: 0.25 });
+    }
+  });
+
   it('stays awake while the time is not known', () => {
     expect(lookAt(idleGuest(0, { idleSince: null }), 90 * MIN)).toMatchObject({
       frame: 0,

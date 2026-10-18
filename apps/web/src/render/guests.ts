@@ -90,8 +90,8 @@ function restingLook(guest: Pick<StageGuest, 'index' | 'idleSince'>, now: GuestC
     const mark = doze.mark === null ? null : { kind: 'dots' as const };
     return { ...STANDING, frame: doze.frame, flip: doze.flip, dy: doze.offset.y, mark };
   }
-  // Asleep on the spot, as the members sleep at their seats (idle.ts).
-  const phase = Math.max(now.t - guest.index * GUEST.phaseMs, 0);
+  // Asleep on the spot, as the members sleep at their seats (idle.ts): the 「Z」 too goes by the wall.
+  const phase = Math.max(now.wall - guest.index * GUEST.phaseMs, 0);
   const rise = (phase % IDLE.zRiseMs) / IDLE.zRiseMs;
   return { ...STANDING, frame: 7, mark: { kind: 'z', rise } };
 }

@@ -35,8 +35,9 @@ function at(t: number, wall = t): { t: number; wall: number } {
   return { t, wall };
 }
 
-/** Asleep: idle since the start of the wall clock, 30 minutes on. */
+/** Asleep: idle since the start of the wall clock; at SLEEP_WALL, past 30 minutes, a 「Z」 starts. */
 const ASLEEP = { idleSince: 0 } as const;
+const SLEEP_WALL = Math.ceil(IDLE.sleepAfterMs / IDLE.zRiseMs) * IDLE.zRiseMs;
 
 describe('stageGuestsOf', () => {
   it('keeps the index and the state only: no name or counts are drawn (Issue #122)', () => {
@@ -86,7 +87,7 @@ describe('guestLook', () => {
   it('sleeps after 30 minutes resting or idle: the sleeping frame, still, and a rising 「Z」', () => {
     for (const state of ['resting', 'idle'] as const) {
       for (const t of [0, IDLE.zRiseMs / 4, IDLE.zRiseMs / 2]) {
-        const look = guestLook(guest(0, { state, ...ASLEEP }), at(t, IDLE.sleepAfterMs), true);
+        const look = guestLook(guest(0, { state, ...ASLEEP }), at(0, SLEEP_WALL + t), true);
         expect(look.frame).toBe(7);
         expect(look.dy).toBe(0);
         expect(look.reading).toBe(false);
@@ -101,7 +102,7 @@ describe('guestLook', () => {
     expect(guestLook(guest(0, working), at(t), true).dy).toBe(GUEST.readPx);
     expect(guestLook(guest(1, working), at(t), true).dy).toBe(0);
     const z = (index: number) =>
-      guestLook(guest(index, ASLEEP), at(IDLE.zRiseMs / 2, IDLE.sleepAfterMs), true).mark;
+      guestLook(guest(index, ASLEEP), at(0, SLEEP_WALL + IDLE.zRiseMs / 2), true).mark;
     expect(z(0)).not.toEqual(z(1));
   });
 });
