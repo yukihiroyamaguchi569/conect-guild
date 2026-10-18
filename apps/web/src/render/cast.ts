@@ -1,6 +1,7 @@
 import type { MemberId } from '../guild.config';
 import { createAmbientSeeds, type AmbientMoods } from './ambient';
 import type { GuildArt } from './art';
+import { createAsking, type Asking } from './asking';
 import { blessingFor, blessMomentOf, type BlessingLine } from './blessing';
 import { createCalls, type CallsOptions, type CallView, type Calls } from './calls';
 import type { Random } from './confetti';
@@ -53,6 +54,8 @@ export interface Cast {
   readonly calls: Calls;
   /** The pet's clicks (Issue #186): whether it is up from one now (petting.ts). */
   readonly petting: Petting;
+  /** The members' answers to clicks (Issue #191, asking.ts). */
+  readonly asking: Asking;
   frame(director: Director, t: number, moods: AmbientMoods): StageFrame;
   /**
    * Takes a new party at stage time `t`: the idle times (members whose time changed walk back), the
@@ -84,6 +87,16 @@ export interface Cast {
     party: CastParty,
     at: { readonly t: number; readonly paused: boolean },
   ): boolean;
+  /**
+   * Member `id` was clicked at `t` (Issue #191): they answer with a line of what they do, unless
+   * the click is dropped (asking.askSceneOf; a remark of theirs showing or to come drops it too).
+   */
+  ask(
+    id: MemberId,
+    director: Director,
+    party: CastParty,
+    at: { readonly t: number; readonly paused: boolean },
+  ): boolean;
 }
 
 /** Where the remarks draw their chance and their line from, and tell what was seen (Issue #47). */
@@ -106,6 +119,19 @@ export function createBless(calls: Calls, random: Random): Cast['bless'] {
   };
 }
 
+/** The members' long idle spells (idleCrew.ts). */
+function crewOf(
+  random: Random,
+  options: Pick<CallsOptions, 'wallNow' | 'onActive'> & { readonly idleSeeds?: IdleSeeds },
+): IdleCrew {
+  return createIdleCrew({
+    random,
+    seeds: options.idleSeeds,
+    wallNow: options.wallNow ?? (() => Date.now()),
+    onActive: options.onActive,
+  });
+}
+
 /** The members' small moves and long idle spells over the director's scenes, and the king's calls. */
 export function createCast(
   art: GuildArt,
@@ -115,22 +141,20 @@ export function createCast(
 ): Cast {
   const seeds = createAmbientSeeds(random);
   const hasHoldFrames = (id: MemberId): boolean => art.sprites.hasHoldFrames(id);
-  const crew = createIdleCrew({
-    random,
-    seeds: options.idleSeeds,
-    wallNow: options.wallNow ?? (() => Date.now()),
-    onActive: options.onActive,
-  });
+  const crew = crewOf(random, options);
   const calls = createCalls(options);
   const petting = createPetting();
+  const asking = createAsking(crew, calls, talk);
   let remarks: Remarks = NO_REMARKS;
   let murmurs: Murmurs = NO_MURMURS;
   return {
     crew,
     calls,
     petting,
+    asking,
     receive: (director, party, at) => {
       petting.setHalted(party.halted);
+      if (party.halted) asking.clear();
       // かなめ's visits to the throne dropped with the calls turn back to her counter (visit.ts).
       const cut = calls
         .setHalted(party.halted)
@@ -157,8 +181,10 @@ export function createCast(
     silence: () => {
       remarks = silenced(remarks);
       murmurs = NO_MURMURS;
+      asking.clear();
     },
     bless: createBless(calls, talk.random),
+    ask: (id, director, party, at) => asking.ask(id, { director, party }, { ...at, remarks }),
     frame: (director, t, moods) =>
       frameAt(director, t, DEFAULT_SEATS, {
         moods,
@@ -191,7 +217,15 @@ export function stageAt(
     ...decorCuesOf(party.moods, director.bursts, t, view.frame.members),
     petted: cast.petting.isPetted(t, party.halted),
   };
-  const { remarks, remarking } = cast.remarksAt(t, view);
+  const said = cast.remarksAt(t, view);
+  // The answers to clicks (Issue #191) show where the remarks do, under them, and put the murmurs
+  // off too.
+  const remarks = { ...cast.asking.linesAt(t), ...said.remarks };
+  cast.asking.drew(t, view.frame.members, (id) => {
+    const { speeches, frame: drawn } = view;
+    return [speeches[id], drawn.lines[id], said.remarks[id]].some((top) => top !== undefined);
+  });
+  const remarking = said.remarking || cast.asking.isAnswering(t, null);
   const animating = isAnimating(director, t) || remarking;
   const frame = { ...at, members: view.frame.members, busy: animating || view.calling };
   const murmurs = cast.murmursAt(frame, view);

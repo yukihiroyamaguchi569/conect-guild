@@ -20,7 +20,16 @@ import { bootStage, cueAction, type StageState } from '../app/stageBoot';
 import { ambientMoodsOf } from '../render/ambient';
 import type { GuildArt } from '../render/art';
 import { bubblesOf } from '../render/bubbles';
-import { CLICKABLES, pressedAt, pressStyle, toLogical, type Clickable } from '../render/clickables';
+import {
+  CLICKABLES,
+  MEMBER_SEAT_CLICKABLES,
+  memberClickables,
+  pressedAt,
+  pressStyle,
+  toLogical,
+  withMembers,
+  type Clickable,
+} from '../render/clickables';
 import type { ThingKind } from '../render/examine';
 import { hourFromQuery } from '../render/daylight';
 import { levelsOf } from '../render/levelTags';
@@ -277,11 +286,12 @@ watch(() => props.sparkle?.id, takeSparkle);
 function press(item: Clickable): void {
   if (props.halted) return;
   if (item.id === 'thing') emit('examine', item.thing);
+  else if (item.id === 'member') loop?.ask(item.member);
   else if (item.id === 'king') loop?.bless();
   else loop?.pet();
 }
 
-/** The king and the pet have a button each; the room's things share one stop of Tab. */
+/** The king and the pet have a button each; the members, and the room's things, share one stop of Tab. */
 const SOLO_PRESSES = CLICKABLES.filter((item) => item.id !== 'thing');
 const THING_PRESSES = CLICKABLES.filter((item) => item.id === 'thing');
 
@@ -294,7 +304,9 @@ function clickableUnder(event: MouseEvent): Clickable | null {
   if (element === null) return null;
   const box = element.getBoundingClientRect();
   const offset = { x: event.clientX - box.left, y: event.clientY - box.top };
-  return pressedAt(toLogical(offset, box));
+  // The members are found where they were last drawn (Issue #191).
+  const items = withMembers(CLICKABLES, memberClickables(loop?.feet() ?? []));
+  return pressedAt(toLogical(offset, box), items);
 }
 
 function onClick(event: MouseEvent): void {
@@ -340,6 +352,7 @@ watch(() => props.cue?.id, takeCue, { immediate: true });
         :aria-label="item.label"
         @click="press(item)"
       />
+      <PressGroup :items="MEMBER_SEAT_CLICKABLES" label="メンバー" @press="press" />
       <PressGroup
         v-if="THING_PRESSES.length > 0"
         :items="THING_PRESSES"

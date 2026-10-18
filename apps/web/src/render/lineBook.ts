@@ -64,7 +64,19 @@ export type LineScene =
   | 'windowMorning'
   | 'windowDay'
   | 'windowEvening'
-  | 'windowNight';
+  | 'windowNight'
+  /** Clicked (Issue #191) with work at the desk. */
+  | 'askWork'
+  /** Clicked at the seat with nothing to do, awake. */
+  | 'askIdle'
+  /** Clicked with a waiting bubble over the head. */
+  | 'askWait'
+  /** Clicked dozing at the seat. */
+  | 'askDoze'
+  /** Clicked asleep at the seat: they talk in their sleep and sleep on. */
+  | 'askSleep'
+  /** Clicked staying at a play spot. */
+  | 'askPlay';
 
 /** At least one line for each moment a member has. */
 type Choices = readonly [string, ...string[]];
@@ -81,6 +93,8 @@ export const LINE_BOOK = {
     awaitPermission: ['よろしいですか', 'ごかくにんを！', 'きょかを…'],
     work: ['てきぱきと！', 'じゅんばんに', 'ととのえて…', 'よし、つぎ'],
     idle: ['ひまですね', 'つぎはまだかな', 'うけつけ、ヨシ', 'のんびりです'],
+    askWork: ['いそがしいです', 'あとでね！', 'しごとちゅう！'],
+    askIdle: ['ごようですか？', 'はい、なにか？', 'どうしました？'],
   },
   minori: {
     takeScroll: ['うけたまわり！', 'けいさんします', 'はい、きっちり', 'おまかせを'],
@@ -91,6 +105,8 @@ export const LINE_BOOK = {
     awaitPermission: ['よいですか？', 'きょか、まだ？', 'おうかがいを'],
     work: ['ぱちぱち…', 'あうかな…', 'よし、あった', 'きっちりと'],
     idle: ['ふう…', 'のんびり…', 'せいとん、よし'],
+    askWork: ['けいさんちゅう', 'いそがしい！', 'あとにして…'],
+    askIdle: ['なにか？', 'ごようけん？', 'どうしたの？'],
   },
   hibiki: {
     takeScroll: ['まかせて！', 'きたきた！', 'いくよー！', 'よっしゃ！'],
@@ -101,6 +117,8 @@ export const LINE_BOOK = {
     awaitPermission: ['いい？いい？', 'まだかな〜', 'ゴーサイン？'],
     work: ['いいかんじ！', 'ノッてきた！', 'よし、いける', 'ラララ♪'],
     idle: ['ひまだ〜', 'ふんふ〜ん♪', 'なにしよっか'],
+    askWork: ['いまムリ〜！', 'あとでね〜', 'てがはなせない'],
+    askIdle: ['よんだ〜？', 'なになに？', 'あそぼっか？'],
   },
   hirame: {
     takeScroll: ['おもしろそう', 'かんがえます', 'ふむ、なるほど', 'いいですね'],
@@ -111,6 +129,8 @@ export const LINE_BOOK = {
     awaitPermission: ['いいのかな…', 'すすめても？', 'うーん、まつ'],
     work: ['うーん…', 'もしかして…', 'メモメモ', 'ピンときた！'],
     idle: ['ぼんやり…', 'ふと、おもう', 'くもみたい…'],
+    askWork: ['かんがえちゅう', 'いまちょっと…', 'あとで…！'],
+    askIdle: ['なんでしょう', 'ん、なにか？', 'アイデア？'],
   },
   sasae: {
     takeScroll: ['まかせてね', 'しょうちです', 'やっておくね', 'はーい'],
@@ -121,6 +141,8 @@ export const LINE_BOOK = {
     awaitPermission: ['いいかしら？', 'まってますね', 'どうかしら？'],
     work: ['せいり、せいり', 'こつこつと', 'ファイル、よし'],
     idle: ['おそうじ、よし', 'へいわだね', 'おちゃにする？'],
+    askWork: ['いそがしいの', 'あとでいい？', 'ちょっとまって'],
+    askIdle: ['なにかしら？', 'こまりごと？', 'はーいはい'],
   },
   takumi: {
     takeScroll: ['うけおった', 'つくりますか', 'よし、やるか', 'まかせとけ'],
@@ -131,6 +153,8 @@ export const LINE_BOOK = {
     awaitPermission: ['いいですか？', 'うごかすぞ？', 'まだかな'],
     work: ['とんてんかん', 'ここをこうして', 'ねじ、よし', 'カチャカチャ'],
     idle: ['どうぐのていれ', 'ひとやすみ', 'ふむ…'],
+    askWork: ['てがはなせん', 'いそがしい！', 'あとにしてくれ'],
+    askIdle: ['なんだい？', 'ようか？', 'おう、なにか'],
   },
   musubi: {
     takeScroll: ['よろこんで！', 'おまかせを！', 'つなぎます！', 'いってきます'],
@@ -141,6 +165,8 @@ export const LINE_BOOK = {
     awaitPermission: ['よろしくて？', 'おまちします', 'いいかな？'],
     work: ['にこにこ', 'あいさつから', 'ごあいさつ♪', 'こうしょう…'],
     idle: ['おちゃのじかん', 'だれかくるかな', 'ふふっ'],
+    askWork: ['いそがしいの！', 'あとでね♪', 'いまはちょっと'],
+    askIdle: ['こんにちは！', 'ごようですか', 'なにかしら♪'],
   },
   yukihiro: {
     seeClear: ['みごとじゃ！', 'あっぱれ！', 'ほめてつかわす'],
@@ -164,6 +190,10 @@ export const SHARED_LINES = {
   windowNight: ['ほしがきれい', 'しずかだね', 'つきだ…'],
   doze: ['ねむ…', 'ふぁ〜', 'うと…うと…'],
   sleepTalk: ['むにゃ…', 'すぴー…', 'あとすこし…'],
+  askWait: ['まってるの', 'へんじまち…', 'まちぼうけ…'],
+  askDoze: ['ん…？', 'はっ…！', 'ねてないよ…'],
+  askSleep: ['あとごふん…', 'むにゃむにゃ', 'すやぁ…'],
+  askPlay: ['やすみちゅう〜', 'きゅうけいだよ', 'ひといきちゅう'],
 } as const satisfies Readonly<Partial<Record<LineScene, Choices>>>;
 
 type Book = typeof LINE_BOOK;
@@ -208,6 +238,12 @@ const SCENES: readonly LineScene[] = [
   'windowDay',
   'windowEvening',
   'windowNight',
+  'askWork',
+  'askIdle',
+  'askWait',
+  'askDoze',
+  'askSleep',
+  'askPlay',
 ];
 
 /** The moment a member says `line` at (a member never has one line at two moments: lineBook.test.ts). */

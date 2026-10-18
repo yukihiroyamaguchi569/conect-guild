@@ -69,6 +69,12 @@ const SHOW_MS: Readonly<Record<LineScene, number>> = {
   windowDay: LINES.murmurMs,
   windowEvening: LINES.murmurMs,
   windowNight: LINES.murmurMs,
+  askWork: LINES.remarkMs,
+  askIdle: LINES.remarkMs,
+  askWait: LINES.remarkMs,
+  askDoze: LINES.remarkMs,
+  askSleep: LINES.remarkMs,
+  askPlay: LINES.remarkMs,
 };
 
 /** How long a line of `scene` shows. */

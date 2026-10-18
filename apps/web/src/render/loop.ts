@@ -20,6 +20,7 @@ import type { IdleSeeds, IdleSince } from './idle';
 import { playEvent, recallHome, type HomeIn } from './idleCrew';
 import type { Levels } from './levelTags';
 import { createLinePicker, seenLines, type LinePicker } from './lines';
+import type { Asking } from './asking';
 import { createCast, stageAt, talkOf, type Cast } from './cast';
 import { context2d, createPainter, paint, type Painter } from './painter';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
@@ -137,6 +138,15 @@ export interface RenderLoop {
    * (petting.mayPet). True when it is up from the click.
    */
   pet(): boolean;
+  /**
+   * Member `id` was clicked (Issue #191): they answer over their head with a line of what they do.
+   * Dropped while halted, before the first snapshot, while drawing would not be seen, while a call
+   * plays, and while they are in a scene, on the way, or say something else (asking.askSceneOf).
+   * True when they answer.
+   */
+  ask(id: MemberId): boolean;
+  /** Where each member was drawn in the last frame (feet; the king too), for the clicks. */
+  feet(): ReturnType<Asking['feet']>;
   /**
    * What the party state shows on the stage: the waiting bubbles, the ambient moves, and since
    * when each member has had nothing to do (idle.ts; a member whose time changes while out playing
@@ -419,15 +429,32 @@ function petNow(
   return up;
 }
 
-/** The presses on the canvas (the king, the pet), on the stage as `now()` gives it at the press. */
+/** A member clicked (Issue #191): they answer, and the frame is drawn, unless the click is dropped. */
+function askNow(
+  cast: Pick<Cast, 'ask'>,
+  schedule: Scheduler,
+  id: MemberId,
+  at: Parameters<typeof blessNow>[2],
+): boolean {
+  const said = cast.ask(id, at.director, at.party, at);
+  if (said) schedule.now();
+  return said;
+}
+
+/**
+ * The presses on the canvas (the king, the pet, the members), on the stage as `now()` gives it at
+ * the press.
+ */
 function presses(
-  cast: Pick<Cast, 'bless' | 'petting'>,
+  cast: Pick<Cast, 'bless' | 'petting' | 'ask' | 'asking'>,
   schedule: Scheduler,
   now: () => Parameters<typeof blessNow>[2],
-): Pick<RenderLoop, 'bless' | 'pet'> {
+): Pick<RenderLoop, 'bless' | 'pet' | 'ask' | 'feet'> {
   return {
     bless: () => blessNow(cast, schedule, now()),
     pet: () => petNow(cast, schedule, now()),
+    ask: (id) => askNow(cast, schedule, id, now()),
+    feet: () => cast.asking.feet(),
   };
 }
 
