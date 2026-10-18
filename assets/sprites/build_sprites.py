@@ -1,22 +1,29 @@
-"""Cut the two codex-generated sprite sheets into one strip of seven square frames per member.
+"""Cut the three codex-generated sprite sheets into one strip of eight square frames per member.
 
-Inputs, both one row per member (in --members order) on a magenta (#ff00ff) background,
-with 256x256 cells:
-- the main sheet, 4 columns (1024 wide): frames 0-3
-- the poses sheet, 3 columns (768 wide): frames 4-6
+Inputs on a magenta (#ff00ff) background, with 256x256 cells:
+- the main sheet, one row per member (in --members order), 4 columns (1024 wide): frames 0-3
+- the poses sheet, one row per member, 3 columns (768 wide): frames 4-6
+- the sleep sheet, one cell per member in --members order, left to right then top to bottom,
+  --sleep-cols columns: frame 7
 Defaults: the six members kaname..yukihiro, source-sheet.png (1024x1536, see prompt.txt) and
-source-sheet-poses.png (768x1536, see prompt-poses.txt) next to this script, and this script's
-directory as output. Other members: e.g. --members takumi,musubi,guest1,guest2 with
---sheet source-sheet-new4.png --poses source-sheet-new4-poses.png (1024x1024 and 768x1024).
+source-sheet-poses.png (768x1536, see prompt-poses.txt) and source-sheet-sleep.png (768x512, 3
+columns, see prompt-sleep.txt) next to this script, and this script's directory as output. Other
+members: e.g. --members takumi,musubi,guest1,guest2 with --sheet source-sheet-new4.png
+--poses source-sheet-new4-poses.png --sleep source-sheet-new4-sleep.png --sleep-cols 2
+(1024x1024, 768x1024 and 512x512).
 The scale comes from the main sheet's tallest and widest frame; --scale-from <main sheet> takes it
 from another main sheet instead (e.g. source-sheet.png, so new members stand at the same size).
-Output: <out_dir>/<memberId>.png, seven FRAME x FRAME frames (80x80, so 560x80) side by side
+The sleep sheet is drawn at the main sheet's size and takes its scale as it is (sitting changes
+the height, so it cannot be matched to frame 0 as the poses are).
+Output: <out_dir>/<memberId>.png, eight FRAME x FRAME frames (80x80, so 640x80) side by side
 (0 = front idle, 1 = facing right, 2 = walk right 1, 3 = walk right 2, 4 = front, both hands up,
-5 = front, carrying in both arms, 6 = facing right, carrying in both arms), transparent background,
-feet on the bottom edge, centred horizontally. Optionally a 2x preview of all frames.
+5 = front, carrying in both arms, 6 = facing right, carrying in both arms, 7 = asleep, sitting,
+front), transparent background, feet (or the bottom of the sitting body) on the bottom edge,
+centred horizontally. Optionally a 2x preview of all frames.
 
 Usage: python build_sprites.py [--members <id,id,...>] [--sheet <sheet.png>] [--poses <poses.png>]
-       [--scale-from <sheet.png>] [--out <out_dir>] [--preview <preview.png>]
+       [--sleep <sleep.png>] [--sleep-cols <n>] [--scale-from <sheet.png>] [--out <out_dir>]
+       [--preview <preview.png>]
 Needs Pillow only. Not a project dependency; run it from a throwaway venv.
 """
 
@@ -32,7 +39,7 @@ DEFAULT_MEMBERS = ["kaname", "minori", "hibiki", "hirame", "sasae", "yukihiro"]
 CELL = 256
 SHEET_COLS = 4
 POSES_COLS = 3
-FRAMES = SHEET_COLS + POSES_COLS
+FRAMES = SHEET_COLS + POSES_COLS + 1
 HERE = Path(__file__).resolve().parent
 # Frame size in pixels. Change it here only; everything else derives from it.
 FRAME = 80
@@ -109,6 +116,27 @@ def load_cells(path, members, cols):
     if off_key:
         sys.exit(f"{path}: background is not magenta in " + ", ".join(off_key))
     return rows, boxes
+
+
+def load_grid(path, members, cols):
+    """Key the sleep sheet and cut it into one cell per member, row by row, refusing anything unexpected."""
+    sheet = Image.open(path).convert("RGB")
+    rows = -(-len(members) // cols)
+    size = (cols * CELL, rows * CELL)
+    if sheet.size != size:
+        sys.exit(f"{path}: expected {size[0]}x{size[1]}, got {sheet.width}x{sheet.height}")
+    cells = [
+        keyed(sheet.crop((c * CELL, r * CELL, (c + 1) * CELL, (r + 1) * CELL)))
+        for r, c in (divmod(i, cols) for i in range(len(members)))
+    ]
+    boxes = [cell.getchannel("A").getbbox() for cell in cells]
+    empty = [members[i] for i, box in enumerate(boxes) if box is None]
+    if empty:
+        sys.exit(f"{path}: no character found for " + ", ".join(empty))
+    off_key = [members[i] for i, cell in enumerate(cells) if outline_background_ratio(cell) < MIN_OUTLINE_BACKGROUND]
+    if off_key:
+        sys.exit(f"{path}: background is not magenta for " + ", ".join(off_key))
+    return cells, boxes
 
 
 def height(box):
@@ -190,8 +218,8 @@ def scale_of(path):
     return sheet_scale(boxes)
 
 
-def build(members, sheet_path, poses_path, out_dir, preview_path=None, scale_path=None):
-    inputs = {p.resolve() for p in (sheet_path, poses_path, scale_path) if p}
+def build(members, sheet_path, poses_path, sleep_path, sleep_cols, out_dir, preview_path=None, scale_path=None):
+    inputs = {p.resolve() for p in (sheet_path, poses_path, sleep_path, scale_path) if p}
     sprite_paths = {(out_dir / f"{m}.png").resolve() for m in members}
     if inputs & sprite_paths:
         sys.exit(f"{out_dir}: a sprite would overwrite an input sheet")
@@ -199,16 +227,18 @@ def build(members, sheet_path, poses_path, out_dir, preview_path=None, scale_pat
         sys.exit(f"{preview_path}: the preview would overwrite a sprite or an input sheet")
     rows, boxes = load_cells(sheet_path, members, SHEET_COLS)
     pose_rows, pose_boxes = load_cells(poses_path, members, POSES_COLS)
+    sleep_cells, sleep_boxes = load_grid(sleep_path, members, sleep_cols)
     # One scale for every frame of the main sheet so all members stand at the same size.
     scale = scale_of(scale_path) if scale_path else sheet_scale(boxes)
     # The poses sheet was drawn at its own size. Match each member's standing front pose
     # (pose 5, carrying) to their idle front pose (frame 0) so frames 0-3 stay exactly as they were.
+    # The sleep frame keeps the main sheet's scale (see the module docstring).
     scales = [
-        [scale] * SHEET_COLS + [scale * height(row[0]) / height(pose_row[1])] * POSES_COLS
+        [scale] * SHEET_COLS + [scale * height(row[0]) / height(pose_row[1])] * POSES_COLS + [scale]
         for row, pose_row in zip(boxes, pose_boxes)
     ]
-    cells = [row + pose_row for row, pose_row in zip(rows, pose_rows)]
-    all_boxes = [row + pose_row for row, pose_row in zip(boxes, pose_boxes)]
+    cells = [row + pose_row + [sleep] for row, pose_row, sleep in zip(rows, pose_rows, sleep_cells)]
+    all_boxes = [row + pose_row + [box] for row, pose_row, box in zip(boxes, pose_boxes, sleep_boxes)]
     sizes = [
         [(max(1, round(width(b) * s)), max(1, round(height(b) * s))) for b, s in zip(row, row_scales)]
         for row, row_scales in zip(all_boxes, scales)
@@ -255,8 +285,12 @@ if __name__ == "__main__":
     parser.add_argument("--members", type=member_list, default=DEFAULT_MEMBERS)
     parser.add_argument("--sheet", type=Path, default=HERE / "source-sheet.png")
     parser.add_argument("--poses", type=Path, default=HERE / "source-sheet-poses.png")
+    parser.add_argument("--sleep", type=Path, default=HERE / "source-sheet-sleep.png")
+    parser.add_argument("--sleep-cols", type=int, choices=range(1, 7), default=3)
     parser.add_argument("--scale-from", type=Path)
     parser.add_argument("--out", type=Path, default=HERE)
     parser.add_argument("--preview", type=Path)
     args = parser.parse_args()
-    build(args.members, args.sheet, args.poses, args.out, args.preview, args.scale_from)
+    build(
+        args.members, args.sheet, args.poses, args.sleep, args.sleep_cols, args.out, args.preview, args.scale_from
+    )
