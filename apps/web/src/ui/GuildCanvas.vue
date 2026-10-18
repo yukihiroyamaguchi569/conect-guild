@@ -30,7 +30,8 @@ import {
   withMembers,
   type Clickable,
 } from '../render/clickables';
-import type { ThingKind } from '../render/examine';
+import { pressLinesOf, type PressLines } from '../render/examine';
+import { monthAt } from '../render/ornament';
 import { hourFromQuery } from '../render/daylight';
 import { levelsOf } from '../render/levelTags';
 import { kingQuestCountOf } from '../render/murmurs';
@@ -82,8 +83,11 @@ const emit = defineEmits<{
    * even when the stage failed to start, so that nothing waits on it for ever.
    */
   ready: [];
-  /** A thing of the room was pressed (Issue #190): the message window tells what was in it. */
-  examine: [thing: ThingKind];
+  /**
+   * A thing of the room was pressed (Issue #190): the message window tells what was in it, or what
+   * the month's ornament is (Issue #192), from `lines`.
+   */
+  examine: [lines: PressLines];
 }>();
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
@@ -144,6 +148,9 @@ function playCues(): void {
 /** Dev only: `?hour=21.5` fixes the time of day, to check the day and the night by hand. */
 const fixedHour = import.meta.env.DEV ? hourFromQuery(globalThis.location.search) : null;
 
+/** Epoch ms: the month of the ornament drawn and of its line on a press is read from it (#192). */
+const wallNow = (): number => Date.now();
+
 function start(
   element: HTMLCanvasElement,
   art: GuildArt,
@@ -154,6 +161,7 @@ function start(
     art,
     guestArt,
     visitorArt,
+    wallNow,
     ...(fixedHour === null ? {} : { localHour: () => fixedHour }),
     idleSeeds: props.idleSeeds,
     onCallStart: () => {
@@ -291,7 +299,7 @@ watch(() => props.sparkle?.id, takeSparkle);
  */
 function press(item: Clickable): void {
   if (props.halted) return;
-  if (item.id === 'thing') emit('examine', item.thing);
+  if (item.id === 'thing') emit('examine', pressLinesOf(item.thing, monthAt(wallNow())));
   else if (item.id === 'member') loop?.ask(item.member);
   else if (item.id === 'king') loop?.bless();
   else loop?.pet();
