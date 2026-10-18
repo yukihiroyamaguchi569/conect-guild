@@ -5,7 +5,7 @@ import type { IdleMark } from './idle';
 import type { LevelTag } from './levelTags';
 import type { SpokenLine } from './lineBook';
 import type { SpokenLines } from './lines';
-import { TALLEST_WINDOW_EXTENTS } from './map';
+import { LOGICAL_WIDTH, TALLEST_WINDOW_EXTENTS } from './map';
 import { DETAIL_SCALE, LINES, OVERHEAD_OFFSET } from './metrics';
 import type { Held } from './motion';
 import type { Point } from './path';
@@ -147,7 +147,8 @@ function plainWords(words: string | null): BubbleOf | null {
 /**
  * Which side of the head words go: the upper right as every bubble, unless they would go under an
  * HTML window there and not on the left (ささえ's seat is a few tiles left of the party column, so
- * longer lines reach under it). Other bubbles are one glyph wide and fit on the right.
+ * longer lines reach under it), or off the right edge of the canvas (the month's gathering at the
+ * ornament by the right wall, Issue #214). Other bubbles are one glyph wide and fit on the right.
  */
 export function overheadSide(
   pose: { readonly point: Point; readonly held: Held | null },
@@ -156,11 +157,11 @@ export function overheadSide(
 ): Side {
   if (words === null || bubble === null) return 'right';
   const lift = raisedLift(pose.held);
-  const under = (side: Side): boolean => {
+  const blocked = (side: Side): boolean => {
     const box = bubbleBox(pose.point, bubble, side, lift);
-    return WINDOWS.some((area) => meet(box, area));
+    return box.right > LOGICAL_WIDTH || WINDOWS.some((area) => meet(box, area));
   };
-  return under('right') && !under('left') ? 'left' : 'right';
+  return blocked('right') && !blocked('left') ? 'left' : 'right';
 }
 
 /**
