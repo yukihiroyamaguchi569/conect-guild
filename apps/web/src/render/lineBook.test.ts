@@ -39,6 +39,12 @@ const SCENES: readonly LineScene[] = [
   'windowDay',
   'windowEvening',
   'windowNight',
+  'askWork',
+  'askIdle',
+  'askWait',
+  'askDoze',
+  'askSleep',
+  'askPlay',
 ];
 
 /** The king's moments: a clear, his own quest's scroll (Issue #146) and clear, his murmurs (#151). */
@@ -90,6 +96,23 @@ describe('line book: every line', () => {
   });
 });
 
+/** The answers to a click (Issue #191): every member but the king has their own at work and idle. */
+const OWN_ASKS = ['askWork', 'askIdle'];
+
+/** The moments `id` has lines of their own at, but the answers to a click. */
+function momentsOf(id: MemberId): Set<string> {
+  return new Set(Object.keys(LINE_BOOK[id]).filter((scene) => !OWN_ASKS.includes(scene)));
+}
+
+describe('line book: answers to a click', () => {
+  it.each(['kaname', 'minori', 'hibiki', 'hirame', 'sasae', 'takumi', 'musubi'] as const)(
+    'gives %s answers of their own at work and idle',
+    (id) => {
+      for (const scene of OWN_ASKS) expect(Object.keys(LINE_BOOK[id])).toContain(scene);
+    },
+  );
+});
+
 describe('line book: each moment', () => {
   it.each(ENTRIES)('$id at $scene has at least 3 lines, none twice', ({ lines }) => {
     expect(lines.length).toBeGreaterThanOrEqual(3);
@@ -97,7 +120,7 @@ describe('line book: each moment', () => {
   });
 
   it('gives かなめ the reception and handover moments, the review and the permission', () => {
-    expect(new Set(Object.keys(LINE_BOOK.kaname))).toEqual(
+    expect(momentsOf('kaname')).toEqual(
       new Set([
         'clear',
         'seeKingClear',
@@ -116,7 +139,7 @@ describe('line book: each moment', () => {
   it.each(['minori', 'hibiki', 'hirame', 'sasae', 'takumi', 'musubi'] as const)(
     'gives %s the moments of a department and its three waits',
     (id) => {
-      expect(new Set(Object.keys(LINE_BOOK[id]))).toEqual(
+      expect(momentsOf(id)).toEqual(
         new Set([
           'clear',
           'deliverChest',
@@ -170,6 +193,10 @@ describe('line book: murmurs', () => {
         'windowNight',
         'doze',
         'sleepTalk',
+        'askWait',
+        'askDoze',
+        'askSleep',
+        'askPlay',
       ]),
     );
     expect(linesOf('minori', 'tea')).toEqual(SHARED_LINES.tea);
