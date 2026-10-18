@@ -1,13 +1,16 @@
 import { shallowRef, type Ref } from 'vue';
 import { z } from 'zod';
 import { createKeyValueStore, type KeyValueStore } from '../adapters/storage';
-import { isNearQuest } from '../domain/deadline';
+import { isNearQuest, isTodayQuest } from '../domain/deadline';
 import type { BoardGroup } from './guildView';
 
-/** localStorage key of the board's filter (Issue #174): near quests only or all, nothing else. */
+/**
+ * localStorage key of the board's filter (Issue #174): today's quests only (Issue #178), near
+ * quests only or all, nothing else.
+ */
 export const BOARD_FILTER_STORAGE_KEY = 'conect-guild:board-filter';
 
-const filterSchema = z.strictObject({ show: z.enum(['near', 'all']) });
+const filterSchema = z.strictObject({ show: z.enum(['today', 'near', 'all']) });
 
 export type BoardFilter = z.infer<typeof filterSchema>['show'];
 
@@ -26,14 +29,18 @@ export function saveBoardFilter(storage: KeyValueStore, show: BoardFilter): bool
 
 export interface FilteredBoard {
   readonly groups: readonly BoardGroup[];
-  /** Quests left out for a date ahead (deadline or day to do it; 「ほか N 件」); 0 when showing all. */
+  /**
+   * Quests left out for a date ahead (deadline or day to do it) or, for today's, no mark either
+   * (「ほか N 件」); 0 when showing all.
+   */
   readonly hidden: number;
 }
 
 /**
  * The board's groups as `show` lists them, judged at `nowMs` (the snapshot's fetch). Near: each
  * group (the king's too) keeps the quests domain/deadline.ts isNearQuest keeps (due within a week
- * or past due, their day to do it come, or no mark), and a group left empty goes. Pure.
+ * or past due, their day to do it come, or no mark). Today: those isTodayQuest keeps (due today or
+ * past due, or their day to do it come; no mark is left out). A group left empty goes. Pure.
  */
 export function filterBoard(
   groups: readonly BoardGroup[],
@@ -41,10 +48,11 @@ export function filterBoard(
   nowMs: number,
 ): FilteredBoard {
   if (show === 'all') return { groups, hidden: 0 };
+  const keeps = show === 'today' ? isTodayQuest : isNearQuest;
   let hidden = 0;
   const kept: BoardGroup[] = [];
   for (const group of groups) {
-    const quests = group.quests.filter((quest) => isNearQuest(quest.title, nowMs));
+    const quests = group.quests.filter((quest) => keeps(quest.title, nowMs));
     hidden += group.quests.length - quests.length;
     if (quests.length > 0) kept.push({ ...group, quests });
   }
@@ -56,13 +64,19 @@ export interface BoardFilterSwitch {
   readonly toggleShow: () => void;
 }
 
+/** The filter the switch turns to next: today → near → all → today (Issue #178). */
+const NEXT_FILTER = { today: 'near', near: 'all', all: 'today' } as const satisfies Record<
+  BoardFilter,
+  BoardFilter
+>;
+
 /** The board's switch, kept in `storage` (localStorage by default; the demo's is in memory). */
 export function useBoardFilter(storage: KeyValueStore = createKeyValueStore()): BoardFilterSwitch {
   const show = shallowRef(loadBoardFilter(storage));
   return {
     show,
     toggleShow: () => {
-      show.value = show.value === 'near' ? 'all' : 'near';
+      show.value = NEXT_FILTER[show.value];
       saveBoardFilter(storage, show.value);
     },
   };

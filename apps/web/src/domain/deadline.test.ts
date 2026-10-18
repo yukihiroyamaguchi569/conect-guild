@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { daysToDeadline, daysToDoDay, isNearQuest, NEAR_DEADLINE_DAYS } from './deadline';
+import {
+  daysToDeadline,
+  daysToDoDay,
+  isNearQuest,
+  isTodayQuest,
+  NEAR_DEADLINE_DAYS,
+} from './deadline';
 
 /** Local time, so the tests hold in any time zone. */
 const at = (year: number, month: number, day: number, hour = 12) =>
@@ -214,5 +220,44 @@ describe('isNearQuest with a day to do it (Issue #176)', () => {
     expect(isNearQuest('@2/30 〆11/30 資料', OCT_17)).toBe(false);
     expect(isNearQuest('〆2/30 @10/20 資料', OCT_17)).toBe(false);
     expect(isNearQuest('taro@example.com に送る', OCT_17)).toBe(true);
+  });
+});
+
+describe('isTodayQuest (Issue #178)', () => {
+  it('keeps a deadline today or past and drops one from tomorrow on', () => {
+    expect(isTodayQuest('〆10/17 資料', OCT_17)).toBe(true);
+    expect(isTodayQuest('〆10/16 資料', OCT_17)).toBe(true);
+    expect(isTodayQuest('〆9/1 資料', OCT_17)).toBe(true);
+    expect(isTodayQuest('〆10/18 資料', OCT_17)).toBe(false);
+    expect(isTodayQuest('〆10/24 資料', OCT_17)).toBe(false);
+  });
+
+  it('keeps a day to do it today or past and drops one from tomorrow on', () => {
+    expect(isTodayQuest('@10/17 資料', OCT_17)).toBe(true);
+    expect(isTodayQuest('@10/16 資料', OCT_17)).toBe(true);
+    expect(isTodayQuest('@10/18 資料', OCT_17)).toBe(false);
+  });
+
+  it('turns at local midnight', () => {
+    expect(isTodayQuest('〆10/18 資料', at(2026, 10, 17, 23))).toBe(false);
+    expect(isTodayQuest('〆10/18 資料', at(2026, 10, 18, 0))).toBe(true);
+  });
+
+  it('drops a quest with no mark, or one that is not a date', () => {
+    expect(isTodayQuest('資料を作る', OCT_17)).toBe(false);
+    expect(isTodayQuest('〆2/30 資料', OCT_17)).toBe(false);
+    expect(isTodayQuest('taro@example.com に送る', OCT_17)).toBe(false);
+  });
+
+  it('keeps a quest with both marks when either one is today or past', () => {
+    expect(isTodayQuest('@10/17 〆10/24 資料', OCT_17)).toBe(true);
+    expect(isTodayQuest('@10/20 〆10/16 資料', OCT_17)).toBe(true);
+    expect(isTodayQuest('@10/10 〆10/12 資料', OCT_17)).toBe(true);
+    expect(isTodayQuest('@10/18 〆10/20 資料', OCT_17)).toBe(false);
+  });
+
+  it('drops a deadline within the week that the near filter keeps', () => {
+    expect(isNearQuest('〆10/20 資料', OCT_17)).toBe(true);
+    expect(isTodayQuest('〆10/20 資料', OCT_17)).toBe(false);
   });
 });

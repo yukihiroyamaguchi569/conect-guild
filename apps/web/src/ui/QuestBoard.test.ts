@@ -153,7 +153,6 @@ describe('QuestBoard: the near filter (Issue #174)', () => {
   it('shows the switch as ちかいもの and how many quests it left out', async () => {
     const html = await renderBoard({ groups, show: 'near', hidden: 2 });
     expect(html).toMatch(/>ちかいもの<\/button>/);
-    expect(html).toContain('aria-pressed="false"');
     expect(html).toContain('ほか 2 件（日付が 先）');
     expect(html).toContain('〆10/20 架空の勅命');
   });
@@ -167,7 +166,34 @@ describe('QuestBoard: the near filter (Issue #174)', () => {
   it('shows すべて when showing all', async () => {
     const html = await renderBoard({ groups, show: 'all' });
     expect(html).toMatch(/>すべて<\/button>/);
-    expect(html).toContain('aria-pressed="true"');
+  });
+
+  it.each(['today', 'near', 'all'])(
+    'tells the filter by its label, not aria-pressed, which cannot hold three (%s)',
+    async (show) => {
+      const html = await renderBoard({ groups, show });
+      expect(html).not.toContain('aria-pressed');
+    },
+  );
+
+  it('shows きょう with its own words for hidden quests (Issue #178)', async () => {
+    const html = await renderBoard({ groups, show: 'today', hidden: 3 });
+    expect(html).toMatch(/>きょう<\/button>/);
+    expect(html).toContain('ほか 3 件（今日より 先・印なし）');
+    expect(html).not.toContain('日付が 先');
+  });
+
+  it('says no quest for today when every quest was left out (Issue #178)', async () => {
+    const html = await renderBoard({ show: 'today', hidden: 2 });
+    expect(html).toContain('きょうの クエストは ありません');
+    expect(html).not.toContain('ちかい クエストは ありません');
+    expect(html).not.toContain('いまは クエストが ありません');
+  });
+
+  it('says no quest at all with today when nothing was left out', async () => {
+    const html = await renderBoard({ show: 'today', hidden: 0 });
+    expect(html).toContain('いまは クエストが ありません');
+    expect(html).not.toContain('ほか');
   });
 
   it('says no near quest instead of none when every quest was left out', async () => {
