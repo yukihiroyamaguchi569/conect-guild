@@ -37,22 +37,23 @@ export function installCanvasImageRecorder(): void {
   const proto = CanvasRenderingContext2D.prototype;
   const original: unknown = Object.getOwnPropertyDescriptor(proto, 'drawImage')?.value;
   if (typeof original !== 'function') return;
-  proto.drawImage = function (this: CanvasRenderingContext2D, ...args: unknown[]) {
+  // The 9-argument form only: the picture, where it was cut from and where and how big it landed.
+  const drawnOf = (args: readonly unknown[]): DrawnImage | null => {
     const [image, sx, sy, , , dx, dy, dw, dh] = args;
-    if (
-      image instanceof HTMLImageElement &&
-      typeof sx === 'number' &&
-      typeof sy === 'number' &&
-      typeof dx === 'number' &&
-      typeof dy === 'number' &&
-      typeof dw === 'number' &&
-      typeof dh === 'number'
-    ) {
-      const file = new URL(image.src).pathname.split('/').pop() ?? '';
-      const key = `${file}@${String(dx)},${String(dy)}`;
+    if (!(image instanceof HTMLImageElement)) return null;
+    if (typeof sx !== 'number' || typeof sy !== 'number') return null;
+    if (typeof dx !== 'number' || typeof dy !== 'number') return null;
+    if (typeof dw !== 'number' || typeof dh !== 'number') return null;
+    const file = new URL(image.src).pathname.split('/').pop() ?? '';
+    return { file, sx, sy, dx, dy, dw, dh };
+  };
+  proto.drawImage = function (this: CanvasRenderingContext2D, ...args: unknown[]) {
+    const drawn = drawnOf(args);
+    if (drawn !== null) {
+      const key = `${drawn.file}@${String(drawn.dx)},${String(drawn.dy)}`;
       if (!seen.has(key)) {
         seen.add(key);
-        window.e2eCanvasImages?.push({ file, sx, sy, dx, dy, dw, dh });
+        window.e2eCanvasImages?.push(drawn);
       }
     }
     Reflect.apply(original, this, args);
