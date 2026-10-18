@@ -25,8 +25,10 @@ export const raise = (prop: Prop): Held => ({ prop, hold: 'raise' });
 export type MoveFrame = 0 | 1 | 2 | 3;
 /** Holding frames (hands.ts): 4 hands up, 5 arms in front (front), 6 arms in front (side). */
 export type HoldFrame = 4 | 5 | 6;
+/** Asleep, sitting, facing front (Issue #179). */
+export type SleepFrame = 7;
 /** Sprite frame: the n-th 80 px column of a member's sheet (contract with the sprite art). */
-export type SpriteFrame = MoveFrame | HoldFrame;
+export type SpriteFrame = MoveFrame | HoldFrame | SleepFrame;
 
 export const MS_PER_TILE = 250;
 export const STEP_FRAME_MS = 160;

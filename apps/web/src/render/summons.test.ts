@@ -36,9 +36,6 @@ const CTX = { seats: DEFAULT_SEATS, holds: NO_HOLDS };
 const order = (members: readonly MemberId[], start = 0): Summons => ({ start, members });
 
 const seatPoint = (id: MemberId) => seatedPoint(tileToPoint(DEFAULT_SEATS[id]));
-/** How much deeper the sleepers of sleepyFrame are drawn. */
-const SLEEP_SINK = 4;
-const sunk = (id: MemberId) => ({ x: seatPoint(id).x, y: seatPoint(id).y + SLEEP_SINK });
 
 function member(frame: StageFrame, id: MemberId): MemberPose {
   const found = frame.members.find((m) => m.id === id);
@@ -46,12 +43,12 @@ function member(frame: StageFrame, id: MemberId): MemberPose {
   return found;
 }
 
-/** Everybody at their seat, the king and みのり asleep (a "Z", sunk deeper). */
+/** Everybody at their seat, the king and みのり asleep (the sleeping frame 7 and a "Z"). */
 function sleepyFrame(): StageFrame {
   const frame = frameAt(EMPTY_DIRECTOR, 0, DEFAULT_SEATS);
   const asleep = (m: MemberPose): MemberPose => ({
     ...m,
-    pose: { ...m.pose, point: { x: m.pose.point.x, y: m.pose.point.y + SLEEP_SINK } },
+    pose: { point: m.pose.point, frame: 7, flip: m.pose.flip, held: null },
     mark: { kind: 'z', rise: 0.5 },
   });
   return {
@@ -163,7 +160,7 @@ describe('withSummons: the king', () => {
     const list = [order(['hibiki'])];
     const calling = member(withSummons(frame, list, 0, CTX), 'yukihiro');
     // Woken where he is drawn: nothing jumps when the call starts or ends.
-    const at = sunk('yukihiro');
+    const at = seatPoint('yukihiro');
     expect(calling.pose).toEqual({
       point: { x: at.x, y: at.y - SUMMONS.kingRisePx },
       frame: 0,
@@ -192,13 +189,13 @@ describe('withSummons: the answer', () => {
     const frame = sleepyFrame();
     const next = withSummons(frame, [order(['minori', 'hibiki'])], REPLY, CTX);
     const minori = member(next, 'minori');
-    expect(minori.pose).toEqual({ point: sunk('minori'), frame: 1, flip: false, held: null });
+    expect(minori.pose).toEqual({ point: seatPoint('minori'), frame: 1, flip: false, held: null });
     expect(minori.mark).toBeNull();
     expect(minori.hand).toBeNull();
     expect(member(next, 'hibiki').pose).toMatchObject({ frame: 1, flip: true });
     // Those not called are left as they were; the king stays awake, sitting, to the end.
     expect(member(next, 'sasae')).toEqual(member(frame, 'sasae'));
-    expect(member(next, 'yukihiro').pose).toMatchObject({ point: sunk('yukihiro'), frame: 0 });
+    expect(member(next, 'yukihiro').pose).toMatchObject({ point: seatPoint('yukihiro'), frame: 0 });
     expect(member(next, 'yukihiro').mark).toBeNull();
   });
 
@@ -344,7 +341,10 @@ describe('holdsAt: nobody moves in a call', () => {
     // drawn in between): the king is held where the new call finds him.
     const later = [order(['sasae'], END + 1)];
     const afterGap = holdsAt(first, sunkFrame, later, END + 1);
-    expect(afterGap.points.yukihiro).toEqual(sunk('yukihiro'));
+    expect(afterGap.points.yukihiro).toEqual({
+      ...seatPoint('yukihiro'),
+      y: seatPoint('yukihiro').y + 4,
+    });
   });
 });
 

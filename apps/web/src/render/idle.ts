@@ -3,15 +3,22 @@ import { byMember } from '@conect-guild/snapshot/settings';
 import { ACTIVE_MEMBER_IDS, type MemberId, type TilePos } from '../guild.config';
 import type { Random } from './confetti';
 import { IDLE } from './metrics';
-import { MS_PER_TILE, poseOnSegment, walkSegment, type MoveFrame, type Segment } from './motion';
+import {
+  MS_PER_TILE,
+  poseOnSegment,
+  walkSegment,
+  type MoveFrame,
+  type Segment,
+  type SleepFrame,
+} from './motion';
 import { findPath, tileToPoint, type Point, type TilePath } from './path';
 import { DEFAULT_SEATS } from './scenes';
 import { PLAY_SPOTS, turnsToPet, type PlaySpot } from './idleSpots';
 
 /**
- * Long idle spells (Issue #23), drawn with the existing frames only: after 10 minutes with nothing
- * to do a member dozes at the seat (nods, yawns, a "…" now and then), after 30 minutes they sleep
- * (sunk a little deeper, a "Z" rising over the head) or get up to play for a while (idleSpots.ts)
+ * Long idle spells (Issue #23): after 10 minutes with nothing to do a member dozes at the seat
+ * (nods, yawns, a "…" now and then), after 30 minutes they sleep (the sleeping frame 7, Issue #179,
+ * a "Z" rising over the head) or get up to play for a while (idleSpots.ts)
  * and come back to sleep or play again. Pure: the wall time, each member's last-active time and the
  * per-member salt (from the injected random source) decide everything, so the same moment always
  * looks the same. The king follows the same rules but never leaves the throne.
@@ -144,9 +151,9 @@ export interface IdlePose {
   readonly feet: Point;
   /** Where the feet are on the tile grid (to walk back from exactly there). */
   readonly step: IdleStep;
-  readonly frame: MoveFrame;
+  readonly frame: MoveFrame | SleepFrame;
   readonly flip: boolean;
-  /** Added after the sink (nodding, sleeping deeper), logical px. */
+  /** Added after the sink (nodding), logical px. */
   readonly offset: Point;
   readonly mark: IdleMark | null;
   /** True while the member stays by the pet (from arriving until the walk back starts). */
@@ -207,9 +214,9 @@ function sleepPose(seat: TilePos, salt: number, now: number): IdlePose {
   return {
     feet: tileToPoint(seat),
     step: still(seat),
-    frame: 0,
+    frame: 7,
     flip: false,
-    offset: { x: 0, y: IDLE.sleepSinkPx },
+    offset: STILL,
     mark: { kind: 'z', rise: elapsed / IDLE.zRiseMs },
     withPet: false,
   };

@@ -267,6 +267,7 @@ describe('idlePose at the seat', () => {
       expect(pose.feet).toEqual(tileToPoint(seat));
       expect([0, IDLE.nodPx]).toContain(pose.offset.y);
       expect(pose.offset.x).toBe(0);
+      expect([0, 1]).toContain(pose.frame); // the sleeping frame is for sleep only (Issue #179)
     }
     expect(poses.some((p) => p.offset.y === IDLE.nodPx)).toBe(true);
     expect(poses.some((p) => p.frame === 1)).toBe(true);
@@ -274,11 +275,12 @@ describe('idlePose at the seat', () => {
     expect(poses.some((p) => p.mark === null && p.frame === 0)).toBe(true);
   });
 
-  it('sleeps sunk deeper with a "Z" rising and starting over', () => {
+  it('sleeps in the sleeping frame, not sunk, with a "Z" rising and starting over', () => {
     const rises = Array.from({ length: 60 }, (_, i) => {
       const pose = idlePose({ kind: 'sleep' }, seat, 7, CYCLE_START + i * 100);
-      expect(pose.offset).toEqual({ x: 0, y: IDLE.sleepSinkPx });
-      expect(pose.frame).toBe(0);
+      expect(pose.feet).toEqual(tileToPoint(seat));
+      expect(pose.offset).toEqual({ x: 0, y: 0 });
+      expect(pose.frame).toBe(7);
       if (pose.mark?.kind !== 'z') throw new Error('no Z');
       expect(pose.mark.rise).toBeGreaterThanOrEqual(0);
       expect(pose.mark.rise).toBeLessThan(1);
@@ -299,6 +301,7 @@ describe('idlePose out playing', () => {
     expect(pose(outing.back.start).feet).toEqual(tileToPoint(outing.spot.tile));
     expect(pose(outing.back.end - 1).feet.y).toBeCloseTo(tileToPoint(DEFAULT_SEATS.hirame).y, -1);
     expect([2, 3]).toContain(pose(outing.out.start + 100).frame);
+    expect(pose(outing.out.end).frame).not.toBe(7); // standing at the spot, not asleep
   });
 
   it('walks on walkable tiles only, never under a window', () => {
@@ -373,6 +376,7 @@ describe('idlePosesAt', () => {
     const poses = idlePosesAt({ yukihiro: now - 40 * MIN, sasae: now - MIN }, SEEDS, now);
     expect(Object.keys(poses)).toEqual(['yukihiro']);
     expect(poses.yukihiro?.feet).toEqual(tileToPoint(DEFAULT_SEATS.yukihiro));
+    expect(poses.yukihiro?.frame).toBe(7);
   });
 });
 

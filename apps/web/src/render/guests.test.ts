@@ -73,20 +73,25 @@ describe('guestLook', () => {
     expect(guestLook(working, 0, false).frame).toBe(0);
   });
 
-  it('dozes while resting or idle: a nod and a rising 「Z」', () => {
+  it('sleeps while resting or idle: the sleeping frame, still, and a rising 「Z」', () => {
     for (const state of ['resting', 'idle'] as const) {
-      const look = guestLook(guest(0, { state }), IDLE.nodMs / 2, true);
-      expect(look.frame).toBe(0);
-      expect(look.dy).toBe(IDLE.nodPx);
-      expect(look.reading).toBe(false);
-      expect(look.mark).toEqual({ kind: 'z', rise: IDLE.nodMs / 2 / IDLE.zRiseMs });
+      for (const t of [0, IDLE.zRiseMs / 4, IDLE.zRiseMs / 2]) {
+        const look = guestLook(guest(0, { state }), t, true);
+        expect(look.frame).toBe(7);
+        expect(look.dy).toBe(0);
+        expect(look.reading).toBe(false);
+        expect(look.mark).toEqual({ kind: 'z', rise: t / IDLE.zRiseMs });
+      }
     }
   });
 
-  it('moves the second guest behind the first, so they never nod as one', () => {
-    const t = IDLE.nodMs / 2;
-    expect(guestLook(guest(0), t, true).dy).toBe(IDLE.nodPx);
-    expect(guestLook(guest(1), t, true).dy).toBe(0);
+  it('moves the second guest behind the first, so they never move as one', () => {
+    const t = GUEST.readMs / 2;
+    const working = { state: 'working' } as const;
+    expect(guestLook(guest(0, working), t, true).dy).toBe(GUEST.readPx);
+    expect(guestLook(guest(1, working), t, true).dy).toBe(0);
+    const z = (index: number) => guestLook(guest(index), IDLE.zRiseMs / 2, true).mark;
+    expect(z(0)).not.toEqual(z(1));
   });
 });
 
@@ -309,7 +314,7 @@ describe('the guest of five departments right of 総務 (Issue #122)', () => {
 });
 
 describe('createGuestArt', () => {
-  const sheet: ImageBitmap = { width: 560, height: 80, close: () => undefined };
+  const sheet: ImageBitmap = { width: 640, height: 80, close: () => undefined };
   const short: ImageBitmap = { width: 320, height: 80, close: () => undefined };
 
   it('reads with the arms in front only from a sheet that has the holding frames', () => {

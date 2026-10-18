@@ -14,7 +14,7 @@ import { tileToPoint, type Point } from './path';
 /**
  * The guests on the stage (Issue #108): each stands at its spot of the layout and never walks into
  * the members' scenes. The look follows the session: waiting for a permission shows the 「?」,
- * working reads a scroll, resting and idle doze. A finished PR or Issue makes a small sparkle.
+ * working reads a scroll, resting and idle sleep. A finished PR or Issue makes a small sparkle.
  * Pure: drawGuests.ts draws.
  */
 
@@ -52,7 +52,7 @@ export type GuestMark =
 
 export interface GuestLook {
   readonly frame: SpriteFrame;
-  /** Down from the spot, logical px (a nod or a bob). */
+  /** Down from the spot, logical px (a bob while reading). */
   readonly dy: number;
   /** True while reading: a scroll in the arms. */
   readonly reading: boolean;
@@ -76,10 +76,9 @@ export function guestLook(
     const dy = phase % GUEST.readMs < GUEST.readMs / 2 ? 0 : GUEST.readPx;
     return { frame: hasHoldFrames ? 5 : 0, dy, reading: true, mark: null };
   }
-  // Resting and idle: dozing on the spot, as the members do at their seats (idle.ts).
-  const dy = phase % IDLE.nodMs < IDLE.nodMs / 2 ? 0 : IDLE.nodPx;
+  // Resting and idle: asleep on the spot, as the members sleep at their seats (idle.ts).
   const rise = (phase % IDLE.zRiseMs) / IDLE.zRiseMs;
-  return { frame: 0, dy, reading: false, mark: { kind: 'z', rise } };
+  return { frame: 7, dy: 0, reading: false, mark: { kind: 'z', rise } };
 }
 
 /**

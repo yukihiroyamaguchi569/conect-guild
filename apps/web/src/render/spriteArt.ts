@@ -8,7 +8,8 @@ import type { Point } from './path';
 /**
  * The real members: one sheet per member (assets/sprites/<memberId>.png), 80 x 80 frames in a row
  * (front, right standing, right walking 1 and 2, then optionally hands up, arms in front and arms in
- * front facing right: hands.ts), feet at the bottom centre. Facing left is the
+ * front facing right: hands.ts, then asleep: Issue #179), feet at the bottom centre. A frame the
+ * sheet does not have falls back to the front frame. Facing left is the
  * right-facing frame mirrored. Held items keep the drawing passed in.
  */
 
@@ -32,8 +33,13 @@ export function spriteDraw(frame: SpriteFrame, feet: Point): SpriteDraw {
 /** A member's sheet: an image whose width tells how many frames it has. */
 export type SpriteSheet = HTMLImageElement | HTMLCanvasElement | ImageBitmap;
 
-function sheetWidth(sheet: SpriteSheet): number {
+export function sheetWidth(sheet: SpriteSheet): number {
   return 'naturalWidth' in sheet ? sheet.naturalWidth : sheet.width;
+}
+
+/** `frame` when a sheet `width` px wide has it, otherwise the front frame (0). Pure. */
+export function frameInSheet(frame: SpriteFrame, width: number): SpriteFrame {
+  return (frame + 1) * SPRITE_SIZE <= width ? frame : 0;
 }
 
 export function createSpriteArt(
@@ -43,7 +49,7 @@ export function createSpriteArt(
   return {
     hasHoldFrames: (id) => hasHoldFrames(sheetWidth(sheets[id])),
     drawMember(ctx, id, pose, feet) {
-      const { sx, dx, dy } = spriteDraw(pose.frame, feet);
+      const { sx, dx, dy } = spriteDraw(frameInSheet(pose.frame, sheetWidth(sheets[id])), feet);
       ctx.save();
       if (pose.flip) {
         // Mirror around the feet so the member stays on the same spot.
