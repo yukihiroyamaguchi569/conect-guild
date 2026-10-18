@@ -19,6 +19,8 @@ import { LOGICAL_WIDTH } from '../src/render/map.ts';
 const at = (time: string): number => Date.parse(`2026-10-12T${time}+09:00`);
 const LINE = 'おうさまから みのりに ほうびの くんしょうが とどいた！';
 const PLACED = rewardOnDesk(SELECTED_LAYOUT, DEFAULT_SEATS.minori, 'medal');
+/** The 32 px picture drawn half as big again (Issue #208). */
+const DRAWN_SIZE = 48;
 
 /** The sample at `time`, with #101 (経理) cleared at 10:00. */
 async function snapshotAt(time: string) {
@@ -35,8 +37,8 @@ async function medalDrawn(page: Page): Promise<boolean> {
       image.sy === piece.row * DECOR_TILE_SIZE &&
       image.dx === PLACED.x &&
       image.dy === PLACED.y &&
-      image.dw === DECOR_TILE_SIZE * PLACED.scale &&
-      image.dh === DECOR_TILE_SIZE * PLACED.scale,
+      image.dw === DRAWN_SIZE &&
+      image.dh === DRAWN_SIZE,
   );
 }
 

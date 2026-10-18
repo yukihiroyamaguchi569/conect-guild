@@ -44,7 +44,7 @@ describe.each(Object.values(LAYOUTS))(
         );
         if (placed === null || desk === undefined) throw new Error('no desk in front of the seat');
         expect(placed.name).toBe('onigiri');
-        expect(placed.scale).toBe(REWARD_SCALE);
+        expect(placed.scale).toBe(1.5);
         const box = {
           left: placed.x,
           top: placed.y,
