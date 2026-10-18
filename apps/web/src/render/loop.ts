@@ -369,6 +369,16 @@ function paintAt(
   };
 }
 
+/** The scheduler of `draw`, paused while the page is hidden or the canvas has no width (isPaused). */
+function pausedScheduler(
+  draw: () => void,
+  visibility: PageVisibility,
+  cssWidth: () => number,
+): { readonly paused: () => boolean; readonly schedule: Scheduler } {
+  const paused = () => isPaused(visibility.isHidden(), cssWidth());
+  return { paused, schedule: createScheduler(draw, paused) };
+}
+
 export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
   const { now, localHour, context, visibility } = loopSources(options);
   const { painter, guests, cast } = stageOf(options, context);
@@ -388,8 +398,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
     follow(schedule, nextDraw({ hidden: paused(), ...drawn.pace }));
   }
 
-  const paused = () => isPaused(visibility.isHidden(), cssWidth);
-  const schedule = createScheduler(draw, paused);
+  const { paused, schedule } = pausedScheduler(draw, visibility, () => cssWidth);
   /**
    * Drops the scenes nobody can see, stops or restarts the stage clock with the paused state, then
    * draws (or not) to match.
