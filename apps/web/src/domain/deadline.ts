@@ -96,3 +96,14 @@ export function isNearQuest(title: string, nowMs: number): boolean {
   if (deadline === null && doDay === null) return true;
   return (deadline !== null && deadline <= NEAR_DEADLINE_DAYS) || (doDay !== null && doDay <= 0);
 }
+
+/**
+ * Whether the board shows the quest while it lists today's only (Issue #178): a deadline today or
+ * past, or a day to do it today or past. With both marks, either one is enough; a quest with
+ * neither mark is not today's.
+ */
+export function isTodayQuest(title: string, nowMs: number): boolean {
+  const deadline = daysToDeadline(title, nowMs);
+  const doDay = daysToDoDay(title, nowMs);
+  return (deadline !== null && deadline <= 0) || (doDay !== null && doDay <= 0);
+}

@@ -80,7 +80,7 @@ const {
 } = useSound({ message, party, halted: () => state.halted }, demo?.storage);
 /** The show mode (Issue #144): live screen only, the demo's titles are fictional. */
 const { masked, toggleMask } = useMask(demo === null);
-/** The board's near-or-all filter (Issue #174), judged at the snapshot's fetch. */
+/** The board's today, near or all filter (Issues #174, #178), judged at the snapshot's fetch. */
 const { show, toggleShow } = useBoardFilter(demo?.storage);
 const shownBoard = computed(() =>
   filterBoard(

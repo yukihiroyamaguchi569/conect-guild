@@ -12,15 +12,22 @@ withDefaults(
     loaded: boolean;
     /** The show mode (Issue #144): titles are masked, numbers and names are not. */
     masked?: boolean;
-    /** The filter (Issue #174): near quests only (the default) or all. */
+    /** The filter (Issue #174): today's quests only (Issue #178), near ones (the default) or all. */
     show?: BoardFilter;
-    /** Quests the near filter left out (「ほか N 件」). */
+    /** Quests the today or near filter left out (「ほか N 件」). */
     hidden?: number;
   }>(),
   { masked: false, show: 'near', hidden: 0 },
 );
 
 const emit = defineEmits<{ 'toggle-show': [] }>();
+
+/** The switch's label for each filter. */
+const FILTER_LABELS = {
+  today: 'きょう',
+  near: 'ちかいもの',
+  all: 'すべて',
+} as const satisfies Record<BoardFilter, string>;
 </script>
 
 <template>
@@ -31,15 +38,15 @@ const emit = defineEmits<{ 'toggle-show': [] }>();
         type="button"
         class="rpg-button"
         :aria-pressed="show === 'all'"
-        title="ちかいもの: 締め切り（題名の 〆M/D）が 7 日以内か過ぎたもの、やる日（@M/D）が来たもの、どちらの印もないものだけを出します。押すと切り替えます（この端末にだけ保存します）"
+        title="きょう: 締め切り（題名の 〆M/D）かやる日（@M/D）が今日か過ぎたものだけを出します。ちかいもの: 締め切りが 7 日以内か過ぎたもの、やる日が来たもの、どちらの印もないものだけを出します。押すと きょう → ちかいもの → すべて の順に切り替えます（この端末にだけ保存します）"
         @click="emit('toggle-show')"
       >
-        {{ show === 'near' ? 'ちかいもの' : 'すべて' }}
+        {{ FILTER_LABELS[show] }}
       </button>
     </p>
     <p v-if="!loaded" class="board__empty">よみこみちゅう…</p>
     <p v-else-if="groups.length === 0 && hidden > 0" class="board__empty">
-      ちかい クエストは ありません
+      {{ show === 'today' ? 'きょうの クエストは ありません' : 'ちかい クエストは ありません' }}
     </p>
     <p v-else-if="groups.length === 0" class="board__empty">
       {{
@@ -64,7 +71,9 @@ const emit = defineEmits<{ 'toggle-show': [] }>();
           </li>
         </ul>
       </div>
-      <p v-if="hidden > 0" class="board__more">ほか {{ hidden }} 件（日付が 先）</p>
+      <p v-if="hidden > 0" class="board__more">
+        ほか {{ hidden }} 件（{{ show === 'today' ? '今日より 先・印なし' : '日付が 先' }}）
+      </p>
     </div>
     <section v-if="guests.length > 0" class="board__guests" aria-label="お客さん">
       <h3 class="board__section">お客さん</h3>

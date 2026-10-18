@@ -83,6 +83,39 @@ describe('filterBoard (Issue #174)', () => {
   });
 });
 
+describe('filterBoard with today (Issue #178)', () => {
+  it('keeps quests due or to do today or past, the king’s too, and counts the rest', () => {
+    const king = group('king', ['〆10/17 勅命', '方針を決める', '〆10/20 挨拶']);
+    const accounting = group('department:経理', ['@10/16 請求書', '@10/18 見積もり']);
+    const planning = group('department:企画', ['市場調査', '〆10/24 企画書']);
+    const { groups, hidden } = filterBoard([king, accounting, planning], 'today', OCT_17);
+    expect(groups.map((g) => [g.key, g.quests.map((q) => q.title)])).toEqual([
+      ['king', ['〆10/17 勅命']],
+      ['department:経理', ['@10/16 請求書']],
+    ]);
+    expect(hidden).toBe(5);
+  });
+
+  it('keeps a group’s label, colour and the quests’ other fields', () => {
+    const reception = group('reception', ['受付', '@10/1 片付け']);
+    const { groups } = filterBoard([reception], 'today', OCT_17);
+    expect(groups).toEqual([
+      {
+        key: 'reception',
+        label: 'reception',
+        color: '#ffffff',
+        quests: [{ number: 2, title: '@10/1 片付け' }],
+      },
+    ]);
+  });
+
+  it('shows nothing and hides every quest when none is today’s', () => {
+    const plain = group('reception', ['受付', '〆10/18 発送']);
+    expect(filterBoard([plain], 'today', OCT_17)).toEqual({ groups: [], hidden: 2 });
+    expect(filterBoard([], 'today', OCT_17)).toEqual({ groups: [], hidden: 0 });
+  });
+});
+
 describe('the board filter setting', () => {
   it('starts near when nothing is stored', () => {
     expect(loadBoardFilter(memory().store)).toBe('near');
@@ -95,14 +128,27 @@ describe('the board filter setting', () => {
     expect(loadBoardFilter(store)).toBe('all');
     saveBoardFilter(store, 'near');
     expect(loadBoardFilter(store)).toBe('near');
+    expect(saveBoardFilter(store, 'today')).toBe(true);
+    expect(items.get(BOARD_FILTER_STORAGE_KEY)).toBe('{"show":"today"}');
+    expect(loadBoardFilter(store)).toBe('today');
   });
 
-  it.each(['{"show":"some"}', '{"show":"all","title":"x"}', '"all"', 'not json', '{}'])(
-    'starts near for a broken value %s',
-    (raw) => {
-      expect(loadBoardFilter(memory(raw).store)).toBe('near');
-    },
-  );
+  it('reads the values stored before today was added (Issue #178)', () => {
+    expect(loadBoardFilter(memory('{"show":"near"}').store)).toBe('near');
+    expect(loadBoardFilter(memory('{"show":"all"}').store)).toBe('all');
+  });
+
+  it.each([
+    '{"show":"some"}',
+    '{"show":"Today"}',
+    '{"show":"today","title":"x"}',
+    '{"show":"all","title":"x"}',
+    '"all"',
+    'not json',
+    '{}',
+  ])('starts near for a broken value %s', (raw) => {
+    expect(loadBoardFilter(memory(raw).store)).toBe('near');
+  });
 
   it('starts near and still toggles when the storage cannot be used', () => {
     expect(loadBoardFilter(throwing)).toBe('near');
@@ -114,7 +160,7 @@ describe('the board filter setting', () => {
 });
 
 describe('useBoardFilter', () => {
-  it('toggles between near and all and keeps each choice', () => {
+  it('turns today → near → all → today and keeps each choice (Issue #178)', () => {
     const { items, store } = memory();
     const { show, toggleShow } = useBoardFilter(store);
     expect(show.value).toBe('near');
@@ -122,11 +168,18 @@ describe('useBoardFilter', () => {
     expect(show.value).toBe('all');
     expect(items.get(BOARD_FILTER_STORAGE_KEY)).toBe('{"show":"all"}');
     toggleShow();
+    expect(show.value).toBe('today');
+    expect(items.get(BOARD_FILTER_STORAGE_KEY)).toBe('{"show":"today"}');
+    toggleShow();
     expect(show.value).toBe('near');
     expect(items.get(BOARD_FILTER_STORAGE_KEY)).toBe('{"show":"near"}');
   });
 
   it('starts from the stored choice', () => {
     expect(useBoardFilter(memory('{"show":"all"}').store).show.value).toBe('all');
+    const today = useBoardFilter(memory('{"show":"today"}').store);
+    expect(today.show.value).toBe('today');
+    today.toggleShow();
+    expect(today.show.value).toBe('near');
   });
 });
