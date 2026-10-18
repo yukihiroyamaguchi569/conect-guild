@@ -58,7 +58,8 @@ export function visitorScene(
   const free = ACTIVE_MEMBER_IDS.flatMap((id) => {
     const member = members.find((one) => one.id === id);
     if (id === PRESIDENT_ID || member === undefined) return [];
-    const ready = member.atSeat && !member.inScene && member.mark === null;
+    // A long idle spell (dozing, asleep, out playing) is no one to speak to, mark shown or not.
+    const ready = member.atSeat && !member.inScene && idle[id] === undefined;
     return ready ? [{ id, seat: DEFAULT_SEATS[id] }] : [];
   });
   return { busy: busy || walking, free };

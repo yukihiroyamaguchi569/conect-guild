@@ -187,7 +187,15 @@ describe('visitorScene', () => {
       member('minori', { atSeat: false }),
       member('hibiki', { mark: { kind: 'z', rise: 0 } }),
     ];
-    expect(visitorScene(members, {}, false).free).toEqual([]);
+    expect(visitorScene(members, { hibiki: idlePose(false) }, false).free).toEqual([]);
+  });
+
+  it('leaves out a member in a long idle spell at the seat even between the dozing 「…」', () => {
+    const dozing = { ...idlePose(false), frame: 0 as const, mark: null };
+    const members = [member('hibiki'), member('minori')];
+    expect(visitorScene(members, { hibiki: dozing }, false).free).toEqual([
+      { id: 'minori', seat: DEFAULT_SEATS.minori },
+    ]);
   });
 
   it('is busy while a scene or a call plays, or a member walks to or from play', () => {
