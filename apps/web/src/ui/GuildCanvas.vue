@@ -41,6 +41,7 @@ import { loadArt, loadGuestArt, loadVisitorArt } from '../render/loadArt';
 import type { IdleSeeds, IdleSince } from '../render/idle';
 import type { HomeIn } from '../render/idleCrew';
 import { isShown, startRenderLoop, type RenderLoop, type StageParty } from '../render/loop';
+import type { StageReward } from '../render/rewardDesk';
 import PressGroup from './PressGroup.vue';
 
 const props = defineProps<{
@@ -62,6 +63,8 @@ const props = defineProps<{
   guestCount: number;
   /** The guest whose PR or Issue the message now in the window reports: it sparkles. */
   sparkle: GuestCue | null;
+  /** The king's reward of the day on a desk (#194); null when there is none. */
+  reward: StageReward | null;
 }>();
 
 const emit = defineEmits<{
@@ -125,6 +128,7 @@ function stageParty(rows: readonly PartyRow[]): StageParty {
     known: rows.length > 0,
     levels: levelsOf(rows),
     kingQuests: kingQuestCountOf(rows),
+    reward: props.reward,
   };
 }
 
@@ -244,6 +248,17 @@ watch(
   (rows) => {
     setIdleSince(lastActive.observe(rows, Date.now()));
     loop?.setParty(stageParty(rows));
+  },
+);
+
+// The reward comes, or the day is over: the desk shows it or not.
+watch(
+  () => {
+    const { reward } = props;
+    return reward === null ? null : `${reward.member}:${reward.kind}:${String(reward.until)}`;
+  },
+  () => {
+    loop?.setParty(stageParty(props.party));
   },
 );
 

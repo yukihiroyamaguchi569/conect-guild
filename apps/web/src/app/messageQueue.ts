@@ -24,6 +24,8 @@ export interface GuildMessage {
   readonly event: GuildEvent | null;
   /** The guest whose PR or Issue this line reports: it sparkles when the line shows (Issue #108). */
   readonly guest?: number;
+  /** Epoch ms from which the line is dropped unshown (MessageEntry.until). */
+  readonly until?: number;
 }
 
 export interface MessageQueue {
@@ -227,7 +229,23 @@ interface Line {
   release(): void;
 }
 
-function createLine(pacer: Pacer, publish: MessageQueueOptions['publish']): Line {
+/**
+ * `next` without the lines whose time is over (`until`, the reward of the day: Issue #194), but the
+ * one the window shows already.
+ */
+function withoutStale(
+  next: readonly GuildMessage[],
+  shown: GuildMessage | undefined,
+  now: number,
+): readonly GuildMessage[] {
+  return next.filter((m) => m.id === shown?.id || m.until === undefined || now < m.until);
+}
+
+function createLine(
+  pacer: Pacer,
+  publish: MessageQueueOptions['publish'],
+  wallNow: () => number,
+): Line {
   let messages: readonly GuildMessage[] = [];
   let held = false;
   return {
@@ -237,7 +255,8 @@ function createLine(pacer: Pacer, publish: MessageQueueOptions['publish']): Line
     get held() {
       return held;
     },
-    set(next) {
+    set(queued) {
+      const next = withoutStale(queued, held ? undefined : messages[0], wallNow());
       const head = next[0];
       const fresh = head !== undefined && head.id !== messages[0]?.id;
       messages = next;
@@ -309,7 +328,7 @@ function createHold(line: Line, pacer: Pacer, scheduler: Scheduler): Hold {
  */
 export function createMessageQueue(options: MessageQueueOptions): MessageQueue {
   const pacer = createPacer(options.now, options);
-  const line = createLine(pacer, options.publish);
+  const line = createLine(pacer, options.publish, options.now);
   const hold = createHold(line, pacer, options.scheduler);
   let nextId = 1;
 
@@ -340,6 +359,12 @@ export function createMessageQueue(options: MessageQueueOptions): MessageQueue {
     },
     setHidden(hidden) {
       pacer.setHidden(hidden);
+      // Back in sight: lines whose time ran out meanwhile go unseen, the one in the window too.
+      if (!hidden) {
+        const now = options.now();
+        const live = line.messages.filter((m) => m.until === undefined || now < m.until);
+        if (live.length < line.messages.length) line.set(live);
+      }
       hold.reschedule();
     },
     setStageShown(shown) {

@@ -84,6 +84,8 @@ export function useGuild(options: GuildStoreOptions = {}) {
     guestCount: store.guests.length,
     guestBoard,
     sparkle,
+    // The king's reward of the day on a desk (Issue #194).
+    reward: store.reward,
     nextMessage: () => {
       store.nextMessage();
     },

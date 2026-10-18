@@ -85,6 +85,11 @@ export interface MessageEntry {
   readonly event: GuildEvent | null;
   /** The guest (its position in the settings) whose PR or Issue the line reports (Issue #108). */
   readonly guest?: number;
+  /**
+   * Epoch ms from which the line is no news: dropped unshown when its turn comes later (the reward
+   * of the day once the day is over, Issue #194).
+   */
+  readonly until?: number;
 }
 
 function entryOf(event: GuildEvent, snapshot: TitleSource): MessageEntry {

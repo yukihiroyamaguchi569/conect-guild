@@ -1,6 +1,6 @@
 import type { Snapshot } from '@conect-guild/snapshot';
 import { GUILD_SETTINGS, type GuildGuest } from '@conect-guild/snapshot/settings';
-import { shallowReactive } from 'vue';
+import { shallowReactive, type Ref } from 'vue';
 import { z } from 'zod';
 import {
   defaultExpectedRepo,
@@ -10,6 +10,7 @@ import {
 } from '../adapters/snapshot';
 import { createKeyValueStore, type KeyValueStore } from '../adapters/storage';
 import { parseBaseline } from '../domain/baseline';
+import type { KeptReward } from '../domain/dailyReward';
 import { diffSnapshot } from '../domain/events';
 import { guestEventMessage, guestEvents, type GuestBaseline } from '../domain/guests';
 import { maskTitle } from '../domain/mask';
@@ -31,6 +32,7 @@ import {
   type StageRecall,
 } from './messageQueue';
 import type { HomeIn } from '../render/idleCrew';
+import { createRewardWatch } from './rewardWatch';
 import { globalScheduler, type Cancel, type Scheduler } from './scheduler';
 
 export type { GuildMessage } from './messageQueue';
@@ -131,6 +133,8 @@ export interface GuildStore {
   readonly guests: readonly GuildGuest[];
   /** Whether the king's quests show (GuildStoreOptions.kingQuests). */
   readonly kingQuests: boolean;
+  /** The king's reward of the day on a desk (Issue #194, app/rewardWatch.ts). */
+  readonly reward: Readonly<Ref<KeptReward | null>>;
   /** Loads once now, then every refresh interval. */
   start(): void;
   /** Stops all timers; results of a fetch still in flight are dropped. */
@@ -353,6 +357,7 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
   const guests = options.guests ?? GUILD_SETTINGS.guests ?? [];
   const kingQuests = options.kingQuests ?? KING_QUESTS_ENABLED;
   const watchGuests = createGuestWatch(guests);
+  const rewards = createRewardWatch(storage, now());
   let cancelRefresh: Cancel | null = null;
   let inFlight = false;
   // Bumped by stop(), so a fetch that started before it cannot touch the state.
@@ -368,10 +373,11 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
       state.checkedAt = now();
       const entries = applyResult(state, storage, result, { now: now(), fresh, kingQuests });
       const guestEntries = result.ok ? watchGuests(result.snapshot) : [];
+      const rewardEntries = result.ok ? rewards.observe(result.snapshot, now()) : [];
       // While halted the window is hidden: hold the messages (and their scenes) until it is back.
       if (state.halted) queue.pause();
       else queue.resume();
-      queue.push([...entries, ...guestEntries]);
+      queue.push([...entries, ...guestEntries, ...rewardEntries]);
     } finally {
       inFlight = false;
     }
@@ -381,6 +387,7 @@ export function createGuildStore(options: GuildStoreOptions = {}): GuildStore {
     state,
     guests,
     kingQuests,
+    reward: rewards.reward,
     start() {
       if (cancelRefresh !== null) return;
       cancelRefresh = scheduler.every(options.refreshIntervalMs ?? REFRESH_INTERVAL_MS, () => {

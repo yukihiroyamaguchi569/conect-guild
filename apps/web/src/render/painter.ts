@@ -36,6 +36,7 @@ import { DEFAULT_SEATS } from './scenes';
 import { decorPoint } from './decorPoint';
 import { SELECTED_LAYOUT } from './layouts';
 import { ornamentPlacement } from './ornament';
+import { rewardOnDesk, rewardShownAt, type PlacedReward, type StageReward } from './rewardDesk';
 import type { Speeches } from './summons';
 import type { DecorCues } from './trinkets';
 import type { VisitorView } from './visitors';
@@ -97,7 +98,11 @@ interface Moment {
   readonly hour: number;
   /** The local month, 1 to 12: its ornament stands on the floor (ornament.ts, Issue #192). */
   readonly month: number;
+  /** Epoch ms of the browser's clock: the reward of the day is gone at its end (Issue #194). */
+  readonly wall: number;
   readonly frame: StageFrame;
+  /** The king's reward of the day and whose desk it is on (Issue #194). */
+  readonly reward: StageReward | null;
   readonly bubbles: Bubbles;
   readonly speeches: Speeches;
   readonly remarks: SpokenLines;
@@ -124,7 +129,8 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
   drawLightPatches(ctx, art, moment, light);
   drawAnimatedDecor(ctx, art, moment, BACK_ANIMATED_DECOR);
   drawOrnament(ctx, art, moment.month);
-  drawActors(ctx, moment, art, painter.front);
+  const reward = rewardPlaced(rewardShownAt(moment.reward, moment.wall));
+  drawActors(ctx, { ...moment, reward }, art, painter.front);
   drawGuestBodies(ctx, moment.guests, {
     guests: painter.guestArt,
     sprites: art.sprites,
@@ -150,6 +156,12 @@ function drawOrnament(ctx: CanvasRenderingContext2D, art: GuildArt, month: numbe
   const placement = ornamentPlacement(SELECTED_LAYOUT.ornamentSpot, month);
   const { x, y } = decorPoint(placement);
   art.decor.drawDecor(ctx, placement.name, x, y);
+}
+
+/** The reward of the day on its member's desk in the selected layout (Issue #194). */
+function rewardPlaced(reward: StageReward | null): PlacedReward | null {
+  if (reward === null) return null;
+  return rewardOnDesk(SELECTED_LAYOUT, DEFAULT_SEATS[reward.member], reward.kind);
 }
 
 /** Everything drawn for the bubbles of `placed` (not the 「Z」, which has none). */

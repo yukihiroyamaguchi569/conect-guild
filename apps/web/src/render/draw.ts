@@ -12,6 +12,7 @@ import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET } from './metrics';
 import { heldLook } from './hands';
 import type { Overhead } from './overhead';
 import type { Placed } from './overheadPlace';
+import type { PlacedReward } from './rewardDesk';
 import type { Point } from './path';
 import type { CallLine, SpeechLine } from './summons';
 import { flyingItemPoint } from './toss';
@@ -162,16 +163,25 @@ function drawFlights(ctx: CanvasRenderingContext2D, frame: StageFrame, art: Guil
  */
 export function drawActors(
   ctx: CanvasRenderingContext2D,
-  stage: { readonly frame: StageFrame; readonly now: number; readonly cues: DecorCues },
+  stage: {
+    readonly frame: StageFrame;
+    readonly now: number;
+    readonly cues: DecorCues;
+    /** The king's reward of the day on a desk, drawn over its desk's things (Issue #194). */
+    readonly reward: PlacedReward | null;
+  },
   art: GuildArt,
   front: readonly CachedFrontLayer[],
 ): void {
+  const { reward } = stage;
   for (const step of stageSteps(stage.frame.members, front)) {
     if (step.kind === 'member') drawMemberPose(ctx, step.member, art);
     if (step.kind === 'held') drawHeldItem(ctx, step.member, art);
     if (step.kind !== 'layer') continue;
     ctx.drawImage(step.layer.image, 0, 0);
     drawAnimatedDecor(ctx, art, stage, step.layer.layer.animated);
+    if (reward?.depth === step.layer.depth)
+      art.decor.drawDecor(ctx, reward.name, reward.x, reward.y);
   }
   drawFlights(ctx, stage.frame, art);
 }
