@@ -1,5 +1,6 @@
 import type { SummonsFrom } from '../domain/summons';
 import type { MemberId, TilePos } from '../guild.config';
+import type { BlessingLine } from './blessing';
 import type { MemberPose, StageFrame } from './director';
 import { SUMMONS } from './metrics';
 import type { MoveFrame } from './motion';
@@ -25,9 +26,15 @@ import type { Visit } from './visit';
  * When かなめ hands work on to departments (Issue #155) the king keeps quiet: she turns at her
  * counter to the (first) department and says "おねがい！", then each department called turns to her
  * and answers "はい！". Who cannot turn (in a scene, away from the seat) speaks where they are.
+ *
+ * The king clicked (Issue #187) says a word of his own (blessing.ts) the same way: sitting up awake
+ * on the throne, nobody called, no "！" and no sound.
  */
 
-export type SpeechLine = '！' | 'ゴニョゴニョ' | 'はっ！' | 'おねがい！' | 'はい！';
+/** The words of a call. */
+export type CallLine = '！' | 'ゴニョゴニョ' | 'はっ！' | 'おねがい！' | 'はい！';
+
+export type SpeechLine = CallLine | BlessingLine;
 
 export type Speeches = Readonly<Partial<Record<MemberId, SpeechLine>>>;
 
@@ -39,6 +46,8 @@ export interface Summons {
   readonly visit?: Visit;
   /** Who gives it; absent: the king. かなめ's has no visit (she is not among the members). */
   readonly from?: SummonsFrom;
+  /** The king's word for a click (Issue #187): he alone says it, from `start` for `blessMs`. */
+  readonly words?: BlessingLine;
 }
 
 const KING: MemberId = 'yukihiro';
@@ -67,6 +76,7 @@ function replyEnd(summons: Summons): number {
 
 /** The end of the call: after the answer, or once かなめ is back at her counter. */
 export function summonsEnd(summons: Summons): number {
+  if (summons.words !== undefined) return summons.start + SUMMONS.blessMs;
   return summons.visit?.back ?? replyEnd(summons);
 }
 
@@ -98,6 +108,15 @@ export function addDispatch(
   return [...list, { start, members, from: 'kaname' }];
 }
 
+/**
+ * Adds the king's word for a click (Issue #187) as addSummons does: never over another. Nobody is
+ * called; he says it alone.
+ */
+export function addBlessing(list: readonly Summons[], words: BlessingLine, now: number): Summons[] {
+  const start = Math.max(now, ...list.map(summonsEnd));
+  return [...list, { start, members: [], words }];
+}
+
 /** True while an order plays or is still to come. */
 export function isSummoning(list: readonly Summons[], now: number): boolean {
   return list.some((summons) => summonsEnd(summons) > now);
@@ -115,15 +134,17 @@ export function endedSummons(list: readonly Summons[], now: number): Summons[] {
 
 /**
  * The start of the order playing at `now` when it is not `announced` (the start already reported):
- * the moment its "！" and its sound begin. Null otherwise. Starts are unique (addSummons).
+ * the moment its "！" and its sound begin. Null otherwise, and for the king's word for a click
+ * (it has no sound). Starts are unique (addSummons).
  */
 export function newCallStart(
   list: readonly Summons[],
   now: number,
   announced: number | null,
 ): number | null {
-  const start = playing(list, now)?.start;
-  return start === undefined || start === announced ? null : start;
+  const summons = playing(list, now);
+  if (summons === undefined || summons.words !== undefined) return null;
+  return summons.start === announced ? null : summons.start;
 }
 
 /** The order playing at `now`, if any (they never overlap: addSummons). */
@@ -139,7 +160,14 @@ export function speechesAt(
 ): Speeches {
   const summons = playing(list, now);
   if (summons === undefined) return {};
-  if (!fromKing(summons)) return dispatchSpeeches(summons, now, done);
+  if (summons.words !== undefined) return { [KING]: summons.words };
+  return fromKing(summons)
+    ? kingSpeeches(summons, now, done)
+    : dispatchSpeeches(summons, now, done);
+}
+
+/** The king's "！" and "ゴニョゴニョ", then the members' "はっ！"; those in `done` have stopped. */
+function kingSpeeches(summons: Summons, now: number, done: readonly MemberId[]): Speeches {
   if (now < summons.start + SUMMONS.callMs) return { [KING]: '！' };
   // かなめ on her way to the throne, or back to her counter: nobody speaks.
   if (now < murmurStart(summons) || now >= replyEnd(summons)) return {};
@@ -283,6 +311,12 @@ function listening(
   return { ...member, pose: { ...member.pose, frame: face.frame, flip: face.flip } };
 }
 
+/** How far the king rises at `now`: while he calls "！", not for his words for a click. */
+function kingRise(summons: Summons, now: number): number {
+  const calling = summons.words === undefined && now < summons.start + SUMMONS.callMs;
+  return calling ? SUMMONS.kingRisePx : 0;
+}
+
 /**
  * The frame with the order playing at `now` applied: the king sitting up, awake, through the call
  * (rising a little while he calls), the members turned to the throne while they answer, each held
@@ -302,8 +336,7 @@ export function withSummons(
   const members = frame.members.map((member) => {
     const at = holds.start === summons.start ? holds.points[member.id] : undefined;
     if (member.id === KING) {
-      const lift = now < summons.start + SUMMONS.callMs ? SUMMONS.kingRisePx : 0;
-      return sitting(member, { frame: 0, flip: false, lift, at });
+      return sitting(member, { frame: 0, flip: false, lift: kingRise(summons, now), at });
     }
     const beside = listening(member, summons, { now, throne: seats[KING] });
     if (beside !== null) return beside;

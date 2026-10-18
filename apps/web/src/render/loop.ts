@@ -125,6 +125,13 @@ export interface RenderLoop {
    */
   summon(members: readonly MemberId[], from?: SummonsFrom): HomeIn;
   /**
+   * The king was clicked (Issue #187): he says a word of his own now, never the one he said last.
+   * Dropped, not kept for later, while halted, before the first snapshot, while drawing would not
+   * be seen, while he awaits approval, and while a call plays or he has a part in a scene
+   * (blessing.mayBless). True when he speaks.
+   */
+  bless(): boolean;
+  /**
    * What the party state shows on the stage: the waiting bubbles, the ambient moves, and since
    * when each member has had nothing to do (idle.ts; a member whose time changes while out playing
    * walks back to their seat).
@@ -369,6 +376,32 @@ function paintAt(
   };
 }
 
+/** The scheduler of `draw`, paused while the page is hidden or the canvas has no width (isPaused). */
+function pausedScheduler(
+  draw: () => void,
+  visibility: PageVisibility,
+  cssWidth: () => number,
+): { readonly paused: () => boolean; readonly schedule: Scheduler } {
+  const paused = () => isPaused(visibility.isHidden(), cssWidth());
+  return { paused, schedule: createScheduler(draw, paused) };
+}
+
+/** The king clicked (Issue #187): he speaks, and the frame is drawn, unless the click is dropped. */
+function blessNow(
+  cast: Pick<Cast, 'bless'>,
+  schedule: Scheduler,
+  at: {
+    readonly director: Director;
+    readonly party: StageParty;
+    readonly t: number;
+    readonly paused: boolean;
+  },
+): boolean {
+  const said = cast.bless(at.director, at.party, at);
+  if (said) schedule.now();
+  return said;
+}
+
 export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
   const { now, localHour, context, visibility } = loopSources(options);
   const { painter, guests, cast } = stageOf(options, context);
@@ -388,8 +421,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
     follow(schedule, nextDraw({ hidden: paused(), ...drawn.pace }));
   }
 
-  const paused = () => isPaused(visibility.isHidden(), cssWidth);
-  const schedule = createScheduler(draw, paused);
+  const { paused, schedule } = pausedScheduler(draw, visibility, () => cssWidth);
   /**
    * Drops the scenes nobody can see, stops or restarts the stage clock with the paused state, then
    * draws (or not) to match.
@@ -419,6 +451,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
       schedule.now();
       return summoned.homeIn;
     },
+    bless: () => blessNow(cast, schedule, { director, party, t: stageNow(), paused: paused() }),
     setParty(next) {
       party = next;
       guests.setHalted(next.halted);

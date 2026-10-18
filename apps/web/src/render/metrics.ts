@@ -129,7 +129,8 @@ export const IDLE = {
  * it (visit.ts, Issue #87) she sets off after `callMs`, walks at motion.MS_PER_TILE (5 tiles, 1.25 s
  * each way), and the whisper starts once she is there: about 6.2 s in all. When かなめ hands work
  * on to departments (Issue #155) she says "おねがい！" for `askMs`, then they answer "はい！" for
- * `replyMs`: 3 s in all.
+ * `replyMs`: 3 s in all. The king clicked (Issue #187) says a word of his own for `blessMs`, as
+ * long as a line on a clear (LINES.clearMs).
  */
 export const SUMMONS = {
   callMs: 700,
@@ -139,6 +140,7 @@ export const SUMMONS = {
   replyMs: 1_600,
   hopMs: 280,
   hopPx: 4,
+  blessMs: 2_000,
 } as const;
 
 /**
