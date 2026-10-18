@@ -8,9 +8,14 @@ import takumiUrl from '../../../../assets/sprites/takumi.png';
 import yukihiroUrl from '../../../../assets/sprites/yukihiro.png';
 import guest1Url from '../../../../assets/sprites/guest1.png';
 import guest2Url from '../../../../assets/sprites/guest2.png';
+import visitorBardUrl from '../../../../assets/sprites/visitor-bard.png';
+import visitorFortuneUrl from '../../../../assets/sprites/visitor-fortune.png';
+import visitorMerchantUrl from '../../../../assets/sprites/visitor-merchant.png';
+import visitorPostmanUrl from '../../../../assets/sprites/visitor-postman.png';
 import decorUrl from '../../../../assets/decor/decor.png';
 import propsUrl from '../../../../assets/props/props.png';
 import tilesetUrl from '../../../../assets/tiles/tileset.png';
+import { VISITOR_KINDS, type VisitorKind } from '../domain/visitors';
 import type { MemberId } from '../guild.config';
 import {
   drawPlaceholderProp,
@@ -124,14 +129,30 @@ export function guestArtUrls(count: number): readonly string[] {
  * (the other keeps its).
  */
 export async function loadGuestArt(count: number): Promise<GuestArt> {
-  const sheets = await Promise.all(
-    guestArtUrls(count).map(async (url) => {
-      try {
-        return await loadImage(url);
-      } catch {
-        return null;
-      }
-    }),
-  );
-  return createGuestArt(sheets);
+  return createGuestArt(await Promise.all(guestArtUrls(count).map(loadOrNull)));
+}
+
+/** The picture at `url`, or null when it cannot be loaded. */
+async function loadOrNull(url: string): Promise<HTMLImageElement | null> {
+  try {
+    return await loadImage(url);
+  } catch {
+    return null;
+  }
+}
+
+const VISITOR_URLS: Readonly<Record<VisitorKind, string>> = {
+  merchant: visitorMerchantUrl,
+  postman: visitorPostmanUrl,
+  bard: visitorBardUrl,
+  fortune: visitorFortuneUrl,
+};
+
+/**
+ * The visitors' art (Issue #195), loaded as the guests' and in the order of VISITOR_KINDS; a plain
+ * box for a visitor whose picture cannot be loaded.
+ */
+export async function loadVisitorArt(): Promise<GuestArt> {
+  const urls = VISITOR_KINDS.map((kind) => VISITOR_URLS[kind]);
+  return createGuestArt(await Promise.all(urls.map(loadOrNull)));
 }
