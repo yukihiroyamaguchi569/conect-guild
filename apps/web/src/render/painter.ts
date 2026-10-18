@@ -14,6 +14,7 @@ import { drawLightPatches, drawShade, drawWindowSun, type ShadeScratch } from '.
 import { drawGuestBodies, drawGuestOverheads } from './drawGuests';
 import { drawVisitorBody, drawVisitorWords } from './drawVisitor';
 import { drawLevelTags } from './drawLevelTags';
+import { drawReward } from './drawReward';
 import { drawLevelUpBanners } from './drawLevelUp';
 import type { GuestArt } from './guestArt';
 import type { GuestFrame } from './guests';
@@ -129,8 +130,7 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
   drawLightPatches(ctx, art, moment, light);
   drawAnimatedDecor(ctx, art, moment, BACK_ANIMATED_DECOR);
   drawOrnament(ctx, art, moment.month);
-  const reward = rewardPlaced(rewardShownAt(moment.reward, moment.wall));
-  drawActors(ctx, { ...moment, reward }, art, painter.front);
+  drawActors(ctx, moment, art, painter.front);
   drawGuestBodies(ctx, moment.guests, {
     guests: painter.guestArt,
     sprites: art.sprites,
@@ -138,6 +138,7 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
   });
   drawVisitorBody(ctx, painter.visitorArt, moment.visitor);
   drawShade(ctx, painter.scratch, light, lampLights(moment.now));
+  drawReward(ctx, art.decor, rewardPlaced(rewardShownAt(moment.reward, moment.wall)), moment.now);
   const tags = levelTags(moment.levels, DEFAULT_SEATS);
   drawLevelTags(ctx, tags);
   drawGuestOverheads(ctx, moment.guests);

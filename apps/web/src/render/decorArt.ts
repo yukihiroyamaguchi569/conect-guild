@@ -30,6 +30,11 @@ export function createDecorArt(sheet: CanvasImageSource): DecorArt {
       const d = decorDraw(name);
       ctx.drawImage(sheet, d.sx, d.sy, d.w, d.h, Math.round(x), Math.round(y), d.w, d.h);
     },
+    drawDecorScaled(ctx, name, { x, y, scale }) {
+      const d = decorDraw(name);
+      const [w, h] = [d.w * scale, d.h * scale];
+      ctx.drawImage(sheet, d.sx, d.sy, d.w, d.h, Math.round(x), Math.round(y), w, h);
+    },
   };
 }
 

@@ -41,6 +41,15 @@ export interface SpriteArt {
 export interface DecorArt {
   /** Draws a small thing with its top-left at `x`, `y` (logical px), at its own size. */
   drawDecor(ctx: CanvasRenderingContext2D, name: DecorName, x: number, y: number): void;
+  /** The same, with its top-left at `at` and `at.scale` times its own size. */
+  drawDecorScaled(ctx: CanvasRenderingContext2D, name: DecorName, at: ScaledAt): void;
+}
+
+/** Where a picture drawn bigger (or smaller) than its own size goes, logical px. */
+export interface ScaledAt {
+  readonly x: number;
+  readonly y: number;
+  readonly scale: number;
 }
 
 export interface GuildArt {
@@ -144,9 +153,14 @@ const placeholderSprites: SpriteArt = {
 
 /** A small brown box per thing when the decor sheet cannot be loaded. */
 const placeholderDecor: DecorArt = {
-  drawDecor(ctx, _name, x, y) {
+  drawDecor(ctx, name, x, y) {
+    placeholderDecor.drawDecorScaled(ctx, name, { x, y, scale: 1 });
+  },
+  drawDecorScaled(ctx, _name, { x, y, scale }) {
     ctx.fillStyle = '#6b4a2b';
-    ctx.fillRect(Math.round(x) + 8, Math.round(y) + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+    const inset = 8 * scale;
+    const side = (TILE_SIZE - 16) * scale;
+    ctx.fillRect(Math.round(x) + inset, Math.round(y) + inset, side, side);
   },
 };
 

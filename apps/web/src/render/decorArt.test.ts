@@ -72,7 +72,7 @@ describe('propPicture', () => {
 });
 
 describe('chooseProps', () => {
-  const fromDecor = decorProps({ drawDecor: vi.fn() });
+  const fromDecor = decorProps({ drawDecor: vi.fn(), drawDecorScaled: vi.fn() });
 
   it('draws with props.png, and the raised scroll with the decor bundle', () => {
     const own: SpriteArt['drawProp'] = vi.fn();

@@ -1,17 +1,42 @@
 import { describe, expect, it } from 'vitest';
-import { FRONT_LAYERS } from './layers';
 import { LAYOUTS, SELECTED_LAYOUT } from './layouts';
-import { contains, overlaps, tallestWindowExtentsFor } from './map';
+import type { TilePos } from './layouts/types';
+import { levelTags } from './levelTags';
+import { contains, overlaps, tallestWindowExtentsFor, type PxRect } from './map';
 import { TILE_SIZE } from './metrics';
-import { rewardOnDesk, rewardShownAt } from './rewardDesk';
+import { bubbleBox } from './overhead';
+import { tileToPoint } from './path';
+import { REWARD_SCALE, rewardOnDesk, rewardShownAt, rewardSparkle } from './rewardDesk';
+import type { Spot } from './bubbleShape';
+import { DEFAULT_SEATS } from './scenes';
 
-/** The king's reward of the day on a desk (Issue #194). */
+/** The king's reward of the day on a desk (Issues #194, #208). */
+
+const SIDE = TILE_SIZE * REWARD_SCALE;
+/**
+ * Where each picture has ink in its 32 px cell (measured on assets/decor/decor.png: alpha > 20),
+ * and how far the widest member reaches either side of the seat's middle (measured on
+ * assets/sprites: ひびき's hair, 36 px). Measured values: re-measure when the art changes.
+ */
+const INK = {
+  onigiri: { left: 5, top: 14, right: 27, bottom: 32 },
+  dango: { left: 3, top: 19, right: 29, bottom: 32 },
+  medal: { left: 9, top: 8, right: 23, bottom: 32 },
+} as const;
+const SEATED_REACH = 36;
+const SPOTS: readonly Spot[] = ['right', 'left', 'beside-right', 'beside-left'];
+/** Around the 「Lv 10」 under `seat` (levelTags.ts; drawLevelTags.ts draws it 10 px bold). */
+function tagArea(seat: TilePos): PxRect {
+  const [tag] = levelTags({ minori: 10 }, { ...DEFAULT_SEATS, minori: seat });
+  if (tag === undefined) throw new Error('no tag');
+  return { left: tag.x - 20, top: tag.y - 8, right: tag.x + 20, bottom: tag.y + 8 };
+}
 
 describe.each(Object.values(LAYOUTS))(
   'rewardOnDesk in the layout of $departmentCount departments',
   (layout) => {
     it.each(layout.desks.map((desk) => [desk.seat.col, desk.seat.row, desk.seat] as const))(
-      'stands on the desk top in front of the seat %i,%i, right of the member',
+      'stands on the desk top in front of the seat %i,%i, beside the member, clear of the rest',
       (_col, _row, seat) => {
         const placed = rewardOnDesk(layout, seat, 'onigiri');
         const desk = layout.objects.find(
@@ -19,18 +44,43 @@ describe.each(Object.values(LAYOUTS))(
         );
         if (placed === null || desk === undefined) throw new Error('no desk in front of the seat');
         expect(placed.name).toBe('onigiri');
-        expect(placed.depth).toBe((desk.row + desk.h) * TILE_SIZE);
-        // Within the desk's width, right of the member's middle, over its top row.
-        expect(placed.x).toBeGreaterThan(seat.col * TILE_SIZE + TILE_SIZE / 2);
-        expect(placed.x + TILE_SIZE).toBeLessThanOrEqual((desk.col + desk.w) * TILE_SIZE);
-        expect(placed.y).toBeGreaterThanOrEqual(desk.row * TILE_SIZE - TILE_SIZE / 2);
-        expect(placed.y + TILE_SIZE).toBeLessThanOrEqual((desk.row + 1) * TILE_SIZE);
+        expect(placed.scale).toBe(1.5);
         const box = {
           left: placed.x,
           top: placed.y,
-          right: placed.x + TILE_SIZE,
-          bottom: placed.y + TILE_SIZE,
+          right: placed.x + SIDE,
+          bottom: placed.y + SIDE,
         };
+        // Within the desk's width, resting on its top row.
+        expect(box.left).toBeGreaterThanOrEqual(desk.col * TILE_SIZE);
+        expect(box.right).toBeLessThanOrEqual((desk.col + desk.w) * TILE_SIZE);
+        expect(box.bottom).toBeGreaterThan(desk.row * TILE_SIZE);
+        expect(box.bottom).toBeLessThanOrEqual((desk.row + 1) * TILE_SIZE);
+        // Beside the member in the chair: above the desk top, where the member shows, no ink of
+        // any of the pictures meets the widest member.
+        const middle = seat.col * TILE_SIZE + TILE_SIZE / 2;
+        const member = {
+          left: middle - SEATED_REACH,
+          top: 0,
+          right: middle + SEATED_REACH,
+          bottom: desk.row * TILE_SIZE,
+        };
+        for (const [kind, ink] of Object.entries(INK)) {
+          const at = { left: placed.x, top: placed.y };
+          const drawn = {
+            left: at.left + ink.left * REWARD_SCALE,
+            top: at.top + ink.top * REWARD_SCALE,
+            right: at.left + ink.right * REWARD_SCALE,
+            bottom: at.top + ink.bottom * REWARD_SCALE,
+          };
+          expect(overlaps(drawn, member), kind).toBe(false);
+        }
+        const feet = tileToPoint(seat);
+        expect(overlaps(box, tagArea(seat))).toBe(false);
+        for (const spot of SPOTS) {
+          const bubble = bubbleBox(feet, { voice: 'glyph', chars: 1 }, spot, 0);
+          expect(overlaps(box, bubble), spot).toBe(false);
+        }
         for (const area of Object.values(tallestWindowExtentsFor(layout))) {
           expect(overlaps(box, area)).toBe(false);
         }
@@ -45,11 +95,28 @@ describe('rewardOnDesk', () => {
     expect(rewardOnDesk(SELECTED_LAYOUT, SELECTED_LAYOUT.commanderSeat, 'medal')).toBeNull();
   });
 
-  it('is drawn with a front layer of the selected layout', () => {
-    for (const { seat } of SELECTED_LAYOUT.desks) {
-      const placed = rewardOnDesk(SELECTED_LAYOUT, seat, 'dango');
-      expect(FRONT_LAYERS.map((layer) => layer.depth)).toContain(placed?.depth);
-    }
+  it('takes the wider stretch of desk beside the member', () => {
+    const desk = { tile: 'desk', solid: true, col: 10, row: 5, w: 4, h: 2 } as const;
+    const left = rewardOnDesk({ objects: [desk] }, { col: 12, row: 4 }, 'dango');
+    const right = rewardOnDesk({ objects: [desk] }, { col: 11, row: 4 }, 'dango');
+    expect(left?.x).toBe((10 * TILE_SIZE + 12 * TILE_SIZE - SIDE) / 2);
+    expect(right?.x).toBe((12 * TILE_SIZE + 14 * TILE_SIZE - SIDE) / 2);
+  });
+});
+
+describe('rewardSparkle', () => {
+  const placed = { name: 'medal', x: 100, y: 50, scale: REWARD_SCALE } as const;
+
+  it('twinkles over the top-right of the picture', () => {
+    const bright = rewardSparkle(placed, 0);
+    const dim = rewardSparkle(placed, 600);
+    expect(bright.alpha).toBeCloseTo(1);
+    expect(dim.alpha).toBeCloseTo(0.1);
+    expect(rewardSparkle(placed, 1_200).alpha).toBeCloseTo(1);
+    expect(bright.x).toBeGreaterThan(placed.x + SIDE / 2);
+    expect(bright.x).toBeLessThan(placed.x + SIDE);
+    expect(bright.y).toBeGreaterThan(placed.y);
+    expect(bright.y).toBeLessThan(placed.y + SIDE / 2);
   });
 });
 
