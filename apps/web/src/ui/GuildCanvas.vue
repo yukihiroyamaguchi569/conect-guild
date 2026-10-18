@@ -154,6 +154,7 @@ function start(
     art,
     guestArt,
     visitorArt,
+    ...(props.lastActiveStorage === undefined ? {} : { toastStore: props.lastActiveStorage }),
     ...(fixedHour === null ? {} : { localHour: () => fixedHour }),
     idleSeeds: props.idleSeeds,
     onCallStart: () => {
