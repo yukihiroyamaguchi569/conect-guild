@@ -14,6 +14,7 @@ import type { GuestView } from '../domain/guests';
 import type { KeyValueStore } from '../adapters/storage';
 import type { Summons } from '../app/guildStore';
 import type { StageRecall } from '../app/messageQueue';
+import { createGuestLastActiveTracker } from '../app/guestLastActive';
 import { createLastActiveTracker } from '../app/lastActive';
 import { bootStage, cueAction, type StageState } from '../app/stageBoot';
 import { ambientMoodsOf } from '../render/ambient';
@@ -23,7 +24,7 @@ import { hourFromQuery } from '../render/daylight';
 import { levelsOf } from '../render/levelTags';
 import { kingQuestCountOf } from '../render/murmurs';
 import type { GuestArt } from '../render/guestArt';
-import { stageGuestsOf } from '../render/guests';
+import { stageGuestsOf, type StageGuest } from '../render/guests';
 import { loadArt, loadGuestArt } from '../render/loadArt';
 import type { IdleSeeds, IdleSince } from '../render/idle';
 import type { HomeIn } from '../render/idleCrew';
@@ -84,6 +85,12 @@ let sparkledId: number | null = null;
 /** When each member last had work (localStorage), for dozing, sleeping and playing (Issue #23). */
 const lastActive = createLastActiveTracker(props.lastActiveStorage);
 let idleSince: IdleSince = {};
+/** When each guest last had work (localStorage), for dozing and sleeping on the spot (Issue #183). */
+const guestLastActive = createGuestLastActiveTracker(props.lastActiveStorage);
+
+function stageGuests(guests: readonly GuestView[]): StageGuest[] {
+  return stageGuestsOf(guests, guestLastActive.observe(guests, Date.now()));
+}
 
 function setIdleSince(next: IdleSince): void {
   idleSince = next;
@@ -142,7 +149,7 @@ function start(element: HTMLCanvasElement, art: GuildArt, guestArt: GuestArt): v
   stage = 'running';
   setIdleSince(lastActive.observe(props.party, Date.now()));
   running.setParty(stageParty(props.party));
-  running.setGuests(stageGuestsOf(props.guests));
+  running.setGuests(stageGuests(props.guests));
   // The message in the window may have come while the pictures were loading.
   takeSparkle();
   running.resize(cssWidth ?? element.clientWidth, globalThis.devicePixelRatio);
@@ -243,7 +250,9 @@ watch(
 watch(
   () => props.guests,
   (guests) => {
-    loop?.setGuests(stageGuestsOf(guests));
+    // Observed even while the pictures load, so the idle times follow every snapshot.
+    const next = stageGuests(guests);
+    loop?.setGuests(next);
   },
 );
 

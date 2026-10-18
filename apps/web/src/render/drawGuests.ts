@@ -17,13 +17,15 @@ export function drawGuestBodies(
 ): void {
   for (const { guest, feet, look } of frame.poses) {
     const at = { x: feet.x, y: feet.y + look.dy };
-    art.guests.drawGuest(ctx, guest.index, look.frame, at);
+    art.guests.drawGuest(ctx, guest.index, look, at);
     if (look.reading) art.sprites.drawProp(ctx, 'scroll', readingPoint(guest.index, at), 'carry');
   }
 }
 
 /** The ink of the 「?」, as over a member waiting for a permission (draw.ts BUBBLE_GLYPHS). */
 const QUESTION = { text: '?', color: '#1a56b0', voice: 'glyph', chars: 1 } as const;
+/** The ink of the dozing 「…」, as over a dozing member (draw.ts IDLE_GLYPHS). */
+const DOTS = { text: '…', color: '#222222', voice: 'glyph', chars: 1 } as const;
 
 function drawSparkle(ctx: CanvasRenderingContext2D, view: SparkleView): void {
   for (const p of view.particles) {
@@ -32,11 +34,15 @@ function drawSparkle(ctx: CanvasRenderingContext2D, view: SparkleView): void {
   }
 }
 
-/** Over everything, like the members' bubbles: the 「?」 or the 「Z」 over the head, and the sparkles. */
+/**
+ * Over everything, like the members' bubbles: the 「?」, the 「…」 or the 「Z」 over the head, and
+ * the sparkles.
+ */
 export function drawGuestOverheads(ctx: CanvasRenderingContext2D, frame: GuestFrame): void {
   for (const { feet, look } of frame.poses) {
     const { mark } = look;
     if (mark?.kind === 'question') drawBubble(ctx, QUESTION, markFeet(feet, mark), 'beside-right');
+    if (mark?.kind === 'dots') drawBubble(ctx, DOTS, markFeet(feet, mark), 'beside-right');
     if (mark?.kind === 'z') drawSleepZ(ctx, mark.rise, markFeet(feet, mark));
   }
   for (const view of frame.sparkles) drawSparkle(ctx, view);

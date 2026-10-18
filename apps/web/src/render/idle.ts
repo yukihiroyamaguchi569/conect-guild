@@ -180,33 +180,35 @@ function phase(salt: number, now: number, cycleMs: number): { index: number; ela
   return { index, elapsed: t - index * cycleMs };
 }
 
-/** Nodding; a yawn turned aside in every fourth cycle; a "…" in every third. */
-function dozePose(seat: TilePos, salt: number, now: number): IdlePose {
+/** How a doze looks on the spot: the frame, the facing, the nod and the sign over the head. */
+export interface DozeMotion {
+  readonly frame: 0 | 1;
+  readonly flip: boolean;
+  readonly offset: Point;
+  readonly mark: IdleMark | null;
+}
+
+/**
+ * Nodding; a yawn turned aside in every fourth cycle; a "…" in every third. Also the guests' doze
+ * (guests.ts, Issue #183).
+ */
+export function dozeMotion(salt: number, now: number): DozeMotion {
   const { index, elapsed } = phase(salt, now, IDLE.dozeCycleMs);
-  const feet = tileToPoint(seat);
-  const step = still(seat);
   if (index % 4 === 0 && elapsed < IDLE.yawnMs) {
-    return {
-      feet,
-      step,
-      frame: 1,
-      flip: index % 8 === 0,
-      offset: STILL,
-      mark: null,
-      withPet: false,
-    };
+    return { frame: 1, flip: index % 8 === 0, offset: STILL, mark: null };
   }
   const nod = Math.floor(elapsed / (IDLE.nodMs / 2)) % 2 === 1 ? IDLE.nodPx : 0;
   const dots = index % 3 === 1 && elapsed < IDLE.dozeDotsMs;
   return {
-    feet,
-    step,
     frame: 0,
     flip: false,
     offset: { x: 0, y: nod },
     mark: dots ? { kind: 'bubble', glyph: '…' } : null,
-    withPet: false,
   };
+}
+
+function dozePose(seat: TilePos, salt: number, now: number): IdlePose {
+  return { feet: tileToPoint(seat), step: still(seat), ...dozeMotion(salt, now), withPet: false };
 }
 
 function sleepPose(seat: TilePos, salt: number, now: number): IdlePose {
