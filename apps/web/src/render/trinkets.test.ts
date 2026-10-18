@@ -143,6 +143,7 @@ describe('activeSince', () => {
     awaitingPresident: true,
     clearedAt: { minori: 300, kaname: 900, sasae: 50 },
     petCompany: false,
+    petted: false,
   };
 
   it('always moves a thing with no trigger', () => {

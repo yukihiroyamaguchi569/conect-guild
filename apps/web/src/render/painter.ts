@@ -9,7 +9,7 @@ import {
   drawStatic,
   type CachedFrontLayer,
 } from './draw';
-import { drawAnimatedDecor } from './drawDecor';
+import { drawAnimatedDecor, drawPetBark } from './drawDecor';
 import { drawLightPatches, drawShade, drawWindowSun, type ShadeScratch } from './drawDaylight';
 import { drawGuestBodies, drawGuestOverheads } from './drawGuests';
 import { drawLevelTags } from './drawLevelTags';
@@ -18,16 +18,19 @@ import type { GuestArt } from './guestArt';
 import type { GuestFrame } from './guests';
 import { BACK_ANIMATED_DECOR, FRONT_LAYERS } from './layers';
 import { levelTags, type Levels } from './levelTags';
+import type { Box } from './overhead';
 import type { SpokenLines } from './lines';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
 import {
   NO_PLACES,
   overheadsOf,
+  placedBox,
   rememberPlaces,
   type OverheadStage,
   type PlaceMemory,
   type Placed,
 } from './overheadPlace';
+import { PET_RECT } from './petting';
 import { DEFAULT_SEATS } from './scenes';
 import type { Speeches } from './summons';
 import type { DecorCues } from './trinkets';
@@ -98,7 +101,8 @@ interface Moment {
 /**
  * One frame: the cached background with the sun in the windows and the light patches, the moving
  * things, the members between the cached front layers (desks, the counter, the throne's arms),
- * the shade of the time of day with the lamps' light, and the bubbles and confetti on top.
+ * the shade of the time of day with the lamps' light, and the bubbles (the pet's 「わん」 too) and
+ * confetti on top.
  */
 export function paint(painter: Painter, scale: number, moment: Moment): void {
   const { ctx, art } = painter;
@@ -120,8 +124,14 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
   drawLevelTags(ctx, tags);
   drawGuestOverheads(ctx, moment.guests);
   const placed = painter.placer.place({ ...moment, tags });
+  if (moment.cues.petted && PET_RECT !== null) drawPetBark(ctx, PET_RECT, bubbleBoxes(placed));
   drawOverhead(ctx, { placed, confetti: moment.frame.confetti });
   drawLevelUpBanners(ctx, { placed, confetti: moment.frame.confetti });
+}
+
+/** Everything drawn for the bubbles of `placed` (not the 「Z」, which has none). */
+function bubbleBoxes(placed: readonly Placed[]): Box[] {
+  return placed.flatMap((one) => (one.bubble === null ? [] : [placedBox(one)]));
 }
 
 /** Places what is over the heads, keeping each line's spot from the frame painted before. */

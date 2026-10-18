@@ -54,6 +54,8 @@ export const DECOR = {
   chest: { col: 5, row: 9, w: 1, h: 1 },
   'sleeping-poodle': { col: 6, row: 9, w: 1, h: 1 },
   'awake-poodle': { col: 7, row: 9, w: 1, h: 1 },
+  'wag-poodle-a': { col: 0, row: 10, w: 1, h: 1 },
+  'wag-poodle-b': { col: 1, row: 10, w: 1, h: 1 },
 } as const;
 
 export type DecorName = keyof typeof DECOR;

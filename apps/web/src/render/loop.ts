@@ -132,6 +132,12 @@ export interface RenderLoop {
    */
   bless(): boolean;
   /**
+   * The pet was clicked (Issue #186): it wakes, or stays up, for TRINKETS.pettedMs wagging its tail
+   * and says 「わん」, whatever else plays. Dropped while halted and while drawing would not be seen
+   * (petting.mayPet). True when it is up from the click.
+   */
+  pet(): boolean;
+  /**
    * What the party state shows on the stage: the waiting bubbles, the ambient moves, and since
    * when each member has had nothing to do (idle.ts; a member whose time changes while out playing
    * walks back to their seat).
@@ -402,6 +408,29 @@ function blessNow(
   return said;
 }
 
+/** The pet clicked (Issue #186): it is up, and the frame is drawn, unless the click is dropped. */
+function petNow(
+  cast: Pick<Cast, 'petting'>,
+  schedule: Scheduler,
+  at: { readonly party: StageParty; readonly paused: boolean; readonly t: number },
+): boolean {
+  const up = cast.petting.press({ halted: at.party.halted, paused: at.paused }, at.t);
+  if (up) schedule.now();
+  return up;
+}
+
+/** The presses on the canvas (the king, the pet), on the stage as `now()` gives it at the press. */
+function presses(
+  cast: Pick<Cast, 'bless' | 'petting'>,
+  schedule: Scheduler,
+  now: () => Parameters<typeof blessNow>[2],
+): Pick<RenderLoop, 'bless' | 'pet'> {
+  return {
+    bless: () => blessNow(cast, schedule, now()),
+    pet: () => petNow(cast, schedule, now()),
+  };
+}
+
 export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
   const { now, localHour, context, visibility } = loopSources(options);
   const { painter, guests, cast } = stageOf(options, context);
@@ -451,7 +480,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
       schedule.now();
       return summoned.homeIn;
     },
-    bless: () => blessNow(cast, schedule, { director, party, t: stageNow(), paused: paused() }),
+    ...presses(cast, schedule, () => ({ director, party, t: stageNow(), paused: paused() })),
     setParty(next) {
       party = next;
       guests.setHalted(next.halted);
