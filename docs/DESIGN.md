@@ -74,7 +74,7 @@ conect-guild/
 │       │   ├── events.ts     基準状態と今回の snapshot の差分 → ゲームのイベント列
 │       │   ├── summons.ts    セッションの待機 → 作業中の変化 → 社長の指示（4.10）
 │       │   ├── guests.ts     設定のお客さん + snapshot → 表示の形、前回との差分 → マージ・完了の出来事（4.13、Issue #108）
-│       │   └── demoScript.ts / demo.ts / demoGuests.ts  デモモードの台本（出来事の列）と、時刻 → 架空の snapshot（4.11）。お客さんの架空の仕事は demoGuests.ts
+│       │   └── demoScript.ts / demo.ts / demoGuests.ts  デモモードの台本（出来事の列）と、時刻 → 架空の snapshot（4.11）。お客さんの架空の仕事は demoGuests.ts、レーンの状態とどの部門が運ぶかは demoLanes.ts（Issue #198）
 │       ├── adapters/
 │       │   ├── snapshot.ts   /snapshot.json を no-store で fetch して zod で検証
 │       │   ├── storage.ts    localStorage の読み書き（失敗しても例外を外に出さない）。デモ用のメモリの Storage もここ
@@ -98,7 +98,9 @@ conect-guild/
 │       │   ├── art.ts        絵の差し替え境界（TileArt / SpriteArt / DecorArt）と仮の矩形
 │       │   ├── tileArt.ts / spriteArt.ts / decorArt.ts / loadArt.ts  assets/ の絵で描く実装と読み込み
 │       │   ├── draw.ts / loop.ts  描画と requestAnimationFrame（動かないものはキャッシュの canvas に 1 回だけ。演出中は毎フレーム、それ以外はアンビエントだけ約 7fps、非表示の間は止める）
-│       │   └── painter.ts    1 フレームの描き方（キャッシュする背景と前景、日の光・メンバー・お客さん・夜の影・頭上の文字の順）。loop.ts はいつ描くかを受け持つ（Issue #124）
+│       │   ├── painter.ts    1 フレームの描き方（キャッシュする背景と前景、日の光・メンバー・お客さん・夜の影・頭上の文字の順）。loop.ts はいつ描くかを受け持つ（Issue #124）
+│       │   ├── scheduler.ts  次に描く時の予約（次のフレーム・アンビエントの待ち・眠る。保留は 1 つまで）。loop.ts が使う（Issue #198）
+│       │   └── presses.ts    Canvas の上で押されたもの（王様・ペット・メンバー）をループに渡し、言ったら描き直す（Issue #198）
 │       ├── audio/            効果音（M4、4.8）。楽譜・鳴らす判定・設定は純粋、Web Audio は差し替えられる境界
 │       ├── ui/               Vue 部品: QuestBoard / PartyStatus / MessageWindow（Canvas の上に重ねる HTML）
 │       └── app/              Vue の reactive による小さなストア。Pinia は入れない。demo.ts は `?demo=1` の判定と、デモの読み込み・メモリの保存先（4.11）
@@ -440,7 +442,7 @@ M3 からは、セッションの状態（4.7）を混ぜる。優先順位は �
   - 当たり判定は純粋関数: Canvas 上の CSS px を表示の大きさで割って論理座標にし（整数でない倍率でも同じ式）、「押せるもの」の一覧（`CLICKABLES`、手前から順。今は王様だけ）から最初に含むものを選ぶ。左と上の辺は含み、右と下の辺は含まない
   - 王様の上にマウスが乗るとカーソルを pointer にする（halted の間はしない）。キーボードでは、王様の位置に重ねた透明のボタン（名前「王様に話しかける」）に Tab で移って Enter・Space で押す。ボタンはマウスを通す（`pointer-events: none`）ので、マウスのクリックは Canvas の当たり判定だけで決まる。フォーカスのときだけ点線の枠を出す。halted の間はボタンを出さず、狭い画面では Canvas と一緒に隠れる
 
-### 4.11 デモモード（Issue #49。domain/demoScript.ts、domain/demo.ts、app/demo.ts）
+### 4.11 デモモード（Issue #49。domain/demoScript.ts、domain/demo.ts、domain/demoLanes.ts、app/demo.ts）
 
 X と note の動画を撮るため、架空のクエストで一連の演出を効果音つきで見せる（社長の依頼、2026-10-12）。本物の Issue の題名は取引先の名前を含みうるので写さない。
 
