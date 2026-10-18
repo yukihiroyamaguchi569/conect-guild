@@ -359,6 +359,12 @@ export function createMessageQueue(options: MessageQueueOptions): MessageQueue {
     },
     setHidden(hidden) {
       pacer.setHidden(hidden);
+      // Back in sight: lines whose time ran out meanwhile go unseen, the one in the window too.
+      if (!hidden) {
+        const now = options.now();
+        const live = line.messages.filter((m) => m.until === undefined || now < m.until);
+        if (live.length < line.messages.length) line.set(live);
+      }
       hold.reschedule();
     },
     setStageShown(shown) {
