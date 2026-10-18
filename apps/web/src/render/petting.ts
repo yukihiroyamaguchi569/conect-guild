@@ -8,7 +8,7 @@ import { bubbleBox, meet, type BubbleOf, type Box } from './overhead';
 import type { Point } from './path';
 
 /**
- * The pet clicked (Issue #186, docs/DESIGN.md 4.11): it wakes for TRINKETS.pettedMs from the latest
+ * The pet clicked (Issue #186, docs/DESIGN.md 8): it wakes for TRINKETS.pettedMs from the latest
  * press, sits up wagging its tail from one side to the other, and says 「わん」 in a murmur's bubble
  * over it (unless that would meet a bubble over a member: their words come first); then it sleeps
  * again. A press while the screen is halted or drawing would not be seen is
