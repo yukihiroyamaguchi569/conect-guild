@@ -14,6 +14,8 @@ declare global {
   interface Window {
     /** The sprite pictures drawn, once per file and place (installCanvasImageRecorder). */
     e2eCanvasImages?: DrawnImage[];
+    /** Forgets the pictures drawn so far: from now on each is recorded again. */
+    e2eForgetCanvasImages?: () => void;
   }
 }
 
@@ -25,6 +27,10 @@ declare global {
 export function installCanvasImageRecorder(): void {
   const seen = new Set<string>();
   window.e2eCanvasImages = [];
+  window.e2eForgetCanvasImages = () => {
+    seen.clear();
+    window.e2eCanvasImages = [];
+  };
   const proto = CanvasRenderingContext2D.prototype;
   const original: unknown = Object.getOwnPropertyDescriptor(proto, 'drawImage')?.value;
   if (typeof original !== 'function') return;
@@ -52,4 +58,11 @@ export function installCanvasImageRecorder(): void {
 export async function drawnImages(page: Page, prefix: string): Promise<DrawnImage[]> {
   const images = await page.evaluate(() => window.e2eCanvasImages ?? []);
   return images.filter((image) => image.file.startsWith(prefix));
+}
+
+/** Forgets the pictures drawn so far (installCanvasImageRecorder): drawnImages then has the later ones. */
+export async function forgetDrawnImages(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    window.e2eForgetCanvasImages?.();
+  });
 }
