@@ -74,7 +74,7 @@ conect-guild/
 │       │   ├── events.ts     基準状態と今回の snapshot の差分 → ゲームのイベント列
 │       │   ├── summons.ts    セッションの待機 → 作業中の変化 → 社長の指示（4.10）
 │       │   ├── guests.ts     設定のお客さん + snapshot → 表示の形、前回との差分 → マージ・完了の出来事（4.13、Issue #108）
-│       │   ├── visitors.ts   日付 → その日の訪問者の日程（いつ・だれが・だれのところへ）（4.15、Issue #195）
+│       │   ├── visitors.ts   日付 → その日の訪問者の日程（いつ・だれが来るか。そのときの空いた人のだれのところへ行くかを引く数も）（4.15、Issue #195）
 │       │   └── demoScript.ts / demo.ts / demoLanes.ts / demoGuests.ts  デモモードの台本（出来事の列）と、時刻 → 架空の snapshot（4.11）。お客さんの架空の仕事は demoGuests.ts、レーンの状態とどの部門が運ぶかは demoLanes.ts（Issue #198）
 │       ├── adapters/
 │       │   ├── snapshot.ts   /snapshot.json を no-store で fetch して zod で検証
