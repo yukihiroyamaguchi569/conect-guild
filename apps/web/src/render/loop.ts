@@ -25,6 +25,7 @@ import { presses, type Presses } from './presses';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
 import { createScheduler, follow, nextDraw, type Scheduler } from './scheduler';
 import { monthAt } from './ornament';
+import type { StageReward } from './rewardDesk';
 import type { Speeches } from './summons';
 import { visitFor, withVisit } from './visit';
 
@@ -86,6 +87,8 @@ export interface StageParty {
   readonly levels: Levels;
   /** How many of the king's quests are open: what he murmurs on the throne (murmurs.ts). */
   readonly kingQuests: number;
+  /** The king's reward of the day on a desk (Issue #194); null when there is none. */
+  readonly reward: StageReward | null;
 }
 
 /** Before the first party: no bubbles, no moves, no levels. */
@@ -97,6 +100,7 @@ const NO_PARTY: StageParty = {
   known: false,
   levels: {},
   kingQuests: 0,
+  reward: null,
 };
 
 export interface RenderLoop extends Presses {
@@ -225,15 +229,19 @@ export function sceneContextWhile(context: SceneContext, quiet: boolean): SceneC
 }
 
 /**
- * The local hour (daylight) and month (the ornament, Issue #192) to draw a frame at. The month
- * follows `wallNow`, the clock the canvas also reads the month of a press from (GuildCanvas.vue).
+ * The local hour (daylight), month (the ornament, Issue #192) and wall clock (the reward of the
+ * day, Issue #194) to draw a frame at. The month follows `wallNow`, the clock the canvas also reads
+ * the month of a press from (GuildCanvas.vue).
  */
 export function calendarOf(
   options: Pick<RenderLoopOptions, 'localHour' | 'wallNow'>,
-): () => { readonly hour: number; readonly month: number } {
+): () => { readonly hour: number; readonly month: number; readonly wall: number } {
   const localHour = options.localHour ?? (() => hourOf(new Date()));
   const wallNow = options.wallNow ?? Date.now;
-  return () => ({ hour: localHour(), month: monthAt(wallNow()) });
+  return () => {
+    const wall = wallNow();
+    return { hour: localHour(), month: monthAt(wall), wall };
+  };
 }
 
 /** The clocks and the random sources of the loop (sceneContext): the injected ones, else the browser's. */
@@ -291,6 +299,7 @@ interface PaintInput {
   readonly t: number;
   readonly hour: number;
   readonly month: number;
+  readonly wall: number;
 }
 
 /**
@@ -300,11 +309,11 @@ interface PaintInput {
 function paintAt(
   painter: Painter,
   scale: number,
-  { cast, director, guests, party, t, hour, month }: PaintInput,
+  { cast, director, guests, party, t, hour, month, wall }: PaintInput,
 ): { readonly speeches: Speeches; readonly pace: { animating: boolean; ambient: boolean } } {
   const { calling, ...stage } = stageAt(cast, director, { t, hour, party });
   const guestNow = guests.frameAt(t);
-  paint(painter, scale, { ...party, ...stage, now: t, month, guests: guestNow });
+  paint(painter, scale, { ...party, ...stage, now: t, month, wall, guests: guestNow });
   // A call needs no more than the ambient pace: its words and turns change every few hundred ms.
   const ambient = Object.keys(party.moods).length > 0 || ANIMATED_DECOR.length > 0 || calling;
   return {

@@ -66,6 +66,7 @@ const {
   guestCount,
   guestBoard,
   sparkle,
+  reward,
   nextMessage,
   clearBaseline,
   setStageShown,
@@ -142,6 +143,7 @@ function onStageShown(shown: boolean): void {
         :guests="guests"
         :guest-count="guestCount"
         :sparkle="sparkle"
+        :reward="reward"
         :last-active-storage="demo?.storage"
         @stage-shown="onStageShown"
         @stage="setStage"

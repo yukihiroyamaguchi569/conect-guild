@@ -147,11 +147,9 @@ describe('scenes while the canvas is out of sight', () => {
 
 describe('calendarOf (Issue #192)', () => {
   it('reads the month of the ornament from the injected wall clock', () => {
-    const calendar = calendarOf({
-      localHour: () => 23.5,
-      wallNow: () => new Date(2026, 10, 1, 0, 0, 5).getTime(),
-    });
-    expect(calendar()).toEqual({ hour: 23.5, month: 11 });
+    const wall = new Date(2026, 10, 1, 0, 0, 5).getTime();
+    const calendar = calendarOf({ localHour: () => 23.5, wallNow: () => wall });
+    expect(calendar()).toEqual({ hour: 23.5, month: 11, wall });
   });
 
   it('reads it again on every frame, so an open page turns to the next month', () => {
