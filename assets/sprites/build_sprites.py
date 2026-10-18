@@ -20,10 +20,14 @@ Output: <out_dir>/<memberId>.png, eight FRAME x FRAME frames (80x80, so 640x80) 
 5 = front, carrying in both arms, 6 = facing right, carrying in both arms, 7 = asleep, sitting,
 front), transparent background, feet (or the bottom of the sitting body) on the bottom edge,
 centred horizontally. Optionally a 2x preview of all frames.
+--walk-only cuts frames 0-3 from the main sheet alone (FRAME x 4 strips, so 320x80; --poses and
+--sleep are not read): the visitors (Issue #195), --members
+visitor-merchant,visitor-postman,visitor-bard,visitor-fortune --sheet source-sheet-visitors.png
+(1024x1024, see prompt-visitors.txt) --scale-from source-sheet.png --walk-only.
 
 Usage: python build_sprites.py [--members <id,id,...>] [--sheet <sheet.png>] [--poses <poses.png>]
-       [--sleep <sleep.png>] [--sleep-cols <n>] [--scale-from <sheet.png>] [--out <out_dir>]
-       [--preview <preview.png>]
+       [--sleep <sleep.png>] [--sleep-cols <n>] [--scale-from <sheet.png>] [--walk-only]
+       [--out <out_dir>] [--preview <preview.png>]
 Needs Pillow only. Not a project dependency; run it from a throwaway venv.
 """
 
@@ -39,7 +43,6 @@ DEFAULT_MEMBERS = ["kaname", "minori", "hibiki", "hirame", "sasae", "yukihiro"]
 CELL = 256
 SHEET_COLS = 4
 POSES_COLS = 3
-FRAMES = SHEET_COLS + POSES_COLS + 1
 HERE = Path(__file__).resolve().parent
 # Frame size in pixels. Change it here only; everything else derives from it.
 FRAME = 80
@@ -218,7 +221,11 @@ def scale_of(path):
     return sheet_scale(boxes)
 
 
-def build(members, sheet_path, poses_path, sleep_path, sleep_cols, out_dir, preview_path=None, scale_path=None):
+def build(
+    members, sheet_path, poses_path, sleep_path, sleep_cols, out_dir, preview_path=None, scale_path=None, walk_only=False
+):
+    if walk_only:
+        poses_path = sleep_path = None
     inputs = {p.resolve() for p in (sheet_path, poses_path, sleep_path, scale_path) if p}
     sprite_paths = {(out_dir / f"{m}.png").resolve() for m in members}
     if inputs & sprite_paths:
@@ -226,10 +233,13 @@ def build(members, sheet_path, poses_path, sleep_path, sleep_cols, out_dir, prev
     if preview_path and preview_path.resolve() in sprite_paths | inputs:
         sys.exit(f"{preview_path}: the preview would overwrite a sprite or an input sheet")
     rows, boxes = load_cells(sheet_path, members, SHEET_COLS)
-    pose_rows, pose_boxes = load_cells(poses_path, members, POSES_COLS)
-    sleep_cells, sleep_boxes = load_grid(sleep_path, members, sleep_cols)
     # One scale for every frame of the main sheet so all members stand at the same size.
     scale = scale_of(scale_path) if scale_path else sheet_scale(boxes)
+    if walk_only:
+        write_strips(members, rows, boxes, [[scale] * SHEET_COLS for _ in members], out_dir, preview_path)
+        return
+    pose_rows, pose_boxes = load_cells(poses_path, members, POSES_COLS)
+    sleep_cells, sleep_boxes = load_grid(sleep_path, members, sleep_cols)
     # The poses sheet was drawn at its own size. Match each member's standing front pose
     # (pose 5, carrying) to their idle front pose (frame 0) so frames 0-3 stay exactly as they were.
     # The sleep frame keeps the main sheet's scale (see the module docstring).
@@ -239,6 +249,12 @@ def build(members, sheet_path, poses_path, sleep_path, sleep_cols, out_dir, prev
     ]
     cells = [row + pose_row + [sleep] for row, pose_row, sleep in zip(rows, pose_rows, sleep_cells)]
     all_boxes = [row + pose_row + [box] for row, pose_row, box in zip(boxes, pose_boxes, sleep_boxes)]
+    write_strips(members, cells, all_boxes, scales, out_dir, preview_path)
+
+
+def write_strips(members, cells, all_boxes, scales, out_dir, preview_path):
+    """One strip of FRAME x FRAME frames per member: each cell's box shrunk by its scale, feet down."""
+    frames = len(cells[0])
     sizes = [
         [(max(1, round(width(b) * s)), max(1, round(height(b) * s))) for b, s in zip(row, row_scales)]
         for row, row_scales in zip(all_boxes, scales)
@@ -255,7 +271,7 @@ def build(members, sheet_path, poses_path, sleep_path, sleep_cols, out_dir, prev
     out_dir.mkdir(parents=True, exist_ok=True)
     strips = []
     for member, row, row_boxes, row_sizes in zip(members, cells, all_boxes, sizes):
-        strip = Image.new("RGBA", (FRAME * FRAMES, FRAME), (0, 0, 0, 0))
+        strip = Image.new("RGBA", (FRAME * frames, FRAME), (0, 0, 0, 0))
         for col, (cell, box, (w, h)) in enumerate(zip(row, row_boxes, row_sizes)):
             sprite = shrink(cell.crop(box), (w, h))
             strip.paste(sprite, (col * FRAME + (FRAME - w) // 2, FRAME - h), sprite)
@@ -264,7 +280,7 @@ def build(members, sheet_path, poses_path, sleep_path, sleep_cols, out_dir, prev
 
     if preview_path:
         preview_path.parent.mkdir(parents=True, exist_ok=True)
-        preview = Image.new("RGBA", (FRAME * FRAMES, FRAME * len(members)), (60, 60, 70, 255))
+        preview = Image.new("RGBA", (FRAME * frames, FRAME * len(members)), (60, 60, 70, 255))
         for i, strip in enumerate(strips):
             preview.paste(strip, (0, i * FRAME), strip)
         preview.resize(
@@ -275,7 +291,7 @@ def build(members, sheet_path, poses_path, sleep_path, sleep_cols, out_dir, prev
 def member_list(text):
     """Comma-separated member ids, top row first. Ids become file names, so keep them simple."""
     members = text.split(",")
-    if not all(re.fullmatch(r"[a-z][a-z0-9]*", m) for m in members) or len(set(members)) != len(members):
+    if not all(re.fullmatch(r"[a-z][a-z0-9]*(-[a-z0-9]+)*", m) for m in members) or len(set(members)) != len(members):
         raise argparse.ArgumentTypeError(f"expected distinct ids like takumi,musubi, got {text!r}")
     return members
 
@@ -288,9 +304,18 @@ if __name__ == "__main__":
     parser.add_argument("--sleep", type=Path, default=HERE / "source-sheet-sleep.png")
     parser.add_argument("--sleep-cols", type=int, choices=range(1, 7), default=3)
     parser.add_argument("--scale-from", type=Path)
+    parser.add_argument("--walk-only", action="store_true")
     parser.add_argument("--out", type=Path, default=HERE)
     parser.add_argument("--preview", type=Path)
     args = parser.parse_args()
     build(
-        args.members, args.sheet, args.poses, args.sleep, args.sleep_cols, args.out, args.preview, args.scale_from
+        args.members,
+        args.sheet,
+        args.poses,
+        args.sleep,
+        args.sleep_cols,
+        args.out,
+        args.preview,
+        args.scale_from,
+        args.walk_only,
     )

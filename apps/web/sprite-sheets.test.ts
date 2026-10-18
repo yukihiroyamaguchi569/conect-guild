@@ -19,6 +19,9 @@ const SPRITES = [
 ] as const;
 const FRAME = 80;
 const FRAMES = 8;
+/** The visitors (Issue #195): front, side and the two walking frames only. */
+const VISITORS = ['merchant', 'postman', 'bard', 'fortune'] as const;
+const VISITOR_FRAMES = 4;
 
 /** Width and height from a PNG's IHDR chunk (bytes 16–23, big-endian). */
 function pngSize(path: string): { width: number; height: number } {
@@ -31,6 +34,13 @@ const asset = (path: string): string => join(import.meta.dirname, '../../assets'
 describe('sprite sheets', () => {
   it.each(SPRITES)('%s has all eight frames in one row', (id) => {
     expect(pngSize(asset(`sprites/${id}.png`))).toEqual({ width: FRAMES * FRAME, height: FRAME });
+  });
+
+  it.each(VISITORS)('visitor %s has the four walking frames in one row', (id) => {
+    expect(pngSize(asset(`sprites/visitor-${id}.png`))).toEqual({
+      width: VISITOR_FRAMES * FRAME,
+      height: FRAME,
+    });
   });
 });
 
