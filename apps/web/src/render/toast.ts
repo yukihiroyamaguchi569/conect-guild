@@ -7,8 +7,8 @@ import { homeWalk, type IdlePoses } from './idle';
 import { SHARED_LINES } from './lineBook';
 import { showMs, type Utterance } from './lines';
 import { isWalkable } from './map';
-import { carry, raise, staySegment, walkSegment, type Segment } from './motion';
-import { findPath, tileToPoint } from './path';
+import { carry, raise, staySegment, walkSegment, type Held, type Segment } from './motion';
+import { findPath, tileToPoint, type TilePath } from './path';
 import type { Track } from './scenes';
 import { stepAt } from './visitors';
 
@@ -73,8 +73,38 @@ export function toasters(
   });
 }
 
+/** A member's way to a spot of a gathering from the seat at `start`, and the way back. */
+export interface GatherWalk {
+  readonly id: MemberId;
+  readonly spot: TilePos;
+  readonly walkIn: Segment;
+  readonly back: TilePath;
+}
+
+/**
+ * The walks of `ids` from their seats to `spots`, each to the next spot (the toast's, the month's
+ * of Issue #214); those with no way there stay out.
+ */
+export function walksTo(
+  spots: readonly TilePos[],
+  ids: readonly MemberId[],
+  from: {
+    readonly start: number;
+    readonly seats: Readonly<Record<MemberId, TilePos>>;
+    readonly held: Held | null;
+  },
+): GatherWalk[] {
+  return ids.flatMap((id, i) => {
+    const spot = spots[i];
+    const there = spot === undefined ? null : findPath(from.seats[id], spot);
+    const back = spot === undefined ? null : findPath(spot, from.seats[id]);
+    if (spot === undefined || there === null || back === null || there.length < 2) return [];
+    return [{ id, spot, walkIn: walkSegment(there, from.start, from.held), back }];
+  });
+}
+
 /** Segments without the empty stays (a member who arrives last waits for no one). */
-function timed(segments: readonly Segment[]): Segment[] {
+export function timed(segments: readonly Segment[]): Segment[] {
   return segments.filter((segment) => segment.end > segment.start);
 }
 
@@ -87,13 +117,7 @@ export function planToast(
   start: number,
   seats: Readonly<Record<MemberId, TilePos>>,
 ): Toast | null {
-  const walks = ids.flatMap((id, i) => {
-    const spot = TOAST_SPOTS[i];
-    const there = spot === undefined ? null : findPath(seats[id], spot);
-    const back = spot === undefined ? null : findPath(spot, seats[id]);
-    if (spot === undefined || there === null || back === null || there.length < 2) return [];
-    return [{ id, spot, walkIn: walkSegment(there, start, carry('tankard')), back }];
-  });
+  const walks = walksTo(TOAST_SPOTS, ids, { start, seats, held: carry('tankard') });
   if (walks.length < MIN_TOASTERS) return null;
   const all = Math.max(...walks.map(({ walkIn }) => walkIn.end));
   const tracks = walks.map(({ id, spot, walkIn, back }): Track => {

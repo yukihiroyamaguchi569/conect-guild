@@ -78,7 +78,9 @@ export type LineScene =
   /** Clicked staying at a play spot. */
   | 'askPlay'
   /** Everyone free raises a tankard in front of the counter on a Friday evening (Issue #193). */
-  | 'toast';
+  | 'toast'
+  /** Everyone free gathers at the month's ornament (Issue #214): one line a month, January first. */
+  | 'season';
 
 /** At least one line for each moment a member has. */
 type Choices = readonly [string, ...string[]];
@@ -197,6 +199,20 @@ export const SHARED_LINES = {
   askSleep: ['あとごふん…', 'むにゃむにゃ', 'すやぁ…'],
   askPlay: ['やすみちゅう〜', 'きゅうけいだよ', 'ひといきちゅう'],
   toast: ['かんぱーい！'],
+  season: [
+    'あけまして！',
+    'おにはそと！',
+    'ひなまつり！',
+    'おはなみだ！',
+    'こどものひ！',
+    'はれてほしい',
+    'ねがいごと！',
+    'すずしいね〜',
+    'おつきみだ！',
+    'トリックオア…',
+    'やきいもだ！',
+    'メリクリ！',
+  ],
 } as const satisfies Readonly<Partial<Record<LineScene, Choices>>>;
 
 type Book = typeof LINE_BOOK;
@@ -248,6 +264,7 @@ const SCENES: readonly LineScene[] = [
   'askSleep',
   'askPlay',
   'toast',
+  'season',
 ];
 
 /** The moment a member says `line` at (a member never has one line at two moments: lineBook.test.ts). */

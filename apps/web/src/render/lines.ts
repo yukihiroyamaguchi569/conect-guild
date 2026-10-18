@@ -76,6 +76,7 @@ const SHOW_MS: Readonly<Record<LineScene, number>> = {
   askSleep: LINES.remarkMs,
   askPlay: LINES.remarkMs,
   toast: LINES.clearMs,
+  season: LINES.clearMs,
 };
 
 /** How long a line of `scene` shows. */

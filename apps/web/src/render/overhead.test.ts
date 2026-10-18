@@ -6,7 +6,7 @@ import { carry, raise } from './motion';
 import { raisedItemPoint } from './toss';
 import { tileToPoint } from './path';
 import { DEFAULT_SEATS } from './scenes';
-import { TALLEST_WINDOW_EXTENTS } from './map';
+import { LOGICAL_WIDTH, TALLEST_WINDOW_EXTENTS } from './map';
 import {
   bubbleBox,
   bubbleOf,
@@ -298,5 +298,15 @@ describe('overheadSide: words keep clear of the HTML windows', () => {
     };
     expect(overheadLift(sasae, 'いいかしら？', [tag])).toBeGreaterThan(0);
     expect(overheadLift(sasae, 'はっ！', [tag])).toBe(0);
+  });
+});
+
+describe('overheadSide: words keep on the canvas (Issue #214)', () => {
+  it('puts words on the left when on the right they would run off the right edge', () => {
+    const edge = { point: { x: LOGICAL_WIDTH - 40, y: 420 }, held: null };
+    expect(wordsBox(edge.point, 7, 0, 'right').right).toBeGreaterThan(LOGICAL_WIDTH);
+    expect(overheadSide(edge, 'トリックオア…')).toBe('left');
+    const room = { point: { x: LOGICAL_WIDTH / 2, y: 420 }, held: null };
+    expect(overheadSide(room, 'トリックオア…')).toBe('right');
   });
 });
