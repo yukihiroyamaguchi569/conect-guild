@@ -3,7 +3,7 @@ import type { PlannedVisit, VisitorKind } from '../domain/visitors';
 import type { MemberId, TilePos } from '../guild.config';
 import { homeWalk, type IdleStep } from './idle';
 import { SELECTED_LAYOUT } from './layouts';
-import { isWalkable, PLACES } from './map';
+import { isWalkable, LOGICAL_WIDTH, PLACES } from './map';
 import {
   MS_PER_TILE,
   poseOnSegment,
@@ -15,6 +15,7 @@ import {
 import { findPath, tileToPoint, type Point } from './path';
 import { besideSeat } from './scenes';
 import { faceThrone } from './summons';
+import { overheadSide, wordsBox, type Side } from './overhead';
 
 /**
  * A visitor's trip (Issue #195), pure: in at the door, along the walkways to the member's seat
@@ -32,9 +33,41 @@ export const VISITOR_LINES = {
 } as const satisfies Readonly<Record<VisitorKind, readonly string[]>>;
 export type VisitorLine = (typeof VISITOR_LINES)[VisitorKind][number];
 
+/**
+ * What a visitor says back when clicked (Issue #212), over the head on the way: fixed, as the
+ * words above.
+ */
+export const VISITOR_REPLIES = {
+  merchant: ['かうかい？', 'みていって！', 'おまけするよ！'],
+  postman: ['いそがしい！', 'いそいでます！', 'じかんがない！'],
+  bard: ['いっきょく？♪', 'ききたいかい？', 'リクエスト？'],
+  fortune: ['みらいが…', 'てをみせて…', 'うらなうかえ？'],
+} as const satisfies Readonly<Record<VisitorKind, readonly [string, ...string[]]>>;
+export type VisitorReply = (typeof VISITOR_REPLIES)[VisitorKind][number];
+
+/** What each visitor is called (its button: 「〇〇に話しかける」). */
+export const VISITOR_NAMES: Readonly<Record<VisitorKind, string>> = {
+  merchant: '旅の商人',
+  postman: '郵便屋',
+  bard: '吟遊詩人',
+  fortune: '占い師のおばあさん',
+};
+
+/**
+ * A reply of `kind` other than `previous` (the one said last, of any visitor), `r` (0 to 1) of the
+ * way through the rest.
+ */
+export function replyOf(kind: VisitorKind, previous: string | null, r: number): VisitorReply {
+  const all: readonly VisitorReply[] = VISITOR_REPLIES[kind];
+  const pool = all.filter((words) => words !== previous);
+  return pool[Math.min(Math.floor(r * pool.length), pool.length - 1)] ?? VISITOR_REPLIES[kind][0];
+}
+
 export const VISITOR = {
   /** How long the visitor stays and speaks at the seat. */
   talkMs: 2_400,
+  /** How long a reply to a click stays over the head (Issue #212), as a member's (LINES.remarkMs). */
+  replyMs: 2_000,
   /** How late a visit may still come (a busy room or a page opened later): no more. */
   graceMinutes: 10,
 } as const;
@@ -54,7 +87,8 @@ export interface VisitorView {
   readonly feet: Point;
   readonly frame: MoveFrame;
   readonly flip: boolean;
-  readonly words: VisitorLine | null;
+  /** The words at the seat, or a reply to a click on the way (Issue #212). */
+  readonly words: VisitorLine | VisitorReply | null;
 }
 
 /** Where visitors come in and go out: by the door (GuildLayout.offstage). */
@@ -133,4 +167,15 @@ export function stepAt(segment: Segment, t: number): IdleStep {
   const from = segment.path[index] ?? segment.path[0];
   const to = segment.path[index + 1] ?? from;
   return { from, to, progress: same(from, to) ? 0 : progress - index };
+}
+
+/**
+ * Which side of the visitor's head its words go, `lift` px up (overhead.overheadLift): as the
+ * members' lines (overhead.overheadSide), but on the left where the right would run off the canvas
+ * (a reply on the way, Issue #212, may come by the door at the right edge).
+ */
+export function visitorWordsSide(feet: Point, words: string, lift: number): Side {
+  const side = overheadSide({ point: feet, held: null }, words);
+  const box = wordsBox(feet, Array.from(words).length, lift, side);
+  return side === 'right' && box.right > LOGICAL_WIDTH ? 'left' : side;
 }

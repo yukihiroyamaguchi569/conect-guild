@@ -2,8 +2,8 @@ import { VISITOR_KINDS } from '../domain/visitors';
 import { drawBubble } from './drawBubble';
 import type { GuestArt } from './guestArt';
 import type { LevelTag } from './levelTags';
-import { overheadLift, overheadSide } from './overhead';
-import type { VisitorView } from './visitors';
+import { overheadLift } from './overhead';
+import { visitorWordsSide, type VisitorView } from './visitors';
 
 /**
  * Canvas side effects only (visitors.ts decides): the visitor of Issue #195 with the members'
@@ -37,5 +37,5 @@ export function drawVisitorWords(
     voice: 'say',
     chars: Array.from(words).length,
   } as const;
-  drawBubble(ctx, text, { x: feet.x, y: feet.y - lift }, overheadSide(pose, words));
+  drawBubble(ctx, text, { x: feet.x, y: feet.y - lift }, visitorWordsSide(feet, words, lift));
 }

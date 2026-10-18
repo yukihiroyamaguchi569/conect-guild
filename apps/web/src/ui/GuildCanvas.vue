@@ -29,6 +29,8 @@ import {
   rewardClickables,
   roomPresses,
   toLogical,
+  visitorClickables,
+  visitorDoorClickables,
   withMembers,
   type Clickable,
 } from '../render/clickables';
@@ -44,6 +46,7 @@ import type { IdleSeeds, IdleSince } from '../render/idle';
 import type { HomeIn } from '../render/idleCrew';
 import { isShown, startRenderLoop, type RenderLoop, type StageParty } from '../render/loop';
 import { rewardLinesOf, rewardShownAt, type StageReward } from '../render/rewardDesk';
+import type { VisitorKind } from '../domain/visitors';
 import PressGroup from './PressGroup.vue';
 
 const props = defineProps<{
@@ -174,6 +177,9 @@ function start(
     idleSeeds: props.idleSeeds,
     onCallStart: () => {
       emit('callStarted');
+    },
+    onVisitor: (kind) => {
+      visitorKind.value = kind;
     },
     onActive: (ids, at) => {
       setIdleSince(lastActive.markActive(ids, at));
@@ -312,18 +318,31 @@ function takeSparkle(): void {
 
 watch(() => props.sparkle?.id, takeSparkle);
 
+/** What the window tells for a press on a thing or the reward; null once the reward's day is over. */
+function windowLines(item: Clickable): PressLines | null {
+  if (item.id === 'thing') return pressLinesOf(item.thing, monthAt(wallNow()));
+  if (item.id !== 'reward' || rewardShownAt(item.reward, wallNow()) === null) return null;
+  return rewardLinesOf(item.reward);
+}
+
 /**
  * What a press on each thing on the canvas does (render/clickables.ts, Issues #187, #186, #190 and
- * #213). Nothing while halted, nor on a reward whose day is over.
+ * #213, #212). Nothing while halted, nor on a reward whose day is over.
  */
 function press(item: Clickable): void {
   if (props.halted) return;
-  if (item.id === 'thing') emit('examine', pressLinesOf(item.thing, monthAt(wallNow())));
-  else if (item.id === 'reward') {
-    if (rewardShownAt(item.reward, wallNow()) !== null) emit('examine', rewardLinesOf(item.reward));
-  } else if (item.id === 'member') loop?.ask(item.member);
-  else if (item.id === 'king') loop?.bless();
-  else loop?.pet();
+  if (item.id === 'thing' || item.id === 'reward') {
+    const lines = windowLines(item);
+    if (lines !== null) emit('examine', lines);
+  } else if (loop !== null) pressOn(loop, item);
+}
+
+/** A press on someone on the stage: a member, the visitor, the king or the pet. */
+function pressOn(stage: RenderLoop, item: Clickable): void {
+  if (item.id === 'member') stage.ask(item.member);
+  else if (item.id === 'visitor') stage.answer();
+  else if (item.id === 'king') stage.bless();
+  else stage.pet();
 }
 
 /** The king and the pet have a button each; the members, and the room's things, share one stop of Tab. */
@@ -347,6 +366,9 @@ onBeforeUnmount(() => {
 });
 /** The reward on a desk while it is there (Issue #213): drawn in front of the members. */
 const rewardPresses = computed(() => rewardClickables(shownReward.value));
+/** The visitor in the room (Issue #212): its button shows meanwhile, over the door. */
+const visitorKind = ref<VisitorKind | null>(null);
+const visitorPresses = computed(() => visitorDoorClickables(visitorKind.value));
 /** The room's things and the reward, one stop of Tab. */
 const roomRow = computed(() => roomPresses(THING_PRESSES, rewardPresses.value));
 
@@ -362,7 +384,9 @@ function clickableUnder(event: MouseEvent): Clickable | null {
   // The members are found where they were last drawn (Issue #191); the reward is only there while
   // its day lasts (Issue #213).
   const reward = rewardClickables(rewardShownAt(props.reward, wallNow()));
-  const items = withMembers(CLICKABLES, [...reward, ...memberClickables(loop?.feet() ?? [])]);
+  // The visitor too, drawn in front of the members (Issue #212).
+  const front = [...reward, ...visitorClickables(loop?.visitor() ?? null)];
+  const items = withMembers(CLICKABLES, [...front, ...memberClickables(loop?.feet() ?? [])]);
   return pressedAt(toLogical(offset, box), items);
 }
 
@@ -401,7 +425,7 @@ watch(() => props.cue?.id, takeCue, { immediate: true });
     <!-- For the keyboard: the mouse presses through them on the canvas (render/clickables.ts). -->
     <template v-if="!halted">
       <button
-        v-for="item in SOLO_PRESSES"
+        v-for="item in [...SOLO_PRESSES, ...visitorPresses]"
         :key="item.id"
         type="button"
         class="guild-canvas__press"

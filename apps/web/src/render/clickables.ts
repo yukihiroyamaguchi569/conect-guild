@@ -9,6 +9,9 @@ import { SELECTED_LAYOUT } from './layouts';
 import { seatedPoint } from './seating';
 import { REWARD_NAMES } from '../domain/dailyReward';
 import { rewardOnDesk, type StageReward } from './rewardDesk';
+import type { VisitorKind } from '../domain/visitors';
+import { DOOR, VISITOR_NAMES } from './visitors';
+import type { DrawnVisitor } from './visitorStage';
 import { SPRITE_SIZE, TILE_SIZE } from './metrics';
 
 /**
@@ -28,7 +31,8 @@ export type Clickable =
   | (Spot & { readonly id: 'king' | 'dog' })
   | (Spot & { readonly id: 'member'; readonly member: MemberId })
   | (Spot & { readonly id: 'thing'; readonly thing: RoomThing })
-  | (Spot & { readonly id: 'reward'; readonly reward: StageReward });
+  | (Spot & { readonly id: 'reward'; readonly reward: StageReward })
+  | (Spot & { readonly id: 'visitor'; readonly kind: VisitorKind });
 
 export type ClickableId = Clickable['id'];
 
@@ -119,6 +123,24 @@ export function rewardClickables(reward: StageReward | null): readonly Clickable
       label: `${MEMBERS[reward.member].name}の ${REWARD_NAMES[reward.kind]}を みる`,
     },
   ];
+}
+
+/**
+ * The visitor (Issue #212) where it was drawn last (VisitorStage.drawn), a member's frame (the
+ * pictures are the guests' size); none when no visitor is in the room.
+ */
+export function visitorClickables(drawn: DrawnVisitor | null): readonly Clickable[] {
+  if (drawn === null) return [];
+  const label = `${VISITOR_NAMES[drawn.kind]}に話しかける`;
+  return [{ id: 'visitor', kind: drawn.kind, rect: spriteFrame(drawn.feet), label }];
+}
+
+/**
+ * The visitor's button for the keyboard while `kind` is in the room (null: none): over the door it
+ * comes in by, which stays put (a click finds the visitor where it is drawn: visitorClickables).
+ */
+export function visitorDoorClickables(kind: VisitorKind | null): readonly Clickable[] {
+  return kind === null ? [] : visitorClickables({ kind, feet: tileToPoint(DOOR) });
 }
 
 /**

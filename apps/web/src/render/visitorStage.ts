@@ -1,16 +1,19 @@
 import { PRESIDENT_ID } from '@conect-guild/snapshot/settings';
-import { dueVisit, visitsOn, type LocalDay } from '../domain/visitors';
+import { dueVisit, visitsOn, type LocalDay, type VisitorKind } from '../domain/visitors';
 import { ACTIVE_MEMBER_IDS, type MemberId, type TilePos } from '../guild.config';
 import type { MemberPose } from './director';
 import type { IdlePoses } from './idle';
 import { DEFAULT_SEATS } from './scenes';
+import type { Point } from './path';
 import {
   cutTrip,
   planTrip,
+  replyOf,
   tripEnd,
   VISITOR,
   visitorAt,
   type Trip,
+  type VisitorReply,
   type VisitorView,
 } from './visitors';
 
@@ -39,6 +42,35 @@ export interface VisitorStage {
   clear(): void;
   /** True while a visitor is in the room (as of the frame drawn last). */
   isVisiting(): boolean;
+  /**
+   * The visitor was clicked at `t` (Issue #212): a reply over the head for VISITOR.replyMs while it
+   * walks, never the reply said just before. Dropped (not kept for later) while halted, while it
+   * speaks at the seat (those words come first), and once it turned back. True when it replies.
+   */
+  reply(t: number): boolean;
+  /** Who was drawn where (feet) in the frame drawn last, for the clicks; null for none. */
+  drawn(): DrawnVisitor | null;
+}
+
+/** The visitor as drawn: which kind, and its feet (logical px). */
+export interface DrawnVisitor {
+  readonly kind: VisitorKind;
+  readonly feet: Point;
+}
+
+const kindOf = (view: VisitorView | null): VisitorKind | null => view?.kind ?? null;
+
+/** A reply to a click (Issue #212): over the head of `trip`'s visitor until `until`. */
+interface Reply {
+  readonly trip: Trip;
+  readonly words: VisitorReply;
+  readonly until: number;
+}
+
+/** `view` with `reply` over its head while it lasts and the visitor says nothing else. */
+function withReply(view: VisitorView | null, reply: Reply | null, trip: Trip | null, t: number) {
+  if (view === null || trip === null || reply?.trip !== trip || t >= reply.until) return view;
+  return view.words === null ? { ...view, words: reply.words } : view;
 }
 
 /** The local day and the minutes after its midnight of `epochMs`. */
@@ -67,10 +99,23 @@ export function visitorScene(
   return { busy: busy || walking, free };
 }
 
-export function createVisitorStage(wallNow: () => number = () => Date.now()): VisitorStage {
+export function createVisitorStage(
+  wallNow: () => number = () => Date.now(),
+  {
+    random = Math.random,
+    onVisitor,
+  }: {
+    readonly random?: () => number;
+    /** The visitor drawn came in (its kind) or is gone (null), Issue #212. */
+    readonly onVisitor?: (kind: VisitorKind | null) => void;
+  } = {},
+): VisitorStage {
   let trip: Trip | null = null;
   const came = new Set<string>();
   let halted = false;
+  let reply: Reply | null = null;
+  let lastReply: VisitorReply | null = null;
+  let shown: VisitorView | null = null;
 
   function arrive(t: number, scene: VisitorScene): Trip | null {
     const { day, minute } = localTimeOf(wallNow());
@@ -82,12 +127,20 @@ export function createVisitorStage(wallNow: () => number = () => Date.now()): Vi
     return planTrip(visit, member, t);
   }
 
+  /** `next` is the visitor drawn now: onVisitor hears when it comes or goes. */
+  function show(next: VisitorView | null): VisitorView | null {
+    const was = shown;
+    shown = next;
+    if (kindOf(was) !== kindOf(next)) onVisitor?.(kindOf(next));
+    return next;
+  }
+
   return {
     frameAt(t, scene) {
       if (trip !== null && t >= tripEnd(trip)) trip = null;
       if (trip !== null && scene.busy) trip = cutTrip(trip, t);
       if (trip === null && !halted && !scene.busy) trip = arrive(t, scene);
-      return trip === null ? null : visitorAt(trip, t);
+      return show(withReply(trip === null ? null : visitorAt(trip, t), reply, trip, t));
     },
     setHalted(next, t) {
       halted = next;
@@ -95,7 +148,47 @@ export function createVisitorStage(wallNow: () => number = () => Date.now()): Vi
     },
     clear() {
       trip = null;
+      show(null);
     },
     isVisiting: () => trip !== null,
+    reply(t) {
+      // A trip cut short says nothing more (cutTrip); at the seat its own words come first.
+      if (halted || !trip?.talk) return false;
+      if (visitorAt(trip, t)?.words !== null) return false;
+      lastReply = replyOf(trip.kind, lastReply, random());
+      reply = { trip, words: lastReply, until: t + VISITOR.replyMs };
+      return true;
+    },
+    drawn: () => (shown === null ? null : { kind: shown.kind, feet: shown.feet }),
+  };
+}
+
+/** The presses on the visitor (Issue #212), as the render loop takes them. */
+export interface VisitorPresses {
+  /**
+   * The visitor was clicked: a reply over its head on the way. Dropped while drawing would not be
+   * seen, and as VisitorStage.reply drops it. True when it replies.
+   */
+  answer(): boolean;
+  /** Who was drawn where in the last frame (feet), null for none, for the clicks. */
+  visitor(): DrawnVisitor | null;
+}
+
+/** VisitorPresses on `visitors`, on the loop's clock; the frame is drawn when it replies. */
+export function visitorControls(
+  visitors: VisitorStage,
+  loop: {
+    readonly schedule: { now(): void };
+    readonly paused: () => boolean;
+    readonly stageNow: () => number;
+  },
+): VisitorPresses {
+  return {
+    answer() {
+      const said = !loop.paused() && visitors.reply(loop.stageNow());
+      if (said) loop.schedule.now();
+      return said;
+    },
+    visitor: () => visitors.drawn(),
   };
 }
