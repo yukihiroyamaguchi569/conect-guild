@@ -5,23 +5,28 @@ import { SPRITE_SIZE } from './metrics';
 import { tileToPoint, type Point } from './path';
 import { PET_RECT } from './petting';
 import { DEFAULT_SEATS } from './scenes';
+import { THINGS, thingsIn, type Thing, type ThingKind } from './examine';
+import { SELECTED_LAYOUT } from './layouts';
 import { seatedPoint } from './seating';
 
 /**
  * What can be pressed on the canvas (Issue #187): where it is in logical px, and its accessible
- * name for the button that presses it from the keyboard (ui/GuildCanvas.vue). Pure: the point of a
- * click is passed in.
+ * name for the button that presses it from the keyboard (ui/GuildCanvas.vue). The things of the
+ * room (Issue #190) say which kind they are. Pure: the point of a click is passed in.
  */
 
-export type ClickableId = 'king' | 'dog';
-
-export interface Clickable {
-  readonly id: ClickableId;
+interface Spot {
   /** Where a press lands, logical px. */
   readonly rect: PxRect;
   /** The accessible name of its button. */
   readonly label: string;
 }
+
+export type Clickable =
+  | (Spot & { readonly id: 'king' | 'dog' })
+  | (Spot & { readonly id: 'thing'; readonly thing: ThingKind });
+
+export type ClickableId = Clickable['id'];
 
 /** The frame of a member drawn seated on `seat` (seating.seatedPoint), logical px. */
 export function seatedSpriteRect(seat: TilePos): PxRect {
@@ -34,22 +39,38 @@ export function seatedSpriteRect(seat: TilePos): PxRect {
   };
 }
 
+/** The button of a thing to examine (examine.thingsIn). */
+function thingClickable(thing: Thing): Clickable {
+  return {
+    id: 'thing',
+    thing: thing.kind,
+    rect: thing.rect,
+    label: `${THINGS[thing.kind].name}を しらべる`,
+  };
+}
+
 /**
  * What can be pressed with the pet in `pet` (petting.petRectIn; null: the layout has none, nothing
- * to pet). Front first: the first that holds a point is the one pressed. The king never leaves the
- * throne; the pet (Issue #186) never leaves its place.
+ * to pet) and the room's `things` (examine.thingsIn). Front first: the first that holds a point is
+ * the one pressed. The king never leaves the throne; the pet (Issue #186) and the things never
+ * leave their place.
  */
-export function clickablesWith(pet: PxRect | null): readonly Clickable[] {
+export function clickablesWith(
+  pet: PxRect | null,
+  things: readonly Thing[] = [],
+): readonly Clickable[] {
   const king: Clickable = {
     id: 'king',
     rect: seatedSpriteRect(DEFAULT_SEATS[PRESIDENT_ID]),
     label: '王様に話しかける',
   };
-  return pet === null ? [king] : [king, { id: 'dog', rect: pet, label: '犬をなでる' }];
+  const dog: readonly Clickable[] =
+    pet === null ? [] : [{ id: 'dog', rect: pet, label: '犬をなでる' }];
+  return [king, ...dog, ...things.map(thingClickable)];
 }
 
 /** What can be pressed in the selected layout (clickablesWith). */
-export const CLICKABLES: readonly Clickable[] = clickablesWith(PET_RECT);
+export const CLICKABLES: readonly Clickable[] = clickablesWith(PET_RECT, thingsIn(SELECTED_LAYOUT));
 
 /**
  * The logical point of `offset` (CSS px from the canvas's top left) on a canvas displayed `size`
@@ -74,12 +95,43 @@ function holds(rect: PxRect, point: Point): boolean {
 }
 
 /** What is pressed at the logical `point`, or null for none (or no point). */
+export function pressedAt(
+  point: Point | null,
+  clickables: readonly Clickable[] = CLICKABLES,
+): Clickable | null {
+  if (point === null) return null;
+  return clickables.find((clickable) => holds(clickable.rect, point)) ?? null;
+}
+
+/** Which kind of thing is pressed at the logical `point` (pressedAt), or null. */
 export function clickableAt(
   point: Point | null,
   clickables: readonly Clickable[] = CLICKABLES,
 ): ClickableId | null {
-  if (point === null) return null;
-  return clickables.find((clickable) => holds(clickable.rect, point))?.id ?? null;
+  return pressedAt(point, clickables)?.id ?? null;
+}
+
+/**
+ * Where the focus goes in a row of `count` buttons from `index` on `key` (the things' buttons are
+ * one stop of Tab, ui/PressGroup.vue): the arrows go to the next or the previous one, round the
+ * ends, Home and End to the first and the last; null for any other key.
+ */
+export function rovingIndex(index: number, key: string, count: number): number | null {
+  if (count <= 0) return null;
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      return (index + 1) % count;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      return (index - 1 + count) % count;
+    case 'Home':
+      return 0;
+    case 'End':
+      return count - 1;
+    default:
+      return null;
+  }
 }
 
 /**
@@ -97,5 +149,16 @@ export function rectPercent(rect: PxRect): {
     top: (rect.top / LOGICAL_HEIGHT) * 100,
     width: ((rect.right - rect.left) / LOGICAL_WIDTH) * 100,
     height: ((rect.bottom - rect.top) / LOGICAL_HEIGHT) * 100,
+  };
+}
+
+/** The CSS of a button over `rect`: at the same spot of the canvas at any width (rectPercent). */
+export function pressStyle(rect: PxRect): Record<'left' | 'top' | 'width' | 'height', string> {
+  const at = rectPercent(rect);
+  return {
+    left: `${String(at.left)}%`,
+    top: `${String(at.top)}%`,
+    width: `${String(at.width)}%`,
+    height: `${String(at.height)}%`,
   };
 }

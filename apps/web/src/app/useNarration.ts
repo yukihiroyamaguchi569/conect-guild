@@ -9,6 +9,7 @@ import { narrationPools, pickNarration, type NarrationPools } from './narration'
 import { createNarrator, NARRATION_INTERVAL_MS, type Narration } from './narrator';
 import { globalScheduler, type Scheduler } from './scheduler';
 import type { Random } from '../render/confetti';
+import { examineLineFor, type ExamineMoment, type ThingKind } from '../render/examine';
 
 export interface NarrationSources {
   /** The head of the message queue: while there is one, it is shown instead of the narration. */
@@ -62,6 +63,15 @@ function poolsNow(
   });
 }
 
+/** The window when a thing of the room is pressed (Issue #190). */
+function examineMoment(sources: NarrationSources): ExamineMoment {
+  return {
+    halted: sources.halted(),
+    known: sources.snapshot() !== null,
+    messageShown: sources.message.value !== null,
+  };
+}
+
 /**
  * The narration bound to the screen, without the component's lifetime (useNarration adds it):
  * call start() once mounted and stop() when unmounted. Watchers follow the current effect scope.
@@ -112,6 +122,15 @@ export function bindNarration(sources: NarrationSources, clock: NarrationClock =
     idleSeeds,
     setIdleSince: (since: IdleSince) => {
       idleSince = since;
+    },
+    /**
+     * A thing of the room pressed (Issue #190): what was found in it takes the narration's place
+     * for a whole interval. Dropped while an event's message is in the window (the events come
+     * first), while halted and before the first snapshot (examine.examineLineFor).
+     */
+    examine: (kind: ThingKind) => {
+      const line = examineLineFor(examineMoment(sources), kind, clock.random);
+      if (line !== null) narrator.say(line);
     },
     /** The ▼ button: the next event message while there is one, else the next narration. */
     next: () => {
