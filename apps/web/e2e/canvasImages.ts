@@ -3,6 +3,9 @@ import type { Page } from '@playwright/test';
 /** A picture drawn on a 2D canvas: the file name of its image and where it landed (logical px). */
 export interface DrawnImage {
   readonly file: string;
+  /** Where in the image the picture was cut from (the first drawing at this place). */
+  readonly sx: number;
+  readonly sy: number;
   readonly dx: number;
   readonly dy: number;
 }
@@ -26,13 +29,19 @@ export function installCanvasImageRecorder(): void {
   const original: unknown = Object.getOwnPropertyDescriptor(proto, 'drawImage')?.value;
   if (typeof original !== 'function') return;
   proto.drawImage = function (this: CanvasRenderingContext2D, ...args: unknown[]) {
-    const [image, , , , , dx, dy] = args;
-    if (image instanceof HTMLImageElement && typeof dx === 'number' && typeof dy === 'number') {
+    const [image, sx, sy, , , dx, dy] = args;
+    if (
+      image instanceof HTMLImageElement &&
+      typeof sx === 'number' &&
+      typeof sy === 'number' &&
+      typeof dx === 'number' &&
+      typeof dy === 'number'
+    ) {
       const file = new URL(image.src).pathname.split('/').pop() ?? '';
       const key = `${file}@${String(dx)},${String(dy)}`;
       if (!seen.has(key)) {
         seen.add(key);
-        window.e2eCanvasImages?.push({ file, dx, dy });
+        window.e2eCanvasImages?.push({ file, sx, sy, dx, dy });
       }
     }
     Reflect.apply(original, this, args);
