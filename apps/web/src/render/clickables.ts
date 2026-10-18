@@ -1,5 +1,5 @@
 import { PRESIDENT_ID } from '@conect-guild/snapshot/settings';
-import type { TilePos } from '../guild.config';
+import { ACTIVE_MEMBER_IDS, MEMBERS, type MemberId, type TilePos } from '../guild.config';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH, type PxRect } from './map';
 import { SPRITE_SIZE } from './metrics';
 import { tileToPoint, type Point } from './path';
@@ -24,13 +24,18 @@ interface Spot {
 
 export type Clickable =
   | (Spot & { readonly id: 'king' | 'dog' })
+  | (Spot & { readonly id: 'member'; readonly member: MemberId })
   | (Spot & { readonly id: 'thing'; readonly thing: ThingKind });
 
 export type ClickableId = Clickable['id'];
 
 /** The frame of a member drawn seated on `seat` (seating.seatedPoint), logical px. */
 export function seatedSpriteRect(seat: TilePos): PxRect {
-  const feet = seatedPoint(tileToPoint(seat));
+  return spriteFrame(seatedPoint(tileToPoint(seat)));
+}
+
+/** The frame of a member drawn with their feet at `feet`, logical px. */
+export function spriteFrame(feet: Point): PxRect {
   return {
     left: feet.x - SPRITE_SIZE / 2,
     top: feet.y - SPRITE_SIZE,
@@ -67,6 +72,43 @@ export function clickablesWith(
   const dog: readonly Clickable[] =
     pet === null ? [] : [{ id: 'dog', rect: pet, label: '犬をなでる' }];
   return [king, ...dog, ...things.map(thingClickable)];
+}
+
+/**
+ * The members but the king (his click is his own: Issue #187) drawn with their feet at `feet`
+ * (Issue #191; loop.RenderLoop.feet), in the order given.
+ */
+export function memberClickables(
+  feet: readonly { readonly id: MemberId; readonly point: Point }[],
+): readonly Clickable[] {
+  return feet
+    .filter(({ id }) => id !== PRESIDENT_ID)
+    .map(({ id, point }) => ({
+      id: 'member',
+      member: id,
+      rect: spriteFrame(point),
+      label: `${MEMBERS[id].name}に話しかける`,
+    }));
+}
+
+/**
+ * The members' buttons for the keyboard, at their seats: かなめ and the departments' members in the
+ * settings' order (a click finds them where they are drawn: memberClickables).
+ */
+export const MEMBER_SEAT_CLICKABLES: readonly Clickable[] = memberClickables(
+  ACTIVE_MEMBER_IDS.map((id) => ({ id, point: seatedPoint(tileToPoint(DEFAULT_SEATS[id])) })),
+);
+
+/**
+ * `clickables` (clickablesWith) with `members` (memberClickables) behind the king and the pet and
+ * in front of the room's things.
+ */
+export function withMembers(
+  clickables: readonly Clickable[],
+  members: readonly Clickable[],
+): readonly Clickable[] {
+  const things = clickables.filter((item) => item.id === 'thing');
+  return [...clickables.filter((item) => item.id !== 'thing'), ...members, ...things];
 }
 
 /** What can be pressed in the selected layout (clickablesWith). */
