@@ -168,6 +168,15 @@ describe('cutTrip', () => {
     expect(cutTrip(cut, talk.start + 200)).toBe(cut);
   });
 
+  it('calls the visit off when cut before it starts: nobody shows', () => {
+    const cut = cutTrip(trip, walkIn.start - 500);
+    expect(cut.segments).toEqual([]);
+    expect(cut.talk).toBeNull();
+    for (let at = walkIn.start - 500; at < tripEnd(trip); at += 100) {
+      expect(visitorAt(cut, at)).toBeNull();
+    }
+  });
+
   it('ends the trip at once when cut on the door tile itself', () => {
     const cut = cutTrip(trip, walkIn.start);
     expect(tripEnd(cut)).toBeLessThanOrEqual(walkIn.start);

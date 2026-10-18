@@ -120,6 +120,8 @@ export function visitorAt(trip: Trip, t: number): VisitorView | null {
  */
 export function cutTrip(trip: Trip, t: number): Trip {
   if (trip.talk === null || t >= trip.talk.end) return trip;
+  // Not in yet: the visit is called off, nobody shows.
+  if (t < (trip.segments[0]?.start ?? t)) return { ...trip, segments: [], talk: null };
   const walk = homeWalk(stepAt(segmentAt(trip, t) ?? trip.talk, t), DOOR, t, open);
   return { ...trip, segments: walk === null ? [] : [walk], talk: null };
 }
