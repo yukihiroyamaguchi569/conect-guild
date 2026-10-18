@@ -8,7 +8,7 @@ import { isAbsolute, join } from 'node:path';
  * git nor gh (the skill does).
  */
 
-export const SCAFFOLD_USAGE =
+const SCAFFOLD_USAGE =
   '使い方: npm run --silent trial:scaffold -- --dir <絶対パスのフォルダ> --departments <2〜6>\n';
 
 export interface TrialDepartment {
@@ -131,7 +131,7 @@ export interface Templates {
 }
 
 /** The two ````markdown blocks of docs/orchestration.md: chapter 4 and chapter 5. */
-export function extractTemplates(doc: string): Templates | null {
+function extractTemplates(doc: string): Templates | null {
   const blocks = [...doc.matchAll(/^````markdown\n([\s\S]*?)\n````$/gm)].map((m) => m[1] ?? '');
   const [commander, department] = blocks;
   if (commander === undefined || department === undefined) return null;
@@ -161,7 +161,7 @@ function replaceTable(markdown: string, departments: readonly TrialDepartment[])
 const CATCH_ALL = 'どこにも当てはまらない依頼は総務に振る';
 
 /** The 司令塔's CLAUDE.md; null when the template no longer has the parts it fills. */
-export function commanderClaudeMd(
+function commanderClaudeMd(
   template: string,
   departments: readonly TrialDepartment[],
 ): string | null {
@@ -184,7 +184,7 @@ const SCOPE_SECTION = /(## 担当範囲\n)(?:- .*\n)+/;
 const RULE_SECTION = /(## 広報固有のルール\n)(?:- .*\n?)+$/;
 
 /** A department's CLAUDE.md from the chapter 5 example (広報); null when its parts moved. */
-export function departmentClaudeMd(template: string, d: TrialDepartment): string | null {
+function departmentClaudeMd(template: string, d: TrialDepartment): string | null {
   if (!SCOPE_SECTION.test(template) || !RULE_SECTION.test(template)) return null;
   const f = d.folder;
   const filled = template

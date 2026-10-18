@@ -28,7 +28,7 @@ export const UPPER_RIGHT_DESK: CornerDesk = {
  * the furniture) never covers it. Its cells stay right of the alley (col 24). It takes the place
  * of layout4's files and crates; layout6 has the sales desk there instead.
  */
-export const GUEST_TABLE: DecorPlacement = {
+const GUEST_TABLE: DecorPlacement = {
   ...place('round-table', 27, 12),
   dx: -16,
   dy: -24,

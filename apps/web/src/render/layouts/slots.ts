@@ -35,7 +35,7 @@ import type { Desk, GuildLayout, TilePos } from './types';
  * A place that is neither a desk nor the guests' is decoration.
  */
 
-export const FILL_ORDER = [
+const FILL_ORDER = [
   'lowerLeft',
   'lowerRight',
   'upperLeft',
@@ -105,7 +105,7 @@ const CHAT_PARTNERS: Readonly<Record<Place, Place>> = {
 };
 
 /** Rule 1: the places with a desk. */
-export function deskPlacesFor(departmentCount: number): readonly Place[] {
+function deskPlacesFor(departmentCount: number): readonly Place[] {
   return FILL_ORDER.slice(0, departmentCount);
 }
 
@@ -113,7 +113,7 @@ const isCorner = (place: Place | undefined): place is CornerPlace =>
   place !== undefined && place !== 'lowerLeft' && place !== 'lowerRight';
 
 /** Rule 2: the place of the guests, none with six departments. */
-export function guestPlaceFor(departmentCount: number): CornerPlace | undefined {
+function guestPlaceFor(departmentCount: number): CornerPlace | undefined {
   if (departmentCount === 2) return 'upperRight';
   const next = FILL_ORDER[departmentCount];
   return isCorner(next) ? next : undefined;

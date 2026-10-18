@@ -148,7 +148,7 @@ function levelUpEvents(before: Baseline, after: Baseline): GuildEvent[] {
  * ascending number. None while either baseline does not know the king's quests. A quest that was
  * an open department Issue in `before` was relabelled, not opened, so it is not told (Issue #167).
  */
-export function kingQuestEvents(before: Baseline, after: Baseline): GuildEvent[] {
+function kingQuestEvents(before: Baseline, after: Baseline): GuildEvent[] {
   const changes = kingQuestChanges(before.king, after.king);
   const wasOpen = new Set(before.issues.filter((i) => i.state === 'open').map((i) => i.number));
   const opened = changes.opened.filter((n) => !wasOpen.has(n));

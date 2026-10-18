@@ -35,7 +35,7 @@ export function seatedSpriteRect(seat: TilePos): PxRect {
 }
 
 /** The frame of a member drawn with their feet at `feet`, logical px. */
-export function spriteFrame(feet: Point): PxRect {
+function spriteFrame(feet: Point): PxRect {
   return {
     left: feet.x - SPRITE_SIZE / 2,
     top: feet.y - SPRITE_SIZE,
