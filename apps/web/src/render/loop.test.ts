@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AMBIENT } from './metrics';
 import { EMPTY_DIRECTOR, scheduleEvent } from './director';
-import { createScheduler, isPaused, isShown, nextDraw, scenesShown } from './loop';
+import { isPaused, isShown, scenesShown } from './loop';
+import { createScheduler, nextDraw } from './scheduler';
 import { DEFAULT_SEATS } from './scenes';
 
 describe('nextDraw', () => {

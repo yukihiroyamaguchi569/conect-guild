@@ -7,13 +7,8 @@ import { showMs } from '../render/lines';
 import { DEFAULT_SEATS, planScene } from '../render/scenes';
 import { createMemoryStorage, createKeyValueStore } from '../adapters/storage';
 import { toBaseline } from './baseline';
-import {
-  DEMO_LOOP_MS,
-  demoIssueNumber,
-  demoKingQuestAt,
-  demoSnapshotAt,
-  laneDepartments,
-} from './demo';
+import { DEMO_LOOP_MS, demoIssueNumber, demoKingQuestAt, demoSnapshotAt } from './demo';
+import { laneDepartments } from './demoLanes';
 import { DEMO_KING_QUEST, DEMO_SCRIPT } from './demoScript';
 import { diffSnapshot, type GuildEvent } from './events';
 

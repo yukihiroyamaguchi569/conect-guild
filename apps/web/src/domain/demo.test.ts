@@ -3,15 +3,8 @@ import { GUILD_SETTINGS } from '@conect-guild/snapshot/settings';
 import { describe, expect, it } from 'vitest';
 import { buildFetchStatus, buildKingBubble, buildParty } from '../app/guildView';
 import { toBaseline } from './baseline';
-import {
-  DEMO_LOOP_MS,
-  DEMO_REPO,
-  demoIssueNumber,
-  demoSnapshotAt,
-  laneDepartments,
-  laneStatesAt,
-  ruleChangeFile,
-} from './demo';
+import { DEMO_LOOP_MS, DEMO_REPO, demoIssueNumber, demoSnapshotAt, ruleChangeFile } from './demo';
+import { laneDepartments, laneStatesAt } from './demoLanes';
 import { DEMO_LANES, DEMO_RECEPTION_TITLES, DEMO_SCRIPT, DEMO_TITLES } from './demoScript';
 import { EVENT_GAP_LIMIT_MS } from '../guild.config';
 import { diffSnapshot, type GuildEvent } from './events';

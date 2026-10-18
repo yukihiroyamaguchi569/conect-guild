@@ -1,12 +1,7 @@
 import { makeSettings } from '@conect-guild/snapshot/settings.fixtures';
 import { describe, expect, it } from 'vitest';
-import {
-  DEMO_LOOP_MS,
-  demoIssueNumber,
-  demoSnapshotAt,
-  laneDepartments,
-  questCarriers,
-} from './demo';
+import { DEMO_LOOP_MS, demoIssueNumber, demoSnapshotAt } from './demo';
+import { laneDepartments, questCarriers } from './demoLanes';
 import { DEMO_LANES, DEMO_TITLES } from './demoScript';
 
 /**
