@@ -8,6 +8,7 @@ import {
   type Random,
 } from './confetti';
 import { dozeMotion, idleStage } from './idle';
+import { DECOR, DECOR_TILE_SIZE } from '../../../../assets/decor/decor';
 import { CONFETTI, IDLE } from './metrics';
 import type { SpriteFrame } from './motion';
 import { tileToPoint, type Point } from './path';
@@ -47,6 +48,11 @@ export const GUEST = {
   phaseMs: 700,
   /** How much lower than over a member each mark is (markFeet). */
   markDrop: { question: 20, dots: 20, z: 17 },
+  /**
+   * The bench behind a guest (Issue #182) is this much right of centred under the feet: its ends
+   * then stay clear of the stools beside two spots (the tavern's round table, the map table's).
+   */
+  benchDx: 12,
   /** A sparkle: fewer, slower and shorter-lived squares than a member's confetti. */
   sparkleMs: 1_600,
   sparkleCount: 14,
@@ -110,6 +116,16 @@ export function guestLook(guest: StageGuest, now: GuestClock, hasHoldFrames: boo
     return { ...STANDING, frame: hasHoldFrames ? 5 : 0, dy, reading: true, mark: null };
   }
   return restingLook(guest, now);
+}
+
+/**
+ * The top-left of the bench a guest sits on or stands in front of (Issue #182): the decor `bench`
+ * with its bottom on the feet, `GUEST.benchDx` right of centred. It stays put while the guest bobs
+ * or nods.
+ */
+export function benchPoint(feet: Point): Point {
+  const { w, h } = DECOR.bench;
+  return { x: feet.x - (w * DECOR_TILE_SIZE) / 2 + GUEST.benchDx, y: feet.y - h * DECOR_TILE_SIZE };
 }
 
 /**

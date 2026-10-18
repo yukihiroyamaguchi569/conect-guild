@@ -110,7 +110,11 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
   drawLightPatches(ctx, art, moment, light);
   drawAnimatedDecor(ctx, art, moment, BACK_ANIMATED_DECOR);
   drawActors(ctx, moment, art, painter.front);
-  drawGuestBodies(ctx, moment.guests, { guests: painter.guestArt, sprites: art.sprites });
+  drawGuestBodies(ctx, moment.guests, {
+    guests: painter.guestArt,
+    sprites: art.sprites,
+    decor: art.decor,
+  });
   drawShade(ctx, painter.scratch, light, lampLights(moment.now));
   const tags = levelTags(moment.levels, DEFAULT_SEATS);
   drawLevelTags(ctx, tags);
