@@ -160,7 +160,7 @@ class TrackBuilder {
  * (left or right, so neither hides the other), else in front of or behind it; the nearest one that
  * can be reached. `from` itself when none can.
  */
-function besideSeat(from: TilePos, seat: TilePos): TilePos {
+export function besideSeat(from: TilePos, seat: TilePos): TilePos {
   const at = (col: number, row: number): TilePos => ({ col: seat.col + col, row: seat.row + row });
   for (const group of [
     [at(-1, 0), at(1, 0)],
