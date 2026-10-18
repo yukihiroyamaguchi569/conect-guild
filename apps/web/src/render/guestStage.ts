@@ -17,7 +17,7 @@ export interface GuestStage {
   set(guests: readonly StageGuest[]): void;
   /** A sparkle over guest `index` from stage time `t`; nothing when that guest is not there. */
   sparkle(index: number, t: number): void;
-  /** Drops what is over and says what to draw at `t`. */
+  /** Drops what is over and says what to draw at `t` (the idle spells go by the wall clock). */
   frameAt(t: number): GuestFrame;
   /** Drops the sparkles (the canvas is out of sight: they must not play late). */
   clearSparkles(): void;
@@ -29,6 +29,8 @@ export function createGuestStage(
   spots: readonly TilePos[],
   hasHoldFrames: (index: number) => boolean,
   random: Random = Math.random,
+  /** Epoch ms, for the guests' long idle spells (Issue #183); they go on while the page is hidden. */
+  wallNow: () => number = () => Date.now(),
 ): GuestStage {
   let guests: readonly StageGuest[] = [];
   let sparkles: readonly GuestSparkle[] = [];
@@ -43,7 +45,7 @@ export function createGuestStage(
     },
     frameAt(t) {
       sparkles = liveSparkles(sparkles, t);
-      return guestFrame({ guests, sparkles, spots }, t, hasHoldFrames);
+      return guestFrame({ guests, sparkles, spots }, { t, wall: wallNow() }, hasHoldFrames);
     },
     clearSparkles() {
       sparkles = [];

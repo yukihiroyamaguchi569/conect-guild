@@ -7,6 +7,7 @@ import {
   type PlacedParticle,
   type Random,
 } from './confetti';
+import { dozeMotion, idleStage } from './idle';
 import { CONFETTI, IDLE } from './metrics';
 import type { SpriteFrame } from './motion';
 import { tileToPoint, type Point } from './path';
@@ -14,8 +15,9 @@ import { tileToPoint, type Point } from './path';
 /**
  * The guests on the stage (Issue #108): each stands at its spot of the layout and never walks into
  * the members' scenes. The look follows the session: waiting for a permission shows the 「?」,
- * working reads a scroll, resting and idle sleep. A finished PR or Issue makes a small sparkle.
- * Pure: drawGuests.ts draws.
+ * working reads a scroll. Resting and idle go as the members' long idle spells (idle.ts, Issue
+ * #183): awake for 10 minutes, then dozing, from 30 minutes asleep, never leaving the spot. A
+ * finished PR or Issue makes a small sparkle. Pure: drawGuests.ts draws.
  */
 
 /**
@@ -25,10 +27,15 @@ import { tileToPoint, type Point } from './path';
 export interface StageGuest {
   readonly index: number;
   readonly state: GuestState;
+  /** Epoch ms since when the guest has had nothing to do; null while working or not known. */
+  readonly idleSince: number | null;
 }
 
-export function stageGuestsOf(views: readonly GuestView[]): StageGuest[] {
-  return views.map(({ index, state }) => ({ index, state }));
+/** Since when each guest (by index) has had nothing to do (app/guestLastActive.ts). */
+export type GuestIdleSince = readonly (number | null)[];
+
+export function stageGuestsOf(views: readonly GuestView[], since: GuestIdleSince): StageGuest[] {
+  return views.map(({ index, state }) => ({ index, state, idleSince: since[index] ?? null }));
 }
 
 /** Times are ms, distances logical px. */
@@ -39,19 +46,26 @@ export const GUEST = {
   /** Each guest's moves run this much behind the one before, so the two never move as one. */
   phaseMs: 700,
   /** How much lower than over a member each mark is (markFeet). */
-  markDrop: { question: 20, z: 17 },
+  markDrop: { question: 20, dots: 20, z: 17 },
   /** A sparkle: fewer, slower and shorter-lived squares than a member's confetti. */
   sparkleMs: 1_600,
   sparkleCount: 14,
   sparkleSpeed: 0.5,
 } as const;
 
-/** What is over a guest's head: the waiting 「?」 or a rising 「Z」 (`rise` 0 to 1). */
+/**
+ * What is over a guest's head: the waiting 「?」, the dozing 「…」 (in the same place) or a rising
+ * 「Z」 (`rise` 0 to 1).
+ */
 export type GuestMark =
-  { readonly kind: 'question' } | { readonly kind: 'z'; readonly rise: number };
+  | { readonly kind: 'question' }
+  | { readonly kind: 'dots' }
+  | { readonly kind: 'z'; readonly rise: number };
 
 export interface GuestLook {
   readonly frame: SpriteFrame;
+  /** True when facing left (the side frame of a yawn). */
+  readonly flip: boolean;
   /** Down from the spot, logical px (a bob while reading). */
   readonly dy: number;
   /** True while reading: a scroll in the arms. */
@@ -59,26 +73,43 @@ export interface GuestLook {
   readonly mark: GuestMark | null;
 }
 
+/** The clocks a look reads: the stage's `t` (stops while hidden) and the wall's epoch ms. */
+export interface GuestClock {
+  readonly t: number;
+  readonly wall: number;
+}
+
+const STANDING = { flip: false, dy: 0, reading: false } as const;
+
+/** Resting or idle, by how long since the guest had work (idle.idleStage, the members' times). */
+function restingLook(guest: Pick<StageGuest, 'index' | 'idleSince'>, now: GuestClock): GuestLook {
+  const stage = guest.idleSince === null ? 'awake' : idleStage(guest.idleSince, now.wall);
+  if (stage === 'awake') return { ...STANDING, frame: 0, mark: null };
+  if (stage === 'doze') {
+    const doze = dozeMotion(guest.index * GUEST.phaseMs, now.wall);
+    const mark = doze.mark === null ? null : { kind: 'dots' as const };
+    return { ...STANDING, frame: doze.frame, flip: doze.flip, dy: doze.offset.y, mark };
+  }
+  // Asleep on the spot, as the members sleep at their seats (idle.ts).
+  const phase = Math.max(now.t - guest.index * GUEST.phaseMs, 0);
+  const rise = (phase % IDLE.zRiseMs) / IDLE.zRiseMs;
+  return { ...STANDING, frame: 7, mark: { kind: 'z', rise } };
+}
+
 /**
- * How a guest looks at stage time `t`. Reading uses the arms-in-front frame when the sheet has it
- * (the scroll is then held in the arms), otherwise the front frame.
+ * How a guest looks at `now`. Reading uses the arms-in-front frame when the sheet has it (the
+ * scroll is then held in the arms), otherwise the front frame.
  */
-export function guestLook(
-  guest: Pick<StageGuest, 'index' | 'state'>,
-  t: number,
-  hasHoldFrames: boolean,
-): GuestLook {
-  const phase = Math.max(t - guest.index * GUEST.phaseMs, 0);
+export function guestLook(guest: StageGuest, now: GuestClock, hasHoldFrames: boolean): GuestLook {
   if (guest.state === 'awaiting-permission') {
-    return { frame: 0, dy: 0, reading: false, mark: { kind: 'question' } };
+    return { ...STANDING, frame: 0, mark: { kind: 'question' } };
   }
   if (guest.state === 'working') {
+    const phase = Math.max(now.t - guest.index * GUEST.phaseMs, 0);
     const dy = phase % GUEST.readMs < GUEST.readMs / 2 ? 0 : GUEST.readPx;
-    return { frame: hasHoldFrames ? 5 : 0, dy, reading: true, mark: null };
+    return { ...STANDING, frame: hasHoldFrames ? 5 : 0, dy, reading: true, mark: null };
   }
-  // Resting and idle: asleep on the spot, as the members sleep at their seats (idle.ts).
-  const rise = (phase % IDLE.zRiseMs) / IDLE.zRiseMs;
-  return { frame: 7, dy: 0, reading: false, mark: { kind: 'z', rise } };
+  return restingLook(guest, now);
 }
 
 /**
@@ -137,25 +168,25 @@ export interface GuestFrame {
   readonly animating: boolean;
 }
 
-/** The guests at their spots and the sparkles still in the air at `t`. */
+/** The guests at their spots and the sparkles still in the air at `now`. */
 export function guestFrame(
   stage: {
     readonly guests: readonly StageGuest[];
     readonly sparkles: readonly GuestSparkle[];
     readonly spots: readonly TilePos[];
   },
-  t: number,
+  now: GuestClock,
   hasHoldFrames: (index: number) => boolean,
 ): GuestFrame {
   const poses = stage.guests.flatMap((guest) => {
     const spot = stage.spots[guest.index];
     if (spot === undefined) return [];
     const feet = guestFeet(spot);
-    return [{ guest, feet, look: guestLook(guest, t, hasHoldFrames(guest.index)) }];
+    return [{ guest, feet, look: guestLook(guest, now, hasHoldFrames(guest.index)) }];
   });
   const sparkles = stage.sparkles.flatMap((sparkle) => {
     const pose = poses.find((p) => p.guest.index === sparkle.guest);
-    const view = pose === undefined ? null : sparkleAt(sparkle, t, pose.feet);
+    const view = pose === undefined ? null : sparkleAt(sparkle, now.t, pose.feet);
     return view === null ? [] : [view];
   });
   return { poses, sparkles, animating: sparkles.length > 0 };

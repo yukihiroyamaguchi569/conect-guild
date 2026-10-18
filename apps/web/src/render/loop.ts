@@ -234,7 +234,12 @@ function stageOf(
   const { canvas, art } = options;
   const painter = createPainter(context2d(canvas), art, options.guestArt ?? placeholderGuestArt);
   const guestArt = painter.guestArt;
-  const guests = createGuestStage(SELECTED_LAYOUT.guestSpots, (i) => guestArt.hasHoldFrames(i));
+  const guests = createGuestStage(
+    SELECTED_LAYOUT.guestSpots,
+    (i) => guestArt.hasHoldFrames(i),
+    Math.random,
+    options.wallNow,
+  );
   const cast = createCast(art, context.random, options, talkOf(options, context));
   return { painter, guests, cast };
 }

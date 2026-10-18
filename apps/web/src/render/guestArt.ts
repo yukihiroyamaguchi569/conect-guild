@@ -11,8 +11,16 @@ import { frameInSheet, sheetWidth, spriteDraw, type SpriteSheet } from './sprite
  * MemberId. When a picture cannot be loaded, plain boxes take its place.
  */
 export interface GuestArt {
-  /** Draws guest `index` facing front (or in a holding frame) with the feet at `feet`. */
-  drawGuest(ctx: CanvasRenderingContext2D, index: number, frame: SpriteFrame, feet: Point): void;
+  /**
+   * Draws guest `index` in `pose` with the feet at `feet`; the side frame faces right and `flip`
+   * mirrors it to face left (a yawn, Issue #183).
+   */
+  drawGuest(
+    ctx: CanvasRenderingContext2D,
+    index: number,
+    pose: { readonly frame: SpriteFrame; readonly flip: boolean },
+    feet: Point,
+  ): void;
   /** True when the guest's sheet has the holding frames (the arms-in-front frame to read in). */
   hasHoldFrames(index: number): boolean;
 }
@@ -39,14 +47,21 @@ export function createGuestArt(sheets: readonly (SpriteSheet | null)[]): GuestAr
       const sheet = sheets[index] ?? null;
       return sheet !== null && sheetHasHoldFrames(sheetWidth(sheet));
     },
-    drawGuest(ctx, index, frame, feet) {
+    drawGuest(ctx, index, pose, feet) {
       const sheet = sheets[index] ?? null;
       if (sheet === null) {
-        placeholderGuestArt.drawGuest(ctx, index, frame, feet);
+        placeholderGuestArt.drawGuest(ctx, index, pose, feet);
         return;
       }
-      const { sx, dx, dy } = spriteDraw(frameInSheet(frame, sheetWidth(sheet)), feet);
+      const { sx, dx, dy } = spriteDraw(frameInSheet(pose.frame, sheetWidth(sheet)), feet);
+      ctx.save();
+      if (pose.flip) {
+        // Mirror around the feet so the guest stays on the spot (as spriteArt.drawMember).
+        ctx.translate(2 * dx + SPRITE_SIZE, 0);
+        ctx.scale(-1, 1);
+      }
       ctx.drawImage(sheet, sx, 0, SPRITE_SIZE, SPRITE_SIZE, dx, dy, SPRITE_SIZE, SPRITE_SIZE);
+      ctx.restore();
     },
   };
 }
@@ -56,7 +71,7 @@ const PLACEHOLDER_COLORS = ['#6d4c8e', '#2f6f8f'] as const;
 
 export const placeholderGuestArt: GuestArt = {
   hasHoldFrames: () => false,
-  drawGuest(ctx, index, _frame, feet) {
+  drawGuest(ctx, index, _pose, feet) {
     ctx.save();
     ctx.translate(Math.round(feet.x), Math.round(feet.y));
     ctx.scale(DETAIL_SCALE, DETAIL_SCALE);

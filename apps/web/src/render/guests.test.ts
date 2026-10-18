@@ -27,8 +27,16 @@ import { DETAIL_SCALE, IDLE, OVERHEAD_OFFSET, TILE_SIZE } from './metrics';
 const fixed: Random = () => 0.5;
 
 function guest(index: number, over: Partial<StageGuest> = {}): StageGuest {
-  return { index, state: 'idle', ...over };
+  return { index, state: 'idle', idleSince: null, ...over };
 }
+
+/** The stage clock and the wall clock at `t` (the same unless told). */
+function at(t: number, wall = t): { t: number; wall: number } {
+  return { t, wall };
+}
+
+/** Asleep: idle since the start of the wall clock, 30 minutes on. */
+const ASLEEP = { idleSince: 0 } as const;
 
 describe('stageGuestsOf', () => {
   it('keeps the index and the state only: no name or counts are drawn (Issue #122)', () => {
@@ -41,9 +49,9 @@ describe('stageGuestsOf', () => {
       },
       { index: 1, name: 'ぼうけんしゃ', state: 'idle', repo: null },
     ];
-    expect(stageGuestsOf(views)).toEqual([
-      { index: 0, state: 'working' },
-      { index: 1, state: 'idle' },
+    expect(stageGuestsOf(views, [null, 1_000])).toEqual([
+      { index: 0, state: 'working', idleSince: null },
+      { index: 1, state: 'idle', idleSince: 1_000 },
     ]);
   });
 });
@@ -51,8 +59,9 @@ describe('stageGuestsOf', () => {
 describe('guestLook', () => {
   it('shows the 「?」 while waiting for a permission, standing still', () => {
     for (const t of [0, 500, 1_300, 9_999]) {
-      expect(guestLook(guest(0, { state: 'awaiting-permission' }), t, true)).toEqual({
+      expect(guestLook(guest(0, { state: 'awaiting-permission' }), at(t), true)).toEqual({
         frame: 0,
+        flip: false,
         dy: 0,
         reading: false,
         mark: { kind: 'question' },
@@ -62,21 +71,22 @@ describe('guestLook', () => {
 
   it('reads a scroll in the arms while working, bobbing a little', () => {
     const working = guest(0, { state: 'working' });
-    expect(guestLook(working, 0, true)).toEqual({
+    expect(guestLook(working, at(0), true)).toEqual({
       frame: 5,
+      flip: false,
       dy: 0,
       reading: true,
       mark: null,
     });
-    expect(guestLook(working, GUEST.readMs / 2, true).dy).toBe(GUEST.readPx);
+    expect(guestLook(working, at(GUEST.readMs / 2), true).dy).toBe(GUEST.readPx);
     // A sheet without the holding frames reads facing front.
-    expect(guestLook(working, 0, false).frame).toBe(0);
+    expect(guestLook(working, at(0), false).frame).toBe(0);
   });
 
-  it('sleeps while resting or idle: the sleeping frame, still, and a rising 「Z」', () => {
+  it('sleeps after 30 minutes resting or idle: the sleeping frame, still, and a rising 「Z」', () => {
     for (const state of ['resting', 'idle'] as const) {
       for (const t of [0, IDLE.zRiseMs / 4, IDLE.zRiseMs / 2]) {
-        const look = guestLook(guest(0, { state }), t, true);
+        const look = guestLook(guest(0, { state, ...ASLEEP }), at(t, IDLE.sleepAfterMs), true);
         expect(look.frame).toBe(7);
         expect(look.dy).toBe(0);
         expect(look.reading).toBe(false);
@@ -88,9 +98,10 @@ describe('guestLook', () => {
   it('moves the second guest behind the first, so they never move as one', () => {
     const t = GUEST.readMs / 2;
     const working = { state: 'working' } as const;
-    expect(guestLook(guest(0, working), t, true).dy).toBe(GUEST.readPx);
-    expect(guestLook(guest(1, working), t, true).dy).toBe(0);
-    const z = (index: number) => guestLook(guest(index), IDLE.zRiseMs / 2, true).mark;
+    expect(guestLook(guest(0, working), at(t), true).dy).toBe(GUEST.readPx);
+    expect(guestLook(guest(1, working), at(t), true).dy).toBe(0);
+    const z = (index: number) =>
+      guestLook(guest(index, ASLEEP), at(IDLE.zRiseMs / 2, IDLE.sleepAfterMs), true).mark;
     expect(z(0)).not.toEqual(z(1));
   });
 });
@@ -116,11 +127,11 @@ describe('guestFrame', () => {
 
   it('stands each guest at its spot and animates only while a sparkle flies', () => {
     const guests = [guest(0), guest(1, { state: 'working' })];
-    const idle = guestFrame({ guests, sparkles: [], spots }, 0, () => true);
+    const idle = guestFrame({ guests, sparkles: [], spots }, at(0), () => true);
     expect(idle.poses.map((p) => p.feet)).toEqual(spots.map(guestFeet));
     expect(idle.animating).toBe(false);
     const sparkles = [createSparkle(1, 0, fixed)];
-    const busy = guestFrame({ guests, sparkles, spots }, 10, () => true);
+    const busy = guestFrame({ guests, sparkles, spots }, at(10), () => true);
     expect(busy.sparkles).toHaveLength(1);
     expect(busy.animating).toBe(true);
   });
@@ -128,7 +139,7 @@ describe('guestFrame', () => {
   it('draws no sparkle for a guest who is not there', () => {
     const frame = guestFrame(
       { guests: [guest(0)], sparkles: [createSparkle(1, 0, fixed)], spots },
-      10,
+      at(10),
       () => true,
     );
     expect(frame.sparkles).toEqual([]);
@@ -142,7 +153,12 @@ describe('createGuestStage', () => {
   ];
 
   it('sparkles only a guest that is there, and drops the sparkles when told', () => {
-    const stage = createGuestStage(spots, () => true, fixed);
+    const stage = createGuestStage(
+      spots,
+      () => true,
+      fixed,
+      () => 0,
+    );
     stage.sparkle(0, 0);
     expect(stage.frameAt(10).sparkles).toEqual([]);
     stage.set([guest(0)]);
@@ -153,7 +169,12 @@ describe('createGuestStage', () => {
   });
 
   it('drops the sparkles while the screen is halted and starts none until it is back', () => {
-    const stage = createGuestStage(spots, () => true, fixed);
+    const stage = createGuestStage(
+      spots,
+      () => true,
+      fixed,
+      () => 0,
+    );
     stage.set([guest(0)]);
     stage.sparkle(0, 0);
     stage.setHalted(true);
@@ -166,7 +187,12 @@ describe('createGuestStage', () => {
   });
 
   it('forgets a sparkle once it is over', () => {
-    const stage = createGuestStage(spots, () => true, fixed);
+    const stage = createGuestStage(
+      spots,
+      () => true,
+      fixed,
+      () => 0,
+    );
     stage.set([guest(0)]);
     stage.sparkle(0, 0);
     expect(stage.frameAt(GUEST.sparkleMs).sparkles).toEqual([]);
@@ -226,11 +252,12 @@ function drawnPx(table: DecorPlacement): PxRect {
 
 /**
  * The drawn figure of a guest on `spot`: assets/sprites/guest1.png and guest2.png fill x 8–70 and
- * y 6–79 of each 80 px frame (measured over all seven frames, 2026-10-15).
+ * y 6–79 of each 80 px frame (measured over all seven frames, 2026-10-15); mirrored (the yawn of a
+ * doze, Issue #183) x 9–71, so up to x 72.
  */
 function bodyRect(spot: { col: number; row: number }): PxRect {
   const frame = spriteRect(spot);
-  return { left: frame.left + 8, right: frame.left + 71, top: frame.top + 6, bottom: frame.bottom };
+  return { left: frame.left + 8, right: frame.left + 72, top: frame.top + 6, bottom: frame.bottom };
 }
 
 /**
