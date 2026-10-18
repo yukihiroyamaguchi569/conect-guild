@@ -10,6 +10,7 @@ import {
   type GroundFill,
   type MapObject,
   type TilePos,
+  type TileRect,
 } from './types';
 
 /**
@@ -242,6 +243,13 @@ export const LOWER_RIGHT_SEAT: Omit<Desk, 'chatWith'> = {
   side: 'lower',
   things: ['file-stack'],
 };
+
+/**
+ * The month's ornament (Issue #192) in every office: on the empty floor right of the 総務 desk,
+ * below the party window and against the right wall, off every way (the walks keep clear of the
+ * party window there, or pass left of it) and above the barrel by the wall.
+ */
+export const ORNAMENT_SPOT: TileRect = rect(29, 9, 2, 2);
 
 /** Where かなめ, the king and the scenes' places are: as in layout4. */
 export const SMALL_ROOM_SEATS = {

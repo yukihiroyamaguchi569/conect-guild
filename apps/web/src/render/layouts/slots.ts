@@ -12,6 +12,7 @@ import {
   LOWER_RIGHT_SEAT,
   MAP_CORNER,
   MAP_CORNER_GUEST_SPOTS,
+  ORNAMENT_SPOT,
   roomWith,
   SMALL_ROOM_GROUND,
   SMALL_ROOM_SEATS,
@@ -165,6 +166,7 @@ export function buildLayout(departmentCount: number, specials: LayoutSpecials): 
     desks: desksAt(deskPlacesFor(departmentCount)),
     ...SMALL_ROOM_SEATS,
     guestSpots: guestSpotsFor(departmentCount),
+    ornamentSpot: ORNAMENT_SPOT,
     ...specials,
   };
 }

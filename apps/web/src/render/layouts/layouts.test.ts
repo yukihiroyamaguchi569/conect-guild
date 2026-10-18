@@ -211,6 +211,60 @@ describe.each(Object.values(LAYOUTS))('layout of $departmentCount departments: d
   });
 });
 
+describe.each(Object.values(LAYOUTS))(
+  'layout of $departmentCount departments: the month’s ornament (Issue #192)',
+  (layout) => {
+    const spot = layout.ornamentSpot;
+    const tiles = Array.from({ length: spot.w * spot.h }, (_, i) => ({
+      col: spot.col + (i % spot.w),
+      row: spot.row + Math.floor(i / spot.w),
+    }));
+    const box = {
+      left: spot.col * TILE_SIZE,
+      top: spot.row * TILE_SIZE,
+      right: (spot.col + spot.w) * TILE_SIZE,
+      bottom: (spot.row + spot.h) * TILE_SIZE,
+    };
+    const sharesCell = (item: { col: number; row: number; w: number; h: number }): boolean =>
+      tiles.some((tile) => contains(item, tile));
+
+    it('stands on bare floor: no furniture, no other thing, no seat, no guest', () => {
+      for (const tile of tiles) expect(groundAt(layout, tile), keyOf(tile)).toBe('floor');
+      expect(layout.objects.filter(sharesCell)).toEqual([]);
+      expect(layout.decor.filter(sharesCell)).toEqual([]);
+      for (const pos of [...allSeats(layout), ...layout.guestSpots]) {
+        expect(contains(spot, pos), keyOf(pos)).toBe(false);
+      }
+    });
+
+    it('is walked on by nobody', () => {
+      for (const tile of tiles) expect(isWalkableIn(layout, tile), keyOf(tile)).toBe(false);
+    });
+
+    it('is clear of the windows at their tallest', () => {
+      for (const area of windowsOver(layout)) expect(overlaps(box, area)).toBe(false);
+    });
+
+    // The waiting 「?」 and the like stay for long; a member's line passes over the top of the
+    // picture now and then, as over the other things (bubbles are drawn over everything).
+    it('is clear of the bubble over every seat, standing or sunk', () => {
+      const sinks = seatSinkFor(layout);
+      for (const seat of allSeats(layout)) {
+        const feet = tileToPoint(seat);
+        for (const dy of [0, sinks.get(keyOf(seat)) ?? 0]) {
+          const bubble = bubbleBox(
+            { x: feet.x, y: feet.y + dy },
+            { voice: 'glyph', chars: 1 },
+            'right',
+            0,
+          );
+          expect(overlaps(bubble, box), keyOf(seat)).toBe(false);
+        }
+      }
+    });
+  },
+);
+
 describe('layout of 5 departments: the guest right of 総務 (Issue #122)', () => {
   const [spot] = LAYOUT5.guestSpots;
   const desk = LAYOUT5.objects.find(
