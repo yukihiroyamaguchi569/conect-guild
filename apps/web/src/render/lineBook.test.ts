@@ -197,6 +197,7 @@ describe('line book: murmurs', () => {
         'askDoze',
         'askSleep',
         'askPlay',
+        'toast',
       ]),
     );
     expect(linesOf('minori', 'tea')).toEqual(SHARED_LINES.tea);
