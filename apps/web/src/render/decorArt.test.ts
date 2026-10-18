@@ -23,8 +23,8 @@ describe('decorDraw', () => {
 });
 
 describe('held items', () => {
-  it('uses the scroll pile and the chest for the held items', () => {
-    expect(PROP_DECOR).toEqual({ scroll: 'scroll-pile', chest: 'chest' });
+  it('uses the scroll pile, the chest and the mugs for the held items', () => {
+    expect(PROP_DECOR).toEqual({ scroll: 'scroll-pile', chest: 'chest', tankard: 'mugs' });
     expect(DECOR['scroll-pile']).toBeDefined();
   });
 

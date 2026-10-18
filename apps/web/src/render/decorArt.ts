@@ -37,6 +37,7 @@ export function createDecorArt(sheet: CanvasImageSource): DecorArt {
 export const PROP_DECOR: Readonly<Record<Prop, DecorName>> = {
   scroll: 'scroll-pile',
   chest: 'chest',
+  tankard: 'mugs',
 };
 
 /** Which picture a held item uses and its top-left, centred on `at`. Pure. */

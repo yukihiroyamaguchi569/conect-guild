@@ -161,6 +161,7 @@ function start(
     art,
     guestArt,
     visitorArt,
+    ...(props.lastActiveStorage === undefined ? {} : { toastStore: props.lastActiveStorage }),
     wallNow,
     ...(fixedHour === null ? {} : { localHour: () => fixedHour }),
     idleSeeds: props.idleSeeds,

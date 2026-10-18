@@ -37,6 +37,8 @@ export interface VisitorStage {
   setHalted(halted: boolean, t: number): void;
   /** Drops the visitor (the canvas is out of sight: it must not walk on late). */
   clear(): void;
+  /** True while a visitor is in the room (as of the frame drawn last). */
+  isVisiting(): boolean;
 }
 
 /** The local day and the minutes after its midnight of `epochMs`. */
@@ -94,5 +96,6 @@ export function createVisitorStage(wallNow: () => number = () => Date.now()): Vi
     clear() {
       trip = null;
     },
+    isVisiting: () => trip !== null,
   };
 }
