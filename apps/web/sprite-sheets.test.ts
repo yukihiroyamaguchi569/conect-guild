@@ -38,7 +38,12 @@ function pngAlpha(path: string): { width: number; alpha: (x: number, y: number) 
   const bytes = readFileSync(path);
   const { width, height } = pngSize(path);
   expect([bytes[24], bytes[25], bytes[28]]).toEqual([8, 6, 0]);
-  const pixels = unfiltered(inflateSync(idatOf(bytes)), width * 4, height);
+  const raw = inflateSync(idatOf(bytes));
+  // One filter byte (0–4) and width * 4 bytes per row, nothing missing or left over.
+  expect(raw).toHaveLength((width * 4 + 1) * height);
+  const filters = Array.from({ length: height }, (_, y) => raw[y * (width * 4 + 1)] ?? -1);
+  expect(filters.every((filter) => filter >= 0 && filter <= 4)).toBe(true);
+  const pixels = unfiltered(raw, width * 4, height);
   return { width, alpha: (x, y) => pixels[y * width * 4 + x * 4 + 3] ?? 0 };
 }
 
