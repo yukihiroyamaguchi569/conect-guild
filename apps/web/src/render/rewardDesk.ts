@@ -1,12 +1,13 @@
 import type { RewardKind } from '../domain/dailyReward';
-import type { MemberId } from '../guild.config';
+import { MEMBERS, type MemberId } from '../guild.config';
+import type { PressLines } from './examine';
 import type { GuildLayout, TilePos } from './layouts/types';
 import { contains } from './map';
 import { TILE_SIZE } from './metrics';
 
 /**
  * Where the king's reward of the day (Issue #194, domain/dailyReward.ts) stands on its member's
- * desk. Pure: the layout and the seat are passed in.
+ * desk, and what a press on it tells (Issue #213). Pure: the layout and the seat are passed in.
  */
 
 /** The reward of the day on the stage: whose desk, and which picture (assets/decor). */
@@ -86,4 +87,35 @@ export function rewardSparkle(placed: PlacedReward, now: number): RewardSparkle 
     y: placed.y + 10,
     alpha: 0.55 + 0.45 * Math.cos(phase * 2 * Math.PI),
   };
+}
+
+/** What a press on each kind tells (Issue #213), with the name of the member who got it. */
+const REWARD_LINES: Readonly<
+  Record<RewardKind, readonly [(name: string) => string, ...((name: string) => string)[]]>
+> = {
+  onigiri: [
+    (name) => `${name}の おにぎりは まだ あたたかい。`,
+    (name) => `${name}は おにぎりを うれしそうに みつめている。`,
+    (name) => `${name}は おにぎりを たべるのが もったいないようだ。`,
+  ],
+  dango: [
+    (name) => `${name}は おだんごを だいじそうに ながめている。`,
+    (name) => `${name}の おだんごから あまい においが する。`,
+    (name) => `${name}は おだんごを いつ たべるか まよっている。`,
+  ],
+  medal: [
+    (name) => `${name}は くんしょうを ほこらしげに みがいている。`,
+    (name) => `${name}の くんしょうが きらりと ひかった。`,
+    (name) => `${name}は くんしょうを むねに つけてみた。`,
+  ],
+};
+
+/**
+ * What a press on `reward` tells in the message window (Issue #213): one of the fixed lines of its
+ * kind with its member's name from the settings, never the line told just before, nothing rare.
+ */
+export function rewardLinesOf(reward: Pick<StageReward, 'member' | 'kind'>): PressLines {
+  const { name } = MEMBERS[reward.member];
+  const [first, ...rest] = REWARD_LINES[reward.kind];
+  return { usual: [first(name), ...rest.map((line) => line(name))], rare: [], noRepeat: true };
 }

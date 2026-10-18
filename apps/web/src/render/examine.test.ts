@@ -7,6 +7,7 @@ import {
   THINGS,
   thingName,
   thingsIn,
+  withoutLine,
   type ExamineMoment,
 } from './examine';
 import { LAYOUTS } from './layouts';
@@ -181,5 +182,24 @@ describe('the month’s ornament as a thing (Issue #192)', () => {
   it('names the buttons', () => {
     expect(thingName('ornament')).toBe('かざり');
     expect(thingName('cabinet')).toBe('しょるいだな');
+  });
+});
+
+describe('withoutLine (Issue #213)', () => {
+  const lines = { usual: ['あ', 'い', 'う'], rare: [], noRepeat: true } as const;
+
+  it('leaves out the line in the window', () => {
+    expect(withoutLine(lines, 'い').usual).toEqual(['あ', 'う']);
+    expect(withoutLine(lines, 'え').usual).toEqual(['あ', 'い', 'う']);
+    expect(withoutLine(lines, null).usual).toEqual(['あ', 'い', 'う']);
+  });
+
+  it('keeps a single line, which has nothing else to say', () => {
+    const one = { usual: ['あ'], rare: [], noRepeat: true } as const;
+    expect(withoutLine(one, 'あ')).toBe(one);
+  });
+
+  it('leaves the things of #190 as they are: they may tell the same line again', () => {
+    expect(withoutLine(THINGS.barrel, THINGS.barrel.usual[0])).toBe(THINGS.barrel);
   });
 });

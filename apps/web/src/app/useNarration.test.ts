@@ -229,3 +229,34 @@ describe('bindNarration: things examined (Issue #190)', () => {
     scope.stop();
   });
 });
+
+describe('bindNarration: the reward pressed (Issue #213)', () => {
+  /** With the walk of setup's random: 0, 0.37, 0.74, 0.11, ... picks あ, あ, い, あ, ... of two. */
+  const twoLines = (noRepeat: boolean) => ({ usual: ['あ', 'い'], rare: [], noRepeat }) as const;
+
+  it('never tells the line in the window again', async () => {
+    const { binding, load, scope } = setup();
+    await load();
+    const told: (string | undefined)[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      binding.examine(twoLines(true));
+      told.push(binding.narration.value?.text);
+    }
+    expect(told).toEqual(['あ', 'い', 'あ', 'い', 'あ', 'い']);
+    binding.stop();
+    scope.stop();
+  });
+
+  it('lets the things of #190 tell the same line again (the same walk)', async () => {
+    const { binding, load, scope } = setup();
+    await load();
+    const told: (string | undefined)[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      binding.examine(twoLines(false));
+      told.push(binding.narration.value?.text);
+    }
+    expect(told.some((line, i) => i > 0 && line === told[i - 1])).toBe(true);
+    binding.stop();
+    scope.stop();
+  });
+});
