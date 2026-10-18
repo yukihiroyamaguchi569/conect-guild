@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Seat } from '../collector.config.ts';
+import type { Seat } from './seat.ts';
 import {
   latestCompanySessionIds,
   readSeatStates,

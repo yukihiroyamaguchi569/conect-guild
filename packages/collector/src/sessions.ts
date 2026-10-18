@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { SessionState, SnapshotSession } from '@conect-guild/snapshot';
 import { z } from 'zod';
-import type { Seat } from '../collector.config.ts';
+import type { Seat } from './seat.ts';
 
 /**
  * Company and guest session states from MulmoTerminal's files (docs/DESIGN.md 4.7). Pure: the

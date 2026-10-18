@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Seat } from '../collector.config.ts';
+import type { Seat } from './seat.ts';
 import {
   MAX_ACTIVITY_STATE_BYTES,
   MAX_CWD_LOG_BYTES,

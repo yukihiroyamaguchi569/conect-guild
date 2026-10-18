@@ -3,23 +3,11 @@ import { resolve } from 'node:path';
 import type { SessionDepartment } from '@conect-guild/snapshot';
 import { GUILD_SETTINGS } from '@conect-guild/snapshot/settings';
 import { expandHome } from './src/home.ts';
+import type { Seat } from './src/seat.ts';
 import { mulmoTerminalFiles } from './src/sessionFiles.ts';
 
 // Kept here too: the settings writer imports it from src/home.ts, which loads no settings.
 export { expandHome };
-
-/**
- * Where a watched session is started: the directory MulmoTerminal records for its grid cell. A
- * company seat (かなめ when `department` is null) or a guest named in the settings (Issue #108),
- * by its position in `guests`.
- */
-export type Seat =
-  | {
-      readonly kind: 'company';
-      readonly department: SessionDepartment | null;
-      readonly cwd: string;
-    }
-  | { readonly kind: 'guest'; readonly index: number; readonly cwd: string };
 
 const HOME = homedir();
 

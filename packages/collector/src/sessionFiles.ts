@@ -1,6 +1,6 @@
 import { createReadStream, type ReadStream } from 'node:fs';
 import { join } from 'node:path';
-import type { Seat } from '../collector.config.ts';
+import type { Seat } from './seat.ts';
 import {
   latestCompanySessionIds,
   readSeatStates,
