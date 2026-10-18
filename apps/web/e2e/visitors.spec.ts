@@ -36,6 +36,7 @@ test('no visitor comes between the visits', async ({ page }) => {
   await page.addInitScript(installCanvasImageRecorder);
   await page.goto('/');
   await waitForRoom(page);
-  await page.waitForTimeout(2_000);
+  // The members are drawn on the frames that would bring a visitor too.
+  await expect.poll(async () => (await drawnImages(page, 'kaname')).length).toBeGreaterThan(0);
   expect(await drawnImages(page, 'visitor-')).toEqual([]);
 });
