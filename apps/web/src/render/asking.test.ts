@@ -209,6 +209,19 @@ describe('createAsking: dropped clicks', () => {
 });
 
 describe('createAsking: drawn frames', () => {
+  it('gives two members pressed before a frame two different shared lines', () => {
+    const { asking, ask } = setup();
+    const party: AskParty = {
+      ...PARTY,
+      bubbles: { hibiki: 'awaiting-permission', sasae: 'awaiting-permission' },
+    };
+    ask('hibiki', 0, { party });
+    ask('sasae', 0, { party });
+    const lines = asking.linesAt(0);
+    expect(linesOf('hibiki', 'askWait')).toContain(lines.hibiki);
+    expect(lines.sasae).not.toBe(lines.hibiki);
+  });
+
   it('keeps where the members were drawn last', () => {
     const { asking, draw } = setup();
     expect(asking.feet()).toEqual([]);

@@ -134,7 +134,9 @@ export function createAsking(
         activity: activities[id],
         wall,
       });
-      const line = scene === null ? null : (talk.pick?.(id, scene, []) ?? null);
+      // Not a line still showing over another head (the shared ones are the guild's: lines.ts).
+      const pending = said.filter((one) => one.end > t).map((one) => one.line);
+      const line = scene === null ? null : (talk.pick?.(id, scene, pending) ?? null);
       if (scene === null || line === null) return false;
       const answer = { actor: id, line, start: t, end: t + showMs(scene) };
       said = [...said.filter((one) => one.end > t), answer];
