@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import {
   EMPTY_CUE_QUEUE,
   guestCueToPlay,
@@ -20,6 +20,14 @@ import { bootStage, cueAction, type StageState } from '../app/stageBoot';
 import { ambientMoodsOf } from '../render/ambient';
 import type { GuildArt } from '../render/art';
 import { bubblesOf } from '../render/bubbles';
+import {
+  CLICKABLES,
+  clickableAt,
+  rectPercent,
+  toLogical,
+  type Clickable,
+  type ClickableId,
+} from '../render/clickables';
 import { hourFromQuery } from '../render/daylight';
 import { levelsOf } from '../render/levelTags';
 import { kingQuestCountOf } from '../render/murmurs';
@@ -265,20 +273,111 @@ function takeSparkle(): void {
 
 watch(() => props.sparkle?.id, takeSparkle);
 
+/** What a press on each thing on the canvas does (render/clickables.ts, Issue #187). */
+const PRESS: Readonly<Record<ClickableId, () => void>> = {
+  king: () => {
+    loop?.bless();
+  },
+};
+
+/** The pointer is over something to press: the cursor shows it. */
+const pointing = ref(false);
+
+/** What is under the pointer of `event` on the canvas, if anything. */
+function clickableUnder(event: MouseEvent): ClickableId | null {
+  const element = canvas.value;
+  if (element === null) return null;
+  const box = element.getBoundingClientRect();
+  const offset = { x: event.clientX - box.left, y: event.clientY - box.top };
+  return clickableAt(toLogical(offset, box));
+}
+
+function onClick(event: MouseEvent): void {
+  const id = clickableUnder(event);
+  if (id !== null && !props.halted) PRESS[id]();
+}
+
+function onPointerMove(event: MouseEvent): void {
+  pointing.value = !props.halted && clickableUnder(event) !== null;
+}
+
+watch(
+  () => props.halted,
+  (halted) => {
+    if (halted) pointing.value = false;
+  },
+);
+
+/** The keyboard's button over `clickable`, at the same spot of the canvas at any width. */
+function pressStyle(clickable: Clickable): Record<string, string> {
+  const at = rectPercent(clickable.rect);
+  return {
+    left: `${String(at.left)}%`,
+    top: `${String(at.top)}%`,
+    width: `${String(at.width)}%`,
+    height: `${String(at.height)}%`,
+  };
+}
+
 // The message in the window at mount counts too.
 watch(() => props.cue?.id, takeCue, { immediate: true });
 </script>
 
 <template>
-  <canvas ref="canvas" class="guild-canvas" aria-label="ギルドの社屋" role="img" />
+  <div class="guild-canvas">
+    <canvas
+      ref="canvas"
+      class="guild-canvas__art"
+      :class="{ 'guild-canvas__art--pointing': pointing }"
+      aria-label="ギルドの社屋"
+      role="img"
+      @click="onClick"
+      @pointermove="onPointerMove"
+      @pointerleave="pointing = false"
+    />
+    <!-- For the keyboard: the mouse presses through them on the canvas (render/clickables.ts). -->
+    <template v-if="!halted">
+      <button
+        v-for="item in CLICKABLES"
+        :key="item.id"
+        type="button"
+        class="guild-canvas__press"
+        :style="pressStyle(item)"
+        :aria-label="item.label"
+        @click="PRESS[item.id]()"
+      />
+    </template>
+  </div>
 </template>
 
 <style scoped>
 .guild-canvas {
+  position: relative;
+}
+
+.guild-canvas__art {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   image-rendering: pixelated;
   user-select: none;
+}
+
+.guild-canvas__art--pointing {
+  cursor: pointer;
+}
+
+.guild-canvas__press {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.guild-canvas__press:focus-visible {
+  outline: 2px dashed #fff;
+  outline-offset: -2px;
 }
 </style>
