@@ -89,7 +89,7 @@ const shownBoard = computed(() =>
     state.snapshot === null ? 0 : Date.parse(state.snapshot.fetchedAt),
   ),
 );
-const { narration, next, idleSeeds, setIdleSince } = useNarration({
+const { narration, next, idleSeeds, setIdleSince, examine } = useNarration({
   message,
   party,
   snapshot: () => state.snapshot,
@@ -149,6 +149,7 @@ function onStageShown(shown: boolean): void {
         @call-started="callStarted"
         @idle-since="setIdleSince"
         @ready="demo?.markReady()"
+        @examine="examine"
       />
       <section v-if="state.halted" class="rpg-window stage__halt" role="alert">
         <template v-if="state.haltReason === 'repo-mismatch'">

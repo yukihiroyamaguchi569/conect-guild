@@ -20,14 +20,8 @@ import { bootStage, cueAction, type StageState } from '../app/stageBoot';
 import { ambientMoodsOf } from '../render/ambient';
 import type { GuildArt } from '../render/art';
 import { bubblesOf } from '../render/bubbles';
-import {
-  CLICKABLES,
-  clickableAt,
-  rectPercent,
-  toLogical,
-  type Clickable,
-  type ClickableId,
-} from '../render/clickables';
+import { CLICKABLES, pressedAt, pressStyle, toLogical, type Clickable } from '../render/clickables';
+import type { ThingKind } from '../render/examine';
 import { hourFromQuery } from '../render/daylight';
 import { levelsOf } from '../render/levelTags';
 import { kingQuestCountOf } from '../render/murmurs';
@@ -37,6 +31,7 @@ import { loadArt, loadGuestArt } from '../render/loadArt';
 import type { IdleSeeds, IdleSince } from '../render/idle';
 import type { HomeIn } from '../render/idleCrew';
 import { isShown, startRenderLoop, type RenderLoop, type StageParty } from '../render/loop';
+import PressGroup from './PressGroup.vue';
 
 const props = defineProps<{
   /** Party rows; members who wait on someone get a bubble over their seat. */
@@ -78,6 +73,8 @@ const emit = defineEmits<{
    * even when the stage failed to start, so that nothing waits on it for ever.
    */
   ready: [];
+  /** A thing of the room was pressed (Issue #190): the message window tells what was in it. */
+  examine: [thing: ThingKind];
 }>();
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
@@ -273,31 +270,36 @@ function takeSparkle(): void {
 
 watch(() => props.sparkle?.id, takeSparkle);
 
-/** What a press on each thing on the canvas does (render/clickables.ts, Issues #187 and #186). */
-const PRESS: Readonly<Record<ClickableId, () => void>> = {
-  king: () => {
-    loop?.bless();
-  },
-  dog: () => {
-    loop?.pet();
-  },
-};
+/**
+ * What a press on each thing on the canvas does (render/clickables.ts, Issues #187, #186 and
+ * #190). Nothing while halted.
+ */
+function press(item: Clickable): void {
+  if (props.halted) return;
+  if (item.id === 'thing') emit('examine', item.thing);
+  else if (item.id === 'king') loop?.bless();
+  else loop?.pet();
+}
+
+/** The king and the pet have a button each; the room's things share one stop of Tab. */
+const SOLO_PRESSES = CLICKABLES.filter((item) => item.id !== 'thing');
+const THING_PRESSES = CLICKABLES.filter((item) => item.id === 'thing');
 
 /** The pointer is over something to press: the cursor shows it. */
 const pointing = ref(false);
 
 /** What is under the pointer of `event` on the canvas, if anything. */
-function clickableUnder(event: MouseEvent): ClickableId | null {
+function clickableUnder(event: MouseEvent): Clickable | null {
   const element = canvas.value;
   if (element === null) return null;
   const box = element.getBoundingClientRect();
   const offset = { x: event.clientX - box.left, y: event.clientY - box.top };
-  return clickableAt(toLogical(offset, box));
+  return pressedAt(toLogical(offset, box));
 }
 
 function onClick(event: MouseEvent): void {
-  const id = clickableUnder(event);
-  if (id !== null && !props.halted) PRESS[id]();
+  const item = clickableUnder(event);
+  if (item !== null) press(item);
 }
 
 function onPointerMove(event: MouseEvent): void {
@@ -310,17 +312,6 @@ watch(
     if (halted) pointing.value = false;
   },
 );
-
-/** The keyboard's button over `clickable`, at the same spot of the canvas at any width. */
-function pressStyle(clickable: Clickable): Record<string, string> {
-  const at = rectPercent(clickable.rect);
-  return {
-    left: `${String(at.left)}%`,
-    top: `${String(at.top)}%`,
-    width: `${String(at.width)}%`,
-    height: `${String(at.height)}%`,
-  };
-}
 
 // The message in the window at mount counts too.
 watch(() => props.cue?.id, takeCue, { immediate: true });
@@ -341,13 +332,19 @@ watch(() => props.cue?.id, takeCue, { immediate: true });
     <!-- For the keyboard: the mouse presses through them on the canvas (render/clickables.ts). -->
     <template v-if="!halted">
       <button
-        v-for="item in CLICKABLES"
+        v-for="item in SOLO_PRESSES"
         :key="item.id"
         type="button"
         class="guild-canvas__press"
-        :style="pressStyle(item)"
+        :style="pressStyle(item.rect)"
         :aria-label="item.label"
-        @click="PRESS[item.id]()"
+        @click="press(item)"
+      />
+      <PressGroup
+        v-if="THING_PRESSES.length > 0"
+        :items="THING_PRESSES"
+        label="へやの こもの"
+        @press="press"
       />
     </template>
   </div>

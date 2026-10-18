@@ -9,6 +9,7 @@ import type { GuildMessage } from './messageQueue';
 import { NARRATION_INTERVAL_MS } from './narrator';
 import { KING_LEVEL } from './partyLevel';
 import { globalScheduler } from './scheduler';
+import { THINGS } from '../render/examine';
 import { bindNarration } from './useNarration';
 
 const IDS: readonly MemberId[] = ['kaname', 'minori', 'hibiki', 'hirame', 'sasae', 'yukihiro'];
@@ -180,6 +181,50 @@ describe('bindNarration: hidden page and halted screen', () => {
     binding.setHidden(false);
     await vi.advanceTimersByTimeAsync(NARRATION_INTERVAL_MS);
     expect(binding.narration.value?.id).not.toBe(first);
+    binding.stop();
+    scope.stop();
+  });
+});
+
+describe('bindNarration: things examined (Issue #190)', () => {
+  it('tells what was in a thing pressed, for a whole interval', async () => {
+    const { binding, load, scope } = setup();
+    await load();
+    const first = binding.narration.value?.id;
+    binding.examine('barrel');
+    const lines: readonly string[] = [...THINGS.barrel.usual, ...THINGS.barrel.rare];
+    const said = binding.narration.value;
+    expect(said?.id).not.toBe(first);
+    expect(lines).toContain(said?.text);
+    await vi.advanceTimersByTimeAsync(NARRATION_INTERVAL_MS - 1);
+    expect(binding.narration.value).toBe(said);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(binding.narration.value?.id).not.toBe(said?.id);
+    binding.stop();
+    scope.stop();
+  });
+
+  it('drops a press before the first snapshot, while halted and under an event message', async () => {
+    const { binding, load, scope, halted, message } = setup();
+    binding.examine('jar');
+    expect(binding.narration.value).toBeNull();
+    await load();
+    const first = binding.narration.value;
+    halted.value = true;
+    await nextTick();
+    binding.examine('jar');
+    expect(binding.narration.value).toBe(first);
+    halted.value = false;
+    message.value = { id: 1, text: 'できごと', event: closed };
+    await nextTick();
+    binding.examine('jar');
+    expect(binding.narration.value).toBe(first);
+    // Not kept for later: the window goes back to a narration of its own.
+    message.value = null;
+    await nextTick();
+    expect(Object.values(THINGS).flatMap((t) => [...t.usual, ...t.rare])).not.toContain(
+      binding.narration.value?.text,
+    );
     binding.stop();
     scope.stop();
   });
