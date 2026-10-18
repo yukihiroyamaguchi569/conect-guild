@@ -3,6 +3,8 @@ import { shallowRef, type Ref } from 'vue';
 import { z } from 'zod';
 import type { KeyValueStore } from '../adapters/storage';
 import {
+  dayEndOf,
+  deliveryOf,
   NO_REWARD_WATCH,
   REWARD_KINDS,
   rewardMessage,
@@ -24,10 +26,14 @@ const storedRewardSchema = z.strictObject({
 });
 type StoredReward = z.infer<typeof storedRewardSchema>;
 
-/** The reward kept by an earlier screen; null when there is none or its desk is gone. */
+/**
+ * The reward kept by an earlier screen; null when its desk is gone or its times are not those of a
+ * day's reward (REWARD_HOUR and the next midnight).
+ */
 function restored(stored: StoredReward): KeptReward | null {
   const department = DEPARTMENT_LABELS[stored.desk];
-  if (department === undefined) return null;
+  const day = stored.delivery === deliveryOf(stored.delivery);
+  if (department === undefined || !day || stored.until !== dayEndOf(stored.delivery)) return null;
   const { delivery, until, kind } = stored;
   return { department, member: departmentMember(department), kind, delivery, until };
 }

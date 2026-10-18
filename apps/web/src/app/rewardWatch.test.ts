@@ -62,7 +62,9 @@ describe('createRewardWatch', () => {
     nextDay.observe(snapshot({ fetchedAt: tomorrow, issues: [] }), Date.parse(tomorrow));
     expect(nextDay.reward.value).toBeNull();
   });
+});
 
+describe('createRewardWatch: the kept reward of an earlier screen', () => {
   it('puts the kept reward on the desk at once, before any fetch, while its day lasts', () => {
     const storage = memory();
     createRewardWatch(storage, at(16)).observe(fetchedAt(17), at(17));
@@ -70,5 +72,21 @@ describe('createRewardWatch', () => {
     expect(createRewardWatch(storage, at(16)).reward.value).toBeNull();
     const nextDay = new Date(2026, 9, 13, 9).getTime();
     expect(createRewardWatch(storage, nextDay).reward.value).toBeNull();
+  });
+
+  it('restores no reward whose times are not those of a day', () => {
+    const storage = memory();
+    const kept = {
+      delivery: at(17),
+      until: new Date(2026, 9, 13).getTime(),
+      desk: 3,
+      kind: 'medal',
+    };
+    storage.write(REWARD_STORAGE_KEY, kept);
+    expect(createRewardWatch(storage, at(19)).reward.value?.member).toBe('sasae');
+    storage.write(REWARD_STORAGE_KEY, { ...kept, delivery: 0 });
+    expect(createRewardWatch(storage, at(19)).reward.value).toBeNull();
+    storage.write(REWARD_STORAGE_KEY, { ...kept, until: 9_999_999_999_999 });
+    expect(createRewardWatch(storage, at(19)).reward.value).toBeNull();
   });
 });
