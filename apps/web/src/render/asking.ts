@@ -95,8 +95,13 @@ export interface Asking {
   isAnswering(t: number, id: MemberId | null): boolean;
   /** Drops the answers (halted, or the canvas out of sight). */
   clear(): void;
-  /** The members of the frame drawn now (director.StageFrame): where a click finds them. */
-  drew(members: readonly MemberPose[]): void;
+  /**
+   * The frame drawn at `t` (director.StageFrame): where a click finds its members, and the answers
+   * seen over their heads, counted as said for not repeating a line (lines.createLinePicker). An
+   * answer is not seen while `covered` (something above it has the head) or its member is in a
+   * scene.
+   */
+  drew(t: number, members: readonly MemberPose[], covered: (id: MemberId) => boolean): void;
   /** Where each member was drawn in the last frame (their feet; the king too). */
   feet(): readonly { readonly id: MemberId; readonly point: Point }[];
 }
@@ -133,7 +138,6 @@ export function createAsking(
       if (scene === null || line === null) return false;
       const answer = { actor: id, line, start: t, end: t + showMs(scene) };
       said = [...said.filter((one) => one.end > t), answer];
-      talk.saw([answer], t);
       return true;
     },
     linesAt: (t) => linesAt(said, t),
@@ -141,8 +145,13 @@ export function createAsking(
     clear() {
       said = [];
     },
-    drew(members) {
+    drew(t, members, covered) {
       drawn = members;
+      const shown = new Set(members.filter((m) => !m.inScene && !covered(m.id)).map((m) => m.id));
+      talk.saw(
+        said.filter((one) => one.start <= t && t < one.end && shown.has(one.actor)),
+        t,
+      );
     },
     feet: () => drawn.map((member) => ({ id: member.id, point: member.pose.point })),
   };

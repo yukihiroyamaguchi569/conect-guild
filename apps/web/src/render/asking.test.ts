@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { MemberId } from '../guild.config';
 import { askSceneOf, createAsking, type AskMoment, type AskParty } from './asking';
-import { EMPTY_DIRECTOR, type Director } from './director';
+import { EMPTY_DIRECTOR, type Director, type MemberPose } from './director';
 import { plannedOuting, type IdleActivity, type Outing } from './idle';
 import { linesOf } from './lineBook';
 import { createLinePicker, type Utterance } from './lines';
@@ -98,16 +98,46 @@ function setup(options: { activities?: Partial<Record<MemberId, IdleActivity>> }
       { director: more.director ?? EMPTY_DIRECTOR, party: more.party ?? PARTY },
       { t, paused: more.paused ?? false, remarks: more.remarks ?? NO_REMARKS },
     );
-  return { asking, ask, saw, calling };
+  /** Draws a frame at `t` with `ids` on stage. */
+  const draw = (
+    t: number,
+    ids: readonly MemberId[],
+    covered: (id: MemberId) => boolean = () => false,
+    inScene: readonly MemberId[] = [],
+  ) => {
+    asking.drew(
+      t,
+      ids.map((id) => poseOf(id, inScene.includes(id))),
+      covered,
+    );
+  };
+  return { asking, ask, saw, calling, draw };
+}
+
+/** A member drawn at the same place, in a scene or not. */
+function poseOf(id: MemberId, inScene: boolean): MemberPose {
+  return {
+    id,
+    pose: { point: { x: 10, y: 20 }, frame: 0, flip: false, held: null },
+    depth: 0,
+    hand: null,
+    inScene,
+    mark: null,
+    atSeat: true,
+    withPet: false,
+  };
 }
 
 describe('createAsking', () => {
   it('has the member answer over the head for remarkMs, with a line of theirs', () => {
-    const { asking, ask, saw } = setup();
+    const { asking, ask, saw, draw } = setup();
     expect(ask('minori', 100)).toBe(true);
     const line = asking.linesAt(100).minori;
     expect(linesOf('minori', 'askWork')).toContain(line);
-    expect(saw).toHaveBeenCalledOnce();
+    // Seen once drawn, not before.
+    expect(saw).not.toHaveBeenCalled();
+    draw(100, ['minori']);
+    expect(saw).toHaveBeenCalledWith([expect.objectContaining({ actor: 'minori', line })], 100);
     expect(asking.isAnswering(100 + LINES.remarkMs - 1, 'minori')).toBe(true);
     expect(asking.isAnswering(100 + LINES.remarkMs - 1, null)).toBe(true);
     expect(asking.isAnswering(100, 'hibiki')).toBe(false);
@@ -115,11 +145,12 @@ describe('createAsking', () => {
   });
 
   it('never says the same line twice in a row', () => {
-    const { asking, ask } = setup();
+    const { asking, ask, draw } = setup();
     let last: string | undefined;
     for (let i = 0; i < 6; i++) {
       const t = i * LINES.remarkMs;
       expect(ask('sasae', t)).toBe(true);
+      draw(t, ['sasae']);
       const line = asking.linesAt(t).sasae;
       expect(line).not.toBe(last);
       last = line;
@@ -175,23 +206,27 @@ describe('createAsking: dropped clicks', () => {
     expect(asking.linesAt(1)).toEqual({});
     expect(asking.isAnswering(1, null)).toBe(false);
   });
+});
 
+describe('createAsking: drawn frames', () => {
   it('keeps where the members were drawn last', () => {
-    const { asking } = setup();
+    const { asking, draw } = setup();
     expect(asking.feet()).toEqual([]);
-    const pose = { point: { x: 10, y: 20 }, frame: 0, flip: false, held: null } as const;
-    asking.drew([
-      {
-        id: 'kaname',
-        pose,
-        depth: 0,
-        hand: null,
-        inScene: false,
-        mark: null,
-        atSeat: true,
-        withPet: false,
-      },
-    ]);
+    draw(0, ['kaname']);
     expect(asking.feet()).toEqual([{ id: 'kaname', point: { x: 10, y: 20 } }]);
+  });
+
+  it('counts an answer as said only when seen over the head', () => {
+    const { ask, saw, draw, asking } = setup();
+    ask('hibiki', 0);
+    // Covered by the king's call, a line of a scene or a remark; in a scene; off stage.
+    draw(1, ['hibiki'], (id) => id === 'hibiki');
+    draw(2, ['hibiki'], () => false, ['hibiki']);
+    draw(3, []);
+    expect(saw.mock.calls.flatMap(([lines]) => lines)).toEqual([]);
+    // Dropped before it was drawn (a halt): never seen.
+    asking.clear();
+    draw(4, ['hibiki']);
+    expect(saw.mock.calls.flatMap(([lines]) => lines)).toEqual([]);
   });
 });

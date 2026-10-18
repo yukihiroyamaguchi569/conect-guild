@@ -218,9 +218,13 @@ export function stageAt(
     petted: cast.petting.isPetted(t, party.halted),
   };
   const said = cast.remarksAt(t, view);
-  // The answers to clicks (Issue #191) show where the remarks do, and put the murmurs off too.
-  const remarks = { ...said.remarks, ...cast.asking.linesAt(t) };
-  cast.asking.drew(view.frame.members);
+  // The answers to clicks (Issue #191) show where the remarks do, under them, and put the murmurs
+  // off too.
+  const remarks = { ...cast.asking.linesAt(t), ...said.remarks };
+  cast.asking.drew(t, view.frame.members, (id) => {
+    const { speeches, frame: drawn } = view;
+    return [speeches[id], drawn.lines[id], said.remarks[id]].some((top) => top !== undefined);
+  });
   const remarking = said.remarking || cast.asking.isAnswering(t, null);
   const animating = isAnimating(director, t) || remarking;
   const frame = { ...at, members: view.frame.members, busy: animating || view.calling };

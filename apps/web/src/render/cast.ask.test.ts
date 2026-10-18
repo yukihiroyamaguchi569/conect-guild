@@ -18,10 +18,10 @@ const PARTY: CastParty = {
 };
 const LIVE = { t: 0, paused: false } as const;
 
-function newCast() {
+function newCast(random = 0.5) {
   const picker = createLinePicker(() => 0);
   const talk = {
-    random: () => 0.5,
+    random: () => random,
     pick: picker.pick,
     saw: (lines: readonly Utterance[], t: number) => {
       picker.saw(lines, t);
@@ -66,5 +66,16 @@ describe('the cast and a member clicked', () => {
     const cast = newCast();
     expect(cast.ask('hibiki', EMPTY_DIRECTOR, { ...PARTY, halted: true }, LIVE)).toBe(false);
     expect(stage(cast, 1).remarks).toEqual({});
+  });
+
+  it('lets a remark that starts during an answer have the head (the answer goes under it)', () => {
+    // 0: under LINES.remarkChance, so the member says a remark on starting to wait.
+    const cast = newCast(0);
+    cast.receive(EMPTY_DIRECTOR, PARTY, { t: 0, quiet: false });
+    expect(cast.ask('minori', EMPTY_DIRECTOR, PARTY, LIVE)).toBe(true);
+    const waiting: CastParty = { ...PARTY, bubbles: { minori: 'awaiting-permission' } };
+    cast.receive(EMPTY_DIRECTOR, waiting, { t: 100, quiet: false });
+    const shown = stage(cast, 200, waiting).remarks.minori;
+    expect(linesOf('minori', 'awaitPermission')).toContain(shown);
   });
 });
