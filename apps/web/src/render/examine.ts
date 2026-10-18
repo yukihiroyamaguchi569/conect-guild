@@ -22,6 +22,11 @@ export type RoomThing = ThingKind | 'ornament';
 export interface PressLines {
   readonly usual: readonly [string, ...string[]];
   readonly rare: readonly string[];
+  /**
+   * Never the line in the window just before (the reward, Issue #213: withoutLine); the things of
+   * #190 and the ornament may tell the same line again.
+   */
+  readonly noRepeat?: boolean;
 }
 
 /** How often a press finds something, when the thing has rare lines. */
@@ -156,6 +161,16 @@ export function pickLine(lines: PressLines, random: Random): string {
 function lineAt(pool: readonly string[], share: number, fallback: string): string {
   const index = Math.min(Math.floor(share * pool.length), pool.length - 1);
   return pool[index] ?? fallback;
+}
+
+/**
+ * `lines` (PressLines.noRepeat) without `previous`, the line in the window now, while another usual
+ * line is left; `lines` as they are otherwise.
+ */
+export function withoutLine(lines: PressLines, previous: string | null): PressLines {
+  if (lines.noRepeat !== true) return lines;
+  const [first, ...rest] = lines.usual.filter((line) => line !== previous);
+  return first === undefined ? lines : { ...lines, usual: [first, ...rest] };
 }
 
 /** The window when a thing is pressed. */

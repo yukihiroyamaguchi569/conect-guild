@@ -23,7 +23,7 @@ export const REWARD_KINDS = ['onigiri', 'dango', 'medal'] as const;
 export type RewardKind = (typeof REWARD_KINDS)[number];
 
 /** What the message window calls each. */
-const REWARD_NAMES: Readonly<Record<RewardKind, string>> = {
+export const REWARD_NAMES: Readonly<Record<RewardKind, string>> = {
   onigiri: 'おにぎり',
   dango: 'おだんご',
   medal: 'くんしょう',

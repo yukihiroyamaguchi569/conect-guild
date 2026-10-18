@@ -6,7 +6,15 @@ import { contains, overlaps, tallestWindowExtentsFor, type PxRect } from './map'
 import { TILE_SIZE } from './metrics';
 import { bubbleBox } from './overhead';
 import { tileToPoint } from './path';
-import { REWARD_SCALE, rewardOnDesk, rewardShownAt, rewardSparkle } from './rewardDesk';
+import {
+  REWARD_SCALE,
+  rewardLinesOf,
+  rewardOnDesk,
+  rewardShownAt,
+  rewardSparkle,
+} from './rewardDesk';
+import { REWARD_KINDS } from '../domain/dailyReward';
+import { MEMBERS } from '../guild.config';
 import type { Spot } from './bubbleShape';
 import { DEFAULT_SEATS } from './scenes';
 
@@ -127,5 +135,30 @@ describe('rewardShownAt', () => {
     expect(rewardShownAt(reward, 999)).toBe(reward);
     expect(rewardShownAt(reward, 1_000)).toBeNull();
     expect(rewardShownAt(null, 0)).toBeNull();
+  });
+});
+
+describe('rewardLinesOf (Issue #213)', () => {
+  it('tells fixed lines of the kind with the member name, nothing rare, never the same twice', () => {
+    for (const kind of REWARD_KINDS) {
+      const lines = rewardLinesOf({ member: 'hirame', kind });
+      expect(lines.rare).toEqual([]);
+      expect(lines.noRepeat).toBe(true);
+      expect(lines.usual).toHaveLength(3);
+      expect(new Set(lines.usual).size).toBe(lines.usual.length);
+      for (const line of lines.usual) expect(line).toContain(MEMBERS.hirame.name);
+    }
+  });
+
+  it('says the reward the member got', () => {
+    expect(rewardLinesOf({ member: 'minori', kind: 'medal' }).usual).toContain(
+      `${MEMBERS.minori.name}は くんしょうを ほこらしげに みがいている。`,
+    );
+    expect(rewardLinesOf({ member: 'sasae', kind: 'dango' }).usual).toContain(
+      `${MEMBERS.sasae.name}は おだんごを だいじそうに ながめている。`,
+    );
+    expect(rewardLinesOf({ member: 'hirame', kind: 'onigiri' }).usual).toContain(
+      `${MEMBERS.hirame.name}の おにぎりは まだ あたたかい。`,
+    );
   });
 });

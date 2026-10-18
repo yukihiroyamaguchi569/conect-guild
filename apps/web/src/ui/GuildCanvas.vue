@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
 import {
   EMPTY_CUE_QUEUE,
   guestCueToPlay,
@@ -26,6 +26,8 @@ import {
   memberClickables,
   pressedAt,
   pressStyle,
+  rewardClickables,
+  roomPresses,
   toLogical,
   withMembers,
   type Clickable,
@@ -41,7 +43,7 @@ import { loadArt, loadGuestArt, loadVisitorArt } from '../render/loadArt';
 import type { IdleSeeds, IdleSince } from '../render/idle';
 import type { HomeIn } from '../render/idleCrew';
 import { isShown, startRenderLoop, type RenderLoop, type StageParty } from '../render/loop';
-import type { StageReward } from '../render/rewardDesk';
+import { rewardLinesOf, rewardShownAt, type StageReward } from '../render/rewardDesk';
 import PressGroup from './PressGroup.vue';
 
 const props = defineProps<{
@@ -88,7 +90,8 @@ const emit = defineEmits<{
   ready: [];
   /**
    * A thing of the room was pressed (Issue #190): the message window tells what was in it, or what
-   * the month's ornament is (Issue #192), from `lines`.
+   * the month's ornament is (Issue #192), or what the member does with the reward on their desk
+   * (Issue #213), from `lines`.
    */
   examine: [lines: PressLines];
 }>();
@@ -310,13 +313,15 @@ function takeSparkle(): void {
 watch(() => props.sparkle?.id, takeSparkle);
 
 /**
- * What a press on each thing on the canvas does (render/clickables.ts, Issues #187, #186 and
- * #190). Nothing while halted.
+ * What a press on each thing on the canvas does (render/clickables.ts, Issues #187, #186, #190 and
+ * #213). Nothing while halted, nor on a reward whose day is over.
  */
 function press(item: Clickable): void {
   if (props.halted) return;
   if (item.id === 'thing') emit('examine', pressLinesOf(item.thing, monthAt(wallNow())));
-  else if (item.id === 'member') loop?.ask(item.member);
+  else if (item.id === 'reward') {
+    if (rewardShownAt(item.reward, wallNow()) !== null) emit('examine', rewardLinesOf(item.reward));
+  } else if (item.id === 'member') loop?.ask(item.member);
   else if (item.id === 'king') loop?.bless();
   else loop?.pet();
 }
@@ -324,6 +329,26 @@ function press(item: Clickable): void {
 /** The king and the pet have a button each; the members, and the room's things, share one stop of Tab. */
 const SOLO_PRESSES = CLICKABLES.filter((item) => item.id !== 'thing');
 const THING_PRESSES = CLICKABLES.filter((item) => item.id === 'thing');
+/**
+ * The reward while its day lasts (rewardShownAt, Issue #213): its button goes at midnight, as the
+ * picture does, fetched or not.
+ */
+const shownReward = shallowRef<StageReward | null>(null);
+let rewardTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+function followReward(): void {
+  globalThis.clearTimeout(rewardTimer);
+  shownReward.value = rewardShownAt(props.reward, wallNow());
+  if (shownReward.value !== null)
+    rewardTimer = globalThis.setTimeout(followReward, shownReward.value.until - wallNow());
+}
+watch(() => props.reward, followReward, { immediate: true });
+onBeforeUnmount(() => {
+  globalThis.clearTimeout(rewardTimer);
+});
+/** The reward on a desk while it is there (Issue #213): drawn in front of the members. */
+const rewardPresses = computed(() => rewardClickables(shownReward.value));
+/** The room's things and the reward, one stop of Tab. */
+const roomRow = computed(() => roomPresses(THING_PRESSES, rewardPresses.value));
 
 /** The pointer is over something to press: the cursor shows it. */
 const pointing = ref(false);
@@ -334,8 +359,10 @@ function clickableUnder(event: MouseEvent): Clickable | null {
   if (element === null) return null;
   const box = element.getBoundingClientRect();
   const offset = { x: event.clientX - box.left, y: event.clientY - box.top };
-  // The members are found where they were last drawn (Issue #191).
-  const items = withMembers(CLICKABLES, memberClickables(loop?.feet() ?? []));
+  // The members are found where they were last drawn (Issue #191); the reward is only there while
+  // its day lasts (Issue #213).
+  const reward = rewardClickables(rewardShownAt(props.reward, wallNow()));
+  const items = withMembers(CLICKABLES, [...reward, ...memberClickables(loop?.feet() ?? [])]);
   return pressedAt(toLogical(offset, box), items);
 }
 
@@ -383,12 +410,7 @@ watch(() => props.cue?.id, takeCue, { immediate: true });
         @click="press(item)"
       />
       <PressGroup :items="MEMBER_SEAT_CLICKABLES" label="メンバー" @press="press" />
-      <PressGroup
-        v-if="THING_PRESSES.length > 0"
-        :items="THING_PRESSES"
-        label="へやの こもの"
-        @press="press"
-      />
+      <PressGroup v-if="roomRow.length > 0" :items="roomRow" label="へやの こもの" @press="press" />
     </template>
   </div>
 </template>

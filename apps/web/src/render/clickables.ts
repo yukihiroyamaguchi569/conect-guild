@@ -1,13 +1,15 @@
 import { PRESIDENT_ID } from '@conect-guild/snapshot/settings';
 import { ACTIVE_MEMBER_IDS, MEMBERS, type MemberId, type TilePos } from '../guild.config';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH, type PxRect } from './map';
-import { SPRITE_SIZE } from './metrics';
 import { tileToPoint, type Point } from './path';
 import { PET_RECT } from './petting';
 import { DEFAULT_SEATS } from './scenes';
 import { thingName, thingsIn, type RoomThing, type Thing } from './examine';
 import { SELECTED_LAYOUT } from './layouts';
 import { seatedPoint } from './seating';
+import { REWARD_NAMES } from '../domain/dailyReward';
+import { rewardOnDesk, type StageReward } from './rewardDesk';
+import { SPRITE_SIZE, TILE_SIZE } from './metrics';
 
 /**
  * What can be pressed on the canvas (Issue #187): where it is in logical px, and its accessible
@@ -25,7 +27,8 @@ interface Spot {
 export type Clickable =
   | (Spot & { readonly id: 'king' | 'dog' })
   | (Spot & { readonly id: 'member'; readonly member: MemberId })
-  | (Spot & { readonly id: 'thing'; readonly thing: RoomThing });
+  | (Spot & { readonly id: 'thing'; readonly thing: RoomThing })
+  | (Spot & { readonly id: 'reward'; readonly reward: StageReward });
 
 export type ClickableId = Clickable['id'];
 
@@ -100,8 +103,40 @@ export const MEMBER_SEAT_CLICKABLES: readonly Clickable[] = memberClickables(
 );
 
 /**
- * `clickables` (clickablesWith) with `members` (memberClickables) behind the king and the pet and
- * in front of the room's things.
+ * The reward of the day on its member's desk (Issue #213), pressed where it is drawn (1.5 times a
+ * tile: rewardDesk.rewardOnDesk, Issue #208); none when there is no reward or no desk for it.
+ */
+export function rewardClickables(reward: StageReward | null): readonly Clickable[] {
+  if (reward === null) return [];
+  const placed = rewardOnDesk(SELECTED_LAYOUT, DEFAULT_SEATS[reward.member], reward.kind);
+  if (placed === null) return [];
+  const side = TILE_SIZE * placed.scale;
+  return [
+    {
+      id: 'reward',
+      reward,
+      rect: { left: placed.x, top: placed.y, right: placed.x + side, bottom: placed.y + side },
+      label: `${MEMBERS[reward.member].name}の ${REWARD_NAMES[reward.kind]}を みる`,
+    },
+  ];
+}
+
+/**
+ * The buttons of the row 「へやの こもの」 (Issue #190): the room's `things` and the `reward` on a desk
+ * (rewardClickables, Issue #213), top row first and left to right, as the things are.
+ */
+export function roomPresses(
+  things: readonly Clickable[],
+  reward: readonly Clickable[],
+): readonly Clickable[] {
+  return [...things, ...reward].sort(
+    (a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left,
+  );
+}
+
+/**
+ * `clickables` (clickablesWith) with `members` (memberClickables; the reward, drawn in front of
+ * them, before them: Issue #213) behind the king and the pet and in front of the room's things.
  */
 export function withMembers(
   clickables: readonly Clickable[],
@@ -151,6 +186,14 @@ export function clickableAt(
   clickables: readonly Clickable[] = CLICKABLES,
 ): ClickableId | null {
   return pressedAt(point, clickables)?.id ?? null;
+}
+
+/**
+ * What tells `item` from the others of a row of buttons (ui/PressGroup.vue) whatever its place in
+ * it: the things of one kind share a label, never a spot.
+ */
+export function pressKey(item: Clickable): string {
+  return `${item.label}@${String(item.rect.left)},${String(item.rect.top)}`;
 }
 
 /**
