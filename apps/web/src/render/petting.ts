@@ -87,12 +87,19 @@ export function isPetted(until: number | null, now: number, halted: boolean): bo
   return until !== null && now < until && !halted;
 }
 
+/** Until when the pet is up once the screen is `halted` or not: a halt puts it to sleep for good. */
+export function pettedAfterHalt(until: number | null, halted: boolean): number | null {
+  return halted ? null : until;
+}
+
 /** The pet's presses through the loop (Cast.pet), keeping until when it is up. */
 export interface Petting {
   /** A press at `t`: true when the pet is up from it (mayPet). */
   press(moment: PetMoment, t: number): boolean;
   /** True while the pet is up from a press at `now` (isPetted). */
   isPetted(now: number, halted: boolean): boolean;
+  /** The screen is halted or not (Cast.receive): a halt ends the time up (pettedAfterHalt). */
+  setHalted(halted: boolean): void;
 }
 
 export function createPetting(): Petting {
@@ -103,5 +110,8 @@ export function createPetting(): Petting {
       return mayPet(moment);
     },
     isPetted: (now, halted) => isPetted(until, now, halted),
+    setHalted(halted) {
+      until = pettedAfterHalt(until, halted);
+    },
   };
 }

@@ -130,6 +130,7 @@ export function createCast(
     calls,
     petting,
     receive: (director, party, at) => {
+      petting.setHalted(party.halted);
       // かなめ's visits to the throne dropped with the calls turn back to her counter (visit.ts).
       const cut = calls
         .setHalted(party.halted)

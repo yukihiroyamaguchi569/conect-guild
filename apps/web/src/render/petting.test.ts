@@ -12,6 +12,7 @@ import {
   mayPet,
   PET_RECT,
   petRectIn,
+  pettedAfterHalt,
   pettedUntil,
 } from './petting';
 import { bubbleBox } from './overhead';
@@ -115,6 +116,26 @@ describe('when a press wakes the pet', () => {
     expect(petting.press({ ...LIVE, paused: true }, 1_000)).toBe(false);
     expect(petting.isPetted(TRINKETS.pettedMs - 1, false)).toBe(true);
     expect(petting.isPetted(TRINKETS.pettedMs, false)).toBe(false);
+  });
+});
+
+describe('a halt while the pet is up', () => {
+  it('puts it to sleep for good: it does not wake again once the halt is over', () => {
+    expect(pettedAfterHalt(3_000, true)).toBeNull();
+    expect(pettedAfterHalt(3_000, false)).toBe(3_000);
+    const petting = createPetting();
+    petting.press(LIVE, 0);
+    petting.setHalted(true);
+    petting.setHalted(false);
+    expect(petting.isPetted(1, false)).toBe(false);
+    expect(petting.isPetted(TRINKETS.pettedMs - 1, false)).toBe(false);
+  });
+
+  it('leaves it up through parties that are not halted', () => {
+    const petting = createPetting();
+    petting.press(LIVE, 0);
+    petting.setHalted(false);
+    expect(petting.isPetted(TRINKETS.pettedMs - 1, false)).toBe(true);
   });
 });
 
