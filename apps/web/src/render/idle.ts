@@ -2,6 +2,7 @@ import type { MemberState } from '../domain/party';
 import { byMember } from '@conect-guild/snapshot/settings';
 import { ACTIVE_MEMBER_IDS, type MemberId, type TilePos } from '../guild.config';
 import type { Random } from './confetti';
+import { isWalkable } from './map';
 import { IDLE } from './metrics';
 import {
   MS_PER_TILE,
@@ -317,19 +318,25 @@ export function idlePosesAt(
 /**
  * The walk back to the seat from exactly where the feet are, starting at `now`; null when already
  * on the seat or there is no way. Between two tiles the walk goes on through the one the seat is
- * nearer from; the segment then starts a little before `now`, so the feet do not jump.
+ * nearer from; the segment then starts a little before `now`, so the feet do not jump. Only the
+ * tiles `walkable` allows are walked (a visitor keeps off the guests' spots, visitors.ts).
  */
-export function homeWalk(step: IdleStep, seat: TilePos, now: number): Segment | null {
+export function homeWalk(
+  step: IdleStep,
+  seat: TilePos,
+  now: number,
+  walkable: (pos: TilePos) => boolean = isWalkable,
+): Segment | null {
   const { from, to, progress } = step;
   const same = (a: TilePos, b: TilePos) => a.col === b.col && a.row === b.row;
   if (same(from, to)) {
     if (same(from, seat)) return null;
-    const path = findPath(from, seat);
+    const path = findPath(from, seat, walkable);
     return path === null || path.length < 2 ? null : walkSegment(path, now);
   }
   const ways = [
-    { first: from, rest: findPath(to, seat), done: progress },
-    { first: to, rest: findPath(from, seat), done: 1 - progress },
+    { first: from, rest: findPath(to, seat, walkable), done: progress },
+    { first: to, rest: findPath(from, seat, walkable), done: 1 - progress },
   ].flatMap(({ first, rest, done }) =>
     rest === null ? [] : [walkSegment([first, ...rest], now - done * MS_PER_TILE)],
   );
