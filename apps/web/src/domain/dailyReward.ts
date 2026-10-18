@@ -144,14 +144,14 @@ export function watchReward(
   if (held !== null && seenAt >= held.delivery && seenAt < held.until) {
     return { watch: { awaited, kept: held }, told: null };
   }
+  const until = new Date(now).setHours(24, 0, 0, 0);
+  // A snapshot of a day already over when seen changes nothing (nor tells anything).
+  if (seenAt >= until) return { watch: { ...watch, awaited }, told: null };
   if (now < delivery) return { watch: { awaited, kept: null }, told: null };
   const reward = rewardAt(snapshot, now, dayRandom(now));
   if (reward === null) return { watch: { awaited, kept: null }, told: null };
-  const until = new Date(now).setHours(24, 0, 0, 0);
   const kept: KeptReward = { ...reward, delivery, until };
-  // A fetch first seen after its day was over is no news any more.
-  const news = awaited === delivery && seenAt < until;
-  return { watch: { awaited, kept }, told: news ? kept : null };
+  return { watch: { awaited, kept }, told: awaited === delivery ? kept : null };
 }
 
 /** The message window's line, e.g. 「おうさまから ささえに ほうびの おにぎりが とどいた！」. */

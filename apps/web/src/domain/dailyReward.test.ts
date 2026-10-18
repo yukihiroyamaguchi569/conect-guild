@@ -203,7 +203,9 @@ describe('watchReward: late data, a late screen, the next day', () => {
     expect(told).toEqual([null, null]);
     expect(kept?.member).toBe('minori');
   });
+});
 
+describe('watchReward: days over', () => {
   it('tells nothing when the fetch reaches the screen after the day was over', () => {
     const nextMorning = new Date(2026, 9, 13, 8).getTime();
     const { told, kept } = runSeen(
@@ -211,7 +213,19 @@ describe('watchReward: late data, a late screen, the next day', () => {
       { snapshot: fetched(local(17)), seenAt: nextMorning },
     );
     expect(told).toEqual([null, null]);
-    expect(kept?.member).toBe('minori');
+    expect(kept).toBeNull();
+  });
+
+  it('keeps the new day’s reward when the day before’s snapshot comes late', () => {
+    const tomorrow = (hour: number) => new Date(2026, 9, 13, hour).getTime();
+    const nextDay = fetched(tomorrow(18), [
+      closedIssue(2, new Date(tomorrow(9)).toISOString(), ['総務']),
+    ]);
+    const { kept } = runSeen(
+      { snapshot: nextDay, seenAt: tomorrow(18) },
+      { snapshot: fetched(local(18)), seenAt: tomorrow(18) + 1 },
+    );
+    expect(kept?.member).toBe('sasae');
   });
 
   it('keeps the day’s reward when an older snapshot comes later that day', () => {
