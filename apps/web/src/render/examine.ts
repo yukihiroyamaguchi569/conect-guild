@@ -4,6 +4,7 @@ import { decorPoint } from './decorPoint';
 import type { GuildLayout, TileName, TileRect } from './layouts/types';
 import { overlaps, windowExtentsFor, type PxRect } from './map';
 import { TILE_SIZE } from './metrics';
+import { ornamentOf } from './ornament';
 
 /**
  * The things of the room that can be examined (Issue #190, docs/DESIGN.md 8): a press on one tells
@@ -14,6 +15,8 @@ import { TILE_SIZE } from './metrics';
  */
 
 export type ThingKind = 'barrel' | 'crate' | 'shelf' | 'jar' | 'safe' | 'sacks' | 'cabinet';
+/** A thing of the room to press: one of the kinds above, or the month's ornament (Issue #192). */
+export type RoomThing = ThingKind | 'ornament';
 
 /** What a press tells in the message window: one of `usual`, or one of `rare` now and then. */
 export interface PressLines {
@@ -87,9 +90,19 @@ const DECOR_KINDS: Partial<Record<DecorName, ThingKind>> = {
 /** The furniture (layout.objects) that can be examined. */
 const TILE_KINDS: Partial<Record<TileName, ThingKind>> = { crate: 'crate', shelf: 'shelf' };
 
+/** What the button of `kind` calls it (「〇〇を しらべる」): the ornament by what it is for. */
+export function thingName(kind: RoomThing): string {
+  return kind === 'ornament' ? 'かざり' : THINGS[kind].name;
+}
+
+/** What a press on `kind` tells in `month` (1 to 12): the ornament says what it is, nothing rare. */
+export function pressLinesOf(kind: RoomThing, month: number): PressLines {
+  return kind === 'ornament' ? { usual: [ornamentOf(month).line], rare: [] } : THINGS[kind];
+}
+
 /** A thing of the room to examine, where it is drawn (logical px). */
 export interface Thing {
-  readonly kind: ThingKind;
+  readonly kind: RoomThing;
   readonly rect: PxRect;
 }
 
@@ -103,8 +116,9 @@ function tileRect(area: TileRect, at: { readonly x: number; readonly y: number }
 }
 
 /**
- * The things of `layout` to examine, top row first and left to right (the keyboard's order). A
- * thing any window covers even in part is left out: a press there lands on the window.
+ * The things of `layout` to examine (the month's ornament too), top row first and left to right
+ * (the keyboard's order). A thing any window covers even in part is left out: a press there lands
+ * on the window.
  */
 export function thingsIn(layout: GuildLayout): readonly Thing[] {
   const fromDecor = layout.decor.flatMap((item) => {
@@ -116,8 +130,12 @@ export function thingsIn(layout: GuildLayout): readonly Thing[] {
     const at = { x: item.col * TILE_SIZE, y: item.row * TILE_SIZE };
     return kind === undefined ? [] : [{ kind, rect: tileRect(item, at) }];
   });
+  // The whole spot, whichever month's picture fills it (render/ornament.ts).
+  const spot = layout.ornamentSpot;
+  const at = { x: spot.col * TILE_SIZE, y: spot.row * TILE_SIZE };
+  const ornament: Thing = { kind: 'ornament', rect: tileRect(spot, at) };
   const windows = Object.values(windowExtentsFor(layout));
-  return [...fromDecor, ...fromObjects]
+  return [...fromDecor, ...fromObjects, ornament]
     .filter((thing) => !windows.some((area) => overlaps(thing.rect, area)))
     .sort((a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left);
 }
@@ -151,14 +169,14 @@ export interface ExamineMoment {
 }
 
 /**
- * What the window tells for a press on a `kind` at `moment`, or null when the press is dropped
- * (not kept for later). No number is drawn then.
+ * What the window tells for a press on a thing that tells `lines` (pressLinesOf) at `moment`, or
+ * null when the press is dropped (not kept for later). No number is drawn then.
  */
 export function examineLineFor(
   moment: ExamineMoment,
-  kind: ThingKind,
+  lines: PressLines,
   random: Random,
 ): string | null {
   if (moment.halted || !moment.known || moment.messageShown) return null;
-  return pickLine(THINGS[kind], random);
+  return pickLine(lines, random);
 }

@@ -205,16 +205,17 @@ export function groundAt(pos: TilePos): TileName | null {
 }
 
 /**
- * True where a member may walk in `layout`: walkable ground, no solid furniture or floor decor, and
- * no part of the sprite (80 px wide and tall, so it reaches into the tiles beside and above) under
- * a window, so nobody vanishes behind one on the way; but the party window may cover the tiles the
- * layout lists (GuildLayout.underPartyWindow).
+ * True where a member may walk in `layout`: walkable ground, no solid furniture or floor decor (nor
+ * the month's ornament), and no part of the sprite (80 px wide and tall, so it reaches into the
+ * tiles beside and above) under a window, so nobody vanishes behind one on the way; but the party
+ * window may cover the tiles the layout lists (GuildLayout.underPartyWindow).
  */
 export function isWalkableIn(layout: GuildLayout, pos: TilePos): boolean {
   const ground = groundAtIn(layout, pos);
   if (ground === null || !WALKABLE_GROUND.has(ground)) return false;
   if (layout.objects.some((object) => object.solid && contains(object, pos))) return false;
   if (layout.decor.some((item) => item.solid && contains(item, pos))) return false;
+  if (contains(layout.ornamentSpot, pos)) return false;
   return !isUnderWindowIn(layout, pos) || isOnlyUnderPartyIn(layout, pos);
 }
 

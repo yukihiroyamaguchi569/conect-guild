@@ -5,6 +5,7 @@ groundFills [{"tile":"floor","col":0,"row":0,"w":32,"h":18},{"tile":"floor-carpe
 guestSpots [{"col":20,"row":3},{"col":21,"row":6}]
 kingSeat {"col":16,"row":3}
 offstage {"col":30,"row":15}
+ornamentSpot {"col":29,"row":9,"w":2,"h":2}
 partyWindow {"bottom":240,"tallestBottom":240}
 places {"counterFront":{"col":16,"row":10},"throneSide":{"col":14,"row":4}}
 toss {"maxTiles":5.5}

@@ -108,6 +108,11 @@ export interface GuildLayout {
    */
   readonly guestSpots: readonly TilePos[];
   /**
+   * The floor where the month's ornament stands (render/ornament.ts, Issue #192): 2 x 2 tiles
+   * nobody walks on, clear of the seats, the windows and the bubbles.
+   */
+  readonly ornamentSpot: TileRect;
+  /**
    * How far down the right-hand column (party window) reaches, logical px (render/map.ts). The fetch
    * status is a tab on the message window in every layout (Issue #132), so no note reaches the
    * column and both are the same.

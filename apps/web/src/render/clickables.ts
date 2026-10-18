@@ -5,7 +5,7 @@ import { SPRITE_SIZE } from './metrics';
 import { tileToPoint, type Point } from './path';
 import { PET_RECT } from './petting';
 import { DEFAULT_SEATS } from './scenes';
-import { THINGS, thingsIn, type Thing, type ThingKind } from './examine';
+import { thingName, thingsIn, type RoomThing, type Thing } from './examine';
 import { SELECTED_LAYOUT } from './layouts';
 import { seatedPoint } from './seating';
 
@@ -25,7 +25,7 @@ interface Spot {
 export type Clickable =
   | (Spot & { readonly id: 'king' | 'dog' })
   | (Spot & { readonly id: 'member'; readonly member: MemberId })
-  | (Spot & { readonly id: 'thing'; readonly thing: ThingKind });
+  | (Spot & { readonly id: 'thing'; readonly thing: RoomThing });
 
 export type ClickableId = Clickable['id'];
 
@@ -50,7 +50,7 @@ function thingClickable(thing: Thing): Clickable {
     id: 'thing',
     thing: thing.kind,
     rect: thing.rect,
-    label: `${THINGS[thing.kind].name}を しらべる`,
+    label: `${thingName(thing.kind)}を しらべる`,
   };
 }
 

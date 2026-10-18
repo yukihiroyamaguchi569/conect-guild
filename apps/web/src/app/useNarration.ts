@@ -9,7 +9,7 @@ import { narrationPools, pickNarration, type NarrationPools } from './narration'
 import { createNarrator, NARRATION_INTERVAL_MS, type Narration } from './narrator';
 import { globalScheduler, type Scheduler } from './scheduler';
 import type { Random } from '../render/confetti';
-import { examineLineFor, type ExamineMoment, type ThingKind } from '../render/examine';
+import { examineLineFor, type ExamineMoment, type PressLines } from '../render/examine';
 
 export interface NarrationSources {
   /** The head of the message queue: while there is one, it is shown instead of the narration. */
@@ -124,12 +124,13 @@ export function bindNarration(sources: NarrationSources, clock: NarrationClock =
       idleSince = since;
     },
     /**
-     * A thing of the room pressed (Issue #190): what was found in it takes the narration's place
+     * A thing of the room pressed (Issue #190), telling `lines` (examine.pressLinesOf; the month's
+     * ornament too, Issue #192): what was found in it takes the narration's place
      * for a whole interval. Dropped while an event's message is in the window (the events come
      * first), while halted and before the first snapshot (examine.examineLineFor).
      */
-    examine: (kind: ThingKind) => {
-      const line = examineLineFor(examineMoment(sources), kind, clock.random);
+    examine: (lines: PressLines) => {
+      const line = examineLineFor(examineMoment(sources), lines, clock.random);
       if (line !== null) narrator.say(line);
     },
     /** The ▼ button: the next event message while there is one, else the next narration. */
