@@ -2,6 +2,7 @@ import { createKeyValueStore, type KeyValueStore } from '../adapters/storage';
 import { documentVisibility, type PageVisibility } from '../adapters/visibility';
 import type { GuildEvent } from '../domain/events';
 import type { SummonsFrom } from '../domain/summons';
+import type { VisitorKind } from '../domain/visitors';
 import { ACTIVE_MEMBER_IDS, type MemberId } from '../guild.config';
 import type { AmbientMoods } from './ambient';
 import type { GuildArt } from './art';
@@ -29,7 +30,13 @@ import { monthAt } from './ornament';
 import type { StageReward } from './rewardDesk';
 import type { Speeches } from './summons';
 import { createToastStage, type ToastStage } from './toastStage';
-import { createVisitorStage, visitorScene, type VisitorStage } from './visitorStage';
+import {
+  createVisitorStage,
+  visitorControls,
+  visitorScene,
+  type VisitorPresses,
+  type VisitorStage,
+} from './visitorStage';
 import { visitFor, withVisit } from './visit';
 
 /**
@@ -66,6 +73,8 @@ export interface RenderLoopOptions {
   readonly onActive?: (ids: readonly MemberId[], at: number) => void;
   /** A call of the king (summons.ts) starts on the stage now: its sound rings with it. */
   readonly onCallStart?: () => void;
+  /** The visitor came in (its kind) or is gone (null), Issue #212: its button shows meanwhile. */
+  readonly onVisitor?: (kind: VisitorKind | null) => void;
   /** The idle spells' per-member salts, so the narration tells the same outings (Issue #30). */
   readonly idleSeeds?: IdleSeeds;
   /** The guests' pictures (Issue #108); plain boxes when absent. */
@@ -110,7 +119,7 @@ const NO_PARTY: StageParty = {
   reward: null,
 };
 
-export interface RenderLoop extends Presses {
+export interface RenderLoop extends Presses, VisitorPresses {
   /** Starts the scene for an event now (or when its cast is free); dropped while not shown. */
   play(event: GuildEvent): void;
   /**
@@ -194,7 +203,9 @@ function stageOf(
     options.wallNow,
   );
   const cast = createCast(art, context.random, options, talkOf(options, context));
-  const visitors = createVisitorStage(options.wallNow);
+  const visitors = createVisitorStage(options.wallNow, {
+    onVisitor: (kind) => options.onVisitor?.(kind),
+  });
   const toast = createToastStage(options.toastStore ?? createKeyValueStore(), options.wallNow);
   return { painter, room: { guests, visitors, toast }, cast };
 }
@@ -419,6 +430,11 @@ function paintAt(
   };
 }
 
+/** What the loop does for the guests (Issue #108) and the visitor (Issue #212). */
+function roomControls(room: Room, loop: Parameters<typeof guestControls>[1]) {
+  return { ...guestControls(room.guests, loop), ...visitorControls(room.visitors, loop) };
+}
+
 /** The scheduler of `draw`, paused while the page is hidden or the canvas has no width (isPaused). */
 function pausedScheduler(
   draw: () => void,
@@ -484,7 +500,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
       director = receiveIn(room, cast, director, { party, t: stageNow(), quiet: paused() });
       schedule.now();
     },
-    ...guestControls(room.guests, { schedule, paused, stageNow }),
+    ...roomControls(room, { schedule, paused, stageNow }),
     resize(nextCssWidth, pixelRatio) {
       cssWidth = nextCssWidth;
       scale = fitCanvas(options.canvas, cssWidth, pixelRatio) ?? scale;
