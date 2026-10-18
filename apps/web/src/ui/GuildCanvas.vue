@@ -36,7 +36,7 @@ import { levelsOf } from '../render/levelTags';
 import { kingQuestCountOf } from '../render/murmurs';
 import type { GuestArt } from '../render/guestArt';
 import { stageGuestsOf, type StageGuest } from '../render/guests';
-import { loadArt, loadGuestArt } from '../render/loadArt';
+import { loadArt, loadGuestArt, loadVisitorArt } from '../render/loadArt';
 import type { IdleSeeds, IdleSince } from '../render/idle';
 import type { HomeIn } from '../render/idleCrew';
 import { isShown, startRenderLoop, type RenderLoop, type StageParty } from '../render/loop';
@@ -144,11 +144,16 @@ function playCues(): void {
 /** Dev only: `?hour=21.5` fixes the time of day, to check the day and the night by hand. */
 const fixedHour = import.meta.env.DEV ? hourFromQuery(globalThis.location.search) : null;
 
-function start(element: HTMLCanvasElement, art: GuildArt, guestArt: GuestArt): void {
+function start(
+  element: HTMLCanvasElement,
+  art: GuildArt,
+  { guestArt, visitorArt }: { readonly guestArt: GuestArt; readonly visitorArt: GuestArt },
+): void {
   const running = startRenderLoop({
     canvas: element,
     art,
     guestArt,
+    visitorArt,
     ...(fixedHour === null ? {} : { localHour: () => fixedHour }),
     idleSeeds: props.idleSeeds,
     onCallStart: () => {
@@ -189,14 +194,15 @@ function observe(element: HTMLCanvasElement): void {
 onMounted(() => {
   if (canvas.value !== null) observe(canvas.value);
   // The loop starts once the pictures are in, so the cached background has them.
-  void Promise.all([loadArt(), loadGuestArt(props.guestCount)]).then(([art, guestArt]) => {
+  const pictures = [loadArt(), loadGuestArt(props.guestCount), loadVisitorArt()] as const;
+  void Promise.all(pictures).then(([art, guestArt, visitorArt]) => {
     const element = canvas.value;
     if (unmounted || element === null) return;
     // A stage that cannot start (no 2D context, for one) leaves the windows, messages and sounds
     // going without the room; `ready` is sent either way (the demo's はじめる waits for it).
     stage = bootStage(
       () => {
-        start(element, art, guestArt);
+        start(element, art, { guestArt, visitorArt });
       },
       {
         failed: (error) => {
