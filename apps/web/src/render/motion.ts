@@ -7,8 +7,8 @@ import { tileToPoint, type Point, type TilePath } from './path';
  * tile. All times are milliseconds on the clock the caller injects.
  */
 
-/** What a member hands over in a scene. */
-export type Prop = 'scroll' | 'chest';
+/** What a member hands over in a scene, or raises in a toast (Issue #193). */
+export type Prop = 'scroll' | 'chest' | 'tankard';
 
 /** How it is held: in both arms in front of the body while carried, or up over the head. */
 export type Hold = 'carry' | 'raise';
