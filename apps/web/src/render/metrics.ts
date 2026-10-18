@@ -107,8 +107,7 @@ export const IDLE = {
   dozeCycleMs: 6_000,
   yawnMs: 1_260,
   dozeDotsMs: 1_680,
-  /** Asleep: sunk a little deeper, a "Z" rising `zRisePx` and fading every `zRiseMs`. */
-  sleepSinkPx: 4,
+  /** Asleep: the sleeping frame, a "Z" rising `zRisePx` and fading every `zRiseMs`. */
   zRiseMs: 2_100,
   zRisePx: 14,
   /** At a play spot: bubbles change every `bubbleMs`; at a window, a look aside every `lookMs`. */

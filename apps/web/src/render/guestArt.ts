@@ -2,12 +2,12 @@ import { DETAIL_SCALE, SPRITE_SIZE } from './metrics';
 import { hasHoldFrames as sheetHasHoldFrames } from './hands';
 import type { SpriteFrame } from './motion';
 import type { Point } from './path';
-import { spriteDraw, type SpriteSheet } from './spriteArt';
+import { frameInSheet, sheetWidth, spriteDraw, type SpriteSheet } from './spriteArt';
 
 /**
  * The guests' pictures (Issue #108): assets/sprites/guest1.png (旅の剣士) for the first guest and
  * guest2.png (旅の魔法使い) for the second, in the members' sheet format (80 x 80 frames: front,
- * side, walking, then hands up and arms in front). Apart from the members' art: a guest is no
+ * side, walking, then hands up and arms in front, then asleep). Apart from the members' art: a guest is no
  * MemberId. When a picture cannot be loaded, plain boxes take its place.
  */
 export interface GuestArt {
@@ -32,10 +32,6 @@ export function readingPoint(index: number, feet: Point): Point {
   return { x: feet.x + hands.x - SPRITE_SIZE / 2, y: feet.y - hands.up };
 }
 
-function sheetWidth(sheet: SpriteSheet): number {
-  return 'naturalWidth' in sheet ? sheet.naturalWidth : sheet.width;
-}
-
 /** Each guest's sheet by position; null where its picture could not be loaded (a plain box). */
 export function createGuestArt(sheets: readonly (SpriteSheet | null)[]): GuestArt {
   return {
@@ -49,7 +45,7 @@ export function createGuestArt(sheets: readonly (SpriteSheet | null)[]): GuestAr
         placeholderGuestArt.drawGuest(ctx, index, frame, feet);
         return;
       }
-      const { sx, dx, dy } = spriteDraw(frame, feet);
+      const { sx, dx, dy } = spriteDraw(frameInSheet(frame, sheetWidth(sheet)), feet);
       ctx.drawImage(sheet, sx, 0, SPRITE_SIZE, SPRITE_SIZE, dx, dy, SPRITE_SIZE, SPRITE_SIZE);
     },
   };
