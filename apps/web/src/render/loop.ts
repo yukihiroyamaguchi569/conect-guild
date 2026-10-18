@@ -15,7 +15,6 @@ import type { StageGuest } from './guests';
 import { createGuestStage, guestControls, type GuestStage } from './guestStage';
 import { SELECTED_LAYOUT } from './layouts';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
-import { AMBIENT } from './metrics';
 import type { IdleSeeds, IdleSince } from './idle';
 import { playEvent, recallHome, type HomeIn } from './idleCrew';
 import type { Levels } from './levelTags';
@@ -24,6 +23,7 @@ import type { Asking } from './asking';
 import { createCast, stageAt, talkOf, type Cast } from './cast';
 import { context2d, createPainter, paint, type Painter } from './painter';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
+import { createScheduler, follow, nextDraw, type Scheduler } from './scheduler';
 import type { Speeches } from './summons';
 import { visitFor, withVisit } from './visit';
 
@@ -36,19 +36,6 @@ import { visitFor, withVisit } from './visit';
  * the canvas has no width (narrow screens hide it) it does not run at all, and the stage clock
  * (clock.ts) stands still, so a scene goes on from where it was once the canvas is shown again.
  */
-
-/** What to do after a frame: draw the next one, wait for the next ambient move, or sleep. */
-export type NextDraw = 'frame' | 'ambient' | 'sleep';
-
-export function nextDraw(state: {
-  readonly hidden: boolean;
-  readonly animating: boolean;
-  readonly ambient: boolean;
-}): NextDraw {
-  if (state.hidden) return 'sleep';
-  if (state.animating) return 'frame';
-  return state.ambient ? 'ambient' : 'sleep';
-}
 
 export interface RenderLoopOptions {
   readonly canvas: HTMLCanvasElement;
@@ -181,61 +168,6 @@ export function isPaused(pageHidden: boolean, cssWidth: number): boolean {
   return pageHidden || !isShown(cssWidth);
 }
 
-export interface Scheduler {
-  /** Draws on the next animation frame (sooner than any ambient wait). */
-  now(): void;
-  /** Draws after AMBIENT.frameMs unless a draw is already on the way. */
-  later(): void;
-  /** Cancels what is pending when paused, otherwise draws soon (after a pause ends). */
-  refresh(): void;
-  stop(): void;
-}
-
-/** One pending draw at most; nothing runs while `paused()` is true or after stop(). */
-export function createScheduler(draw: () => void, paused: () => boolean): Scheduler {
-  let pending: number | null = null;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let stopped = false;
-
-  function cancel(): void {
-    if (pending !== null) cancelAnimationFrame(pending);
-    if (timer !== null) clearTimeout(timer);
-    pending = null;
-    timer = null;
-  }
-
-  function now(): void {
-    if (stopped || paused() || pending !== null) return;
-    if (timer !== null) clearTimeout(timer);
-    timer = null;
-    pending = requestAnimationFrame(() => {
-      pending = null;
-      draw();
-    });
-  }
-
-  function later(): void {
-    if (stopped || paused() || pending !== null || timer !== null) return;
-    timer = setTimeout(() => {
-      timer = null;
-      now();
-    }, AMBIENT.frameMs);
-  }
-
-  return {
-    now,
-    later,
-    refresh() {
-      if (paused()) cancel();
-      else now();
-    },
-    stop() {
-      stopped = true;
-      cancel();
-    },
-  };
-}
-
 /**
  * Matches the backing store to the displayed width; returns the new scale, or null when nothing
  * changed or the canvas is not shown (width 0).
@@ -308,12 +240,6 @@ export function isQuiet(halted: boolean, cssWidth: number): boolean {
 /** The context without the picker while quiet (isQuiet). */
 export function sceneContextWhile(context: SceneContext, quiet: boolean): SceneContext {
   return quiet ? { ...context, pickLine: undefined } : context;
-}
-
-/** Asks for the next draw as `next` says. */
-function follow(schedule: Scheduler, next: NextDraw): void {
-  if (next === 'frame') schedule.now();
-  if (next === 'ambient') schedule.later();
 }
 
 /** The clocks and the random sources of the loop (sceneContext): the injected ones, else the browser's. */
