@@ -127,7 +127,7 @@ export function cutTrip(trip: Trip, t: number): Trip {
 }
 
 /** The tiles the feet are between at `t` on `segment`, and how far (0 to 1) they are on the way. */
-function stepAt(segment: Segment, t: number): IdleStep {
+export function stepAt(segment: Segment, t: number): IdleStep {
   const progress = Math.max(t - segment.start, 0) / MS_PER_TILE;
   const index = Math.min(Math.floor(progress), Math.max(segment.path.length - 2, 0));
   const from = segment.path[index] ?? segment.path[0];

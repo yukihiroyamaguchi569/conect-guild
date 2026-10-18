@@ -12,6 +12,7 @@ import {
 import { drawAnimatedDecor, drawPetBark } from './drawDecor';
 import { drawLightPatches, drawShade, drawWindowSun, type ShadeScratch } from './drawDaylight';
 import { drawGuestBodies, drawGuestOverheads } from './drawGuests';
+import { drawVisitorBody, drawVisitorWords } from './drawVisitor';
 import { drawLevelTags } from './drawLevelTags';
 import { drawLevelUpBanners } from './drawLevelUp';
 import type { GuestArt } from './guestArt';
@@ -38,6 +39,7 @@ import { ornamentPlacement } from './ornament';
 import { rewardOnDesk, rewardShownAt, type PlacedReward, type StageReward } from './rewardDesk';
 import type { Speeches } from './summons';
 import type { DecorCues } from './trinkets';
+import type { VisitorView } from './visitors';
 
 /**
  * Painting one frame of the render loop (loop.ts): the scenery cached once, then each frame the
@@ -85,6 +87,8 @@ export interface Painter {
   readonly front: readonly CachedFrontLayer[];
   readonly art: GuildArt;
   readonly guestArt: GuestArt;
+  /** The visitors' pictures (Issue #195), in the order of VISITOR_KINDS. */
+  readonly visitorArt: GuestArt;
   /** Where the words over each head were in the frame painted last (overheadPlace.ts). */
   readonly placer: Placer;
 }
@@ -106,6 +110,7 @@ interface Moment {
   readonly cues: DecorCues;
   readonly levels: Levels;
   readonly guests: GuestFrame;
+  readonly visitor: VisitorView | null;
 }
 
 /**
@@ -131,10 +136,12 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
     sprites: art.sprites,
     decor: art.decor,
   });
+  drawVisitorBody(ctx, painter.visitorArt, moment.visitor);
   drawShade(ctx, painter.scratch, light, lampLights(moment.now));
   const tags = levelTags(moment.levels, DEFAULT_SEATS);
   drawLevelTags(ctx, tags);
   drawGuestOverheads(ctx, moment.guests);
+  drawVisitorWords(ctx, moment.visitor, tags);
   const placed = painter.placer.place({ ...moment, tags });
   if (moment.cues.petted && PET_RECT !== null) drawPetBark(ctx, PET_RECT, bubbleBoxes(placed));
   drawOverhead(ctx, { placed, confetti: moment.frame.confetti });
@@ -183,9 +190,10 @@ export function createPainter(
   ctx: CanvasRenderingContext2D,
   art: GuildArt,
   guestArt: GuestArt,
+  visitorArt: GuestArt,
 ): Painter {
   const { background, front } = cachedScenery(art);
   const image = cachedLayer(() => undefined);
   const scratch = { ctx: context2d(image), image };
-  return { ctx, scratch, background, front, art, guestArt, placer: createPlacer() };
+  return { ctx, scratch, background, front, art, guestArt, visitorArt, placer: createPlacer() };
 }

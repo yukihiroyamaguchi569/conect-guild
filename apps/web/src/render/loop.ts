@@ -1,13 +1,14 @@
+import { createKeyValueStore, type KeyValueStore } from '../adapters/storage';
 import { documentVisibility, type PageVisibility } from '../adapters/visibility';
 import type { GuildEvent } from '../domain/events';
 import type { SummonsFrom } from '../domain/summons';
-import type { MemberId } from '../guild.config';
+import { ACTIVE_MEMBER_IDS, type MemberId } from '../guild.config';
 import type { AmbientMoods } from './ambient';
 import type { GuildArt } from './art';
 import type { Bubbles } from './bubbles';
 import { RUNNING_CLOCK, stageTime, withPaused, type StageClock } from './clock';
 import type { Random } from './confetti';
-import { EMPTY_DIRECTOR, prune, type Director } from './director';
+import { EMPTY_DIRECTOR, isAnimating, prune, type Director } from './director';
 import { hourOf } from './daylight';
 import { ANIMATED_DECOR } from './animatedDecor';
 import { placeholderGuestArt, type GuestArt } from './guestArt';
@@ -22,11 +23,13 @@ import { createLinePicker, seenLines, type LinePicker } from './lines';
 import { createCast, stageAt, talkOf, type Cast } from './cast';
 import { context2d, createPainter, paint, type Painter } from './painter';
 import { presses, type Presses } from './presses';
-import { DEFAULT_SEATS, type SceneContext } from './scenes';
+import { actorOf, castOf, DEFAULT_SEATS, type SceneContext } from './scenes';
 import { createScheduler, follow, nextDraw, type Scheduler } from './scheduler';
 import { monthAt } from './ornament';
 import type { StageReward } from './rewardDesk';
 import type { Speeches } from './summons';
+import { createToastStage, type ToastStage } from './toastStage';
+import { createVisitorStage, visitorScene, type VisitorStage } from './visitorStage';
 import { visitFor, withVisit } from './visit';
 
 /**
@@ -67,6 +70,10 @@ export interface RenderLoopOptions {
   readonly idleSeeds?: IdleSeeds;
   /** The guests' pictures (Issue #108); plain boxes when absent. */
   readonly guestArt?: GuestArt;
+  /** The visitors' pictures (Issue #195), in the order of VISITOR_KINDS; plain boxes when absent. */
+  readonly visitorArt?: GuestArt;
+  /** Where the day of the last toast is kept (Issue #193); localStorage when absent. */
+  readonly toastStore?: KeyValueStore;
 }
 
 export interface StageParty {
@@ -167,13 +174,18 @@ function fitCanvas(canvas: HTMLCanvasElement, cssWidth: number, pixelRatio: numb
   return width / LOGICAL_WIDTH;
 }
 
-/** The painter, the guests of the layout in use (Issue #108) and the members' cast. */
+/** The painter, the guests of the layout in use (Issue #108), the visitor (#195) and the cast. */
 function stageOf(
   options: RenderLoopOptions,
   context: ReturnType<typeof loopSources>['context'],
-): { readonly painter: Painter; readonly guests: GuestStage; readonly cast: Cast } {
+): { readonly painter: Painter; readonly room: Room; readonly cast: Cast } {
   const { canvas, art } = options;
-  const painter = createPainter(context2d(canvas), art, options.guestArt ?? placeholderGuestArt);
+  const painter = createPainter(
+    context2d(canvas),
+    art,
+    options.guestArt ?? placeholderGuestArt,
+    options.visitorArt ?? placeholderGuestArt,
+  );
   const guestArt = painter.guestArt;
   const guests = createGuestStage(
     SELECTED_LAYOUT.guestSpots,
@@ -182,14 +194,94 @@ function stageOf(
     options.wallNow,
   );
   const cast = createCast(art, context.random, options, talkOf(options, context));
-  return { painter, guests, cast };
+  const visitors = createVisitorStage(options.wallNow);
+  const toast = createToastStage(options.toastStore ?? createKeyValueStore(), options.wallNow);
+  return { painter, room: { guests, visitors, toast }, cast };
+}
+
+/**
+ * Who is in the room besides the members' scenes: the guests (Issue #108), the visitor (Issue
+ * #195) and the Friday toast (Issue #193).
+ */
+interface Room {
+  readonly guests: GuestStage;
+  readonly visitors: VisitorStage;
+  readonly toast: ToastStage;
+}
+
+/**
+ * While halted the sparkles stop, the visitor turns back to the door and the toast breaks up
+ * (everyone walks back to the seat).
+ */
+function haltRoom(room: Room, director: Director, halted: boolean, t: number): Director {
+  room.guests.setHalted(halted);
+  room.visitors.setHalted(halted, t);
+  return halted ? room.toast.release(director, ACTIVE_MEMBER_IDS, t) : director;
+}
+
+/** The toast starts at `t` when it is time (toastStage.ts). */
+function toastAt(room: Room, cast: Cast, director: Director, at: { t: number; party: StageParty }) {
+  const { t, party } = at;
+  const { moods, halted } = party;
+  const calling = cast.calls.isCalling(t);
+  const visiting = room.visitors.isVisiting();
+  return room.toast.start(director, {
+    t,
+    moods,
+    halted,
+    calling,
+    visiting,
+    idle: cast.crew.poses(),
+  });
+}
+
+/**
+ * Plays the scene of `event`: those in it leave the toast first (they walk back to the seat now),
+ * and members out playing come back (idleCrew.playEvent); the scene waits for them.
+ */
+function playIn(
+  room: Room,
+  cast: Cast,
+  director: Director,
+  at: { event: GuildEvent; t: number; context: SceneContext },
+): Director {
+  const { event, t, context } = at;
+  const released = room.toast.release(director, [...castOf(event), actorOf(event)], t);
+  return playEvent(cast.crew, released, event, { t, context });
+}
+
+/**
+ * Calls `members` back to their seat, out of the toast too (idleCrew.recallHome); nobody while
+ * drawing would not be seen.
+ */
+function recallIn(
+  room: Room,
+  cast: Cast,
+  director: Director,
+  at: { members: readonly MemberId[]; t: number; paused: boolean },
+) {
+  const { t } = at;
+  const members = at.paused ? [] : at.members;
+  return recallHome(cast.crew, room.toast.release(director, members, t), members, t);
+}
+
+/** Takes a new party at `t`: the room halts with it (haltRoom), then the cast (Cast.receive). */
+function receiveIn(
+  room: Room,
+  cast: Cast,
+  director: Director,
+  at: { party: StageParty; t: number; quiet: boolean },
+): Director {
+  const { party, t, quiet } = at;
+  return cast.receive(haltRoom(room, director, party.halted, t), party, { t, quiet });
 }
 
 /** The scenes and the remarks to keep: none while the canvas is out of sight (scenesShown). */
-function keepShown(cast: Cast, director: Director, cssWidth: number, guests: GuestStage): Director {
+function keepShown(cast: Cast, director: Director, cssWidth: number, room: Room): Director {
   if (!isShown(cssWidth)) {
     cast.silence();
-    guests.clearSparkles();
+    room.guests.clearSparkles();
+    room.visitors.clear();
   }
   return scenesShown(director, cssWidth);
 }
@@ -294,7 +386,7 @@ export function summonOn(
 interface PaintInput {
   readonly cast: Cast;
   readonly director: Director;
-  readonly guests: GuestStage;
+  readonly room: Room;
   readonly party: StageParty;
   readonly t: number;
   readonly hour: number;
@@ -309,16 +401,21 @@ interface PaintInput {
 function paintAt(
   painter: Painter,
   scale: number,
-  { cast, director, guests, party, t, hour, month, wall }: PaintInput,
+  { cast, director, room, party, t, hour, month, wall }: PaintInput,
 ): { readonly speeches: Speeches; readonly pace: { animating: boolean; ambient: boolean } } {
   const { calling, ...stage } = stageAt(cast, director, { t, hour, party });
-  const guestNow = guests.frameAt(t);
-  paint(painter, scale, { ...party, ...stage, now: t, month, wall, guests: guestNow });
+  const guestNow = room.guests.frameAt(t);
+  const busy = isAnimating(director, t) || calling;
+  const visitor = room.visitors.frameAt(
+    t,
+    visitorScene(stage.frame.members, cast.crew.poses(), busy),
+  );
+  paint(painter, scale, { ...party, ...stage, now: t, month, wall, guests: guestNow, visitor });
   // A call needs no more than the ambient pace: its words and turns change every few hundred ms.
   const ambient = Object.keys(party.moods).length > 0 || ANIMATED_DECOR.length > 0 || calling;
   return {
     speeches: stage.speeches,
-    pace: { animating: stage.animating || guestNow.animating, ambient },
+    pace: { animating: stage.animating || guestNow.animating || visitor !== null, ambient },
   };
 }
 
@@ -334,7 +431,7 @@ function pausedScheduler(
 
 export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
   const { now, calendar, context, visibility } = loopSources(options);
-  const { painter, guests, cast } = stageOf(options, context);
+  const { painter, room, cast } = stageOf(options, context);
   // Narrow screens hide the canvas (display: none): its width is 0 and nothing is drawn.
   let cssWidth = 1;
   let director: Director = EMPTY_DIRECTOR;
@@ -346,7 +443,8 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
 
   function draw(): void {
     const t = stageNow();
-    const drawn = paintAt(painter, scale, { cast, director, guests, party, t, ...calendar() });
+    director = toastAt(room, cast, director, { t, party });
+    const drawn = paintAt(painter, scale, { cast, director, room, party, t, ...calendar() });
     director = seenAndPruned(context, director, { t, speeches: drawn.speeches });
     follow(schedule, nextDraw({ hidden: paused(), ...drawn.pace }));
   }
@@ -357,7 +455,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
    * draws (or not) to match.
    */
   function refresh(): void {
-    director = keepShown(cast, director, cssWidth, guests);
+    director = keepShown(cast, director, cssWidth, room);
     clock = withPaused(clock, paused(), now());
     schedule.refresh();
   }
@@ -365,12 +463,11 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
   refresh();
   return {
     play(event) {
-      // Members out playing come back first; the scene waits for them (idleCrew.playEvent).
-      director = playEvent(cast.crew, director, event, { t: stageNow(), context: quiet() });
+      director = playIn(room, cast, director, { event, t: stageNow(), context: quiet() });
       refresh();
     },
     recall(members) {
-      const recalled = recallHome(cast.crew, director, paused() ? [] : members, stageNow());
+      const recalled = recallIn(room, cast, director, { members, t: stageNow(), paused: paused() });
       director = recalled.director;
       refresh();
       return recalled.homeIn;
@@ -384,11 +481,10 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
     ...presses(cast, schedule, () => ({ director, party, t: stageNow(), paused: paused() })),
     setParty(next) {
       party = next;
-      guests.setHalted(next.halted);
-      director = cast.receive(director, party, { t: stageNow(), quiet: paused() });
+      director = receiveIn(room, cast, director, { party, t: stageNow(), quiet: paused() });
       schedule.now();
     },
-    ...guestControls(guests, { schedule, paused, stageNow }),
+    ...guestControls(room.guests, { schedule, paused, stageNow }),
     resize(nextCssWidth, pixelRatio) {
       cssWidth = nextCssWidth;
       scale = fitCanvas(options.canvas, cssWidth, pixelRatio) ?? scale;
