@@ -1,6 +1,7 @@
 import type { MemberId } from '../guild.config';
 import { createAmbientSeeds, type AmbientMoods } from './ambient';
 import type { GuildArt } from './art';
+import { blessingFor, blessMomentOf, type BlessingLine } from './blessing';
 import { createCalls, type CallsOptions, type CallView, type Calls } from './calls';
 import type { Random } from './confetti';
 import { frameAt, hushed, isAnimating, type Director, type StageFrame } from './director';
@@ -70,6 +71,16 @@ export interface Cast {
   murmursAt(frame: MurmurFrame, view: Pick<CallView, 'frame' | 'speeches'>): SpokenLines;
   /** Drops the remarks said and to come, and the murmurs start over (the canvas is out of sight). */
   silence(): void;
+  /**
+   * The king was clicked at `t` (Issue #187): he says a word other than the one he said last, drawn
+   * from the talk's random source, unless the click is dropped (blessing.mayBless). True when he
+   * says one.
+   */
+  bless(
+    director: Director,
+    party: CastParty,
+    at: { readonly t: number; readonly paused: boolean },
+  ): boolean;
 }
 
 /** Where the remarks draw their chance and their line from, and tell what was seen (Issue #47). */
@@ -77,6 +88,19 @@ export interface Talk {
   readonly random: Random;
   readonly pick: PickLine | undefined;
   readonly saw: LinePicker['saw'];
+}
+
+/** The king's words for a click (Cast.bless), through `calls`, never the same twice in a row. */
+export function createBless(calls: Calls, random: Random): Cast['bless'] {
+  let blessed: BlessingLine | null = null;
+  return (director, party, { t, paused }) => {
+    const calling = calls.isCalling(t);
+    const moment = blessMomentOf({ party, director, calling, paused }, t);
+    const words = blessingFor(moment, blessed, random);
+    if (words === null || calls.bless(words, t) === null) return false;
+    blessed = words;
+    return true;
+  };
 }
 
 /** The members' small moves and long idle spells over the director's scenes, and the king's calls. */
@@ -128,6 +152,7 @@ export function createCast(
       remarks = silenced(remarks);
       murmurs = NO_MURMURS;
     },
+    bless: createBless(calls, talk.random),
     frame: (director, t, moods) =>
       frameAt(director, t, DEFAULT_SEATS, {
         moods,

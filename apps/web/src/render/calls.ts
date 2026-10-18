@@ -1,7 +1,9 @@
 import type { MemberId } from '../guild.config';
+import type { BlessingLine } from './blessing';
 import type { StageFrame } from './director';
 import { DEFAULT_SEATS } from './scenes';
 import {
+  addBlessing,
   addDispatch,
   addSummons,
   endedSummons,
@@ -50,6 +52,13 @@ export interface Calls {
   /** かなめ hands work on to the departments `members` (Issue #155), as `add` does; the king is quiet. */
   dispatch(members: readonly MemberId[], t: number | null): Summons | null;
   /**
+   * The king says `words` for a click (Issue #187), as `add` does: none while halted or for a null
+   * `t`. The caller asks only when no call plays (isCalling).
+   */
+  bless(words: BlessingLine, t: number | null): Summons | null;
+  /** True while a call plays or is to come at `t` (the king's words for a click too). */
+  isCalling(t: number): boolean;
+  /**
    * Halted (the screen is not live): the calls to come and the one playing are dropped. Returns
    * かなめ's visits dropped with them, to cut short on the stage (visit.cutVisit).
    */
@@ -84,6 +93,12 @@ export function createCalls(options: CallsOptions): Calls {
       list = addDispatch(list, members, t);
       return list.at(-1) ?? null;
     },
+    bless(words, t) {
+      if (halted || t === null) return null;
+      list = addBlessing(list, words, t);
+      return list.at(-1) ?? null;
+    },
+    isCalling: (t) => isSummoning(list, t),
     setHalted(next) {
       halted = next;
       if (!halted) return [];

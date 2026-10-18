@@ -13,7 +13,7 @@ import { heldLook } from './hands';
 import type { Overhead } from './overhead';
 import type { Placed } from './overheadPlace';
 import type { Point } from './path';
-import type { SpeechLine } from './summons';
+import type { CallLine, SpeechLine } from './summons';
 import { flyingItemPoint } from './toss';
 import type { DecorCues } from './trinkets';
 
@@ -93,14 +93,17 @@ export function drawSleepZ(ctx: CanvasRenderingContext2D, rise: number, feet: Po
   ctx.restore();
 }
 
-/** The words of the king's summons (summons.ts): fixed strings, never outside text. */
-const SPEECH_COLORS: Readonly<Record<SpeechLine, string>> = {
+/**
+ * The words of the king's summons (summons.ts): fixed strings, never outside text. His words for a
+ * click (blessing.ts) are in the ink of the lines.
+ */
+const SPEECH_COLORS: Readonly<Partial<Record<SpeechLine, string>>> = {
   '！': '#b0103a',
   ゴニョゴニョ: '#222222',
   'はっ！': '#1a3a8a',
   'おねがい！': '#222222',
   'はい！': '#1a3a8a',
-};
+} satisfies Readonly<Record<CallLine, string>>;
 
 /** The members' lines (lineBook.ts) read best in the dark ink of the king's murmur. */
 const LINE_COLOR = '#222222';
@@ -175,7 +178,8 @@ export function drawActors(
 
 /** The text and the ink of what is over the head; null for the 「Z」, which has no bubble. */
 function textOf(shown: Overhead): Glyph | null {
-  if (shown.kind === 'speech') return { glyph: shown.words, color: SPEECH_COLORS[shown.words] };
+  if (shown.kind === 'speech')
+    return { glyph: shown.words, color: SPEECH_COLORS[shown.words] ?? LINE_COLOR };
   if (shown.kind === 'line' || shown.kind === 'murmur')
     return { glyph: shown.words, color: LINE_COLOR };
   if (shown.kind === 'bubble') return BUBBLE_GLYPHS[shown.bubble];
