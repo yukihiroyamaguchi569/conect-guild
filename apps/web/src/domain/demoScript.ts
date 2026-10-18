@@ -1,7 +1,7 @@
 /**
  * The script of the demo mode (Issue #49): what happens when in one loop, as a list of beats.
  * Everything here is fictional; no title or name comes from real data. To show something new in
- * the demo (the king's call of #28, levels of #19), add a beat (and its action in domain/demo.ts).
+ * the demo (the king's call of #28, levels of #19), add a beat (and its action in domain/demoLanes.ts).
  */
 
 /** One loop of the demo; it then starts over with new quest numbers. */
@@ -14,7 +14,7 @@ export const DEMO_REPO = 'demo-guild/demo-company';
  * Who a beat is about. commander is かなめ (an Issue on this lane has no department and waits at
  * the reception). Each loop gives the other four lanes to departments: two of them carry a quest
  * from opening to clearing (quest1, and quest2, which needs the president), and up to two others
- * help. Half the departments carry a quest each loop (domain/demo.ts laneDepartments): with four,
+ * help. Half the departments carry a quest each loop (domain/demoLanes.ts laneDepartments): with four,
  * the pairs swap every loop, so all four carry one every two loops. With two departments the
  * helper lanes are left out, with three one of them.
  */
