@@ -25,6 +25,7 @@ import { context2d, createPainter, paint, type Painter } from './painter';
 import { presses, type Presses } from './presses';
 import { actorOf, castOf, DEFAULT_SEATS, type SceneContext } from './scenes';
 import { createScheduler, follow, nextDraw, type Scheduler } from './scheduler';
+import { monthAt } from './ornament';
 import type { Speeches } from './summons';
 import { createToastStage, type ToastStage } from './toastStage';
 import { createVisitorStage, visitorScene, type VisitorStage } from './visitorStage';
@@ -55,7 +56,10 @@ export interface RenderLoopOptions {
    */
   readonly lineRandom?: Random;
   readonly visibility?: PageVisibility;
-  /** Epoch ms, for the long idle spells (idle.ts); they go on while the page is hidden. */
+  /**
+   * Epoch ms, for the long idle spells (idle.ts; they go on while the page is hidden) and the
+   * month's ornament (ornament.ts).
+   */
   readonly wallNow?: () => number;
   /** Members in a scene at `at` (epoch ms), on every frame that shows them in one. */
   readonly onActive?: (ids: readonly MemberId[], at: number) => void;
@@ -312,12 +316,24 @@ export function sceneContextWhile(context: SceneContext, quiet: boolean): SceneC
   return quiet ? { ...context, pickLine: undefined } : context;
 }
 
+/**
+ * The local hour (daylight) and month (the ornament, Issue #192) to draw a frame at. The month
+ * follows `wallNow`, the clock the canvas also reads the month of a press from (GuildCanvas.vue).
+ */
+export function calendarOf(
+  options: Pick<RenderLoopOptions, 'localHour' | 'wallNow'>,
+): () => { readonly hour: number; readonly month: number } {
+  const localHour = options.localHour ?? (() => hourOf(new Date()));
+  const wallNow = options.wallNow ?? Date.now;
+  return () => ({ hour: localHour(), month: monthAt(wallNow()) });
+}
+
 /** The clocks and the random sources of the loop (sceneContext): the injected ones, else the browser's. */
 function loopSources(options: RenderLoopOptions) {
   const context = sceneContext(options);
   return {
     now: options.now ?? (() => performance.now()),
-    localHour: options.localHour ?? (() => hourOf(new Date())),
+    calendar: calendarOf(options),
     context,
     visibility: options.visibility ?? documentVisibility,
   };
@@ -366,6 +382,7 @@ interface PaintInput {
   readonly party: StageParty;
   readonly t: number;
   readonly hour: number;
+  readonly month: number;
 }
 
 /**
@@ -375,7 +392,7 @@ interface PaintInput {
 function paintAt(
   painter: Painter,
   scale: number,
-  { cast, director, room, party, t, hour }: PaintInput,
+  { cast, director, room, party, t, hour, month }: PaintInput,
 ): { readonly speeches: Speeches; readonly pace: { animating: boolean; ambient: boolean } } {
   const { calling, ...stage } = stageAt(cast, director, { t, hour, party });
   const guestNow = room.guests.frameAt(t);
@@ -384,7 +401,7 @@ function paintAt(
     t,
     visitorScene(stage.frame.members, cast.crew.poses(), busy),
   );
-  paint(painter, scale, { ...party, ...stage, now: t, guests: guestNow, visitor });
+  paint(painter, scale, { ...party, ...stage, now: t, month, guests: guestNow, visitor });
   // A call needs no more than the ambient pace: its words and turns change every few hundred ms.
   const ambient = Object.keys(party.moods).length > 0 || ANIMATED_DECOR.length > 0 || calling;
   return {
@@ -404,7 +421,7 @@ function pausedScheduler(
 }
 
 export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
-  const { now, localHour, context, visibility } = loopSources(options);
+  const { now, calendar, context, visibility } = loopSources(options);
   const { painter, room, cast } = stageOf(options, context);
   // Narrow screens hide the canvas (display: none): its width is 0 and nothing is drawn.
   let cssWidth = 1;
@@ -418,7 +435,7 @@ export function startRenderLoop(options: RenderLoopOptions): RenderLoop {
   function draw(): void {
     const t = stageNow();
     director = toastAt(room, cast, director, { t, party });
-    const drawn = paintAt(painter, scale, { cast, director, room, party, t, hour: localHour() });
+    const drawn = paintAt(painter, scale, { cast, director, room, party, t, ...calendar() });
     director = seenAndPruned(context, director, { t, speeches: drawn.speeches });
     follow(schedule, nextDraw({ hidden: paused(), ...drawn.pace }));
   }

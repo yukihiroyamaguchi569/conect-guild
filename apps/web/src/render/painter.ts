@@ -33,6 +33,9 @@ import {
 } from './overheadPlace';
 import { PET_RECT } from './petting';
 import { DEFAULT_SEATS } from './scenes';
+import { decorPoint } from './decorPoint';
+import { SELECTED_LAYOUT } from './layouts';
+import { ornamentPlacement } from './ornament';
 import type { Speeches } from './summons';
 import type { DecorCues } from './trinkets';
 import type { VisitorView } from './visitors';
@@ -92,6 +95,8 @@ export interface Painter {
 interface Moment {
   readonly now: number;
   readonly hour: number;
+  /** The local month, 1 to 12: its ornament stands on the floor (ornament.ts, Issue #192). */
+  readonly month: number;
   readonly frame: StageFrame;
   readonly bubbles: Bubbles;
   readonly speeches: Speeches;
@@ -105,7 +110,7 @@ interface Moment {
 
 /**
  * One frame: the cached background with the sun in the windows and the light patches, the moving
- * things, the members between the cached front layers (desks, the counter, the throne's arms),
+ * things and the month's ornament, the members between the cached front layers (desks, the counter, the throne's arms),
  * the shade of the time of day with the lamps' light, and the bubbles (the pet's 「わん」 too) and
  * confetti on top.
  */
@@ -118,6 +123,7 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
   drawWindowSun(ctx, art, light);
   drawLightPatches(ctx, art, moment, light);
   drawAnimatedDecor(ctx, art, moment, BACK_ANIMATED_DECOR);
+  drawOrnament(ctx, art, moment.month);
   drawActors(ctx, moment, art, painter.front);
   drawGuestBodies(ctx, moment.guests, {
     guests: painter.guestArt,
@@ -134,6 +140,16 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
   if (moment.cues.petted && PET_RECT !== null) drawPetBark(ctx, PET_RECT, bubbleBoxes(placed));
   drawOverhead(ctx, { placed, confetti: moment.frame.confetti });
   drawLevelUpBanners(ctx, { placed, confetti: moment.frame.confetti });
+}
+
+/**
+ * The month's ornament at its spot, every frame: the next month's stands there as soon as the
+ * month changes, the page left open or not.
+ */
+function drawOrnament(ctx: CanvasRenderingContext2D, art: GuildArt, month: number): void {
+  const placement = ornamentPlacement(SELECTED_LAYOUT.ornamentSpot, month);
+  const { x, y } = decorPoint(placement);
+  art.decor.drawDecor(ctx, placement.name, x, y);
 }
 
 /** Everything drawn for the bubbles of `placed` (not the 「Z」, which has none). */

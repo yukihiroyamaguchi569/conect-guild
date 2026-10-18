@@ -2,14 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   examineLineFor,
   pickLine,
+  pressLinesOf,
   RARE_CHANCE,
   THINGS,
+  thingName,
   thingsIn,
   type ExamineMoment,
 } from './examine';
 import { LAYOUTS } from './layouts';
 import { overlaps, windowExtentsFor } from './map';
 import { TILE_SIZE } from './metrics';
+import { ORNAMENTS } from './ornament';
 
 /** Examining the room's things (Issue #190). */
 
@@ -25,6 +28,7 @@ function placesOf(count: number): string[] {
 
 const SHARED = [
   'jar@14,8',
+  'ornament@29,9',
   'sacks@22,10',
   'barrel@30,11',
   'barrel@1,14',
@@ -39,18 +43,18 @@ describe('thingsIn', () => {
     expect(placesOf(2)).toEqual([
       'shelf@10,3',
       'shelf@12,3',
-      ...SHARED.slice(0, 2),
+      ...SHARED.slice(0, 3),
       'cabinet@26,11',
       'crate@28,11',
-      ...SHARED.slice(2),
+      ...SHARED.slice(3),
     ]);
     for (const count of [3, 4]) {
       expect(placesOf(count)).toEqual([
         'safe@10,3',
-        ...SHARED.slice(0, 2),
+        ...SHARED.slice(0, 3),
         'cabinet@26,11',
         'crate@28,11',
-        ...SHARED.slice(2),
+        ...SHARED.slice(3),
       ]);
     }
   });
@@ -59,9 +63,9 @@ describe('thingsIn', () => {
     for (const count of [5, 6]) {
       expect(placesOf(count)).toEqual([
         'safe@10,3',
-        ...SHARED.slice(0, 2),
+        ...SHARED.slice(0, 3),
         'barrel@1,11',
-        ...SHARED.slice(2),
+        ...SHARED.slice(3),
       ]);
     }
   });
@@ -88,10 +92,14 @@ describe('thingsIn', () => {
     },
   );
 
-  it('finds nothing in a layout with no such things', () => {
+  it('finds only the month’s ornament in a layout with no such things (Issue #192)', () => {
     const layout = LAYOUTS[4];
     if (layout === undefined) throw new Error('no layout4');
-    expect(thingsIn({ ...layout, decor: [], objects: [] })).toEqual([]);
+    const things = thingsIn({ ...layout, decor: [], objects: [] });
+    // The whole 2 x 2 spot, whichever month's picture stands in it.
+    expect(things).toEqual([
+      { kind: 'ornament', rect: { left: 928, top: 288, right: 992, bottom: 352 } },
+    ]);
   });
 });
 
@@ -144,8 +152,8 @@ describe('examineLineFor', () => {
   const free: ExamineMoment = { halted: false, known: true, messageShown: false };
 
   it('tells a line of the thing pressed', () => {
-    expect(examineLineFor(free, 'barrel', () => 0.9)).toBe(THINGS.barrel.usual[1]);
-    expect(examineLineFor(free, 'safe', () => 0)).toBe(THINGS.safe.rare[0]);
+    expect(examineLineFor(free, THINGS.barrel, () => 0.9)).toBe(THINGS.barrel.usual[1]);
+    expect(examineLineFor(free, THINGS.safe, () => 0)).toBe(THINGS.safe.rare[0]);
   });
 
   it.each([
@@ -154,7 +162,24 @@ describe('examineLineFor', () => {
     ["while an event's message is in the window", { ...free, messageShown: true }],
   ])('drops the press %s, drawing no number', (_when, moment) => {
     const random = vi.fn(() => 0.5);
-    expect(examineLineFor(moment, 'jar', random)).toBeNull();
+    expect(examineLineFor(moment, THINGS.jar, random)).toBeNull();
     expect(random).not.toHaveBeenCalled();
+  });
+});
+
+describe('the month’s ornament as a thing (Issue #192)', () => {
+  it('tells what the ornament of the month is, never anything rare', () => {
+    expect(pressLinesOf('ornament', 10)).toEqual({ usual: [ORNAMENTS[9]?.line], rare: [] });
+    expect(pickLine(pressLinesOf('ornament', 1), () => 0)).toBe(ORNAMENTS[0].line);
+    expect(pickLine(pressLinesOf('ornament', 12), () => 0)).toBe(ORNAMENTS[11]?.line);
+  });
+
+  it('keeps the lines of the other things', () => {
+    expect(pressLinesOf('barrel', 10)).toBe(THINGS.barrel);
+  });
+
+  it('names the buttons', () => {
+    expect(thingName('ornament')).toBe('かざり');
+    expect(thingName('cabinet')).toBe('しょるいだな');
   });
 });

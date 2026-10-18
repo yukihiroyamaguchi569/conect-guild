@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { expect, test, waitForRoom } from './fixtures.ts';
 import { sampleSnapshot } from './sampleSnapshot.ts';
 import { CLICKABLES, type Clickable } from '../src/render/clickables.ts';
-import { THINGS } from '../src/render/examine.ts';
+import { pressLinesOf } from '../src/render/examine.ts';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from '../src/render/map.ts';
 
 /**
@@ -13,10 +13,10 @@ import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from '../src/render/map.ts';
 
 const ITEMS = CLICKABLES.filter((item) => item.id === 'thing');
 
-/** Every line examining `item` may tell. */
+/** Every line examining `item` may tell (in October, the month of NOW: the ornament's, #192). */
 function linesOf(item: Clickable): readonly string[] {
   if (item.id !== 'thing') throw new Error('not a thing');
-  const { usual, rare } = THINGS[item.thing];
+  const { usual, rare } = pressLinesOf(item.thing, 10);
   return [...usual, ...rare];
 }
 

@@ -191,7 +191,7 @@ describe('bindNarration: things examined (Issue #190)', () => {
     const { binding, load, scope } = setup();
     await load();
     const first = binding.narration.value?.id;
-    binding.examine('barrel');
+    binding.examine(THINGS.barrel);
     const lines: readonly string[] = [...THINGS.barrel.usual, ...THINGS.barrel.rare];
     const said = binding.narration.value;
     expect(said?.id).not.toBe(first);
@@ -206,18 +206,18 @@ describe('bindNarration: things examined (Issue #190)', () => {
 
   it('drops a press before the first snapshot, while halted and under an event message', async () => {
     const { binding, load, scope, halted, message } = setup();
-    binding.examine('jar');
+    binding.examine(THINGS.jar);
     expect(binding.narration.value).toBeNull();
     await load();
     const first = binding.narration.value;
     halted.value = true;
     await nextTick();
-    binding.examine('jar');
+    binding.examine(THINGS.jar);
     expect(binding.narration.value).toBe(first);
     halted.value = false;
     message.value = { id: 1, text: 'できごと', event: closed };
     await nextTick();
-    binding.examine('jar');
+    binding.examine(THINGS.jar);
     expect(binding.narration.value).toBe(first);
     // Not kept for later: the window goes back to a narration of its own.
     message.value = null;
