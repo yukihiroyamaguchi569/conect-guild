@@ -37,7 +37,6 @@ const FILTER_LABELS = {
       <button
         type="button"
         class="rpg-button"
-        :aria-pressed="show === 'all'"
         title="きょう: 締め切り（題名の 〆M/D）かやる日（@M/D）が今日か過ぎたものだけを出します。ちかいもの: 締め切りが 7 日以内か過ぎたもの、やる日が来たもの、どちらの印もないものだけを出します。押すと きょう → ちかいもの → すべて の順に切り替えます（この端末にだけ保存します）"
         @click="emit('toggle-show')"
       >
