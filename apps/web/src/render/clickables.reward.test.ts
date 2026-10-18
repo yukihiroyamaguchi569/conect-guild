@@ -5,6 +5,7 @@ import {
   MEMBER_SEAT_CLICKABLES,
   memberClickables,
   pressedAt,
+  pressKey,
   rewardClickables,
   roomPresses,
   withMembers,
@@ -90,5 +91,15 @@ describe('roomPresses', () => {
 
   it('is the things alone, in their order, without a reward', () => {
     expect(roomPresses(things, [])).toEqual(things);
+  });
+});
+
+describe('pressKey', () => {
+  it('tells apart things of one kind by their spot, whatever their place in the row', () => {
+    const things = CLICKABLES.filter((item) => item.id === 'thing');
+    const keys = things.map(pressKey);
+    expect(new Set(keys).size).toBe(things.length);
+    const row = roomPresses(things, rewardClickables(MEDAL));
+    expect(row.map(pressKey)).toEqual(expect.arrayContaining(keys));
   });
 });

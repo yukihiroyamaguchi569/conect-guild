@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, type ComponentPublicInstance } from 'vue';
-import { pressStyle, rovingIndex, type Clickable } from '../render/clickables';
+import { computed, ref, type ComponentPublicInstance } from 'vue';
+import { pressKey, pressStyle, rovingIndex, type Clickable } from '../render/clickables';
 
 /**
  * Buttons over the canvas for the keyboard that make one stop of Tab (Issue #190: the room has a
@@ -16,8 +16,17 @@ const props = defineProps<{
 
 const emit = defineEmits<{ press: [item: Clickable] }>();
 
-/** The button Tab reaches. */
-const current = ref(0);
+/**
+ * The button Tab reaches, by its key (clickables.pressKey): it stays on the same thing when a
+ * button comes or goes before it (the reward, Issue #213); the first one when it is gone.
+ */
+const currentKey = ref<string | null>(null);
+const current = computed(() =>
+  Math.max(
+    0,
+    props.items.findIndex((item) => pressKey(item) === currentKey.value),
+  ),
+);
 /** The buttons by index (a ref array in v-for does not keep the order). */
 const buttons: (HTMLButtonElement | undefined)[] = [];
 
@@ -29,7 +38,8 @@ function onKeydown(event: KeyboardEvent, index: number): void {
   const next = rovingIndex(index, event.key, props.items.length);
   if (next === null) return;
   event.preventDefault();
-  current.value = next;
+  const item = props.items[next];
+  if (item !== undefined) currentKey.value = pressKey(item);
   buttons[next]?.focus();
 }
 </script>
@@ -39,13 +49,13 @@ function onKeydown(event: KeyboardEvent, index: number): void {
     <button
       v-for="(item, index) in items"
       :ref="(element) => keep(element, index)"
-      :key="index"
+      :key="pressKey(item)"
       type="button"
       class="press-group__press"
       :style="pressStyle(item.rect)"
       :aria-label="item.label"
       :tabindex="index === current ? 0 : -1"
-      @focus="current = index"
+      @focus="currentKey = pressKey(item)"
       @keydown="onKeydown($event, index)"
       @click="emit('press', item)"
     />

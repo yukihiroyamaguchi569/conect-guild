@@ -189,6 +189,14 @@ export function clickableAt(
 }
 
 /**
+ * What tells `item` from the others of a row of buttons (ui/PressGroup.vue) whatever its place in
+ * it: the things of one kind share a label, never a spot.
+ */
+export function pressKey(item: Clickable): string {
+  return `${item.label}@${String(item.rect.left)},${String(item.rect.top)}`;
+}
+
+/**
  * Where the focus goes in a row of `count` buttons from `index` on `key` (the things' buttons are
  * one stop of Tab, ui/PressGroup.vue): the arrows go to the next or the previous one, round the
  * ends, Home and End to the first and the last; null for any other key.

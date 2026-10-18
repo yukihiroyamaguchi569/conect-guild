@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
 import {
   EMPTY_CUE_QUEUE,
   guestCueToPlay,
@@ -329,8 +329,24 @@ function press(item: Clickable): void {
 /** The king and the pet have a button each; the members, and the room's things, share one stop of Tab. */
 const SOLO_PRESSES = CLICKABLES.filter((item) => item.id !== 'thing');
 const THING_PRESSES = CLICKABLES.filter((item) => item.id === 'thing');
+/**
+ * The reward while its day lasts (rewardShownAt, Issue #213): its button goes at midnight, as the
+ * picture does, fetched or not.
+ */
+const shownReward = shallowRef<StageReward | null>(null);
+let rewardTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+function followReward(): void {
+  globalThis.clearTimeout(rewardTimer);
+  shownReward.value = rewardShownAt(props.reward, wallNow());
+  if (shownReward.value !== null)
+    rewardTimer = globalThis.setTimeout(followReward, shownReward.value.until - wallNow());
+}
+watch(() => props.reward, followReward, { immediate: true });
+onBeforeUnmount(() => {
+  globalThis.clearTimeout(rewardTimer);
+});
 /** The reward on a desk while it is there (Issue #213): drawn in front of the members. */
-const rewardPresses = computed(() => rewardClickables(props.reward));
+const rewardPresses = computed(() => rewardClickables(shownReward.value));
 /** The room's things and the reward, one stop of Tab. */
 const roomRow = computed(() => roomPresses(THING_PRESSES, rewardPresses.value));
 

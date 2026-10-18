@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect, test, waitForRoom, type SnapshotServer } from './fixtures.ts';
 import { sampleSnapshot, withClosedIssues } from './sampleSnapshot.ts';
-import { rewardClickables } from '../src/render/clickables.ts';
+import { CLICKABLES, rewardClickables } from '../src/render/clickables.ts';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from '../src/render/map.ts';
 import { rewardLinesOf } from '../src/render/rewardDesk.ts';
 
@@ -63,11 +63,18 @@ test('the reward has a button among the room things only while it is on the desk
   await openAt(page, snapshotServer, '16:59:50');
   const group = page.getByRole('group', { name: 'へやの こもの' });
   await expect(group.getByRole('button', { name: LABEL })).toHaveCount(0);
+  // Tab stays on the thing last focused when the reward's button comes before it.
+  const last = CLICKABLES.filter((item) => item.id === 'thing').at(-1);
+  if (last === undefined) throw new Error('nothing to examine');
+  await group.getByRole('button').last().focus();
+  await expect(group.locator('button[tabindex="0"]')).toHaveAttribute('aria-label', last.label);
 
   await page.clock.setFixedTime(at('17:00:10'));
   snapshotServer.serve(await snapshotAt('17:00:10'));
   const button = group.getByRole('button', { name: LABEL });
   await expect(button).toHaveCount(1, { timeout: 15_000 });
+  await expect(group.locator('button[tabindex="0"]')).toHaveAttribute('aria-label', last.label);
+  await expect(group.locator('button[tabindex="0"]')).toBeFocused();
   // The reward's own message goes first; a press under it is dropped (as for the things).
   await expect(page.getByRole('region', { name: 'メッセージ' })).toContainText('ほうび');
   const next = page.getByRole('region', { name: 'メッセージ' }).getByRole('button');
@@ -77,4 +84,18 @@ test('the reward has a button among the room things only while it is on the desk
   await button.focus();
   await page.keyboard.press('Enter');
   await expect.poll(() => windowText(page)).toMatch(new RegExp(`^(${LINES.join('|')})$`, 'u'));
+});
+
+test("the reward's button goes at midnight, even while the fetches fail", async ({
+  page,
+  snapshotServer,
+}) => {
+  await openAt(page, snapshotServer, '23:59:58');
+  const button = page
+    .getByRole('group', { name: 'へやの こもの' })
+    .getByRole('button', { name: LABEL });
+  await expect(button).toHaveCount(1);
+  snapshotServer.failWith(500);
+  await page.clock.setFixedTime(Date.parse('2026-10-13T00:00:10+09:00'));
+  await expect(button).toHaveCount(0, { timeout: 10_000 });
 });

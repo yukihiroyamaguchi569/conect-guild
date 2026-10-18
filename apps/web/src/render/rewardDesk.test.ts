@@ -144,8 +144,7 @@ describe('rewardLinesOf (Issue #213)', () => {
       const lines = rewardLinesOf({ member: 'hirame', kind });
       expect(lines.rare).toEqual([]);
       expect(lines.noRepeat).toBe(true);
-      expect(lines.usual.length).toBeGreaterThanOrEqual(2);
-      expect(lines.usual.length).toBeLessThanOrEqual(3);
+      expect(lines.usual).toHaveLength(3);
       expect(new Set(lines.usual).size).toBe(lines.usual.length);
       for (const line of lines.usual) expect(line).toContain(MEMBERS.hirame.name);
     }
