@@ -5,7 +5,7 @@ description: conect-guild を試すための架空の会社「お試し商会」
 
 # guild-trial
 
-conect-guild のリポジトリ直下で、架空の会社「お試し商会」を作り、conect-guild の画面で眺められるところまで用意する。自分の会社で使うときは `/guild-setup`（[docs/setup.md の 2 章](../../../docs/setup.md#2-自分のリポジトリで使う)）を使う。
+conect-guild のリポジトリ直下で、架空の会社「お試し商会」を作り、conect-guild の画面で眺められるところまで用意する。自分の会社で使うときは `/guild-setup`（[docs/setup.md の 2 章](../../../docs/setup.md#2-設定して使う)）を使う。
 
 片付け（GitHub のリポジトリ・手元のフォルダ・手元の設定を消す）は別のスキル `/guild-trial-cleanup`（[.claude/skills/guild-trial-cleanup/SKILL.md](../guild-trial-cleanup/SKILL.md)）で行う。
 

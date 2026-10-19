@@ -9,7 +9,7 @@ const REFRESH_TIMEOUT = 15_000;
 /** The demo's first scroll is handed out about 5 s after it starts (domain/demoScript.ts). */
 const FIRST_SCROLL_TIMEOUT = 20_000;
 const SETUP_GUIDE =
-  'https://github.com/yukihiroyamaguchi569/conect-guild/blob/main/docs/setup.md#2-自分のリポジトリで使う';
+  'https://github.com/yukihiroyamaguchi569/conect-guild/blob/main/docs/setup.md#2-設定して使う';
 
 /** Chrome logs a failed fetch as a console error: expected for the 500 test only. */
 const SERVER_ERROR_LOG = /^console: Failed to load resource: .* status of 500 /;
