@@ -20,21 +20,13 @@ The demo mode with made-up data.
 
 ## Features
 
-- **The guild hall on a Canvas**: Kaname at the reception desk, the department members (two to six) at their desks and the king on his throne, all moving a little even when nothing is happening
-- **Scrolls, chests and clears**: when an Issue opens, Kaname carries the scroll to the member's desk (and sometimes just tosses it to a nearby one). When a PR is merged, the member brings a treasure chest to the reception desk. When an Issue is closed, 「クリアした！」 (quest cleared!) appears with confetti
-- **Party status**: working, awaiting review, awaiting approval and so on, taken from GitHub Issues and PRs. If you use MulmoTerminal, live 「いま作業中」 (working now) and 「許可待ち」 (waiting for permission) are added within a few seconds
-- **Sound effects**: chiptune-style beeps generated with Web Audio. Muted by default, with three volume levels
-- **Day and night**: the room's lighting follows your local time, and at night only the lamps glow
-- **Idle time**: idle members doze off and fall asleep, or wander off for tea, to a window, to chat with a neighbour, or to play with the toy poodle by the throne
-- **Narration**: when nothing is happening, the message window describes what the guild is up to, changing every 20 seconds
-- **The king's summons**: when the president gives a session an instruction, the king calls out to that member, who answers 「はっ！」 ("Yes, sire!"). When Kaname hands work to a department, Kaname says 「おねがい！」 ("Please!") and the department answers 「はい！」 ("Yes!")
-- **The king's quests**: Issues with the label 「社長」 (president) show up in the 「おうさまの クエスト」 (the king's quests) section of the board, and as work for the king on his throne
-- **Visitors**: up to two sessions outside the company, named in your settings, drawn as guests who visit the hall
-- **Show mode**: for showing the screen to others, one button on the fetch-status tab masks the titles of Issues and PRs
-- **The fetch-status tab**: the time of the last fetch, any failure, and the sound on/off and volume, on a tab above the message window
-- **XP and levels**: counted from every cleared Issue and merged PR in the repository's history. On a level-up, the member jumps at their desk under a "LEVEL UP" sign
-- **Lines**: members say a short line when a scroll is handed over, a chest is delivered, or a quest is cleared
-- **Demo mode**: plays a loop of scripted, fictional quests
+- **The guild hall**: draws the work of the commander, the departments (two to six) and the president, taken from GitHub Issues and PRs, as a retro RPG guild
+- **Party status**: working, awaiting review, awaiting approval and so on. If you use MulmoTerminal, live 「いま作業中」 (working now) and 「許可待ち」 (waiting for permission) are shown too
+- **Visitors**: up to two sessions outside the company, drawn as guests who visit the hall
+- **Show mode**: for showing the screen to others, one button masks the titles of Issues and PRs
+- **Demo mode**: try it with fictional quests, no settings needed
+
+How it all moves is for you to find out on the screen.
 
 You can have two to six departments (one commander, two to six departments and the president). What your team needs to use it is listed under 「使える条件」 (requirements) in [docs/setup.md](docs/setup.md#0-使える条件) (Japanese).
 
