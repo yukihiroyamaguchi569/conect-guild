@@ -101,10 +101,10 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 
 ## 5. GitHub に作る
 
-1. リポジトリを作って push する（1 行で）
+1. リポジトリを作って push する（1 行で）。説明（description）は片付けのときにお試しのリポジトリと見分ける印なので、このとおりに付ける
 
    ```bash
-   gh repo create <owner>/<名前> --private --source "<司令塔のフォルダの絶対パス>" --push
+   gh repo create <owner>/<名前> --private --description "conect-guild のお試し商会（架空の会社）" --source "<司令塔のフォルダの絶対パス>" --push
    ```
 
 2. 部門のラベルを 1 つずつ作る（色は何でもよい）

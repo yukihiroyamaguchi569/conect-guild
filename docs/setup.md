@@ -68,7 +68,7 @@ npm run dev
 
 conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します（「お試しの会社を作って」でも使われます）。聞かれるのは、部門の数（2〜6。決めていなければ 4）と、リポジトリを作る前の承認の 2 回だけです。作るのは次のものです。
 
-- GitHub の private のリポジトリ `<あなたのアカウント>/guild-trial`（部門のラベルと、架空の Issue 付き）
+- GitHub の private のリポジトリ `<あなたのアカウント>/guild-trial`（部門のラベルと、架空の Issue 付き。片付けで見分けるため、説明に「conect-guild のお試し商会（架空の会社）」が入ります）
 - 手元の司令塔のフォルダ `~/guild-trial/guild-trial` と、その下の部門のフォルダ（それぞれの `CLAUDE.md` 付き）
 - 手元の設定 `guild.settings.local.json`
 
