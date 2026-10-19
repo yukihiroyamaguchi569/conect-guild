@@ -9,6 +9,8 @@ import { LINE_BOOK } from '../src/render/lineBook.ts';
 const FIRST_EVENT_TIMEOUT = 15_000;
 /** The first scroll's lines: handed out about 5 s in, walked over in about 8 s more. */
 const LINES_TIMEOUT = 25_000;
+/** How long "LEVEL UP" may come after its message: they start together (Issue #224). */
+const LEVEL_UP_LAG_MS = 500;
 /** The king's call (summon, audio/scores.ts): D4 then G4, in Hz rounded. */
 const SUMMON_TONES = [294, 392];
 
@@ -149,13 +151,57 @@ test('on a narrow screen (the room hidden) はじめる waits until the screen i
   expect(errors).toEqual([]);
 });
 
-/** Plays the demo from はじめる until かなめ's level-up shows, "LEVEL UP" on the canvas with it. */
+declare global {
+  interface Window {
+    /** When the level-up's message first showed and "LEVEL UP" was first drawn (installLevelUpTimes). */
+    e2eLevelUpAt?: { message?: number; banner?: number };
+  }
+}
+
+/**
+ * Runs in the page before the app (page.addInitScript): notes the time (performance.now) the
+ * level-up's message first shows and the time "LEVEL UP" is first written on the canvas, so the
+ * test sees how far apart they are, not only that both came (the texts drawn are a record).
+ */
+function installLevelUpTimes(): void {
+  const times: { message?: number; banner?: number } = {};
+  window.e2eLevelUpAt = times;
+  const proto = CanvasRenderingContext2D.prototype;
+  const original: unknown = Object.getOwnPropertyDescriptor(proto, 'fillText')?.value;
+  if (typeof original === 'function') {
+    proto.fillText = function (
+      this: CanvasRenderingContext2D,
+      ...args: Parameters<CanvasRenderingContext2D['fillText']>
+    ) {
+      if (args[0] === 'LEVEL UP') times.banner ??= performance.now();
+      Reflect.apply(original, this, args);
+    };
+  }
+  new MutationObserver(() => {
+    if (
+      times.message === undefined &&
+      document.documentElement.textContent.includes('レベル 6 に')
+    ) {
+      times.message = performance.now();
+    }
+  }).observe(document, { subtree: true, childList: true, characterData: true });
+}
+
+/**
+ * Plays the demo from はじめる until かなめ's level-up shows, "LEVEL UP" on the canvas with it:
+ * within LEVEL_UP_LAG_MS of the message.
+ */
 async function expectFirstLevelUp(page: Page, context: BrowserContext) {
+  await page.addInitScript(installLevelUpTimes);
   const { errors, snapshotRequests } = await openDemo(page, context);
   await page.getByRole('button', { name: '▶ はじめる' }).click();
   const message = page.getByRole('region', { name: 'メッセージ' });
   await expect(message).toContainText('かなめは レベル 6 に あがった！', { timeout: 60_000 });
   await expect.poll(() => drawnTexts(page)).toContain('LEVEL UP');
+  const at = await page.evaluate(() => window.e2eLevelUpAt);
+  expect(at?.message).toBeDefined();
+  expect(at?.banner).toBeDefined();
+  expect(Math.abs((at?.banner ?? 0) - (at?.message ?? 0))).toBeLessThan(LEVEL_UP_LAG_MS);
   await expect(
     page.getByRole('region', { name: 'パーティのようす' }).getByRole('listitem').nth(0),
   ).toContainText('Lv 6');
