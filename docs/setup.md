@@ -68,17 +68,20 @@ npm run dev
 
 conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します（「お試しの会社を作って」でも使われます）。聞かれるのは、部門の数（2〜6。決めていなければ 4）と、リポジトリを作る前の承認の 2 回だけです。作るのは次のものです。
 
-- GitHub の private のリポジトリ `<あなたのアカウント>/<日付>-<4 文字>`（部門のラベルと、架空の Issue 付き）
-- 手元の司令塔のフォルダ `~/guild-trial/<日付>-<4 文字>` と、その下の部門のフォルダ（それぞれの `CLAUDE.md` 付き）
+- GitHub の private のリポジトリ `<あなたのアカウント>/guild-trial`（部門のラベルと、架空の Issue 付き）
+- 手元の司令塔のフォルダ `~/guild-trial/guild-trial` と、その下の部門のフォルダ（それぞれの `CLAUDE.md` 付き）
 - 手元の設定 `guild.settings.local.json`
 
-`~/guild-trial/` は Claude Code の sandbox の書き込める場所の外なので、フォルダを書く操作は初めから sandbox の外で実行します。そのため許可を求められます。
+同じ名前のリポジトリかフォルダが既にあれば、`guild-trial-2`、`guild-trial-3` … と番号を足した名前にします。
+
+最後にスキルが `npm run dev:all` を起動し、collector が集め終わったら「http://127.0.0.1:5273 を開いてください」と伝えます。既に `npm run dev:all` が動いていたら、スキルは止めずに、止めて起動し直すよう伝えます。
+
+`~/guild-trial/` は Claude Code の sandbox の書き込める場所の外なので、フォルダを書く操作は初めから sandbox の外で実行します。`npm run dev:all` も、collector の `gh` が sandbox の中では証明書のエラーになるので、sandbox の外で起動します。そのため許可を求められます。
 
 **確かめること**
 
-- `npm run dev:all` を起動し（動いていたら止めて起動し直す）、ログの `settings:` の行が `guild.settings.local.json` で、`ok:` の行が出ること
 - ブラウザで http://127.0.0.1:5273 を開くと「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られること
-- MulmoTerminal などの端末で、司令塔のフォルダと部門のフォルダをそれぞれ開いて Claude Code を起動すること（フォルダそのもので起動します。[orchestration.md の 3-5](orchestration.md#3-5-部門のセッションを開く)）。MulmoTerminal なら `sessions=<部門の数 + 1> ok` になります
+- 任意（動きを見たい人だけ）: MulmoTerminal などの端末で、司令塔のフォルダと部門のフォルダをそれぞれ開いて Claude Code を起動する（フォルダそのもので起動します。[orchestration.md の 3-5](orchestration.md#3-5-部門のセッションを開く)）。MulmoTerminal なら `sessions=<部門の数 + 1> ok` になります。お試しの Issue はセッションが無くても机に配られます
 
 **片付け**
 
