@@ -80,8 +80,9 @@ const emit = defineEmits<{
   /** A call of the king starts on the stage now (its sound rings with it, Issue #28). */
   callStarted: [];
   /**
-   * かなめ walks to the throne to hear the king's order (Issue #87): how long until she is back
-   * (ms), for the message queue to wait for.
+   * かなめ walks to the throne to hear the king's order (Issue #87), or a scene waits for its cast
+   * to walk back from a gathering (Issue #224): how long until they are free (ms), for the message
+   * queue to wait for.
    */
   away: [homeIn: HomeIn];
   /** The stage once the loop runs, null when it stops: the message queue calls members back. */
@@ -180,6 +181,9 @@ function start(
     },
     onVisitor: (kind) => {
       visitorKind.value = kind;
+    },
+    onAway: (homeIn) => {
+      emit('away', homeIn);
     },
     onActive: (ids, at) => {
       setIdleSince(lastActive.markActive(ids, at));
