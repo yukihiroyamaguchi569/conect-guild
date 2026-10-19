@@ -21,16 +21,11 @@ The demo mode with made-up data.
 ## Features
 
 - **The guild hall**: draws the work of the commander, the departments (two to six) and the president, taken from GitHub Issues and PRs, as a retro RPG guild
-- **Party status**: working, awaiting review, awaiting approval and so on. If you use MulmoTerminal, live 「いま作業中」 (working now) and 「許可待ち」 (waiting for permission) are shown too
 - **Visitors**: up to two sessions outside the company, drawn as guests who visit the hall
-- **Show mode**: for showing the screen to others, one button masks the titles of Issues and PRs
-- **Demo mode**: try it with fictional quests, no settings needed
 
 How it all moves is for you to find out on the screen.
 
-You can have two to six departments (one commander, two to six departments and the president). What your team needs to use it is listed under 「使える条件」 (requirements) in [docs/setup.md](docs/setup.md#0-使える条件) (Japanese).
-
-## Try the demo
+## Watch the demo
 
 With Node.js 26.10 or later:
 
@@ -45,13 +40,21 @@ Just open http://127.0.0.1:5273 and a demo with made-up quests plays by itself (
 
 To watch or film it with sound from the start, open http://127.0.0.1:5273/?demo=1 (for a daytime room, `?demo=1&hour=12`) and press 「▶ はじめる」 (Start). The button is disabled in a narrow window, so widen it if needed.
 
+## Try a made-up company
+
+After the demo, start Claude Code in the conect-guild root and run `/guild-trial`. It creates a made-up company (a private repository on GitHub, department folders and local settings) so you can try the screen with real Issues and PRs. Clean up with `/guild-trial-cleanup`. See [docs/setup.md 1-2](docs/setup.md#1-2-お試しの会社) (Japanese).
+
+## Try it with your own team
+
+You can have two to six departments (one commander, two to six departments and the president).
+
+- Requirements and steps (settings, collecting, data handling): [docs/setup.md](docs/setup.md) (Japanese)
+- Having Claude Code write your settings file: run `/guild-setup` in the conect-guild root ([docs/setup.md 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える), Japanese)
+- How the commander and department AIs work through GitHub, with CLAUDE.md templates: [docs/orchestration.md](docs/orchestration.md) (Japanese)
+
 ## Learn more
 
 - Design: [docs/DESIGN.md](docs/DESIGN.md) (Japanese)
-- Using it with your own team (settings, collecting, data handling): [docs/setup.md](docs/setup.md) (Japanese)
-- Having Claude Code write your settings file: run `/guild-setup` in the conect-guild root ([docs/setup.md 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える), Japanese)
-- Trying a made-up company: run `/guild-trial` in the conect-guild root (it creates a private repository on GitHub; [docs/setup.md](docs/setup.md), Japanese). Clean up with `/guild-trial-cleanup`
-- How the commander and department AIs work through GitHub, with CLAUDE.md templates: [docs/orchestration.md](docs/orchestration.md) (Japanese)
 - Changelog: [docs/changes/](docs/changes/) (Japanese)
 
 ## License

@@ -21,16 +21,11 @@ AI だけで動く小さな会社を、レトロ RPG のギルド画面として
 ## できること
 
 - **ギルド画面**: GitHub の Issue・PR から、司令塔・部門（2〜6）・社長の仕事のようすを、レトロ RPG のギルドとして描く
-- **パーティの状態**: 作業中・確認まち・承認まちなど。MulmoTerminal を使っていれば「いま作業中」「許可待ち」も出る
 - **お客さん**: 会社の外のセッションを、最大 2 人まで訪ねてくる客として描く
-- **見せるモード**: 人に画面を見せるとき、ボタン 1 つで Issue・PR の題名を伏せる
-- **デモモード**: 架空のクエストで、設定なしに試せる
 
 どう動くかは、画面で見てのお楽しみ。
 
-部門は 2〜6 にできます（司令塔 1・部門 2〜6・社長 1）。自分のチームで使える条件は [docs/setup.md の「使える条件」](docs/setup.md#0-使える条件)にまとめています。
-
-## デモモードで見る
+## デモを見る
 
 Node.js 26.10 以上で:
 
@@ -45,13 +40,21 @@ http://127.0.0.1:5273 を開くだけで、架空のクエストのデモが動�
 
 効果音つきで最初から見る・撮るときは http://127.0.0.1:5273/?demo=1 を開き（昼の部屋なら `?demo=1&hour=12`）、「▶ はじめる」を押します（画面の幅が狭いと押せないので、ウィンドウを広げます）。
 
+## 架空の会社を作って試す
+
+デモのあと、conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します。架空の会社（GitHub の private のリポジトリ、部門のフォルダ、手元の設定）を作り、本物の Issue・PR で画面を試せます。片付けは `/guild-trial-cleanup` です。詳しくは [docs/setup.md の 1-2](docs/setup.md#1-2-お試しの会社)。
+
+## 自分のチームで試す
+
+部門は 2〜6 にできます（司令塔 1・部門 2〜6・社長 1）。
+
+- 使える条件と手順（設定・収集・データの扱い）: [docs/setup.md](docs/setup.md)
+- 設定ファイルを Claude Code に作らせる: conect-guild の直下で `/guild-setup`（[docs/setup.md の 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える)）
+- 司令塔と部門の AI を GitHub で回す流儀と CLAUDE.md の雛形: [docs/orchestration.md](docs/orchestration.md)
+
 ## もっと知る
 
 - 設計: [docs/DESIGN.md](docs/DESIGN.md)
-- 自分のチームで使う（設定・収集・データの扱い）: [docs/setup.md](docs/setup.md)
-- 設定ファイルを Claude Code に作らせる: conect-guild の直下で `/guild-setup`（[docs/setup.md の 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える)）
-- 架空の会社を作って試す: conect-guild の直下で `/guild-trial`（GitHub に private のリポジトリを作る。[docs/setup.md](docs/setup.md)）。片付けは `/guild-trial-cleanup`
-- 司令塔と部門の AI を GitHub で回す流儀と CLAUDE.md の雛形: [docs/orchestration.md](docs/orchestration.md)
 - 変更履歴: [docs/changes/](docs/changes/)
 
 ## ライセンス
