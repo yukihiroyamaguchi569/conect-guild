@@ -189,4 +189,6 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 3. 利用者には次だけを伝える
    - 「http://127.0.0.1:5273 を開いてください」（「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られる）
    - 片付けるときは `/guild-trial-cleanup` を使う
-   - 任意（動きを見たい人だけ）: MulmoTerminal で、司令塔のフォルダ（`~/guild-trial/<名前>`）と部門のフォルダ（`~/guild-trial/<名前>/accounting` など）で、それぞれセルを開いて Claude Code を起動する（フォルダそのもので起動する。[docs/orchestration.md の 3-5](../../../docs/orchestration.md#3-5-部門のセッションを開く)）。お試しの Issue はセッションが無くても机に配られる
+   - 任意（動きを見たい人だけ）: MulmoTerminal を使っているなら、`! npm run trial:open-cells` を打つと、司令塔のフォルダ（`~/guild-trial/<名前>`）と部門のフォルダ（`~/guild-trial/<名前>/accounting` など）のセルがまとめて開く（各セルの「信頼しますか？」に答える）。お試しの Issue はセッションが無くても机に配られる
+
+   **Claude は `npm run trial:open-cells` を自分で実行しない。** MulmoTerminal にセルを開かせる操作なので Claude Code の安全確認で止まる。利用者が `!` を付けて打つよう案内するだけにする
