@@ -149,7 +149,7 @@ export interface GuildStore {
   setStageShown(shown: boolean): void;
   /** The canvas's stage once it runs (null when it stops): a level-up's member walks back first. */
   setStage(stage: StageRecall | null): void;
-  /** かなめ is away hearing the king's order for `homeIn` (MessageQueue.occupy, Issue #87). */
+  /** Members away from their seat for `homeIn` (MessageQueue.occupy, Issues #87 and #224). */
   occupy(homeIn: HomeIn): void;
   /** Removes the stored baseline; the next fetch counts as the first one (no events). */
   clearBaseline(): void;

@@ -137,6 +137,11 @@ export function playEvent(
 /** Ms from now until each member is free at their seat (0 when they are already). */
 export type HomeIn = Readonly<Partial<Record<MemberId, number>>>;
 
+/** Ms from `t` until each of `ids` is free in `director` (0 when they are already). */
+export function freeIn(director: Director, ids: readonly MemberId[], t: number): HomeIn {
+  return Object.fromEntries(ids.map((id) => [id, Math.max((director.busyUntil[id] ?? t) - t, 0)]));
+}
+
 /**
  * Calls `members` back to their seat ahead of their scene (a level-up, Issue #19): those out
  * playing walk back now. Returns the new director and how long until each is free, which the

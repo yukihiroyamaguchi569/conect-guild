@@ -18,7 +18,7 @@ import { createGuestStage, guestControls, type GuestStage } from './guestStage';
 import { SELECTED_LAYOUT } from './layouts';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
 import type { IdleSeeds, IdleSince } from './idle';
-import { playEvent, recallHome, type HomeIn } from './idleCrew';
+import { freeIn, playEvent, recallHome, type HomeIn } from './idleCrew';
 import type { Levels } from './levelTags';
 import { createLinePicker, seenLines, type LinePicker } from './lines';
 import { createCast, stageAt, talkOf, type Cast } from './cast';
@@ -76,6 +76,11 @@ export interface RenderLoopOptions {
   readonly onCallStart?: () => void;
   /** The visitor came in (its kind) or is gone (null), Issue #212: its button shows meanwhile. */
   readonly onVisitor?: (kind: VisitorKind | null) => void;
+  /**
+   * A scene waits for its cast to walk back from a gathering (Issue #224): how long until each of
+   * them is free (stage ms), for the message queue to wait for too.
+   */
+  readonly onAway?: (homeIn: HomeIn) => void;
   /** The idle spells' per-member salts, so the narration tells the same outings (Issue #30). */
   readonly idleSeeds?: IdleSeeds;
   /** The guests' pictures (Issue #108); plain boxes when absent. */
@@ -211,7 +216,8 @@ function stageOf(
     onVisitor: (kind) => options.onVisitor?.(kind),
   });
   const toast = createGatheringsStage(options.toastStore ?? createKeyValueStore(), options.wallNow);
-  return { painter, room: { guests, visitors, toast }, cast };
+  const away = (homeIn: HomeIn) => options.onAway?.(homeIn);
+  return { painter, room: { guests, visitors, toast, away }, cast };
 }
 
 /**
@@ -222,6 +228,8 @@ interface Room {
   readonly guests: GuestStage;
   readonly visitors: VisitorStage;
   readonly toast: ToastStage;
+  /** Tells how long a scene's cast is away walking back from a gathering (onAway). */
+  readonly away: (homeIn: HomeIn) => void;
 }
 
 /**
@@ -252,7 +260,8 @@ function toastAt(room: Room, cast: Cast, director: Director, at: { t: number; pa
 
 /**
  * Plays the scene of `event`: those in it leave the toast first (they walk back to the seat now),
- * and members out playing come back (idleCrew.playEvent); the scene waits for them.
+ * and members out playing come back (idleCrew.playEvent); the scene waits for them. When some left
+ * a gathering, the room tells how long until each of the cast is free (Room.away, Issue #224).
  */
 function playIn(
   room: Room,
@@ -261,8 +270,11 @@ function playIn(
   at: { event: GuildEvent; t: number; context: SceneContext },
 ): Director {
   const { event, t, context } = at;
-  const released = room.toast.release(director, [...castOf(event), actorOf(event)], t);
-  return playEvent(cast.crew, released, event, { t, context });
+  const ids = [...castOf(event), actorOf(event)];
+  const released = room.toast.release(director, ids, t);
+  const played = playEvent(cast.crew, released, event, { t, context });
+  if (released !== director) room.away(freeIn(played, ids, t));
+  return played;
 }
 
 /**
