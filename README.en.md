@@ -42,7 +42,7 @@ To watch or film it with sound from the start, open http://127.0.0.1:5273/?demo=
 
 ## Try a made-up company
 
-After the demo, start Claude Code in the conect-guild root and run `/guild-trial`. It creates a made-up company (a private repository on GitHub, department folders and local settings) so you can try the screen with real Issues and PRs. Clean up with `/guild-trial-cleanup`. See [docs/setup.md 1-2](docs/setup.md#1-2-お試しの会社) (Japanese).
+After the demo, start Claude Code in the conect-guild root and run `/guild-trial`. It creates a made-up company (a private repository on GitHub, department folders and local settings) so you can try the screen with made-up Issues. Clean up with `/guild-trial-cleanup`. See [docs/setup.md 1-2](docs/setup.md#1-2-お試しの会社) (Japanese).
 
 ## Try it with your own team
 
