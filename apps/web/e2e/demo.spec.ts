@@ -149,10 +149,8 @@ test('on a narrow screen (the room hidden) はじめる waits until the screen i
   expect(errors).toEqual([]);
 });
 
-test('the first loop of the demo shows a level-up (Issue #19)', async ({ page, context }) => {
-  // かなめ goes up with her second scroll (13.5 s), and the message waits until she is back
-  // from handing it over: well within the first loop, with the room's scenes in real time.
-  test.setTimeout(90_000);
+/** Plays the demo from はじめる until かなめ's level-up shows, "LEVEL UP" on the canvas with it. */
+async function expectFirstLevelUp(page: Page, context: BrowserContext) {
   const { errors, snapshotRequests } = await openDemo(page, context);
   await page.getByRole('button', { name: '▶ はじめる' }).click();
   const message = page.getByRole('region', { name: 'メッセージ' });
@@ -163,4 +161,32 @@ test('the first loop of the demo shows a level-up (Issue #19)', async ({ page, c
   ).toContainText('Lv 6');
   expect(snapshotRequests).toEqual([]);
   expect(errors).toEqual([]);
+}
+
+test('the first loop of the demo shows a level-up (Issue #19)', async ({ page, context }) => {
+  // かなめ goes up with her second scroll (13.5 s), and the message waits until she is back
+  // from handing it over: well within the first loop, with the room's scenes in real time.
+  test.setTimeout(90_000);
+  await expectFirstLevelUp(page, context);
 });
+
+/**
+ * In the hours of a gathering the free hands are in it when the demo starts (Issue #224): a scene
+ * waits for its cast to walk back, and the message queue waits with it, so the level-up's message
+ * and "LEVEL UP" still come together. Tokyo time (playwright.config.ts); the clock runs on.
+ */
+const GATHERING_TIMES = [
+  { name: 'the month’s gathering (a Monday, 15:30)', at: '2026-10-19T06:30:00.000Z' },
+  { name: 'the Friday toast (18:30)', at: '2026-10-16T09:30:00.000Z' },
+] as const;
+
+for (const { name, at } of GATHERING_TIMES) {
+  test(`the level-up shows with its message in the hours of ${name} (Issue #224)`, async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(90_000);
+    await page.clock.install({ time: Date.parse(at) });
+    await expectFirstLevelUp(page, context);
+  });
+}
