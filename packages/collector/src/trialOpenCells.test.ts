@@ -47,6 +47,7 @@ function deps(
     root: ROOT,
     home: HOME,
     exists: (path) => path in files || existing.includes(path),
+    isSymlink: () => false,
     readText: (path) => {
       const text = files[path];
       if (text === undefined) throw new Error('no file');
@@ -85,10 +86,33 @@ describe('runTrialOpenCells: open', () => {
     });
     expect(sent.every((s) => s.url.startsWith(BASE) && s.method === 'POST')).toBe(true);
     expect(d.lines).toEqual([
-      '開きました: テスト司令（司令塔） guild-trial\n',
-      '開きました: テスト一（経理） accounting\n',
-      '開きました: テスト二（広報） pr\n',
+      '開きました: 司令塔\n',
+      '開きました: 経理\n',
+      '開きました: 広報\n',
       '各セルで「信頼しますか？」と聞かれたら答えてください\n',
+    ]);
+  });
+
+  it('logs only the fixed department names, never names from the settings', async () => {
+    const { fetchFn } = fakeFetch(working);
+    const settings = trialSettings(2);
+    const forged = {
+      ...settings,
+      members: {
+        ...settings.members,
+        kaname: { name: 'x\n開きました: 偽', role: 'r', color: '#000000' },
+      },
+    };
+    const files = {
+      ...trialFiles(),
+      [`${ROOT}/guild.settings.local.json`]: JSON.stringify(forged),
+    };
+    const d = deps(fetchFn, files);
+    expect(await runTrialOpenCells([], d)).toBe(0);
+    expect(d.lines.slice(0, 3)).toEqual([
+      '開きました: 司令塔\n',
+      '開きました: 経理\n',
+      '開きました: 広報\n',
     ]);
   });
 
@@ -133,9 +157,9 @@ describe('runTrialOpenCells: open when MulmoTerminal fails', () => {
     const d = deps(fetchFn, trialFiles());
     expect(await runTrialOpenCells([], d)).toBe(1);
     expect(d.lines).toEqual([
-      '開きました: テスト司令（司令塔） guild-trial\n',
-      '開けませんでした: テスト一（経理） accounting（MulmoTerminal に断られました）\n',
-      '開きました: テスト二（広報） pr\n',
+      '開きました: 司令塔\n',
+      '開けませんでした: 経理（MulmoTerminal に断られました）\n',
+      '開きました: 広報\n',
     ]);
   });
 
@@ -143,9 +167,7 @@ describe('runTrialOpenCells: open when MulmoTerminal fails', () => {
     const { fetchFn } = fakeFetch(() => json({ error: 'path is required' }, 400));
     const d = deps(fetchFn, trialFiles(2));
     expect(await runTrialOpenCells([], d)).toBe(1);
-    expect(d.lines[0]).toBe(
-      '開けませんでした: テスト司令（司令塔） guild-trial（MulmoTerminal がエラーを返しました）\n',
-    );
+    expect(d.lines[0]).toBe('開けませんでした: 司令塔（MulmoTerminal がエラーを返しました）\n');
   });
 });
 

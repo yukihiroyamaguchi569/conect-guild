@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { loadSettingsFile, type SettingsReader } from '@conect-guild/snapshot/settingsFile';
-import type { GuildSettings } from '@conect-guild/snapshot/settingsSchema';
+import { escapeForTerminal, type GuildSettings } from '@conect-guild/snapshot/settingsSchema';
 import { expandHome } from './home.ts';
 import type { CallFailure, MulmoTerminalClient } from './mulmoTerminal.ts';
 import {
@@ -29,6 +29,8 @@ export interface OpenCellsDeps extends SettingsReader {
   /** The repository root, where the settings files sit. */
   readonly root: string;
   readonly home: string;
+  /** True when the path itself is a symbolic link (lstat). */
+  readonly isSymlink: (path: string) => boolean;
   /** null when MULMOTERMINAL_PORT is not a port number. */
   readonly client: MulmoTerminalClient | null;
   readonly out: (text: string) => void;
@@ -58,7 +60,8 @@ function cellsToOpen(deps: OpenCellsDeps): CellsResult {
   } catch (error) {
     return { ok: false, reason: error instanceof Error ? error.message : '設定を読めません' };
   }
-  return trialCells(loaded, deps.home, readClaudeMd(deps, loaded.commanderSessionDir));
+  const claudeMd = readClaudeMd(deps, loaded.commanderSessionDir);
+  return trialCells(loaded, deps.home, claudeMd, deps.isSymlink);
 }
 
 /** Record then spawn; null when opened, else why not. */
@@ -83,7 +86,7 @@ async function openAll(deps: OpenCellsDeps, client: MulmoTerminalClient): Promis
       deps.err(NOT_RUNNING);
       return 1;
     }
-    const where = `${cell.label} ${pathTail(cell.path)}`;
+    const where = cell.logName;
     if (failure === null) {
       deps.out(`開きました: ${where}\n`);
     } else {
@@ -112,10 +115,12 @@ async function forgetAll(deps: OpenCellsDeps, client: MulmoTerminalClient): Prom
   for (const path of targets) {
     const removed = await client.remove(path);
     if (removed.ok) {
-      deps.out(`外しました: ${pathTail(path)}\n`);
+      deps.out(`外しました: ${escapeForTerminal(pathTail(path))}\n`);
     } else {
       failed += 1;
-      deps.out(`外せませんでした: ${pathTail(path)}（${FAILURE_TEXT[removed.failure]}）\n`);
+      deps.out(
+        `外せませんでした: ${escapeForTerminal(pathTail(path))}（${FAILURE_TEXT[removed.failure]}）\n`,
+      );
     }
   }
   return failed === 0 ? 0 : 1;

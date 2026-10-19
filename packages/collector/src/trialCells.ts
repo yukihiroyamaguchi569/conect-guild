@@ -23,7 +23,10 @@ const TRIAL_NAME = /^(?:guild-trial(?:-[1-9]\d*)?|\d{8}-[0-9a-f]{4})$/;
 export interface Cell {
   /** Absolute, `~` expanded. */
   readonly path: string;
+  /** Shown in MulmoTerminal: the member's name from the settings and the role. */
   readonly label: string;
+  /** For the log: fixed text only (司令塔 or the trial table's department name). */
+  readonly logName: string;
   /** The first message of the session: fixed text and a department label of the trial table. */
   readonly message: string;
 }
@@ -49,38 +52,56 @@ export function trialCompanyOf(path: string, home: string): string | null {
 
 const NOT_TRIAL = 'お試しの会社の設定ではないので、まとめて開きません';
 
+/** A department's cell with its label as the role; null unless it is exactly its trial folder. */
+function departmentCell(
+  d: GuildSettings['departments'][number],
+  commander: string,
+  home: string,
+  isSymlink: (path: string) => boolean,
+): Cell | null {
+  const path = expandHome(d.sessionDir, home);
+  const known = TRIAL_DEPARTMENTS.find((t) => t.label === d.label);
+  if (known === undefined || path !== join(commander, known.folder) || isSymlink(path)) return null;
+  return {
+    path,
+    label: known.label,
+    logName: known.name,
+    message: departmentMessage(known.label),
+  };
+}
+
 /**
  * The cells of the trial company in `settings`: the 司令塔 first, then the departments in order.
  * Refuses settings that are not /guild-trial's: the 司令塔 is not `~/guild-trial/<name>`, its
- * CLAUDE.md (null when unreadable) lacks the trial mark, a department is outside it or has a
- * label not in the trial table, or the count is not 2..6.
+ * CLAUDE.md (null when unreadable) lacks the trial mark, a department is not exactly the folder
+ * of its label in the trial table, the count is not 2..6, or `~/guild-trial`, the 司令塔 or a
+ * department folder is a symbolic link (a session would start where the link points).
  */
 export function trialCells(
   settings: GuildSettings,
   home: string,
   commanderClaudeMd: string | null,
+  isSymlink: (path: string) => boolean,
 ): CellsResult {
+  const refused = { ok: false, reason: NOT_TRIAL } as const;
   const commander = expandHome(settings.commanderSessionDir, home);
-  if (trialCompanyOf(commander, home) !== commander) return { ok: false, reason: NOT_TRIAL };
-  if (commanderClaudeMd?.includes(TRIAL_MARK) !== true) return { ok: false, reason: NOT_TRIAL };
-  if (!SUPPORTED_DEPARTMENT_COUNTS.includes(settings.departments.length)) {
-    return { ok: false, reason: NOT_TRIAL };
-  }
+  if (trialCompanyOf(commander, home) !== commander) return refused;
+  if (commanderClaudeMd?.includes(TRIAL_MARK) !== true) return refused;
+  if (!SUPPORTED_DEPARTMENT_COUNTS.includes(settings.departments.length)) return refused;
+  if (isSymlink(join(home, 'guild-trial')) || isSymlink(commander)) return refused;
   const nameOf = (id: keyof GuildSettings['members']): string => settings.members[id]?.name ?? id;
   const cells: Cell[] = [
-    { path: commander, label: `${nameOf(COMMANDER_ID)}（司令塔）`, message: COMMANDER_MESSAGE },
+    {
+      path: commander,
+      label: `${nameOf(COMMANDER_ID)}（司令塔）`,
+      logName: '司令塔',
+      message: COMMANDER_MESSAGE,
+    },
   ];
   for (const d of settings.departments) {
-    const path = expandHome(d.sessionDir, home);
-    const known = TRIAL_DEPARTMENTS.find((t) => t.label === d.label);
-    if (known === undefined || !path.startsWith(`${commander}/`)) {
-      return { ok: false, reason: NOT_TRIAL };
-    }
-    cells.push({
-      path,
-      label: `${nameOf(d.member)}（${known.label}）`,
-      message: departmentMessage(known.label),
-    });
+    const cell = departmentCell(d, commander, home, isSymlink);
+    if (cell === null) return refused;
+    cells.push({ ...cell, label: `${nameOf(d.member)}（${cell.label}）` });
   }
   return { ok: true, cells };
 }

@@ -7,6 +7,9 @@ import { TRIAL_DEPARTMENTS } from './trialScaffold.ts';
 
 export const HOME = '/home/tester';
 export const CLAUDE_MD = `# 司令塔\n\nこれは conect-guild を試すための${TRIAL_MARK}のものである。\n`;
+/** No folder is a symbolic link. */
+export const NO_LINKS = (): boolean => false;
+
 const MEMBERS = ['minori', 'hibiki', 'hirame', 'sasae', 'takumi', 'musubi'] as const;
 
 /** Settings as /guild-trial writes them, with `count` departments. */

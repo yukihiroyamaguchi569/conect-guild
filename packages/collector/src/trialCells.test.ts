@@ -1,26 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { CLAUDE_MD, HOME, trialSettings } from './trialCells.fixtures.test-util.ts';
+import { CLAUDE_MD, HOME, NO_LINKS, trialSettings } from './trialCells.fixtures.test-util.ts';
 import { forgetTargets, pathTail, projectId, trialCells, trialCompanyOf } from './trialCells.ts';
 
 describe('trialCells', () => {
   it('opens the 司令塔 first, then each department, with ~ expanded', () => {
-    const result = trialCells(trialSettings(2), HOME, CLAUDE_MD);
+    const result = trialCells(trialSettings(2), HOME, CLAUDE_MD, NO_LINKS);
     expect(result).toEqual({
       ok: true,
       cells: [
         {
           path: '/home/tester/guild-trial/guild-trial',
           label: 'テスト司令（司令塔）',
+          logName: '司令塔',
           message: 'あなたはお試し商会の司令塔です。CLAUDE.md を読み、社長の依頼を待ってください。',
         },
         {
           path: '/home/tester/guild-trial/guild-trial/accounting',
           label: 'テスト一（経理）',
+          logName: '経理',
           message: 'あなたはお試し商会の経理部門です。CLAUDE.md を読み、Issue を待ってください。',
         },
         {
           path: '/home/tester/guild-trial/guild-trial/pr',
           label: 'テスト二（広報）',
+          logName: '広報',
           message: 'あなたはお試し商会の広報部門です。CLAUDE.md を読み、Issue を待ってください。',
         },
       ],
@@ -28,13 +31,13 @@ describe('trialCells', () => {
   });
 
   it.each([2, 3, 4, 5, 6])('opens %i departments and the 司令塔', (count) => {
-    const result = trialCells(trialSettings(count), HOME, CLAUDE_MD);
+    const result = trialCells(trialSettings(count), HOME, CLAUDE_MD, NO_LINKS);
     expect(result.ok && result.cells.length).toBe(count + 1);
   });
 
   it('accepts the absolute form and the numbered and dated names', () => {
     for (const root of [`${HOME}/guild-trial/guild-trial-2`, '~/guild-trial/20261015-a3f9']) {
-      expect(trialCells(trialSettings(4, root), HOME, CLAUDE_MD).ok).toBe(true);
+      expect(trialCells(trialSettings(4, root), HOME, CLAUDE_MD, NO_LINKS).ok).toBe(true);
     }
   });
 });
@@ -48,7 +51,7 @@ describe('trialCells: refusals', () => {
       '~/guild-trial/guild-trial/accounting',
       '/srv/guild-trial/guild-trial',
     ]) {
-      expect(trialCells(trialSettings(4, root), HOME, CLAUDE_MD)).toEqual({
+      expect(trialCells(trialSettings(4, root), HOME, CLAUDE_MD, NO_LINKS)).toEqual({
         ok: false,
         reason: 'お試しの会社の設定ではないので、まとめて開きません',
       });
@@ -56,8 +59,8 @@ describe('trialCells: refusals', () => {
   });
 
   it('refuses when the 司令塔 CLAUDE.md lacks the trial mark or cannot be read', () => {
-    expect(trialCells(trialSettings(4), HOME, '# 司令塔\n').ok).toBe(false);
-    expect(trialCells(trialSettings(4), HOME, null).ok).toBe(false);
+    expect(trialCells(trialSettings(4), HOME, '# 司令塔\n', NO_LINKS).ok).toBe(false);
+    expect(trialCells(trialSettings(4), HOME, null, NO_LINKS).ok).toBe(false);
   });
 
   it('refuses a department outside the company or with a label not in the trial table', () => {
@@ -66,12 +69,34 @@ describe('trialCells: refusals', () => {
     if (first === undefined || second === undefined) throw new Error('two departments');
     const outside = { ...settings, departments: [first, { ...second, sessionDir: '~/elsewhere' }] };
     const label = { ...settings, departments: [first, { ...second, label: '何でも屋' }] };
-    expect(trialCells(outside, HOME, CLAUDE_MD).ok).toBe(false);
-    expect(trialCells(label, HOME, CLAUDE_MD).ok).toBe(false);
+    expect(trialCells(outside, HOME, CLAUDE_MD, NO_LINKS).ok).toBe(false);
+    expect(trialCells(label, HOME, CLAUDE_MD, NO_LINKS).ok).toBe(false);
+  });
+
+  it('refuses a department whose folder is not the one of its label', () => {
+    const settings = trialSettings(2);
+    const [first, second] = settings.departments;
+    if (first === undefined || second === undefined) throw new Error('two departments');
+    const root = settings.commanderSessionDir;
+    for (const sessionDir of [`${root}/pr`, `${root}/accounting/inner`, `${root}/other`]) {
+      const moved = { ...settings, departments: [{ ...first, sessionDir }, second] };
+      expect(trialCells(moved, HOME, CLAUDE_MD, NO_LINKS).ok).toBe(false);
+    }
+  });
+
+  it('refuses when the 司令塔 or a department folder is a symbolic link', () => {
+    for (const link of [
+      `${HOME}/guild-trial/guild-trial`,
+      `${HOME}/guild-trial/guild-trial/pr`,
+      `${HOME}/guild-trial`,
+    ]) {
+      const isSymlink = (path: string): boolean => path === link;
+      expect(trialCells(trialSettings(2), HOME, CLAUDE_MD, isSymlink).ok).toBe(false);
+    }
   });
 
   it('refuses a department count outside 2..6', () => {
-    expect(trialCells(trialSettings(1), HOME, CLAUDE_MD).ok).toBe(false);
+    expect(trialCells(trialSettings(1), HOME, CLAUDE_MD, NO_LINKS).ok).toBe(false);
   });
 });
 

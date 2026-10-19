@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { SETTINGS_ROOT } from '@conect-guild/snapshot/settingsFile';
 import { mulmoTerminalBase, mulmoTerminalClient } from './mulmoTerminal.ts';
@@ -13,6 +13,7 @@ process.exitCode = await runTrialOpenCells(process.argv.slice(2), {
   home: homedir(),
   exists: existsSync,
   readText: (path) => readFileSync(path, 'utf8'),
+  isSymlink: (path) => lstatSync(path, { throwIfNoEntry: false })?.isSymbolicLink() === true,
   client: base === null ? null : mulmoTerminalClient(base, fetch),
   out: (text) => {
     process.stdout.write(text);
