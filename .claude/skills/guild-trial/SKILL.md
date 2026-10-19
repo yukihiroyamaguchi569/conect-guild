@@ -178,14 +178,14 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
    npm run dev:all
    ```
 
-   起動したら、その出力のファイル（Bash の結果に出るパス）で collector の `ok: issues=` の行を待つ。待つのは上限 120 秒（2 秒ごとに 60 回）で、Bash の `timeout` も 150000 にする
+   起動したら、その出力のファイル（Bash の結果に出るパス）で collector の `ok: issues=` の行が出て、かつ 5273 番が待ち受け（LISTEN）になるのを待つ。待つのは上限 120 秒（2 秒ごとに 60 回）で、Bash の `timeout` も 150000 にする
 
    ```bash
-   i=0; until grep -qE 'ok: issues=|failed:|already in use' "<出力のファイル>"; do i=$((i+1)); [ "$i" -ge 60 ] && echo timeout && break; sleep 2; done; grep -E 'settings:|ok: issues=|failed:|already in use' "<出力のファイル>"
+   i=0; until { grep -q 'ok: issues=' "<出力のファイル>" && lsof -nP -iTCP:5273 -sTCP:LISTEN -t >/dev/null; } || grep -qE 'failed:|already in use' "<出力のファイル>"; do i=$((i+1)); [ "$i" -ge 60 ] && echo timeout && break; sleep 2; done; grep -E 'settings:|ok: issues=|failed:|already in use' "<出力のファイル>"; lsof -nP -iTCP:5273 -sTCP:LISTEN -t || echo "5273 not listening"
    ```
 
-   - `ok: issues=` が出て、`settings:` の行が `guild.settings.local.json` なら 3 に進む
-   - `failed:` が出た、`already in use` が出た、`timeout` が出た、`settings:` の行が `guild.settings.local.json` でない: 出た行を伝え、[docs/setup.md の 3 章](../../../docs/setup.md#3-困ったとき)を案内する。起動した `dev:all` は動いたままにしてよい（利用者が Ctrl-C で止められないので、止めたいときは言ってもらう）
+   - `ok: issues=` が出て、5273 番の PID が出て（`5273 not listening` でない）、`settings:` の行が `guild.settings.local.json` なら 3 に進む。両方そろう前に URL を伝えない
+   - `failed:` が出た、`already in use` が出た、`timeout` か `5273 not listening` が出た、`settings:` の行が `guild.settings.local.json` でない: 出た行を伝え、[docs/setup.md の 3 章](../../../docs/setup.md#3-困ったとき)を案内する。起動した `dev:all` は動いたままにしてよい（利用者が Ctrl-C で止められないので、止めたいときは言ってもらう）
 3. 利用者には次だけを伝える
    - 「http://127.0.0.1:5273 を開いてください」（「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られる）
    - 片付けるときは `/guild-trial-cleanup` を使う
