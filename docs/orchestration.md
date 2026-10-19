@@ -24,7 +24,7 @@ my-company/                ← 司令塔（直下の CLAUDE.md）
 └── projects/              ← 司令塔が書く案件の記録（決定の一覧など）
 ```
 
-部門の名前・フォルダ・ラベルと、部門の数（ここでは 4）は例です。conect-guild で眺められる部門の数は 2〜6 です（[setup.md の使える条件](setup.md#0-使える条件)）。名前・フォルダ・ラベルを変えるときは、司令塔の `CLAUDE.md` の部門の表（[4 章](#4-司令塔の-claudemd-の雛形)）、部門を作ったあとならその部門の `CLAUDE.md`（部門の名前・フォルダ・ラベル・ブランチ名）と、conect-guild の設定（`departments` の `label`・`sessionDir`、`branchPrefixes`、画面に出る役の名前の `members` の `role`）も合わせて変えてください。ラベルを作ったあとでラベル名を変えるときは、GitHub のラベルも `gh label edit "<今のラベル>" --name "<新しいラベル>"` で名前を変えます（付いている Issue はそのまま新しい名前になります）。部門を作ったあとでフォルダ名を変えるときは、司令塔に `git mv` でフォルダを移す PR を出してもらい、社長がマージしてから手元を最新の main にします（ルールの変更なので社長がマージします）。変えたあとは、変わった部門のセッションを（フォルダを変えたなら新しいフォルダで）開き直し、conect-guild の `npm run dev:all` も止めて起動し直します（collector と画面は起動時に設定を読みます）。
+部門の名前・フォルダ・ラベルと、部門の数（ここでは 4）は例です。conect-guild で眺められる部門の数は 2〜6 です（[setup.md の使える条件](setup.md#1-使える条件)）。名前・フォルダ・ラベルを変えるときは、司令塔の `CLAUDE.md` の部門の表（[4 章](#4-司令塔の-claudemd-の雛形)）、部門を作ったあとならその部門の `CLAUDE.md`（部門の名前・フォルダ・ラベル・ブランチ名）と、conect-guild の設定（`departments` の `label`・`sessionDir`、`branchPrefixes`、画面に出る役の名前の `members` の `role`）も合わせて変えてください。ラベルを作ったあとでラベル名を変えるときは、GitHub のラベルも `gh label edit "<今のラベル>" --name "<新しいラベル>"` で名前を変えます（付いている Issue はそのまま新しい名前になります）。部門を作ったあとでフォルダ名を変えるときは、司令塔に `git mv` でフォルダを移す PR を出してもらい、社長がマージしてから手元を最新の main にします（ルールの変更なので社長がマージします）。変えたあとは、変わった部門のセッションを（フォルダを変えたなら新しいフォルダで）開き直し、conect-guild の `npm run dev:all` も止めて起動し直します（collector と画面は起動時に設定を読みます）。
 
 ## 2. GitHub での流れ
 
@@ -139,7 +139,7 @@ conect-guild はルールの変更を、設定の `ruleChangePaths` で見分け
 
 ### 3-6. conect-guild の設定を書く
 
-**やること**: conect-guild の `guild.settings.local.json` に、リポジトリ名（`repo`）、司令塔と部門のフォルダ（`commanderSessionDir` と `departments[].sessionDir`）、部門のラベル名（`departments[].label`）と、ブランチの接頭辞（`branchPrefixes`。部門の表の「ブランチの接頭辞」）を書きます。手順は [setup.md の 2 章](setup.md#2-自分のリポジトリで使う)です。Claude Code を使うなら、conect-guild の直下で `/guild-setup` のスキルを実行すると、司令塔の `CLAUDE.md` の部門の表から値を集めて書けます（[setup.md の 2-2](setup.md#2-2-設定ファイルを作って書き換える)）。
+**やること**: conect-guild の `guild.settings.local.json` に、リポジトリ名（`repo`）、司令塔と部門のフォルダ（`commanderSessionDir` と `departments[].sessionDir`）、部門のラベル名（`departments[].label`）と、ブランチの接頭辞（`branchPrefixes`。部門の表の「ブランチの接頭辞」）を書きます。手順は [setup.md の 2 章](setup.md#2-設定して使う)です。Claude Code を使うなら、conect-guild の直下で `/guild-setup` のスキルを実行すると、司令塔の `CLAUDE.md` の部門の表から値を集めて書けます（[setup.md の 2-2](setup.md#2-2-設定ファイルを作って書き換える)）。
 
 **確かめること**
 

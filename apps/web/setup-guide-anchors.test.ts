@@ -24,7 +24,7 @@ function anchorOf(url: string): string {
 // Issue #97: the banners' links land on a heading of docs/setup.md, not on the top of the page.
 describe('the banners’ links into docs/setup.md', () => {
   it.each([
-    ['集め方', COLLECT_GUIDE_URL, '2-自分のリポジトリで使う'],
+    ['集め方', COLLECT_GUIDE_URL, '2-設定して使う'],
     ['直し方', MISSING_LABELS_GUIDE_URL, '画面の帯に部門のラベルがリポジトリにありませんと出る'],
     [
       '取り違えの直し方',
