@@ -107,7 +107,17 @@ gh repo view <owner/name>   # 眺めたいリポジトリ（例: your-name/my-co
 
 ### 2-2. 設定ファイルを作って書き換える
 
-**Claude Code を使うなら、スキルで書けます。** conect-guild の直下で Claude Code を起動し、`/guild-setup` を実行します（「guild の設定を作って」と頼んでも使われます）。スキルが聞くのは、あなたの会社の GitHub リポジトリ（conect-guild 自身ではありません）と司令塔のフォルダの 2 つだけです。部門（ラベル・司令塔の下のフォルダ・接頭辞）は司令塔の `CLAUDE.md` の部門の表（[orchestration.md の 4 章](orchestration.md#4-司令塔の-claudemd-の雛形)の形）から読み、読めないときは雛形の 4 部門を規定値にして、確認の表に出します。違うところだけ直してください。ラベルがリポジトリにあるかはスキルが `gh label list` で確かめ、2-2b の道具で確かめた結果とあわせて確認の表と警告にして見せます。OK と答えたときだけ `guild.settings.local.json` を書きます。書けたら 2-3 に進みます。
+**Claude Code を使うなら、スキルで書けます。**
+
+1. conect-guild の直下で Claude Code を起動し、`/guild-setup` を実行します（「guild の設定を作って」と頼んでも使われます）
+2. スキルに聞かれる 2 つに答えます
+   - あなたの会社の GitHub リポジトリ（conect-guild 自身ではありません）
+   - 司令塔のフォルダ
+3. スキルが確認の表を見せます。違うところだけ直してください
+   - 部門（ラベル・司令塔の下のフォルダ・接頭辞）は、司令塔の `CLAUDE.md` の部門の表（[orchestration.md の 4 章](orchestration.md#4-司令塔の-claudemd-の雛形)の形）から読みます。読めないときは、雛形の 4 部門が入ります
+   - ラベルがリポジトリにあるかは、スキルが `gh label list` と 2-2b の道具で確かめ、無ければ警告に出します
+4. OK と答えると、`guild.settings.local.json` が書かれます。OK と答えない限り書きません
+5. 書けたら 2-3 に進みます
 
 手で書くときは、下の手順に従います。リポジトリ名・司令塔と部門のフォルダ・部門のラベルと接頭辞を書き換えるだけなら（部門の数を変えるときも）、手で書く代わりに道具（`npm run settings:write`）でも書けます（[2-2b](#2-2b-道具で書くnpm-run-settingswrite)）。
 
