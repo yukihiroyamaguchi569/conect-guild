@@ -1,0 +1,9 @@
+# お試しの会社のセルを MulmoTerminal にまとめて開く（Issue #223）
+
+- `npm run trial:open-cells` を足した。手元の設定の司令塔と部門のフォルダごとに、MulmoTerminal の最近のフォルダに登録し、そのフォルダで Claude のセルを起動する。最初の指示は決まった文（司令塔は社長の依頼を、部門は Issue を待つ）
+- お試しの会社の設定（司令塔のフォルダが `~/guild-trial/<お試しの名前>` で、その `CLAUDE.md` に「架空の会社「お試し商会」」がある）のときだけ動く。本物の会社の設定では何も送らずに理由を出す
+- 送り先はこの機械の MulmoTerminal（`127.0.0.1`、`MULMOTERMINAL_PORT`、無ければ 34567 番）の決まった口だけで、引数では変えられない。応答しない（接続できない・5 秒で答えない）ときは何も開かない。応答は zod で確かめ、フォルダごとに成功・失敗を 1 行ずつ出す
+- 同じフォルダのセルが既にあっても、もう 1 つ開く（二重起動は防がない）
+- `npm run trial:open-cells -- --forget` を足した。片付けのあと、MulmoTerminal の最近のフォルダから、もう無いお試しのフォルダ（`~/guild-trial/<お試しの名前>` とその下）だけを外す。設定を読まないので、片付けで設定を消したあとでも使える
+- `/guild-trial` の最後の案内を、セルを 1 つずつ開く手順から `! npm run trial:open-cells` に替えた。`/guild-trial-cleanup` の最後の案内に `! npm run trial:open-cells -- --forget`（またはチップの ×）を足した。どちらも MulmoTerminal の設定を書き換える操作で、Claude Code の安全確認で止まるので、Claude は実行せず利用者が打つ。承認の回数は増やしていない
+- docs/setup.md の 1-2 と DESIGN.md（通信の原則と、お試しの会社の項）を合わせた
