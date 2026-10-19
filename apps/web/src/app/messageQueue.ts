@@ -54,7 +54,8 @@ export interface MessageQueue {
   setStage(stage: StageRecall | null): void;
   /**
    * Members away from their seat on the stage for a while (`homeIn`, stage ms from now): かなめ
-   * hearing the king's order at the throne (Issue #87). The next scenes that need them wait.
+   * hearing the king's order at the throne (Issue #87), or a scene's cast walking back from a
+   * gathering before it starts (Issue #224). The next scenes that need them wait.
    */
   occupy(homeIn: HomeIn): void;
 }
