@@ -53,7 +53,7 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
      gh repo view <owner>/<名前> --json nameWithOwner,isPrivate,description
      ```
 
-     - 出た `nameWithOwner` が `<owner>/<名前>` で `isPrivate` が `true`: 消すものに入れる。ただし、お試しのフォルダの `origin` では結びつけられず、手元の設定だけで結びついたときは、`<名前>` が `guild-trial` か `guild-trial-<番号>` なら、`description` が `conect-guild のお試し商会（架空の会社）`（`/guild-trial` が付ける説明）と完全に一致するときだけ入れる。一致しなければ消さずに一覧で「お試しのものと確かめられないので消しません」と伝える（同じ名前の本物の private のリポジトリを消さないため）。前の形 `<日付>-<4 文字>` は説明が無くてもよい
+     - 出た `nameWithOwner` が `<owner>/<名前>` で `isPrivate` が `true`: 消すものに入れる。ただし、`<名前>` が `guild-trial` か `guild-trial-<番号>` なら、結びつき方（フォルダの `origin` か手元の設定か）にかかわらず、`description` が `conect-guild のお試し商会（架空の会社）`（`/guild-trial` が付ける説明）と完全に一致するときだけ入れる。一致しなければ消さずに一覧で「お試しのものと確かめられないので消しません」と伝える（お試しを手で消したあとに作った同じ名前の本物の private のリポジトリを消さないため）。前の形 `<日付>-<4 文字>` は説明が無くてもよい
      - `isPrivate` が `false`: お試しは private で作るので、別のものとして消さない（一覧で「public なので消しません」と伝える）
      - エラーに `Could not resolve to a Repository` が出た: もう無い。消すものに入れない
      - それ以外のエラー（証明書・未ログイン・通信など）: 止まり、docs/setup.md の 3 章「`gh issue list` が動かない」を案内する。何も消さない
