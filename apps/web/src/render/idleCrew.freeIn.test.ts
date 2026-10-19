@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GuildEvent } from '../domain/events';
+import { CONFETTI_MS } from './confetti';
 import { EMPTY_DIRECTOR, scheduleEvent } from './director';
 import { createIdleCrew, freeIn, playEvent } from './idleCrew';
 import { planMonthEvent } from './monthEvent';
@@ -23,6 +24,13 @@ const HAND_OVER: GuildEvent = {
   department: '企画',
 };
 const IDS = [...castOf(HAND_OVER), actorOf(HAND_OVER)];
+/** ひらめ (企画) clears a quest: the confetti flies over her seat. */
+const CLEARED: GuildEvent = {
+  id: 'issue-closed#105',
+  kind: 'issue-closed',
+  number: 105,
+  department: '企画',
+};
 
 function crew() {
   return createIdleCrew({ random: () => 0.5, wallNow: () => 0, onActive: () => undefined });
@@ -50,5 +58,22 @@ describe('freeIn (Issue #224)', () => {
     const walkBack = (released.busyUntil.hirame ?? t) - t;
     expect(walkBack).toBeGreaterThan(0);
     expect(onStage.kaname).toBe((queued.kaname ?? 0) + walkBack);
+  });
+
+  it('counts the confetti of a cleared quest, not only the walk back, as the hand-over’s scene', () => {
+    const gathering = planMonthEvent(['hirame', 'sasae'], 0, DEFAULT_SEATS, 10);
+    if (gathering === null) throw new Error('no gathering');
+    const t = 30_000;
+    const ids = [actorOf(CLEARED)];
+    const released = releaseFromToast(withToast(EMPTY_DIRECTOR, gathering), gathering, ids, {
+      t,
+      seats: DEFAULT_SEATS,
+    });
+    const walkBack = (released.busyUntil.hirame ?? t) - t;
+    expect(walkBack).toBeGreaterThan(0);
+    const played = playEvent(crew(), released, CLEARED, { t, context: CONTEXT });
+    // The confetti flies over her seat from `t` on, while she walks back under it.
+    expect(walkBack).toBeLessThan(CONFETTI_MS);
+    expect(freeIn(played, ids, t).hirame).toBe(CONFETTI_MS);
   });
 });

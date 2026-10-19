@@ -1,5 +1,5 @@
 import { ACTIVE_MEMBER_IDS, type MemberId } from '../guild.config';
-import type { Random } from './confetti';
+import { CONFETTI_MS, type Random } from './confetti';
 import type { GuildEvent } from '../domain/events';
 import { inScene, scheduleEvent, sendHome, type Director } from './director';
 import {
@@ -137,9 +137,18 @@ export function playEvent(
 /** Ms from now until each member is free at their seat (0 when they are already). */
 export type HomeIn = Readonly<Partial<Record<MemberId, number>>>;
 
-/** Ms from `t` until each of `ids` is free in `director` (0 when they are already). */
+/**
+ * Ms from `t` until each of `ids` is free in `director` (0 when they are already): out of their
+ * tracks, and out from under their confetti (a cleared quest has no track: its scene is the burst).
+ */
 export function freeIn(director: Director, ids: readonly MemberId[], t: number): HomeIn {
-  return Object.fromEntries(ids.map((id) => [id, Math.max((director.busyUntil[id] ?? t) - t, 0)]));
+  return Object.fromEntries(
+    ids.map((id) => {
+      const bursts = director.bursts.filter((burst) => burst.actor === id);
+      const ends = bursts.map((burst) => burst.start + CONFETTI_MS);
+      return [id, Math.max((director.busyUntil[id] ?? t) - t, ...ends.map((end) => end - t), 0)];
+    }),
+  );
 }
 
 /**
