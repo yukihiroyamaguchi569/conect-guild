@@ -130,7 +130,7 @@ conect-guild/
 ├── scoria.config.json        scoria（コードの健康状態の計測）の設定。.scoria/baseline.json が基準の記録
 ├── .claude/skills/guild-setup/SKILL.md  手元の設定を作る入口のスキル（`/guild-setup`）。値を集め、`npm run settings:write` で確かめてから書く（10 章 9。Issue #79）
 ├── .madgerc                 scoria の循環 import の検査（madge）に渡す設定。.vue の import を TypeScript の解決で読ませる（9 章）
-└── .github/workflows/ci.yml  npm ci → lint / typecheck / test / build（サンプルデータのみ）。scoria.yml は scoria の計測（9 章）
+└── .github/workflows/ci.yml  npm ci → lint / typecheck / test / build（サンプルデータのみ）。e2e.yml はブラウザの E2E（Markdown だけの PR では走らない）。scoria.yml は scoria の計測（9 章）
 ```
 
 画面の重ね方: 一番下に Canvas（社屋とキャラ）、その上に Vue の窓（掲示板・パーティ・メッセージ）。文字は HTML で出すので日本語がきれいに出る。
