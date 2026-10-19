@@ -163,8 +163,30 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 
 4. 入力ファイルを消す
 
-## 7. 案内する
+## 7. 画面を起動して案内する
 
-- MulmoTerminal で、司令塔のフォルダ（`~/guild-trial/<名前>`）と部門のフォルダ（`~/guild-trial/<名前>/accounting` など）で、それぞれセルを開いて Claude Code を起動する（フォルダそのもので起動する。[docs/orchestration.md の 3-5](../../../docs/orchestration.md#3-5-部門のセッションを開く)）
-- conect-guild の直下で `npm run dev:all` を起動し、http://127.0.0.1:5273 を開く。「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られる（[docs/setup.md の 2-3・2-4](../../../docs/setup.md#2-3-collector-と画面を起動する)）。既に起動していたら、止めて起動し直す
-- 片付けるときは `/guild-trial-cleanup` を使う
+1. 5273 番が使われていないかを確かめる
+
+   ```bash
+   lsof -nP -iTCP:5273 -sTCP:LISTEN -t
+   ```
+
+   PID が出たら、`npm run dev:all` などが既に動いている。スキルはそのプロセスを止めない。「`npm run dev:all` が既に動いています。止めて起動し直すと、お試しの会社が画面に出ます（http://127.0.0.1:5273）」と伝え、3 の案内をして終える
+2. conect-guild の直下で `npm run dev:all` を、Bash の `run_in_background` で起動する。collector の `gh` は sandbox の中だと証明書のエラーになるので、初めから sandbox の外で実行する（許可を求められる。sandbox の中で失敗してからやり直さない）
+
+   ```bash
+   npm run dev:all
+   ```
+
+   起動したら、その出力のファイル（Bash の結果に出るパス）で collector の `ok: issues=` の行を待つ。待つのは上限 120 秒（2 秒ごとに 60 回）で、Bash の `timeout` も 150000 にする
+
+   ```bash
+   i=0; until grep -qE 'ok: issues=|failed:|already in use' "<出力のファイル>"; do i=$((i+1)); [ "$i" -ge 60 ] && echo timeout && break; sleep 2; done; grep -E 'settings:|ok: issues=|failed:|already in use' "<出力のファイル>"
+   ```
+
+   - `ok: issues=` が出て、`settings:` の行が `guild.settings.local.json` なら 3 に進む
+   - `failed:` が出た、`already in use` が出た、`timeout` が出た、`settings:` の行が `guild.settings.local.json` でない: 出た行を伝え、[docs/setup.md の 3 章](../../../docs/setup.md#3-困ったとき)を案内する。起動した `dev:all` は動いたままにしてよい（利用者が Ctrl-C で止められないので、止めたいときは言ってもらう）
+3. 利用者には次だけを伝える
+   - 「http://127.0.0.1:5273 を開いてください」（「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られる）
+   - 片付けるときは `/guild-trial-cleanup` を使う
+   - 任意（動きを見たい人だけ）: MulmoTerminal で、司令塔のフォルダ（`~/guild-trial/<名前>`）と部門のフォルダ（`~/guild-trial/<名前>/accounting` など）で、それぞれセルを開いて Claude Code を起動する（フォルダそのもので起動する。[docs/orchestration.md の 3-5](../../../docs/orchestration.md#3-5-部門のセッションを開く)）。お試しの Issue はセッションが無くても机に配られる
