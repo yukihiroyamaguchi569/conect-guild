@@ -70,6 +70,14 @@ gh repo view <owner/name>   # 眺めたいリポジトリ（例: your-name/my-co
 
 ### 2-3. collector と画面を起動する
 
+collector は、画面に出すデータを集める手元のプログラムです。
+
+- GitHub の Issue・PR を 60 秒ごとに `gh` で読みます
+- MulmoTerminal のセッションの状態を 5 秒ごとに読みます
+- 集めたものを手元のファイル（`apps/web/.data/snapshot.json`）に書きます
+
+画面はこのファイルを読んで描きます。ブラウザから GitHub に問い合わせることはありません。
+
 **やること**
 
 ```bash
