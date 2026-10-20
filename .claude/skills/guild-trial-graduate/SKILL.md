@@ -95,7 +95,7 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
 2. 似た名前のリポジトリが無いかを確かめる（つづり違いで既存のリポジトリを見落とさないため）
 
    ```bash
-   gh repo list <owner> --limit 300 --json name --jq .[].name
+   gh repo list <owner> --limit 300 --json name --jq '.[].name'
    ```
 
    出た名前のうち、新しい名前と同じもの、新しい名前の一部（ハイフンで区切った語や、3 文字以上の部分）を含むもの、1〜2 文字だけ違うものを拾う。似た名前があれば「`<似た名前>` がありますが、別の会社として `<新>` を作ってよいですか？」と聞き、OK が無ければ名前を聞き直す
