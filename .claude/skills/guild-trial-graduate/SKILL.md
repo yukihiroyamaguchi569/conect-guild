@@ -42,10 +42,11 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
    gh api user --jq .login
    ```
 
-3. 手元の設定を確かめる。`ls -d guild.settings.local.json guild.settings.local.json.bak guild.settings.local.ts` を見て、`guild.settings.local.ts`（古い形の手元の設定）が出たら止まる（`settings:write` が読み込みを断り、4-6 で止まってしまうため。docs/settings.md の 1 章のとおり片付けてもらう）。`guild.settings.local.json` が無ければ「お試しの会社の設定がありません。卒業させるお試しの会社が見つかりません」と伝えて止まる。あれば Read で開き、`repo`・`commanderSessionDir`・`departments` の `label` と `sessionDir`・`branchPrefixes` だけを見る（ほかの値は引用しない）。JSON として読めない、値が無いときは止まる
+3. 手元の設定を確かめる。`ls -d guild.settings.local.json guild.settings.local.json.bak guild.settings.local.ts` を見て、`guild.settings.local.ts`（古い形の手元の設定）が出たら止まる（`settings:write` が読み込みを断り、4-6 で止まってしまうため。docs/settings.md の 1 章のとおり片付けてもらう）。`guild.settings.local.json` が無ければ「お試しの会社の設定がありません。卒業させるお試しの会社が見つかりません」と伝えて止まる。あれば Read で開き、`repo`・`commanderSessionDir`・`departments` の `label` と `sessionDir`・`branchPrefixes`・`guests` の `sessionDir` だけを見る（ほかの値は引用しない）。JSON として読めない、値が無いときは止まる
    - `repo` が `<owner>/<旧>`、`commanderSessionDir` が `~/guild-trial/<旧>`（または `$HOME` を展開した絶対パス）で、`<旧>` が `guild-trial` か `guild-trial-<番号>`（`^guild-trial(-[1-9][0-9]*)?$`）であること。違えば「手元の設定は本物の会社（またはお試しでない設定）を指しているので、卒業させるものはありません」と伝えて止まる。前の形 `<日付>-<4 文字>`（例: `20261015-a3f9`）のお試しはリポジトリに説明が無く、4-1 で片付けの対象から外せないので、卒業させずに止まる（`/guild-trial-cleanup` で片付けて `/guild-trial` で作り直すよう案内する）
    - 部門ごとに、`sessionDir` が `~/guild-trial/<旧>/<フォルダ>`（または展開した絶対パス）で、`<フォルダ>` が英小文字・数字・ハイフンだけの 1 段（`^[a-z0-9][a-z0-9-]*$`。`/guild-trial` の表のフォルダはどれもこの形）であること。違えば止まる（4-6 で書き直せないため。また、4-2 の git の行に引用符なしで並べるので、空白や記号を含む名前を通さない）
    - `branchPrefixes` の先頭の行が、部門の順に `{ "prefix": "<フォルダ>/", "department": "<label>" }` であること（`settings:write` が書く形。部門が 4 つなら先頭の 4 行）。違えば止まる（4-6 の入力の `prefix` に使う。`settings:write` は入力の接頭辞を先頭に並べ、残りの行を後ろに残すので、この形のときだけ書き直しても順序が変わらない）
+   - お客さん（`guests`）があれば、どの `sessionDir` も `~/guild-trial/<旧>` とその下（展開した絶対パスも）を指していないこと。指していれば止まる（お客さんはそのまま残すので、4-5 でフォルダが移ると無いフォルダを指してしまう。`/guild-setup` でお客さんを直してから呼んでもらう）
    - `guild.settings.local.json.bak` があれば Read で `repo` と `commanderSessionDir` だけを見る。このお試しを指していなければ（自分の会社などの控え）、4-6 で上書きされることを 3 の一覧に書く
 4. フォルダを確かめる。`<旧の絶対パス>` は `$HOME/guild-trial/<旧>` を展開したもの
    - `test -L "<$HOME の展開>/guild-trial" -o -L "<旧の絶対パス>" && echo link`: `link` が出たら止まる
