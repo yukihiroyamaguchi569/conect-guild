@@ -48,8 +48,9 @@ After the demo, start Claude Code in the conect-guild root and run `/guild-trial
 
 You can have two to six departments (one commander, two to six departments and the president).
 
-- Requirements and steps (settings, collecting, data handling): [docs/setup.md](docs/setup.md) (Japanese)
-- Having Claude Code write your settings file: run `/guild-setup` in the conect-guild root ([docs/setup.md 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える), Japanese)
+- Requirements and steps: [docs/setup.md](docs/setup.md) (Japanese)
+- Settings in detail (writing them by hand, guests, data handling): [docs/settings.md](docs/settings.md) (Japanese)
+- Having Claude Code write your settings file: run `/guild-setup` in the conect-guild root ([docs/setup.md 2-2](docs/setup.md#2-2-guild-setup-で設定を作る), Japanese)
 - How the commander and department AIs work through GitHub, with CLAUDE.md templates: [docs/orchestration.md](docs/orchestration.md) (Japanese)
 
 ## Learn more

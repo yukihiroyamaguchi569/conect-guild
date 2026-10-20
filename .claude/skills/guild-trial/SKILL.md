@@ -35,7 +35,7 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
 
    どちらか 1 つでも出たら（「No such file」でない行があれば）止まり、何も作らない
    - `guild.settings.local.json`: 「`guild.settings.local.json` があるので、別の設定（自分の会社など）を使っています。お試しの会社はその設定を上書きしてしまうので作りません」と伝える
-   - `guild.settings.local.ts`: 古い形の手元の設定が残っていて、`settings:write` が読み込みを断るので作れない、と伝え、docs/setup.md のとおり `guild.settings.local.json` に移すよう案内する
+   - `guild.settings.local.ts`: 古い形の手元の設定が残っていて、`settings:write` が読み込みを断るので作れない、と伝え、docs/settings.md の 1 章のとおり `guild.settings.local.json` を作り直すよう案内する
 3. GitHub のアカウント名（`<owner>`）を取る。失敗したら docs/setup.md の 3 章「`gh issue list` が動かない」を案内して止まる
 
    ```bash

@@ -64,7 +64,7 @@ export function whereUnreadable(error: unknown): string {
 export function loadSettingsFile(root: string, reader: SettingsReader): LoadedSettings {
   if (reader.exists(join(root, OLD_LOCAL_SETTINGS_FILE))) {
     throw new Error(
-      `${OLD_LOCAL_SETTINGS_FILE} は読まなくなりました。値を ${LOCAL_SETTINGS_FILE} に移し、${OLD_LOCAL_SETTINGS_FILE} を消してから起動し直してください（docs/setup.md の 2-2）`,
+      `${OLD_LOCAL_SETTINGS_FILE} は読まなくなりました。値を ${LOCAL_SETTINGS_FILE} に移し、${OLD_LOCAL_SETTINGS_FILE} を消してから起動し直してください（書き方は docs/settings.md の「手で書く」）`,
     );
   }
   const file = chooseSettingsFile(root, reader.exists);

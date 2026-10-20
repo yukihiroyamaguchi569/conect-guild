@@ -5,7 +5,7 @@ description: conect-guild を自分の会社（司令塔のフォルダ、2〜6 
 
 # guild-setup
 
-conect-guild のリポジトリ直下で、利用者の会社の値を集め、`npm run settings:write`（[docs/setup.md の 2-2b](../../../docs/setup.md#2-2b-道具で書くnpm-run-settingswrite)）で `guild.settings.local.json` を書く。
+conect-guild のリポジトリ直下で、利用者の会社の値を集め、`npm run settings:write`（[docs/settings.md の 2 章](../../../docs/settings.md#2-道具で書くnpm-run-settingswrite)）で `guild.settings.local.json` を書く。
 
 ## 守ること
 
@@ -79,7 +79,7 @@ conect-guild のリポジトリ直下で、利用者の会社の値を集め、`
   `claudeMd` は `found` → 見つかった、`not-found` → **見つからない**、`no-file` → **読めない** と書く
 
   部門は利用者に聞かずに出しているので、この表で違うところ（ラベル・接頭辞・フォルダ、部門の足し引き）だけを直してもらう、と添える
-- 入力に無い値は出発点のまま保つこと: メンバーの名前・色、`ruleChangePaths`、既存の接頭辞の行のうち、新しいラベルのどれかを指し、接頭辞が入力と重ならないもの（`keptBranchPrefixes` 行。ラベルを変えた部門を指していた行は消える）。メンバーの役は、出発点で部門のラベルと同じだったものだけ新しいラベルに変わる。メンバーの名前・色は、あとで docs/setup.md の 2-2 の表を見て手で変えられる
+- 入力に無い値は出発点のまま保つこと: メンバーの名前・色、`ruleChangePaths`、既存の接頭辞の行のうち、新しいラベルのどれかを指し、接頭辞が入力と重ならないもの（`keptBranchPrefixes` 行。ラベルを変えた部門を指していた行は消える）。メンバーの役は、出発点で部門のラベルと同じだったものだけ新しいラベルに変わる。メンバーの名前・色は、あとで docs/settings.md の 1 章の表を見て手で変えられる
 - `overwrite` が `true` なら「`guild.settings.local.json` が既にあり、書くと上書きになる」
 - **警告**（`warnings`。書くことはできる）は 1 件ずつ見出しを付けて目立たせ、意味と次にやることを添える。警告の `departments[i]` は表の `#` が i の行
   - 「ラベル … がリポジトリにありません」（1-5 の `gh label list` で無かったラベルも同じ）: そのラベルの Issue が部門の机に配られない。`gh label create` で作るか、ラベル名をそろえる

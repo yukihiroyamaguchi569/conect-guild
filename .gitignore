@@ -4,7 +4,7 @@ dist/
 .env.*
 .dev.vars
 apps/web/.data/
-# A team's own settings (docs/setup.md); the tests always use guild.settings.json.
+# A team's own settings (docs/settings.md); the tests always use guild.settings.json.
 guild.settings.local.json
 # What npm run settings:write replaced (Issue #79).
 guild.settings.local.json.bak

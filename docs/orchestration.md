@@ -41,7 +41,7 @@ my-company/                ← 司令塔（直下の CLAUDE.md）
 
 ここは conect-guild が担当をうまく描けるおすすめの書き方で、決まりではありません。
 
-- ブランチ名は `<部門のフォルダ>/<Issue 番号>-<短い英語>`（例: `pr/12-course-announcement`）。PR が Issue に結べないときも、接頭辞（`pr/`）から担当の部門が分かります（setup.md の `branchPrefixes`）
+- ブランチ名は `<部門のフォルダ>/<Issue 番号>-<短い英語>`（例: `pr/12-course-announcement`）。PR が Issue に結べないときも、接頭辞（`pr/`）から担当の部門が分かります（[settings.md の `branchPrefixes`](settings.md#項目)）
 - PR の本文に `Closes #<Issue 番号>` を書きます。conect-guild は PR の題名・本文の `#番号` を拾い、`Closes`・`Fixes`・`Resolves` の後の番号があればそれを優先して担当を決めます。GitHub もマージのときにその Issue を閉じます。完了条件はマージの前に司令塔が確かめるので、マージで閉じて構いません（マージの後にも確かめることがある仕事なら、`Refs #番号` にして司令塔が閉じます）
 
 ### マージの分担
@@ -139,7 +139,7 @@ conect-guild はルールの変更を、設定の `ruleChangePaths` で見分け
 
 ### 3-6. conect-guild の設定を書く
 
-**やること**: conect-guild の `guild.settings.local.json` に、リポジトリ名（`repo`）、司令塔と部門のフォルダ（`commanderSessionDir` と `departments[].sessionDir`）、部門のラベル名（`departments[].label`）と、ブランチの接頭辞（`branchPrefixes`。部門の表の「ブランチの接頭辞」）を書きます。手順は [setup.md の 2 章](setup.md#2-設定して使う)です。Claude Code を使うなら、conect-guild の直下で `/guild-setup` のスキルを実行すると、司令塔の `CLAUDE.md` の部門の表から値を集めて書けます（[setup.md の 2-2](setup.md#2-2-設定ファイルを作って書き換える)）。
+**やること**: conect-guild の `guild.settings.local.json` に、リポジトリ名（`repo`）、司令塔と部門のフォルダ（`commanderSessionDir` と `departments[].sessionDir`）、部門のラベル名（`departments[].label`）と、ブランチの接頭辞（`branchPrefixes`。部門の表の「ブランチの接頭辞」）を書きます。手順は [setup.md の 2 章](setup.md#2-設定して使う)です。Claude Code を使うなら、conect-guild の直下で `/guild-setup` のスキルを実行すると、司令塔の `CLAUDE.md` の部門の表から値を集めて書けます（[setup.md の 2-2](setup.md#2-2-guild-setup-で設定を作る)）。
 
 **確かめること**
 
