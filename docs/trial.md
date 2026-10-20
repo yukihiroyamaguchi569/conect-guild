@@ -42,7 +42,7 @@ conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行し
 先に、開いているお試しのセルを閉じ、`npm run dev:all` を止めておきます（フォルダが移るため。スキルは画面を止めません）。スキルは次の順に変えます。
 
 1. リポジトリの説明を `<新しい名前> の会社` に変える（片付けがお試しと見分ける印を最初に外します）
-2. 司令塔と部門の `CLAUDE.md` から、お試しの印の行（「これは conect-guild を試すための架空の会社「お試し商会」のものである。…」）を消し、`main` に直接 commit・push する
+2. 司令塔と部門の `CLAUDE.md` から、お試しの印の行（「これは conect-guild を試すための架空の会社「お試し商会」のものである。…」）を消し、司令塔の `CLAUDE.md` に書かれたリポジトリ名を新しい名前に直して、`main` に直接 commit・push する
 3. リポジトリの名前を `<新しい名前>` に変え、手元の `origin` も合わせる
 4. フォルダを `~/guild-trial/<お試しの名前>` から `~/<新しい名前>` に移す
 5. 手元の設定 `guild.settings.local.json` の `repo`・`commanderSessionDir`・部門の `sessionDir` を書き直す（前の設定は `.bak` に残ります）
@@ -50,7 +50,7 @@ conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行し
 
 部門（名前・ラベル・フォルダ・部門の数）は卒業では変えません。変えたいときは、卒業のあとで司令塔に頼みます（[orchestration.md の 1 章](orchestration.md#1-登場する役割)の最後の段落）。前の形の名前 `<日付>-<4 文字>` のお試しは、リポジトリに説明が無く片付けの対象から外せないので卒業できません（片付けて作り直します）。
 
-卒業のあとは `npm run dev:all` で起動し直し、MulmoTerminal などで `~/<新しい名前>` と部門のフォルダでセルを開き直します。`npm run trial:open-cells` は卒業した会社では動きません。最近のフォルダに残った古いお試しのフォルダは `! npm run trial:open-cells -- --forget` で外せます。卒業した会社は `/guild-trial-cleanup` の対象になりません（要らなくなったら自分で消します）。途中で止まっても、GitHub のリポジトリは片付けで消されない状態になっています。卒業が終わるまで `/guild-trial-cleanup` は使わず、スキルに続きを頼みます。
+卒業のあとは `npm run dev:all` で起動し直し、MulmoTerminal などで `~/<新しい名前>` と部門のフォルダでセルを開き直します。`npm run trial:open-cells` は卒業した会社では動きません。最近のフォルダに残った古いお試しのフォルダは `! npm run trial:open-cells -- --forget` で外せます。卒業した会社は `/guild-trial-cleanup` の対象になりません（要らなくなったら自分で消します）。1 の説明を変えたあとなら、途中で止まっても、GitHub のリポジトリは片付けで消されない状態になっています。卒業が終わるまで `/guild-trial-cleanup` は使わず、スキルに続きを頼みます。
 
 **片付け**
 
