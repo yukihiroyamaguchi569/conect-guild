@@ -58,7 +58,8 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
      ```
 
      どちらも `1` でなければ止まる（`0` ならお試しと確かめられない。卒業を途中で止めた続きなら 5）
-   - 部門のフォルダごとに、`test -L "<部門の絶対パス>" && echo link` が `link` でないこと、`<部門の絶対パス>/CLAUDE.md` があること、その `TRIAL_NOTE` の行の数（上と同じ `grep -cxF`）が `0` か `1` であること。違えば止まる
+   - 司令塔の `CLAUDE.md` がシンボリックリンクでないこと（`test -L "<旧の絶対パス>/CLAUDE.md" && echo link` が `link` を出さない）。リンクだと 4-2 の Edit がリンク先の別のファイルを書き換えてしまう
+   - 部門のフォルダごとに、`test -L "<部門の絶対パス>" -o -L "<部門の絶対パス>/CLAUDE.md" && echo link` が `link` でないこと、`<部門の絶対パス>/CLAUDE.md` があること、その `TRIAL_NOTE` の行の数（上と同じ `grep -cxF`）が `0` か `1` であること。違えば止まる
    - `git -C "<旧の絶対パス>" remote get-url origin` が `<owner>/<旧>` のリポジトリ（`https://github.com/<owner>/<旧>.git` か `git@github.com:<owner>/<旧>.git`。末尾の `.git` は無くてもよい）を指していること。URL の形（https か ssh か）を 4-4 のために覚えておく
    - `git -C "<旧の絶対パス>" branch --show-current` が `main` であること
    - `git -C "<旧の絶対パス>" status --porcelain -- <司令塔と部門の CLAUDE.md の相対パス>`（例: `CLAUDE.md accounting/CLAUDE.md pr/CLAUDE.md`）が何も出さないこと（コミットしていない変更があると、4-2 のコミットに混ざる）
@@ -78,6 +79,11 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
    ```
 
    PID が出たら `lsof -a -p <PID> -d cwd -Fn` で作業フォルダを見る。`n` で始まる行がこの conect-guild のリポジトリ直下（`pwd -P` の出力）かその `apps/web` なら、この conect-guild の `npm run dev:all` が動いている。3 の一覧で、承認の前に止めてもらう（スキルは止めない）。別のフォルダのプロセスなら気にしない
+7. 閉じる架空の Issue を出す。開いている Issue を全部出し、題名が `/guild-trial` の表（[.claude/skills/guild-trial/SKILL.md の 5-3](../guild-trial/SKILL.md#5-github-に作る)）の題名のどれかと完全に一致し、本文が `conect-guild を試すための架空の Issue です。` と完全に一致するものの番号を、3 の一覧と 4-7 のために覚えておく。出た件数が 1000 なら取りこぼしうるので止まる
+
+   ```bash
+   gh issue list -R <owner>/<旧> --state open --limit 1000 --json number,title,body
+   ```
 
 ## 2. 新しい会社の名前を聞く
 
@@ -115,7 +121,7 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
 - `CLAUDE.md`: 司令塔と部門（`TRIAL_NOTE` の行がある部門の名前を並べる）の `CLAUDE.md` から、お試しの印の行（「これは conect-guild を試すための架空の会社「お試し商会」のものである。…」）を消し、`main` に直接 commit・push する。ほかの行は変えない。手元の `main` が遅れていれば、先に最新を取り込む
 - 手元のフォルダ: `<旧の絶対パス>` を `<新の絶対パス>` に移す（部門のフォルダも一緒に移る）。`origin` を新しい名前の URL にする。`~/guild-trial` そのものは残す
 - 手元の設定 `guild.settings.local.json`: `repo` を `<owner>/<新>`、`commanderSessionDir` を `~/<新>`、部門の `sessionDir` を `~/<新>/<フォルダ>` に書き直す。部門のラベル・ブランチ名の接頭辞・メンバーの名前と色はそのまま。前の設定は `guild.settings.local.json.bak` に残る（1-3 で `.bak` が別の設定の控えだったら「今の `.bak`（別の設定の控え）は上書きされます。残したいなら、OK の前に自分で別の名前に写してください」と書く）
-- 架空の Issue を閉じる（理由は not planned）: 開いている Issue のうち、題名が `/guild-trial` の表の題名で、本文が「conect-guild を試すための架空の Issue です。」のもの（番号と題名を並べる）。部門が手を付けていて残したいものがあれば、外すので言ってもらう
+- 架空の Issue を閉じる（理由は not planned）: 開いている Issue のうち、題名が `/guild-trial` の表の題名で、本文が「conect-guild を試すための架空の Issue です。」のもの（1-7 で出した番号と題名を並べる）。部門が手を付けていて残したいものがあれば、外すので言ってもらう
 - 変えないもの: 部門（名前・ラベル・フォルダ・部門の数）、ラベル、ほかの Issue・PR、`apps/web/.data/snapshot.json`（起動し直すと新しい設定で集め直す）
 - 元に戻すのは手作業になる（名前・説明・フォルダ・設定を戻す）。卒業のあとは `/guild-trial-cleanup` で片付けられないので、要らなくなったら自分で消す
 
@@ -142,7 +148,7 @@ OK をもらったら、変える直前に 1 と 2-3・2-4 をもう一度なぞ
       git -C "<旧の絶対パス>" merge --ff-only origin/main
       ```
 
-   2. 司令塔の `CLAUDE.md`、続いて `TRIAL_NOTE` の行がある部門の `CLAUDE.md` を 1 つずつ、Read してから Edit で直す。`old_string` は見出しの行（1 行目。司令塔は `# CLAUDE.md`、部門は `# 経理 AI` など）・空行・`TRIAL_NOTE` の行の 3 行、`new_string` は見出しの行だけ（`TRIAL_NOTE` の行と直前の空行が消える）。見出しの直後に空行と `TRIAL_NOTE` の行が並んでいなければ、Edit せずに止まる
+   2. 司令塔の `CLAUDE.md`、続いて `TRIAL_NOTE` の行がある部門の `CLAUDE.md` を 1 つずつ、Read してから Edit で直す。`old_string` は見出しの行（1 行目。司令塔は `# CLAUDE.md`、部門は `# 経理 AI` など）・空行・`TRIAL_NOTE` の行の 3 行、`new_string` は見出しの行だけ（`TRIAL_NOTE` の行と直前の空行が消える）。Edit の直前に、そのファイルがシンボリックリンクでないこと（`test -L "<ファイルの絶対パス>" && echo link`）をもう一度確かめ、`link` なら止まる。見出しの直後に空行と `TRIAL_NOTE` の行が並んでいなければ、Edit せずに止まる
    3. 印が残っていないことを確かめる。司令塔と全部門の `CLAUDE.md` のそれぞれで `0` が出ること（1 つでも `0` でなければ、コミットせずに止まる）
 
       ```bash
@@ -213,11 +219,7 @@ OK をもらったら、変える直前に 1 と 2-3・2-4 をもう一度なぞ
 
    4. 入力ファイルを消す。`guild.settings.local.json` を Read で開き、`repo` と `commanderSessionDir` と部門の `sessionDir` が新しい値になったことを確かめる
 
-7. **架空の Issue を閉じる。** 開いている Issue を出し、題名が `/guild-trial` の表（[.claude/skills/guild-trial/SKILL.md の 5-3](../guild-trial/SKILL.md#5-github-に作る)）の題名のどれかと完全に一致し、本文が `conect-guild を試すための架空の Issue です。` と完全に一致するものだけを閉じる（3 の一覧で外すよう言われたものは閉じない）
-
-   ```bash
-   gh issue list -R <owner>/<新> --state open --limit 200 --json number,title,body
-   ```
+7. **架空の Issue を閉じる。** 3 の一覧に載せた番号だけを閉じる（一覧で外すよう言われたものは閉じない）。閉じる前に `gh issue list -R <owner>/<新> --state open --limit 1000 --json number,title,body` を出し直し、その番号がまだ開いていて、題名と本文が 1-7 の条件に合うことを確かめる（合わなくなったものは閉じずに伝える）。一覧に無い Issue は閉じない
 
    1 件ずつ閉じる
 
@@ -232,15 +234,17 @@ OK をもらったら、変える直前に 1 と 2-3・2-4 をもう一度なぞ
 | 止まった段 | そのときの状態 | 片付けから見ると | 続け方 |
 |---|---|---|---|
 | 4-1 の前・4-1 | 何も変わっていない（説明が変わったかは `gh repo view <owner>/<旧> --json description` で見る） | まだお試し | 原因を直して 1 からやり直す |
-| 4-2 | 説明は変わった。印は残っているか、外したがコミット・push していない | リポジトリは対象外。フォルダは司令塔の印が残っていれば対象、設定は対象 | 4-2 の初めから（Edit 済みのファイルは飛ばす。`git -C "<旧の絶対パス>" status --porcelain` で見る） |
+| 4-2（commit の前） | 説明は変わった。印は残っているか、外したがコミットしていない | リポジトリは対象外。フォルダは司令塔の印が残っていれば対象、設定は対象 | 4-2 の初めから（Edit 済みのファイルは飛ばす。`git -C "<旧の絶対パス>" status --porcelain` で見る） |
+| 4-2（commit のあと、push の前） | 印を外したコミットが手元の `main` にだけある（`ahead 1`） | フォルダは対象外（司令塔の印が無い）。設定は対象 | 下の「push だけ残ったとき」を確かめてから、`git -C "<旧の絶対パス>" push origin main` だけをやり直す |
 | 4-3 | 印は外れて push 済み。名前は `<旧>` のまま | どれも対象外。ただし設定は `~/guild-trial/<旧>` を指したままなので、設定だけは片付けの一覧に出る（作り直せる） | 4-3 から |
 | 4-4 | 名前は `<新>`。`origin` は古い URL（GitHub が転送するので push はできる） | 同上 | 4-4 から |
 | 4-5 | フォルダは `<旧の絶対パス>` のまま | 同上 | 4-5 から |
 | 4-6 | フォルダは `<新の絶対パス>`。設定は古いまま（画面は古いフォルダを探す） | 同上 | 4-6 から（書く前に止まったなら、前の設定はそのまま） |
 | 4-7 | 設定も新しい。架空の Issue が一部開いている | 何も対象外 | 4-7 から（`gh issue list` で残りを出し直す） |
 
+- push だけ残ったとき: `git -C "<旧の絶対パス>" fetch origin` のあと、`status --porcelain --branch` の 1 行目が `ahead 1` だけ（`behind` が無い）で、`git -C "<旧の絶対パス>" log -1 --format=%s` が 4-2-4 のコミットの題で、`git -C "<旧の絶対パス>" diff --stat origin/main main` に出るのが印を外した `CLAUDE.md` だけ（1 ファイル 2 行ずつ減る）のときだけ push する。違えば止まる。1・4 の初めの確かめの `ahead` はこのときだけ止まる理由にしない。git の行は 4-2 と同じく初めから sandbox の外で実行する
 - 同じ会話で原因を直して「続けて」と言われたら、止まった段からやり直す。その前に 4 の初めの確かめのうち、その段に関わるもの（フォルダ・リポジトリ・設定の今の値）だけをなぞり、表の状態と同じときだけ進める。承認は取り直さない。違えば止まって伝える
-- 会話が切れたあとで卒業の続きを頼まれたとき（1 で、司令塔の印が `0`・フォルダが無い・説明が `<新しい名前> の会社` のどれかで止まったときも）は、利用者に新しい会社の名前を聞く。`<旧>` は、手元の設定がまだ `~/guild-trial/<旧>` を指していればそこから、書き直したあとなら `guild.settings.local.json.bak` から取る（どちらも 1-3 と同じ形でなければ止まる）。まず `gh repo view <owner>/<新> --json nameWithOwner,isPrivate,description`（4-3 の前なら `<owner>/<旧>`）で、private で説明が `<新> の会社` であることを確かめる。違えば卒業の途中ではないので止まる。続いて表の上から順に、各段が済んだかを確かめる（4-1: 説明が `<新> の会社`、4-2: 司令塔と全部門の印が `0` で `ahead` が無い、4-3: `nameWithOwner` が `<owner>/<新>`、4-4: `origin` が新しい URL、4-5: `<新の絶対パス>` があり `<旧の絶対パス>` が無い、4-6: 設定の `repo` が `<owner>/<新>` で `commanderSessionDir` が `~/<新>`、4-7: 4-7 の条件に合う開いた Issue が無い）。済んでいない最初の段と、そこから先にやることを一覧にして 3 と同じく 1 回だけ承認をもらい、その段から進める
+- 会話が切れたあとで卒業の続きを頼まれたとき（1 で、司令塔の印が `0`・フォルダが無い・説明が `<新しい名前> の会社` のどれかで止まったときも）は、利用者に新しい会社の名前を聞く。`<旧>` は、手元の設定がまだ `~/guild-trial/<旧>` を指していればそこから、書き直したあとなら `guild.settings.local.json.bak` から取る（どちらも 1-3 と同じ形でなければ止まる）。まず `gh repo view <owner>/<新> --json nameWithOwner,isPrivate,description`（4-3 の前なら `<owner>/<旧>`）で、private で説明が `<新> の会社` であることを確かめる。違えば卒業の途中ではないので止まる。続いて表の上から順に、各段が済んだかを確かめる（4-1: 説明が `<新> の会社`、4-2: 司令塔と全部門の印が手元で `0`、それらのファイルに `git -C <フォルダ> status --porcelain -- <ファイル>` で何も出ず、`git -C <フォルダ> fetch origin`（sandbox の外）のあと `ahead` も `behind` も無く、`git -C <フォルダ> grep -c '架空の会社「お試し商会」' origin/main -- <司令塔と部門の CLAUDE.md>` が何も出さない（リモートの `main` にも印が無い）。手元で印が `0` でも、コミットしていない・push していないなら 4-2 の途中として扱う、4-3: `nameWithOwner` が `<owner>/<新>`、4-4: `origin` が新しい URL、4-5: `<新の絶対パス>` があり `<旧の絶対パス>` が無い、4-6: 設定の `repo` が `<owner>/<新>` で `commanderSessionDir` が `~/<新>`、4-7: 4-7 の条件に合う開いた Issue が無い）。済んでいない最初の段と、そこから先にやることを一覧にして 3 と同じく 1 回だけ承認をもらい、その段から進める
 
 ## 6. 案内する
 
