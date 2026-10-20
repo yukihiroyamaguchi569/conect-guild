@@ -48,8 +48,9 @@ http://127.0.0.1:5273 を開くだけで、架空のクエストのデモが動�
 
 部門は 2〜6 にできます（司令塔 1・部門 2〜6・社長 1）。
 
-- 使える条件と手順（設定・収集・データの扱い）: [docs/setup.md](docs/setup.md)
-- 設定ファイルを Claude Code に作らせる: conect-guild の直下で `/guild-setup`（[docs/setup.md の 2-2](docs/setup.md#2-2-設定ファイルを作って書き換える)）
+- 使える条件と手順: [docs/setup.md](docs/setup.md)
+- 設定の詳しい説明（手で書く・お客さん・データの扱い）: [docs/settings.md](docs/settings.md)
+- 設定ファイルを Claude Code に作らせる: conect-guild の直下で `/guild-setup`（[docs/setup.md の 2-2](docs/setup.md#2-2-guild-setup-で設定を作る)）
 - 司令塔と部門の AI を GitHub で回す流儀と CLAUDE.md の雛形: [docs/orchestration.md](docs/orchestration.md)
 
 ## もっと知る
