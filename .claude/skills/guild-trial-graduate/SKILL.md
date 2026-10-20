@@ -159,12 +159,14 @@ OK をもらったら、変える直前に 1 と 2-3・2-4 をもう一度なぞ
       ```
 
       `git -C "<旧の絶対パス>" diff` で、変わったのが直したファイルの `TRIAL_NOTE` の行と直前の空行の削除と、司令塔の `<owner>/<旧>` から `<owner>/<新>` への置き換えだけであることも見る
-   5. 直したファイルだけを commit して push する（`--` の後ろに直したファイルの相対パスを並べる）
+   5. 直したファイルだけを commit して push する。`--` の後ろには、直したファイル（司令塔と、2・3 で直したすべての部門の `CLAUDE.md`）の相対パスを漏れなく並べる（下は 2 部門の例）
 
       ```bash
       git -C "<旧の絶対パス>" commit -m "お試しの印を CLAUDE.md から外し、<新> の会社にする" -- CLAUDE.md accounting/CLAUDE.md pr/CLAUDE.md
       git -C "<旧の絶対パス>" push origin main
       ```
+
+   6. push できたことを確かめる。`git -C "<旧の絶対パス>" status --porcelain -- <司令塔と全部門の CLAUDE.md>` が何も出さず、`git -C "<旧の絶対パス>" fetch origin`（sandbox の外）のあと `rev-list --left-right --count main...origin/main` が両方 `0` で、`git -C "<旧の絶対パス>" grep -c '架空の会社「お試し商会」' origin/main -- <司令塔と全部門の CLAUDE.md>` が何も出さないこと。違えば止まる
 
 3. **リポジトリの名前を変える**（`-R` で指すので、conect-guild の `origin` は変わらない）
 
