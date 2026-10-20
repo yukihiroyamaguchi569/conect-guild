@@ -46,12 +46,10 @@ http://127.0.0.1:5273 を開くだけで、架空のクエストのデモが動�
 
 ## 自分のチームで試す
 
-部門は 2〜6 にできます（司令塔 1・部門 2〜6・社長 1）。
+部門は 2〜6 にできます（司令塔 1・部門 2〜6・社長 1）。AI の会社（司令塔と部門のセッションで GitHub の Issue・PR を回す仕組み）があるかどうかで、道が分かれます。
 
-- 使える条件と手順: [docs/setup.md](docs/setup.md)
-- 設定の詳しい説明（手で書く・お客さん・データの扱い）: [docs/settings.md](docs/settings.md)
-- 設定ファイルを Claude Code に作らせる: conect-guild の直下で `/guild-setup`（[docs/setup.md の 2-2](docs/setup.md#2-2-guild-setup-で設定を作る)）
-- 司令塔と部門の AI を GitHub で回す流儀と CLAUDE.md の雛形: [docs/orchestration.md](docs/orchestration.md)
+- **もう回している**: [docs/setup.md](docs/setup.md) の手順で、conect-guild の直下で `/guild-setup` を実行して設定を作ります
+- **まだ無い**: 上の「架空の会社を作って試す」でお試しの会社を作り、気に入ったら `/guild-trial-graduate` で自分の会社に卒業させます（[docs/trial.md](docs/trial.md)）。一から自分で作るなら [docs/orchestration.md の 3 章](docs/orchestration.md#3-始め方)へ
 
 ## もっと知る
 
