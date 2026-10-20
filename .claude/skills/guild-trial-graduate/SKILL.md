@@ -44,8 +44,8 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
 
 3. 手元の設定を確かめる。`ls -d guild.settings.local.json guild.settings.local.json.bak` を見て、`guild.settings.local.json` が無ければ「お試しの会社の設定がありません。卒業させるお試しの会社が見つかりません」と伝えて止まる。あれば Read で開き、`repo`・`commanderSessionDir`・`departments` の `label` と `sessionDir`・`branchPrefixes` だけを見る（ほかの値は引用しない）。JSON として読めない、値が無いときは止まる
    - `repo` が `<owner>/<旧>`、`commanderSessionDir` が `~/guild-trial/<旧>`（または `$HOME` を展開した絶対パス）で、`<旧>` が `guild-trial` か `guild-trial-<番号>`（`^guild-trial(-[1-9][0-9]*)?$`）であること。違えば「手元の設定は本物の会社（またはお試しでない設定）を指しているので、卒業させるものはありません」と伝えて止まる。前の形 `<日付>-<4 文字>`（例: `20261015-a3f9`）のお試しはリポジトリに説明が無く、4-1 で片付けの対象から外せないので、卒業させずに止まる（`/guild-trial-cleanup` で片付けて `/guild-trial` で作り直すよう案内する）
-   - 部門ごとに、`sessionDir` が `~/guild-trial/<旧>/<フォルダ>`（または展開した絶対パス）で、`<フォルダ>` が 1 段（`/` を含まない）であること。違えば止まる（4-6 で書き直せないため）
-   - 部門ごとに、`branchPrefixes` に `{ "prefix": "<フォルダ>/", "department": "<label>" }` の行があること。違えば止まる（4-6 の入力の `prefix` に使う）
+   - 部門ごとに、`sessionDir` が `~/guild-trial/<旧>/<フォルダ>`（または展開した絶対パス）で、`<フォルダ>` が英小文字・数字・ハイフンだけの 1 段（`^[a-z0-9][a-z0-9-]*$`。`/guild-trial` の表のフォルダはどれもこの形）であること。違えば止まる（4-6 で書き直せないため。また、4-2 の git の行に引用符なしで並べるので、空白や記号を含む名前を通さない）
+   - `branchPrefixes` の先頭の行が、部門の順に `{ "prefix": "<フォルダ>/", "department": "<label>" }` であること（`settings:write` が書く形。部門が 4 つなら先頭の 4 行）。違えば止まる（4-6 の入力の `prefix` に使う。`settings:write` は入力の接頭辞を先頭に並べ、残りの行を後ろに残すので、この形のときだけ書き直しても順序が変わらない）
    - `guild.settings.local.json.bak` があれば Read で `repo` と `commanderSessionDir` だけを見る。このお試しを指していなければ（自分の会社などの控え）、4-6 で上書きされることを 3 の一覧に書く
 4. フォルダを確かめる。`<旧の絶対パス>` は `$HOME/guild-trial/<旧>` を展開したもの
    - `test -L "<$HOME の展開>/guild-trial" -o -L "<旧の絶対パス>" && echo link`: `link` が出たら止まる
@@ -202,7 +202,7 @@ OK をもらったら、変える直前に 1 と 2-3・2-4 をもう一度なぞ
       }
       ```
 
-   2. 書かずに確かめる
+   2. 書かずに確かめる。その前に `guild.settings.local.json` を Read で開き直し、`repo`・`commanderSessionDir`・部門（`label` と `sessionDir`）・`branchPrefixes` が 1-3 で見た値（このお試し）と同じであることを確かめる。違えば（その間に別の会社の設定に替わったなど）書かずに止まる
 
       ```bash
       npm run --silent settings:write -- --dry-run --json < "<入力ファイル>"
@@ -211,13 +211,13 @@ OK をもらったら、変える直前に 1 と 2-3・2-4 をもう一度なぞ
       - `errors` があれば、内容を伝えて止まる
       - `overwrite` が `true` であること（`false` なら、その間に `guild.settings.local.json` が無くなっている。止まる）
       - 警告「ラベルを GitHub に問い合わせられませんでした」は、道具が `npm run` の中から `gh` を呼ぶため sandbox の中で出る。ラベルは変えていないので、そのまま進める
-   3. 書く。結果の `written` が `true` でなければ `errors` を伝えて止まる
+   3. 書く。書く直前に、2 と同じく `guild.settings.local.json` がまだこのお試しを指していることを確かめ直す。結果の `written` が `true` でなければ `errors` を伝えて止まる
 
       ```bash
       npm run --silent settings:write -- --write --overwrite --json < "<入力ファイル>"
       ```
 
-   4. 入力ファイルを消す。`guild.settings.local.json` を Read で開き、`repo` と `commanderSessionDir` と部門の `sessionDir` が新しい値になったことを確かめる
+   4. 入力ファイルを消す。`guild.settings.local.json` を Read で開き、`repo` と `commanderSessionDir` と部門の `sessionDir` が新しい値になったこと、部門の `label`・`member` と `branchPrefixes`（値と順序）が `guild.settings.local.json.bak` と同じであることを確かめる。違えば、どこが違うかを伝えて止まる
 
 7. **架空の Issue を閉じる。** 3 の一覧に載せた番号だけを閉じる（一覧で外すよう言われたものは閉じない）。閉じる前に `gh issue list -R <owner>/<新> --state open --limit 1000 --json number,title,body` を出し直し、その番号がまだ開いていて、題名と本文が 1-7 の条件に合うことを確かめる（合わなくなったものは閉じずに伝える）。一覧に無い Issue は閉じない
 
@@ -244,7 +244,7 @@ OK をもらったら、変える直前に 1 と 2-3・2-4 をもう一度なぞ
 
 - push だけ残ったとき: `git -C "<旧の絶対パス>" fetch origin` のあと、`status --porcelain --branch` の 1 行目が `ahead 1` だけ（`behind` が無い）で、`git -C "<旧の絶対パス>" log -1 --format=%s` が 4-2-4 のコミットの題で、`git -C "<旧の絶対パス>" diff --stat origin/main main` に出るのが印を外した `CLAUDE.md` だけ（1 ファイル 2 行ずつ減る）のときだけ push する。違えば止まる。1・4 の初めの確かめの `ahead` はこのときだけ止まる理由にしない。git の行は 4-2 と同じく初めから sandbox の外で実行する
 - 同じ会話で原因を直して「続けて」と言われたら、止まった段からやり直す。その前に 4 の初めの確かめのうち、その段に関わるもの（フォルダ・リポジトリ・設定の今の値）だけをなぞり、表の状態と同じときだけ進める。承認は取り直さない。違えば止まって伝える
-- 会話が切れたあとで卒業の続きを頼まれたとき（1 で、司令塔の印が `0`・フォルダが無い・説明が `<新しい名前> の会社` のどれかで止まったときも）は、利用者に新しい会社の名前を聞く。`<旧>` は、手元の設定がまだ `~/guild-trial/<旧>` を指していればそこから、書き直したあとなら `guild.settings.local.json.bak` から取る（どちらも 1-3 と同じ形でなければ止まる）。まず `gh repo view <owner>/<新> --json nameWithOwner,isPrivate,description`（4-3 の前なら `<owner>/<旧>`）で、private で説明が `<新> の会社` であることを確かめる。違えば卒業の途中ではないので止まる。続いて表の上から順に、各段が済んだかを確かめる（4-1: 説明が `<新> の会社`、4-2: 司令塔と全部門の印が手元で `0`、それらのファイルに `git -C <フォルダ> status --porcelain -- <ファイル>` で何も出ず、`git -C <フォルダ> fetch origin`（sandbox の外）のあと `ahead` も `behind` も無く、`git -C <フォルダ> grep -c '架空の会社「お試し商会」' origin/main -- <司令塔と部門の CLAUDE.md>` が何も出さない（リモートの `main` にも印が無い）。手元で印が `0` でも、コミットしていない・push していないなら 4-2 の途中として扱う、4-3: `nameWithOwner` が `<owner>/<新>`、4-4: `origin` が新しい URL、4-5: `<新の絶対パス>` があり `<旧の絶対パス>` が無い、4-6: 設定の `repo` が `<owner>/<新>` で `commanderSessionDir` が `~/<新>`、4-7: 4-7 の条件に合う開いた Issue が無い）。済んでいない最初の段と、そこから先にやることを一覧にして 3 と同じく 1 回だけ承認をもらい、その段から進める
+- 会話が切れたあとで卒業の続きを頼まれたとき（1 で、司令塔の印が `0`・フォルダが無い・説明が `<新しい名前> の会社` のどれかで止まったときも）は、利用者に新しい会社の名前を聞く。`<旧>` は、手元の設定がまだ `~/guild-trial/<旧>` を指していればそこから、書き直したあとなら `guild.settings.local.json.bak` から取る（どちらも 1-3 と同じ形でなければ止まる）。まず `gh repo view <owner>/<新> --json nameWithOwner,isPrivate,description`（4-3 の前なら `<owner>/<旧>`）で、private で説明が `<新> の会社` であることを確かめる。違えば卒業の途中ではないので止まる。続いて表の上から順に、各段が済んだかを確かめる（4-1: 説明が `<新> の会社`、4-2: 司令塔と全部門の印が手元で `0`、それらのファイルに `git -C <フォルダ> status --porcelain -- <ファイル>` で何も出ず、`git -C <フォルダ> fetch origin`（sandbox の外）のあと `ahead` も `behind` も無く、`git -C <フォルダ> grep -c '架空の会社「お試し商会」' origin/main -- <司令塔と部門の CLAUDE.md>` が何も出さない（リモートの `main` にも印が無い）。手元で印が `0` でも、コミットしていない・push していないなら 4-2 の途中として扱う、4-3: `nameWithOwner` が `<owner>/<新>`、4-4: `origin` が新しい URL、4-5: `<新の絶対パス>` があり `<旧の絶対パス>` が無い、4-6: 設定の `repo` が `<owner>/<新>`、`commanderSessionDir` が `~/<新>`、全部門の `sessionDir` が `~/<新>/<フォルダ>`、4-7: 4-7 の条件に合う開いた Issue が無い）。済んでいない最初の段と、そこから先にやることを一覧にして 3 と同じく 1 回だけ承認をもらい、その段から進める
 
 ## 6. 案内する
 
