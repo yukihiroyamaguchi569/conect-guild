@@ -48,14 +48,14 @@ http://127.0.0.1:5273 を開くだけで、架空のクエストのデモが動�
 
 ### 2. 架空の会社を作って試す
 
-デモのあと、conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します。架空の会社（GitHub の private のリポジトリ、部門のフォルダ、手元の設定）を作り、架空の Issue で画面を試せます。片付けは `/guild-trial-cleanup` です。自分の会社として使い続けたくなったら `/guild-trial-graduate` で「卒業」させます（名前を変え、お試しの印を外します）。詳しくは [docs/trial.md](docs/trial.md)。
+デモのあと、conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します。架空の会社（GitHub の private のリポジトリ、部門のフォルダ、手元の設定）を作り、架空の Issue で画面を試せます。片付けは `/guild-trial-cleanup` です。自分の会社として使い続けたくなったら、`/guild-trial-graduate` で自分の会社にします（卒業。名前を変え、お試しの印を外します）。詳しくは [docs/trial.md](docs/trial.md)。
 
 ### 3. 自分のチームで試す
 
 部門は 2〜6 にできます（司令塔 1・部門 2〜6・社長 1）。AI の会社（司令塔と部門のセッションで GitHub の Issue・PR を回す仕組み）があるかどうかで、道が分かれます。
 
 - **もう回している**: [docs/setup.md](docs/setup.md) の手順で、conect-guild の直下で `/guild-setup` を実行して設定を作ります
-- **まだ無い**: 上の「2. 架空の会社を作って試す」でお試しの会社を作り、気に入ったら `/guild-trial-graduate` で自分の会社に卒業させます（[docs/trial.md](docs/trial.md)）。一から自分で作るなら [docs/orchestration.md の 3 章](docs/orchestration.md#3-始め方)へ
+- **まだ無い**: 上の「2. 架空の会社を作って試す」でお試しの会社を作り、気に入ったら `/guild-trial-graduate` で自分の会社にします（卒業。[docs/trial.md](docs/trial.md)）。一から自分で作るなら [docs/orchestration.md の 3 章](docs/orchestration.md#3-始め方)へ
 
 ## もっと知る
 
