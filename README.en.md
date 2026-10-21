@@ -25,7 +25,15 @@ The demo mode with made-up data.
 
 How it all moves is for you to find out on the screen.
 
-## Watch the demo
+## Ways to try it
+
+There are three ways to try it. Each one takes a little more setup and gets closer to your own work.
+
+1. [Watch the demo](#1-watch-the-demo): just run the screen locally. No GitHub, no settings
+2. [Try a made-up company](#2-try-a-made-up-company): Claude Code creates a made-up company and Issues, so you can try the real flow
+3. [Try it with your own team](#3-try-it-with-your-own-team): watch the Issues and PRs of your own repository
+
+### 1. Watch the demo
 
 With Node.js 26.10 or later:
 
@@ -38,18 +46,16 @@ npm run dev
 
 Just open http://127.0.0.1:5273 and a demo with made-up quests plays by itself (while the collector has not collected anything; press 「♪ 音を出す」 for sound). No collector or GitHub access is needed.
 
-To watch or film it with sound from the start, open http://127.0.0.1:5273/?demo=1 (for a daytime room, `?demo=1&hour=12`) and press 「▶ はじめる」 (Start). The button is disabled in a narrow window, so widen it if needed.
-
-## Try a made-up company
+### 2. Try a made-up company
 
 After the demo, start Claude Code in the conect-guild root and run `/guild-trial`. It creates a made-up company (a private repository on GitHub, department folders and local settings) so you can try the screen with made-up Issues. Clean up with `/guild-trial-cleanup`. To keep it as your own company, graduate it with `/guild-trial-graduate` (it renames it and removes the trial marks). See [docs/trial.md](docs/trial.md) (Japanese).
 
-## Try it with your own team
+### 3. Try it with your own team
 
 You can have two to six departments (one commander, two to six departments and the president). Where you start depends on whether you already run an AI company (commander and department sessions working through GitHub Issues and PRs).
 
 - **You already run one**: follow [docs/setup.md](docs/setup.md) (Japanese) and run `/guild-setup` in the conect-guild root to write your settings
-- **You don't yet**: create a trial company as in "Try a made-up company" above, and when you like it, graduate it into your own company with `/guild-trial-graduate` ([docs/trial.md](docs/trial.md), Japanese). To build one from scratch, see [chapter 3 of docs/orchestration.md](docs/orchestration.md#3-始め方) (Japanese)
+- **You don't yet**: create a trial company as in "2. Try a made-up company" above, and when you like it, graduate it into your own company with `/guild-trial-graduate` ([docs/trial.md](docs/trial.md), Japanese). To build one from scratch, see [chapter 3 of docs/orchestration.md](docs/orchestration.md#3-始め方) (Japanese)
 
 ## Learn more
 
