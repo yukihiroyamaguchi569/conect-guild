@@ -1,8 +1,12 @@
-# 自分のチームで使う
+# 自分のチームで試す
 
 GitHub の Issue・PR で仕事を回しているチームなら、自分のリポジトリをギルド画面で眺められます。設定ファイルを 1 つ作れば動きます。画面は手元のブラウザで見るもので、どこにも公開しません。
 
-デモを見るだけなら README の「[デモを見る](../README.md#デモを見る)」へ、架空の会社で試すなら [trial.md](trial.md) へ進んでください。設定の細かな説明は [settings.md](settings.md) にあります。
+この文書は、AI の会社（司令塔と部門のセッションで GitHub の Issue・PR を回す仕組み）をもう回している人向けです。まだ無いなら、[trial.md](trial.md) でお試しの会社を作り、気に入ったら `/guild-trial-graduate` で自分の会社に卒業させます。一から自分で作るなら [orchestration.md の 3 章](orchestration.md#3-始め方)へ進んでください。
+
+お試しの会社を作ったことがあるなら、先に `/guild-trial-cleanup` で片付けるか、卒業させてください。お試しの手元の設定（`guild.settings.local.json`）が残っていて、`/guild-setup` はそれを出発点にします。
+
+デモを見るだけなら README の「[デモを見る](../README.md#デモを見る)」へ。設定の細かな説明は [settings.md](settings.md) にあります。
 
 ## 1. 使える条件
 
