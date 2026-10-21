@@ -46,8 +46,6 @@ npm run dev
 
 http://127.0.0.1:5273 を開くだけで、架空のクエストのデモが動きます（collector がまだデータを集めていないあいだの自動のデモ。音は「♪ 音を出す」で鳴ります）。collector も GitHub も要りません。
 
-効果音つきで最初から見る・撮るときは http://127.0.0.1:5273/?demo=1 を開き（昼の部屋なら `?demo=1&hour=12`）、「▶ はじめる」を押します（画面の幅が狭いと押せないので、ウィンドウを広げます）。
-
 ### 2. 架空の会社を作って試す
 
 デモのあと、conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します。架空の会社（GitHub の private のリポジトリ、部門のフォルダ、手元の設定）を作り、架空の Issue で画面を試せます。片付けは `/guild-trial-cleanup` です。自分の会社として使い続けたくなったら `/guild-trial-graduate` で「卒業」させます（名前を変え、お試しの印を外します）。詳しくは [docs/trial.md](docs/trial.md)。

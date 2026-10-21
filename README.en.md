@@ -46,8 +46,6 @@ npm run dev
 
 Just open http://127.0.0.1:5273 and a demo with made-up quests plays by itself (while the collector has not collected anything; press 「♪ 音を出す」 for sound). No collector or GitHub access is needed.
 
-To watch or film it with sound from the start, open http://127.0.0.1:5273/?demo=1 (for a daytime room, `?demo=1&hour=12`) and press 「▶ はじめる」 (Start). The button is disabled in a narrow window, so widen it if needed.
-
 ### 2. Try a made-up company
 
 After the demo, start Claude Code in the conect-guild root and run `/guild-trial`. It creates a made-up company (a private repository on GitHub, department folders and local settings) so you can try the screen with made-up Issues. Clean up with `/guild-trial-cleanup`. To keep it as your own company, graduate it with `/guild-trial-graduate` (it renames it and removes the trial marks). See [docs/trial.md](docs/trial.md) (Japanese).
