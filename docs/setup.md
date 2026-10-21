@@ -6,7 +6,7 @@ GitHub の Issue・PR で仕事を回しているチームなら、自分のリ�
 
 お試しの会社を作ったことがあるなら、先に `/guild-trial-cleanup` で片付けるか、卒業させてください。お試しの手元の設定（`guild.settings.local.json`）が残っていて、`/guild-setup` はそれを出発点にします。
 
-デモを見るだけなら README の「[デモを見る](../README.md#デモを見る)」へ。設定の細かな説明は [settings.md](settings.md) にあります。
+デモを見るだけなら README の「[デモを見る](../README.md#1-デモを見る)」へ。設定の細かな説明は [settings.md](settings.md) にあります。
 
 ## 1. 使える条件
 

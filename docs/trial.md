@@ -6,7 +6,7 @@
 
 **前提**
 
-- conect-guild の clone と `npm ci --ignore-scripts` を済ませていること（作る道具がワークスペースのパッケージを使うため、無いと動きません）。README の「[デモを見る](../README.md#デモを見る)」と同じで、Node.js 26.10 以上で次を実行します
+- conect-guild の clone と `npm ci --ignore-scripts` を済ませていること（作る道具がワークスペースのパッケージを使うため、無いと動きません）。README の「[デモを見る](../README.md#1-デモを見る)」と同じで、Node.js 26.10 以上で次を実行します
 
   ```bash
   git clone https://github.com/yukihiroyamaguchi569/conect-guild.git
