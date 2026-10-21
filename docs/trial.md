@@ -2,40 +2,45 @@
 
 自分の会社の準備ができていなくても、架空の会社「お試し商会」を作って、GitHub の本物のリポジトリに置いた架空の Issue で画面を試せます。
 
-[setup.md の使える条件](setup.md#1-使える条件)は自分の会社で使うときのものです。お試しの会社に要るのは、Node.js・`gh`・Claude Code と `npm ci` だけです。
+**用意するもの**
 
-**前提**
-
-- conect-guild の clone と `npm ci --ignore-scripts` を済ませていること（作る道具がワークスペースのパッケージを使うため、無いと動きません）。README の「[デモを見る](../README.md#1-デモを見る)」と同じで、Node.js 26.10 以上で次を実行します
+- Node.js 26.10 以上
+- Claude Code
+- `gh` でログインしていること（`gh auth status` で確かめます）。private のリポジトリを作る権限が要ります
+- conect-guild の clone と `npm ci --ignore-scripts`。README の「[デモを見る](../README.md#1-デモを見る)」で済ませていれば要りません。作る道具がワークスペースのパッケージを使うので、無いと動きません
 
   ```bash
   git clone https://github.com/yukihiroyamaguchi569/conect-guild.git
   cd conect-guild
   npm ci --ignore-scripts
   ```
-- Claude Code と、private のリポジトリを作れる `gh`（`gh auth status` でログイン済み。private のリポジトリを作る権限が要ります）
 - `guild.settings.local.json` が無いこと。あると、自分の会社の設定を上書きしないよう、何も作らずに止まります
 
-**やること**
+**あなたがやること**
 
-conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します（「お試しの会社を作って」でも使われます）。聞かれるのは、部門の数（2〜6。決めていなければ 4）と、リポジトリを作る前の承認の 2 回だけです。作るのは次のものです。
+1. conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します（「お試しの会社を作って」でも使われます）
+2. 部門の数を聞かれたら答えます（2〜6。決めていなければ 4）
+3. 作るものの一覧が出たら、確かめて承認します。承認を求められるのは、リポジトリを作る前のこの 1 回だけです
+4. 許可を求められたら許可します。手元のフォルダを書くときと、`npm run dev:all` を起動するときの 2 回です（どちらも Claude Code の sandbox の外で動かすため）
+5. スキルが終わったら、司令塔と部門のセルを開きます
+   - MulmoTerminal なら、Claude Code で `! npm run trial:open-cells` を打ちます。司令塔と部門のセルがまとめて開くので、各セルの「信頼しますか？」に答えます。Claude Code の安全確認で止まるので、スキルは代わりに実行しません
+   - ほかの端末では、司令塔のフォルダと部門のフォルダをそれぞれ開いて Claude Code を起動します（フォルダそのもので起動します。[orchestration.md の 3-5](orchestration.md#3-5-部門のセッションを開く)）
+6. ブラウザで http://127.0.0.1:5273 を開きます。「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られていれば成功です。MulmoTerminal でセルを開いたなら、`npm run dev:all` の出力が `sessions=<部門の数 + 1> ok` になり、画面にもセッションの動きが出ます
 
-- GitHub の private のリポジトリ `<あなたのアカウント>/guild-trial`（部門のラベルと、架空の Issue 付き。片付けで見分けるため、説明に「conect-guild のお試し商会（架空の会社）」が入ります）
-- 手元の司令塔のフォルダ `~/guild-trial/guild-trial` と、その下の部門のフォルダ（それぞれの `CLAUDE.md` 付き）
-- 手元の設定 `guild.settings.local.json`
+**`/guild-trial` がやること**
 
-同じ名前のリポジトリかフォルダが既にあれば、`guild-trial-2`、`guild-trial-3` … と番号を足した名前にします。
+- GitHub に private のリポジトリ `<あなたのアカウント>/guild-trial` を作り、部門のラベルと架空の Issue を置きます。片付けで見分けるため、説明に「conect-guild のお試し商会（架空の会社）」が入ります
+- 手元に司令塔のフォルダ `~/guild-trial/guild-trial` と、その下の部門のフォルダを作ります（それぞれ `CLAUDE.md` 付き）
+- 手元の設定 `guild.settings.local.json` を書きます
+- `npm run dev:all` を起動し、collector が集め終わるのを待って、開く URL を伝えます。既に `npm run dev:all` が動いていたら止めずに、止めて起動し直すよう伝えます
 
-最後にスキルが `npm run dev:all` を起動し、collector が集め終わったら「http://127.0.0.1:5273 を開いてください」と伝えます。既に `npm run dev:all` が動いていたら、スキルは止めずに、止めて起動し直すよう伝えます。
+同じ名前のリポジトリかフォルダが既にあれば、`guild-trial-2`、`guild-trial-3` … と番号を足した名前にします。`trial:open-cells` は、お試しの会社の設定のときだけ動きます。MulmoTerminal が動いていなければ何も開きません。
 
-`~/guild-trial/` は Claude Code の sandbox の書き込める場所の外なので、フォルダを書く操作は初めから sandbox の外で実行します。`npm run dev:all` も、collector の `gh` が sandbox の中では証明書のエラーになるので、sandbox の外で起動します。そのため許可を求められます。
+**片付け**
 
-**確かめること**
+`/guild-trial-cleanup` を実行します。消すものの一覧（リポジトリ、手元のフォルダ、手元の設定、集めたデータ）と、動いていれば止める画面（5273 番の開発サーバー）を見せ、承認を 1 回もらってから消します。画面はスキルが PID を名指しして止めます（collector も一緒に止まります）。リポジトリを消すには `gh` に `delete_repo` の権限が要ります。足りなければスキルが案内するので、自分で `gh auth refresh -h github.com -s delete_repo` を実行します。片付けたあとは手元の設定が無くなるので、画面の帯の扱いは [setup.md の 3 章](setup.md#画面の帯に失敗が出る手元の設定が無いとき)のとおりです。MulmoTerminal の最近のフォルダに残ったお試しのフォルダは、`! npm run trial:open-cells -- --forget` で外せます（もう無いお試しのフォルダだけを外します）。チップの × で 1 つずつ外してもかまいません。
 
-- ブラウザで http://127.0.0.1:5273 を開くと「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られること
-- 任意（動きを見たい人だけ）: MulmoTerminal を使っているなら、Claude Code で `! npm run trial:open-cells` を打つと、司令塔のフォルダと部門のフォルダのセルがまとめて開きます（各セルの「信頼しますか？」に答えます）。お試しの会社の設定のときだけ動き、自分の会社の設定ではまとめて開きません。MulmoTerminal が動いていなければ何も開きません。Claude Code の安全確認で止まるので、スキルは代わりに実行せず、自分で打ちます。ほかの端末では、司令塔のフォルダと部門のフォルダをそれぞれ開いて Claude Code を起動します（フォルダそのもので起動します。[orchestration.md の 3-5](orchestration.md#3-5-部門のセッションを開く)）。MulmoTerminal なら `sessions=<部門の数 + 1> ok` になります。お試しの Issue はセッションが無くても机に配られます
-
-**卒業する（自分の会社にする）**
+**自分の会社にする（卒業）**
 
 お試しの会社が気に入ったら、そのまま自分の会社として使い続けられます。conect-guild の直下で `/guild-trial-graduate` を実行します（「お試しの会社を自分の会社にしたい」でも使われます）。聞かれるのは、新しい会社の名前（GitHub のリポジトリ名と手元のフォルダ名。英小文字・数字・ハイフン）と、変える前の承認の 2 回だけです。似た名前のリポジトリがあれば、別の会社として作ってよいかも聞かれます。
 
@@ -51,7 +56,3 @@ conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行し
 部門（名前・ラベル・フォルダ・部門の数）は卒業では変えません。変えたいときは、卒業のあとで司令塔に頼みます（[orchestration.md の 1 章](orchestration.md#1-登場する役割)の最後の段落）。前の形の名前 `<日付>-<4 文字>` のお試しは、リポジトリに説明が無く片付けの対象から外せないので卒業できません（片付けて作り直します）。
 
 卒業のあとは `npm run dev:all` で起動し直し、MulmoTerminal などで `~/<新しい名前>` と部門のフォルダでセルを開き直します。`npm run trial:open-cells` は卒業した会社では動きません。最近のフォルダに残った古いお試しのフォルダは `! npm run trial:open-cells -- --forget` で外せます。卒業した会社は `/guild-trial-cleanup` の対象になりません（要らなくなったら自分で消します）。1 の説明を変えたあとなら、途中で止まっても、GitHub のリポジトリは片付けで消されない状態になっています。卒業が終わるまで `/guild-trial-cleanup` は使わず、スキルに続きを頼みます。
-
-**片付け**
-
-`/guild-trial-cleanup` を実行します。消すものの一覧（リポジトリ、手元のフォルダ、手元の設定、集めたデータ）と、動いていれば止める画面（5273 番の開発サーバー）を見せ、承認を 1 回もらってから消します。画面はスキルが PID を名指しして止めます（collector も一緒に止まります）。リポジトリを消すには `gh` に `delete_repo` の権限が要ります。足りなければスキルが案内するので、自分で `gh auth refresh -h github.com -s delete_repo` を実行します。片付けたあとは手元の設定が無くなるので、画面の帯の扱いは [setup.md の 3 章](setup.md#画面の帯に失敗が出る手元の設定が無いとき)のとおりです。MulmoTerminal の最近のフォルダに残ったお試しのフォルダは、`! npm run trial:open-cells -- --forget` で外せます（もう無いお試しのフォルダだけを外します）。チップの × で 1 つずつ外してもかまいません。
