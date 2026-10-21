@@ -42,7 +42,7 @@ http://127.0.0.1:5273 を開くだけで、架空のクエストのデモが動�
 
 ## 架空の会社を作って試す
 
-デモのあと、conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します。架空の会社（GitHub の private のリポジトリ、部門のフォルダ、手元の設定）を作り、架空の Issue で画面を試せます。片付けは `/guild-trial-cleanup` です。詳しくは [docs/trial.md](docs/trial.md)。
+デモのあと、conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します。架空の会社（GitHub の private のリポジトリ、部門のフォルダ、手元の設定）を作り、架空の Issue で画面を試せます。片付けは `/guild-trial-cleanup` です。自分の会社として使い続けたくなったら `/guild-trial-graduate` で「卒業」させます（名前を変え、お試しの印を外します）。詳しくは [docs/trial.md](docs/trial.md)。
 
 ## 自分のチームで試す
 
