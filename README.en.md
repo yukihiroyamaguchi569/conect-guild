@@ -55,7 +55,7 @@ After the demo, start Claude Code in the conect-guild root and run `/guild-trial
 You can have two to six departments (one commander, two to six departments and the president). Where you start depends on whether you already run an AI company (commander and department sessions working through GitHub Issues and PRs).
 
 - **You already run one**: follow [docs/setup.md](docs/setup.md) (Japanese) and run `/guild-setup` in the conect-guild root to write your settings
-- **You don't yet**: create a trial company as in "2. Try a made-up company" above, and when you like it, graduate it into your own company with `/guild-trial-graduate` ([docs/trial.md](docs/trial.md), Japanese). To build one from scratch, see [chapter 3 of docs/orchestration.md](docs/orchestration.md#3-始め方) (Japanese)
+- **You don't yet**: create a trial company as in "2. Try a made-up company" above, and when you like it, reopen it as your own company with `/guild-trial-renew` ([docs/trial.md](docs/trial.md), Japanese). To build one from scratch, see [chapter 3 of docs/orchestration.md](docs/orchestration.md#3-始め方) (Japanese)
 
 ## Learn more
 

@@ -55,7 +55,7 @@ http://127.0.0.1:5273 を開くだけで、架空のクエストのデモが動�
 部門は 2〜6 にできます（司令塔 1・部門 2〜6・社長 1）。AI の会社（司令塔と部門のセッションで GitHub の Issue・PR を回す仕組み）があるかどうかで、道が分かれます。
 
 - **もう回している**: [docs/setup.md](docs/setup.md) の手順で、conect-guild の直下で `/guild-setup` を実行して設定を作ります
-- **まだ無い**: 上の「2. 架空の会社を作って試す」でお試しの会社を作り、気に入ったら `/guild-trial-graduate` で自分の会社にします（卒業。[docs/trial.md](docs/trial.md)）。一から自分で作るなら [docs/orchestration.md の 3 章](docs/orchestration.md#3-始め方)へ
+- **まだ無い**: 上の「2. 架空の会社を作って試す」でお試しの会社を作り、気に入ったら `/guild-trial-renew` で自分の会社にします（リニューアルオープン。[docs/trial.md](docs/trial.md)）。一から自分で作るなら [docs/orchestration.md の 3 章](docs/orchestration.md#3-始め方)へ
 
 ## もっと知る
 
