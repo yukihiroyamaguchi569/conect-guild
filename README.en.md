@@ -48,7 +48,7 @@ Just open http://127.0.0.1:5273 and a demo with made-up quests plays by itself (
 
 ### 2. Try a made-up company
 
-After the demo, start Claude Code in the conect-guild root and run `/guild-trial`. It creates a made-up company (a private repository on GitHub, department folders and local settings) so you can try the screen with made-up Issues. Clean up with `/guild-trial-cleanup`. To keep it as your own company, graduate it with `/guild-trial-graduate` (it renames it and removes the trial marks). See [docs/trial.md](docs/trial.md) (Japanese).
+After the demo, start Claude Code in the conect-guild root and run `/guild-trial`. It creates a made-up company (a private repository on GitHub, department folders and local settings) so you can try the screen with made-up Issues. You can also adapt it and use it as your own company. See [docs/trial.md](docs/trial.md) (Japanese).
 
 ### 3. Try it with your own team
 
