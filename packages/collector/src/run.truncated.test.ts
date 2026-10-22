@@ -54,7 +54,7 @@ describe('runCollector --once: a list cut short', () => {
     expect(snapshot.history.openedIssueCount).toBe(3);
   });
 
-  it('writes when an Issue created after the totals makes the list longer', async () => {
+  it('writes when the list is longer than the totals (one deleted after it was read)', async () => {
     const deps = harness(fakeGh({ [TOTALS_KEY]: totalsLine(2, 2) }));
     await expect(runCollector(['--once'], deps)).resolves.toBe(0);
     expect(deps.writes).toHaveLength(1);
@@ -68,6 +68,25 @@ describe('runCollector --once: a list cut short', () => {
     const whole = harness(fakeGh({ 'issues?state=all': twice, [TOTALS_KEY]: totalsLine(2, 2) }));
     await expect(runCollector(['--once'], whole)).resolves.toBe(0);
     expect(whole.writes).toHaveLength(1);
+  });
+});
+
+describe('runCollector --once: a list cut short while a new Issue is created', () => {
+  it('fails although the count matches the totals from before the lists', async () => {
+    // Issue 5 is cut off the list and Issue 7 is created while it is read: 1, 3, 7 make 3, the
+    // totals from before the lists. Read after them, the totals are 4 and catch the missing one.
+    let issuesRead = false;
+    const base = fakeGh({ 'issues?state=all': issueLine(7) + issueLine(3) + issueLine(1) });
+    const gh: GhRunner = (args) => {
+      const path = args.at(-1) ?? '';
+      if (path.includes(TOTALS_KEY)) return Promise.resolve(totalsLine(issuesRead ? 4 : 3, 2));
+      if (path.includes('issues?state=all')) issuesRead = true;
+      return base(args);
+    };
+    const deps = harness(gh);
+    await expect(runCollector(['--once'], deps)).resolves.toBe(1);
+    expect(deps.writes).toEqual([]);
+    expect(deps.errors).toEqual([`[collector] ${AT} failed: validation-failed`]);
   });
 });
 

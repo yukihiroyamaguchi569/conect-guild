@@ -49,13 +49,12 @@ export async function collectSnapshot(
   { branchPrefixes, presidentLabel }: CollectRules,
 ): Promise<GithubCollected> {
   const cutoff = recentCutoff(now);
-  // The totals before the lists (Issue #251): see assertListsComplete for why.
-  const totals = await fetchTotals(gh, repo);
   // PRs first, then Issues: every Issue that exists when the PRs are read is in the Issue list
   // read after, so a link to an Issue created between the two lists is kept (Issue #73).
   const rawPrs = await fetchPrs(gh, repo);
   const rawIssues = await fetchIssues(gh, repo);
-  assertListsComplete(totals, rawIssues, rawPrs);
+  // The totals after the lists (Issue #251): see assertListsComplete for why.
+  assertListsComplete(await fetchTotals(gh, repo), rawIssues, rawPrs);
   const existingIssues = issueNumbersOf(rawIssues);
   const prs = await mapWithConcurrency(
     selectRecentPrs(rawPrs, cutoff),

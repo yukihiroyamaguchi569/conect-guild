@@ -134,13 +134,15 @@ function distinctCount(numbers: readonly number[]): number {
 }
 
 /**
- * Throws validation-failed when a list has fewer distinct numbers than the totals read before it
+ * Throws validation-failed when a list has fewer distinct numbers than the totals read after it
  * (Issue #251), so the snapshot is not written from a list cut short.
  *
- * Why fewer-than, with the totals read first: a list cut short can only come out smaller. An
- * Issue or PR created while the lists are read can only make them larger (and may repeat an
- * item, hence distinct numbers), so it does not fail the fetch. One deleted or transferred while
- * they are read makes them smaller and fails this fetch; the next one reads afresh.
+ * Why fewer-than, with the totals read after the lists: everything a list should hold is still
+ * counted in the totals then, so a list cut short is always caught (unless as many are deleted
+ * meanwhile). Totals read before the lists would let an item created meanwhile make up for one
+ * missing. An Issue or PR created while the lists are read and left out of them fails this fetch;
+ * the next one reads afresh. Numbers are counted once, as a shifted page can repeat an item and a
+ * repeat must not hide a missing one.
  */
 export function assertListsComplete(
   totals: RepoTotals,

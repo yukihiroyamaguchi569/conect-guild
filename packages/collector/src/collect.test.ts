@@ -96,8 +96,8 @@ describe('collectSnapshot: order of the lists', () => {
     let issueTwoExists = false;
     const gh: GhRunner = async (args) => {
       const path = args.at(-1) ?? '';
-      // Read before the lists, while only Issue #1 exists; Issue #2 makes the list longer, not short.
-      if (path.includes(TOTALS_KEY)) return totalsLine(1, 1);
+      // Read after the lists, when Issue #2 exists and is in the Issue list.
+      if (path.includes(TOTALS_KEY)) return totalsLine(2, 1);
       if (path.includes('pulls?state=all')) {
         calls.push('prs');
         return prList.promise;
