@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHANGED_FILES_CONCURRENCY, collectSnapshot } from './collect.ts';
 import type { GhRunner } from './gh.ts';
+import { TOTALS_KEY, totalsLine } from './run.fixtures.test-util.ts';
 
 const REPO = 'owner/repo';
 const OPEN_PR_COUNT = 30;
@@ -43,6 +44,7 @@ describe('collectSnapshot', () => {
     let fileCalls = 0;
     const gh: GhRunner = async (args) => {
       const path = args.at(-1) ?? '';
+      if (path.includes(TOTALS_KEY)) return totalsLine(0, OPEN_PR_COUNT);
       if (path.includes('pulls?state=all')) {
         return lines(Array.from({ length: OPEN_PR_COUNT }, (_, i) => openPr(i + 1)));
       }
@@ -71,6 +73,7 @@ describe('collectSnapshot', () => {
       const path = args.at(-1) ?? '';
       inFlight += 1;
       try {
+        if (path.includes(TOTALS_KEY)) return totalsLine(0, 0);
         if (path.includes('issues?state=all')) throw new Error('gh failed');
         for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setImmediate(resolve));
         return '';
@@ -93,6 +96,8 @@ describe('collectSnapshot: order of the lists', () => {
     let issueTwoExists = false;
     const gh: GhRunner = async (args) => {
       const path = args.at(-1) ?? '';
+      // Read after the lists, when Issue #2 exists and is in the Issue list.
+      if (path.includes(TOTALS_KEY)) return totalsLine(2, 1);
       if (path.includes('pulls?state=all')) {
         calls.push('prs');
         return prList.promise;

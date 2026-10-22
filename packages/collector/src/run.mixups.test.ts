@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { CollectorError } from './errors.ts';
 import type { GhRunner } from './gh.ts';
 import { runCollector } from './run.ts';
-import { clockedHarness, fakeGh, harness } from './run.fixtures.test-util.ts';
+import {
+  clockedHarness,
+  fakeGh,
+  harness,
+  TOTALS_KEY,
+  totalsLine,
+} from './run.fixtures.test-util.ts';
 
 /**
  * Issue #94: the suspected mix-ups in the collector's loop and --once, with guild.settings.json
@@ -72,7 +78,11 @@ function expectNoSecrets(output: readonly string[]): void {
 
 /** A gh whose PR list is whatever `prs()` says at the time of the call. */
 function ghWithPrs(prs: () => string | Error): GhRunner {
-  const base = fakeGh({ 'issues?state=all': ISSUES, labels: LABELS });
+  const base = fakeGh({
+    'issues?state=all': ISSUES,
+    labels: LABELS,
+    [TOTALS_KEY]: totalsLine(2, 6),
+  });
   return (args) => {
     if (!(args.at(-1) ?? '').includes('pulls?state=all')) return base(args);
     const answer = prs();

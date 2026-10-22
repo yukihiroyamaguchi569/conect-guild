@@ -51,8 +51,18 @@ const MERGED_PR = {
   closed_at: '2026-10-11T00:00:00Z',
 };
 
+/** What the totals call (Issue #251) is found by: its query, the last argument, asks for it. */
+export const TOTALS_KEY = 'totalCount';
+
+/** What `gh api graphql --jq` prints for the totals of Issues (PRs excluded) and PRs. */
+export function totalsLine(issues: number, pullRequests: number): string {
+  return `${JSON.stringify({ issues, pullRequests })}\n`;
+}
+
 /** Projected items per endpoint, one array per page; issues span three pages and files two. */
 const OUTPUTS: Record<string, unknown[][]> = {
+  // Issue #251: the GraphQL totals (its query is the last argument): Issues 1, 3, 5 and PRs 2, 4.
+  [TOTALS_KEY]: [[{ issues: 3, pullRequests: 2 }]],
   'issues?state=all': [[ISSUE, PR_AS_ISSUE], [OLD_CLOSED_ISSUE], [NOT_PLANNED_ISSUE]],
   'pulls?state=all': [[OPEN_PR], [MERGED_PR]],
   'pulls/2/files': [['a/CLAUDE.md'], ['b.md']],

@@ -13,6 +13,8 @@ import {
   SECRET_TITLE,
   SESSION_MEMBERS,
   SESSIONS_OK,
+  TOTALS_KEY,
+  totalsLine,
 } from './run.fixtures.test-util.ts';
 import { createCompanySessionsReader } from './sessionFiles.ts';
 
@@ -283,7 +285,7 @@ describe('collectOnce: an issue that changes while the pages are read', () => {
     ['closes', lines(open, done), [{ number: 7, departments: ['広報'] }]],
     ['reopens', lines(done, { ...open, state_reason: 'reopened' }), []],
   ])('counts it once when it %s (read twice as the pages shifted)', async (_l, out, completed) => {
-    const deps = harness(fakeGh({ 'issues?state=all': out }));
+    const deps = harness(fakeGh({ 'issues?state=all': out, [TOTALS_KEY]: totalsLine(1, 2) }));
     await collectOnce(deps);
     const snapshot = snapshotSchema.parse(JSON.parse(deps.writes[0] ?? ''));
     expect(snapshot.history.openedIssueCount).toBe(1);

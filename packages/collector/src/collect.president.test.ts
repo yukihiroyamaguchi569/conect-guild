@@ -4,6 +4,7 @@ import { splitPresidentIssues } from './build.ts';
 import { collectSnapshot } from './collect.ts';
 import type { GhRunner } from './gh.ts';
 import { reportCycle } from './report.ts';
+import { TOTALS_KEY, totalsLine } from './run.fixtures.test-util.ts';
 
 /** Issue #141: the king's open Issues leave `issues` for `president.issues`. */
 
@@ -102,6 +103,7 @@ function rawIssue(number: number, labels: string[], state: 'open' | 'closed'): o
 
 const gh: GhRunner = (args) => {
   const path = args.at(-1) ?? '';
+  if (path.includes(TOTALS_KEY)) return Promise.resolve(totalsLine(3, 0));
   if (!path.includes('issues?state=all')) return Promise.resolve('');
   return Promise.resolve(
     [rawIssue(1, [KING], 'open'), rawIssue(2, [], 'open'), rawIssue(3, [KING], 'closed')]
@@ -143,6 +145,7 @@ describe('collectSnapshot: the mix-up check without the king’s Issues', () => 
   });
   const mixGh: GhRunner = (args) => {
     const path = args.at(-1) ?? '';
+    if (path.includes(TOTALS_KEY)) return Promise.resolve(totalsLine(1, 3));
     const items = path.includes('pulls?state=all')
       ? [merged(11), merged(12), merged(13)]
       : [rawIssue(1, [KING, '広報'], 'closed')];
