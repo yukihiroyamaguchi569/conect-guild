@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { ghApiProjected, parseOrThrow, type GhRunner } from './gh.ts';
+import { CollectorError } from './errors.ts';
+import { ghApiProjected, parseJsonLines, parseOrThrow, type GhRunner } from './gh.ts';
 
 // Each list is projected inside gh (jq) to exactly these fields, so issue
 // bodies and file diffs never reach the collector. strictObject catches a
@@ -90,4 +91,67 @@ export async function fetchChangedFiles(
 export async function fetchLabelNames(gh: GhRunner, repo: string): Promise<string[]> {
   const names = await ghApiProjected(gh, `repos/${repo}/labels?${PER_PAGE}`, LABEL_PROJECTION);
   return parseOrThrow(z.array(z.string()), names);
+}
+
+// Issue #251: how many Issues (PRs excluded) and PRs the repository has, to tell a list that gh
+// ended early (exit code 0, a page cut short) from a whole one. Counts only, nothing else.
+const TOTALS_QUERY =
+  'query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { issues { totalCount } pullRequests { totalCount } } }';
+const TOTALS_PROJECTION =
+  '.data.repository | {issues: .issues.totalCount, pullRequests: .pullRequests.totalCount} | @json';
+
+const totalsSchema = z.strictObject({
+  issues: z.number().int().nonnegative(),
+  pullRequests: z.number().int().nonnegative(),
+});
+
+export type RepoTotals = z.infer<typeof totalsSchema>;
+
+/**
+ * The totals from GraphQL. owner and name go in as variables (`-f`, always strings), never into
+ * the query text. The query is the last argument, like the path of the lists.
+ */
+export async function fetchTotals(gh: GhRunner, repo: string): Promise<RepoTotals> {
+  const [owner = '', name = ''] = repo.split('/');
+  const stdout = await gh([
+    'api',
+    'graphql',
+    '--jq',
+    TOTALS_PROJECTION,
+    '-f',
+    `owner=${owner}`,
+    '-f',
+    `name=${name}`,
+    '-f',
+    `query=${TOTALS_QUERY}`,
+  ]);
+  const [totals] = parseOrThrow(z.tuple([totalsSchema]), parseJsonLines(stdout));
+  return totals;
+}
+
+function distinctCount(numbers: readonly number[]): number {
+  return new Set(numbers).size;
+}
+
+/**
+ * Throws validation-failed when a list has fewer distinct numbers than the totals read before it
+ * (Issue #251), so the snapshot is not written from a list cut short.
+ *
+ * Why fewer-than, with the totals read first: a list cut short can only come out smaller. An
+ * Issue or PR created while the lists are read can only make them larger (and may repeat an
+ * item, hence distinct numbers), so it does not fail the fetch. One deleted or transferred while
+ * they are read makes them smaller and fails this fetch; the next one reads afresh.
+ */
+export function assertListsComplete(
+  totals: RepoTotals,
+  issues: readonly RawIssue[],
+  prs: readonly RawPr[],
+): void {
+  const issueCount = distinctCount(
+    issues.filter((issue) => !issue.is_pull_request).map((issue) => issue.number),
+  );
+  const prCount = distinctCount(prs.map((pr) => pr.number));
+  if (issueCount < totals.issues || prCount < totals.pullRequests) {
+    throw new CollectorError('validation-failed');
+  }
 }

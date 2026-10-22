@@ -11,7 +11,13 @@ import {
   toSnapshotPr,
 } from './build.ts';
 import { parseOrThrow, type GhRunner } from './gh.ts';
-import { fetchChangedFiles, fetchIssues, fetchPrs } from './github.ts';
+import {
+  assertListsComplete,
+  fetchChangedFiles,
+  fetchIssues,
+  fetchPrs,
+  fetchTotals,
+} from './github.ts';
 import { mapWithConcurrency } from './limit.ts';
 import { mixupsOf } from './mixups.ts';
 
@@ -34,7 +40,7 @@ export interface CollectRules {
 
 /**
  * Fetch issues and PRs of `repo` and build the validated GitHub part of the snapshot.
- * Throws a CollectorError if any request or validation fails.
+ * Throws a CollectorError if any request or validation fails, or a list is cut short (Issue #251).
  */
 export async function collectSnapshot(
   gh: GhRunner,
@@ -43,10 +49,13 @@ export async function collectSnapshot(
   { branchPrefixes, presidentLabel }: CollectRules,
 ): Promise<GithubCollected> {
   const cutoff = recentCutoff(now);
+  // The totals before the lists (Issue #251): see assertListsComplete for why.
+  const totals = await fetchTotals(gh, repo);
   // PRs first, then Issues: every Issue that exists when the PRs are read is in the Issue list
   // read after, so a link to an Issue created between the two lists is kept (Issue #73).
   const rawPrs = await fetchPrs(gh, repo);
   const rawIssues = await fetchIssues(gh, repo);
+  assertListsComplete(totals, rawIssues, rawPrs);
   const existingIssues = issueNumbersOf(rawIssues);
   const prs = await mapWithConcurrency(
     selectRecentPrs(rawPrs, cutoff),
