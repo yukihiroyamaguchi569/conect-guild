@@ -20,8 +20,12 @@ jobs:
     # Playwright's own image (Issue #255): the browsers and the OS libraries/fonts are baked in, so
     # nothing comes from apt or the browser CDN. Its version must equal @playwright/test in the
     # lockfile (checked below). `--user 1001` is the runner's user, as in Playwright's CI docs.
+    # The digest pins the content, which a tag alone does not. It is the multi-arch index's digest
+    # (what `docker pull` printed in CI and the registry's Docker-Content-Digest): it fixes both
+    # the amd64 and arm64 images, so it keeps working if the runner changes architecture.
+    # A Playwright bump updates the version and the digest here together.
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --user 1001
     steps:
       - uses: actions/checkout@v7
