@@ -11,6 +11,7 @@ import {
   repoJson,
   SETTINGS,
   settingsJson,
+  TRIAL_ID,
   trialWorld,
   type World,
 } from './trialCheck.fixtures.test-util.ts';
@@ -21,7 +22,7 @@ describe('trial:check renew', () => {
   it('gives the repository and the folder of a trial as /guild-trial left it', async () => {
     expect(await checkIn(trialWorld(), renew)).toEqual({
       code: 0,
-      result: { ok: true, repo: REPO, folder: FOLDER },
+      result: { ok: true, repo: REPO, folder: FOLDER, id: TRIAL_ID },
       errors: '',
     });
   });
@@ -89,7 +90,7 @@ describe('trial:check renew refuses', () => {
 });
 
 const RENAMED = 'tester/acme';
-const renewing = ['renewing', REPO, 'acme'] as const;
+const renewing = ['renewing', REPO, 'acme', TRIAL_ID] as const;
 
 /** The trial after renew's step 4-1 (and 4-2): its description is `acme の会社`. */
 function describedWorld(): World {
@@ -125,6 +126,9 @@ describe('trial:check renewing', () => {
     ['repo-description', (w) => w.repos.set(REPO, repoJson(REPO))],
     ['repo-description', (w) => w.repos.set(RENAMED, repoJson(RENAMED, true, '別の会社'))],
     ['repo-public', (w) => w.repos.set(REPO, repoJson(REPO, false, 'acme の会社'))],
+    // Another private repository under the new name, with the same description, is not the trial.
+    ['repo-id', (w) => w.repos.set(RENAMED, repoJson(RENAMED, true, 'acme の会社', 'R_kgDOother'))],
+    ['repo-id', (w) => w.repos.set(REPO, repoJson(REPO, true, 'acme の会社', 'R_kgDOother'))],
     ['repo-missing', (w) => w.repos.delete(REPO)],
     ['origin', (w) => w.origins.set(FOLDER, 'https://github.com/tester/real.git')],
     ['settings-not-trial', (w) => w.files.set(SETTINGS, settingsJson(RENAMED, '~/acme'))],
@@ -142,11 +146,20 @@ describe('trial:check renewing', () => {
     'refuses the new name %j',
     async (name) => {
       const world = describedWorld();
-      expect(await checkIn(world, ['renewing', REPO, name])).toMatchObject({
+      expect(await checkIn(world, ['renewing', REPO, name, TRIAL_ID])).toMatchObject({
         code: 1,
         result: { ok: false, failed: ['new-name'] },
       });
       expect(world.ghCalls).toEqual([]);
     },
   );
+
+  it.each(['', 'R kg', 'R_/x', 'x'.repeat(201)])('refuses the id %j', async (id) => {
+    const world = describedWorld();
+    expect(await checkIn(world, ['renewing', REPO, 'acme', id])).toMatchObject({
+      code: 1,
+      result: { ok: false, failed: ['id'] },
+    });
+    expect(world.ghCalls).toEqual([]);
+  });
 });

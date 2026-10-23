@@ -17,11 +17,19 @@ export const COMMANDER_MD = `# CLAUDE.md\n\n${TRIAL_NOTE}\n\n## 部門\n`;
 export const settingsJson = (repo: string, dir: string): string =>
   JSON.stringify({ repo, commanderSessionDir: dir, departments: [] });
 
+/** The trial repository's node id on GitHub (it stays when the repository is renamed). */
+export const TRIAL_ID = 'R_kgDOtrial1';
+
 export const repoJson = (
   nameWithOwner: string,
   isPrivate = true,
   description = TRIAL_DESCRIPTION,
-) => ({ ok: true, stdout: JSON.stringify({ nameWithOwner, isPrivate, description }) }) as const;
+  id = TRIAL_ID,
+) =>
+  ({
+    ok: true,
+    stdout: JSON.stringify({ id, nameWithOwner, isPrivate, description }),
+  }) as const;
 
 export const NOT_FOUND: GhResult = { ok: false, notFound: true };
 

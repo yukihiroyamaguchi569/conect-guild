@@ -12,7 +12,7 @@ import { TRIAL_NOTE } from './trialScaffold.ts';
  */
 
 export const CHECK_USAGE =
-  '使い方: npm run --silent trial:check -- cleanup|renew <owner>/<名前> | renewing <owner>/<名前> <新しい名前>\n';
+  '使い方: npm run --silent trial:check -- cleanup|renew <owner>/<名前> | renewing <owner>/<名前> <新しい名前> <id>\n';
 
 /** What /guild-trial gives the repository (`gh repo create --description`). */
 export const TRIAL_DESCRIPTION = 'conect-guild のお試し商会（架空の会社）';
@@ -23,6 +23,8 @@ export const renewedDescription = (newName: string): string => `${newName} の�
 const OWNER = /^[A-Za-z0-9-]{1,39}$/;
 const NEW_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const NEW_NAME_MAX = 100;
+/** A GitHub node id (`gh repo view --json id`), e.g. `R_kgDOabc123`. */
+const NODE_ID = /^[A-Za-z0-9_=-]{1,200}$/;
 
 /** What lstat says about a path (a symbolic link is never followed). */
 export type Entry = 'missing' | 'link' | 'dir' | 'file' | 'other';
@@ -49,6 +51,8 @@ export type CheckResult =
       readonly ok: true;
       readonly repo: string | null;
       readonly folder: string | null;
+      /** renew only: the repository's node id, for renewing to know it is the same one. */
+      readonly id?: string;
       readonly settings?: boolean;
       readonly settingsBak?: boolean;
       readonly kept?: readonly string[];
@@ -131,6 +135,7 @@ function pointsToRepo(origin: string | null, full: string): boolean {
 }
 
 const RepoView = z.object({
+  id: z.string(),
   nameWithOwner: z.string(),
   isPrivate: z.boolean(),
   description: z.string().nullable(),
@@ -144,7 +149,7 @@ async function viewRepo(full: string, deps: CheckDeps): Promise<RepoFacts> {
     'view',
     full,
     '--json',
-    'nameWithOwner,isPrivate,description',
+    'id,nameWithOwner,isPrivate,description',
   ]);
   if (!result.ok) return result.notFound ? 'missing' : 'gh-failed';
   try {
@@ -155,10 +160,19 @@ async function viewRepo(full: string, deps: CheckDeps): Promise<RepoFacts> {
   }
 }
 
-/** What is wrong with the repository; `description` null accepts any (the old-form names). */
-function repoKinds(facts: RepoFacts, full: string, description: string | null): string[] {
+/**
+ * What is wrong with the repository; `description` null accepts any (the old-form names), `id`
+ * null any repository.
+ */
+function repoKinds(
+  facts: RepoFacts,
+  full: string,
+  description: string | null,
+  id: string | null = null,
+): string[] {
   if (typeof facts === 'string') return [facts === 'missing' ? 'repo-missing' : facts];
   return [
+    ...(id === null || facts.id === id ? [] : ['repo-id']),
     ...(facts.nameWithOwner === full ? [] : ['repo-name']),
     ...(facts.isPrivate ? [] : ['repo-public']),
     ...(description === null || facts.description === description ? [] : ['repo-description']),
@@ -259,17 +273,25 @@ async function checkRenew(t: Target, deps: CheckDeps): Promise<CheckResult> {
     if (folder.notes !== 1) failed.push('note-count');
     if (!pointsToRepo(folder.origin, t.full)) failed.push('origin');
   }
-  failed.push(...repoKinds(await viewRepo(t.full, deps), t.full, TRIAL_DESCRIPTION));
-  return failed.length === 0 ? { ok: true, repo: t.full, folder: t.folder } : { ok: false, failed };
+  const facts = await viewRepo(t.full, deps);
+  failed.push(...repoKinds(facts, t.full, TRIAL_DESCRIPTION));
+  if (failed.length > 0 || typeof facts === 'string') return { ok: false, failed };
+  return { ok: true, repo: t.full, folder: t.folder, id: facts.id };
 }
 
 /**
  * /guild-trial-renew after its step 4-1 (before renaming and moving): the repository now has
  * `<新> の会社` as its description, under the old name or already renamed to `<owner>/<新>`; the
- * folder is still `~/guild-trial/<旧>` and the settings still point at it. Prints where the
- * repository is now.
+ * folder is still `~/guild-trial/<旧>` and the settings still point at it. Whichever name it is
+ * found under, it must be the repository `renew` checked (its node id), not another one that
+ * happens to have that name and description. Prints where the repository is now.
  */
-async function checkRenewing(t: Target, newName: string, deps: CheckDeps): Promise<CheckResult> {
+async function checkRenewing(
+  t: Target,
+  newName: string,
+  id: string,
+  deps: CheckDeps,
+): Promise<CheckResult> {
   const settings = pointsAt('guild.settings.local.json', t, deps);
   const folder = await folderFacts(t, deps);
   const failed = placeKinds(t, settings, folder, deps.entry(t.base));
@@ -283,7 +305,7 @@ async function checkRenewing(t: Target, newName: string, deps: CheckDeps): Promi
     full = t.full;
     facts = await viewRepo(t.full, deps);
   }
-  failed.push(...repoKinds(facts, full, renewedDescription(newName)));
+  failed.push(...repoKinds(facts, full, renewedDescription(newName), id));
   return failed.length === 0 ? { ok: true, repo: full, folder: t.folder } : { ok: false, failed };
 }
 
@@ -294,20 +316,24 @@ const validNewName = (name: string): boolean =>
   !isTrialName(name);
 
 async function check(args: readonly string[], deps: CheckDeps): Promise<CheckResult> {
-  const [mode, repoArg = '', newName = ''] = args;
+  const [mode, repoArg = '', newName = '', id = ''] = args;
   const wrong = targetKinds(repoArg);
   if (wrong.length > 0) return { ok: false, failed: wrong };
   const target = toTarget(repoArg, deps.home);
   if (mode === 'cleanup') return checkCleanup(target, deps);
   if (mode === 'renew') return checkRenew(target, deps);
-  if (!validNewName(newName)) return { ok: false, failed: ['new-name'] };
-  return checkRenewing(target, newName, deps);
+  const wrongRenewing = [
+    ...(validNewName(newName) ? [] : ['new-name']),
+    ...(NODE_ID.test(id) ? [] : ['id']),
+  ];
+  if (wrongRenewing.length > 0) return { ok: false, failed: wrongRenewing };
+  return checkRenewing(target, newName, id, deps);
 }
 
 const isUsage = (args: readonly string[]): boolean => {
   const [mode] = args;
   if (mode === 'cleanup' || mode === 'renew') return args.length !== 2;
-  return mode !== 'renewing' || args.length !== 3;
+  return mode !== 'renewing' || args.length !== 4;
 };
 
 /** Runs the command; resolves with the exit code (0 checked, 1 not a trial or unknown, 2 usage). */

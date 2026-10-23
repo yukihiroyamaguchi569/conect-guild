@@ -33,7 +33,7 @@ describe('trial:check cleanup', () => {
       errors: '',
     });
     expect(world.ghCalls).toEqual([
-      ['repo', 'view', REPO, '--json', 'nameWithOwner,isPrivate,description'],
+      ['repo', 'view', REPO, '--json', 'id,nameWithOwner,isPrivate,description'],
     ]);
   });
 
