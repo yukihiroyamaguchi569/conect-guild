@@ -17,23 +17,30 @@ jobs:
   # Browser E2E (Issue #34): slow, so it runs beside ci.yml's verify. Dummy sample data only.
   e2e:
     runs-on: ubuntu-latest
+    # Playwright's own image (Issue #255): the browsers and the OS libraries/fonts are baked in, so
+    # nothing comes from apt or the browser CDN. Its version must equal @playwright/test in the
+    # lockfile (checked below). `--user 1001` is the runner's user, as in Playwright's CI docs.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      # The image ships its own Node; .nvmrc stays the one Node the project runs on.
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
-      # The browser is installed explicitly (never by a postinstall), cached per Playwright version.
-      - id: playwright
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
-      - run: npx playwright install --with-deps chromium
+      # Fail before the tests when the image and @playwright/test differ (a Playwright bump that
+      # forgot the image above). The image records its version in /ms-playwright/.docker-info.
+      - run: >-
+          node -e "const fs = require('node:fs');
+          const image = JSON.parse(fs.readFileSync('/ms-playwright/.docker-info', 'utf8')).driverVersion;
+          const pkg = require('@playwright/test/package.json').version;
+          if (image !== pkg) { console.error('Playwright image ' + image + ' != @playwright/test ' + pkg); process.exit(1); }
+          console.log('Playwright ' + pkg);"
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v7
         if: failure()
