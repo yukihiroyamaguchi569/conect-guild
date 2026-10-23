@@ -123,16 +123,50 @@ describe('trial:check cleanup keeps the repository', () => {
     ['repo-public', repoJson(REPO, false)],
     ['repo-description', repoJson(REPO, true, '本物の会社')],
     ['repo-name', repoJson('tester/other', true)],
-    ['repo-missing', { ok: false, notFound: true } as const],
-  ])('keeps the repository: %s', async (kind, answer) => {
+  ])('keeps the repository, the folder and the settings with it: %s', async (kind, answer) => {
     const world = trialWorld();
     world.repos.set(REPO, answer);
     expect(await checkIn(world, cleanup)).toMatchObject({
       code: 0,
-      result: { ok: true, repo: null, folder: FOLDER, kept: [kind] },
+      result: {
+        ok: true,
+        repo: null,
+        folder: null,
+        settings: false,
+        settingsBak: false,
+        kept: [kind, 'repo-remains'],
+      },
     });
   });
 
+  it('keeps the folder and the settings of a renew stopped after its description changed', async () => {
+    const world = trialWorld();
+    world.repos.set(REPO, repoJson(REPO, true, 'acme の会社'));
+    expect((await checkIn(world, cleanup)).result).toEqual({
+      ok: true,
+      repo: null,
+      folder: null,
+      settings: false,
+      settingsBak: false,
+      kept: ['repo-description', 'repo-remains'],
+    });
+  });
+
+  it('still gives the folder and the settings when the repository is already gone', async () => {
+    const world = trialWorld();
+    world.repos.set(REPO, { ok: false, notFound: true });
+    expect((await checkIn(world, cleanup)).result).toEqual({
+      ok: true,
+      repo: null,
+      folder: FOLDER,
+      settings: true,
+      settingsBak: true,
+      kept: ['repo-missing'],
+    });
+  });
+});
+
+describe('trial:check cleanup old-form names and the .bak', () => {
   it('keeps an old-form repository without the description even when a trial folder points at it', async () => {
     // A real repository made under the deleted trial's name: the leftover folder points at it.
     const world = trialWorld();
@@ -145,8 +179,9 @@ describe('trial:check cleanup keeps the repository', () => {
     world.repos.set(old, repoJson(old, true, ''));
     expect((await checkIn(world, ['cleanup', old])).result).toMatchObject({
       repo: null,
-      folder,
-      kept: ['repo-description'],
+      folder: null,
+      settings: false,
+      kept: ['repo-description', 'repo-remains'],
     });
   });
 
@@ -159,8 +194,8 @@ describe('trial:check cleanup keeps the repository', () => {
     expect((await checkIn(world, ['cleanup', old])).result).toMatchObject({
       repo: null,
       folder: null,
-      settings: true,
-      kept: ['repo-description'],
+      settings: false,
+      kept: ['repo-description', 'repo-remains'],
     });
   });
 

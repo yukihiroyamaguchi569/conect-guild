@@ -195,14 +195,29 @@ async function checkCleanup(t: Target, deps: CheckDeps): Promise<CheckResult> {
   if (repoKept.includes('gh-failed') || repoKept.includes('gh-invalid')) {
     return { ok: false, failed: repoKept };
   }
+  const blocked = repoRemains(linked, repoKept);
+  const deletes = (yes: boolean): boolean => yes && !blocked;
   return {
     ok: true,
     repo: repoKept.length === 0 ? t.full : null,
-    folder: trialFolder ? t.folder : null,
-    ...settings,
-    kept: [...folderKept(folder.entry, trialFolder), ...repoKept],
+    folder: deletes(trialFolder) ? t.folder : null,
+    settings: deletes(settings.settings),
+    settingsBak: deletes(settings.settingsBak),
+    kept: [
+      ...folderKept(folder.entry, trialFolder),
+      ...repoKept,
+      ...(blocked ? ['repo-remains'] : []),
+    ],
   };
 }
+
+/**
+ * The folder and the settings go only with their repository: deleted now or already gone. One
+ * that stays (a renew stopped after its description changed, an old-form one, another one) keeps
+ * them too, so a company being renewed is not deleted from under it.
+ */
+const repoRemains = (linked: boolean, repoKept: readonly string[]): boolean =>
+  linked && !repoKept.every((kind) => kind === 'repo-missing');
 
 /**
  * Whether guild.settings.local.json and its .bak point at the trial; null when unreadable. The

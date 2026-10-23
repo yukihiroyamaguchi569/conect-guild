@@ -45,14 +45,16 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
 
    道具は何も変えず、1 行の JSON を出す。終了コードが 0 でなければ（`"ok":false`）、何も消さずに止まり、`failed` の種類を伝える（`gh-failed`・`gh-invalid` は docs/setup.md の 3 章「`gh issue list` が動かない」を案内する。`base-symlink` は置き場がシンボリックリンク、`settings-unreadable` は手元の設定か `.bak` が読めない）。0 なら、消すものには道具が出した値だけを使う
    - `repo`（`<owner>/<名前>` か `null`）: GitHub のリポジトリ。道具は、フォルダの `origin` か手元の設定でこのお試しと結びつき、private で、説明が `conect-guild のお試し商会（架空の会社）`（`/guild-trial` が付ける説明）と完全に一致するときだけ出す（お試しを手で消したあとに作った同じ名前の本物の private のリポジトリを消さないため。残ったフォルダの `origin` もそのリポジトリを指すので、`origin` だけでは見分けられない）。名前の形によらない。前の形 `<日付>-<4 文字>` のリポジトリは説明が無いので、いつも `repo-description` で残る（利用者に GitHub で自分で消してもらう）
-   - `folder`（絶対パスか `null`）: 手元のフォルダ。`~/guild-trial/<名前>` がシンボリックリンクでないフォルダで、司令塔の `CLAUDE.md` に印「架空の会社「お試し商会」」があり、`origin` が `<owner>/<名前>` を指しているときだけ出す（`/guild-trial` が作るフォルダは必ずこの `origin` を持つ。印は文字なので、印だけでは認めない）
-   - `settings`・`settingsBak`: `guild.settings.local.json` と `.bak` の `repo` と `commanderSessionDir` の両方がこのお試しを指しているか（`settingsBak` は `settings` が `true` のときだけ `true`）
-   - `kept`: 消さないものの理由。一覧（2）に次の文で書く。`folder-symlink` は「シンボリックリンクなので消しません」、`folder-not-trial` は「お試しのフォルダと確かめられないので消しません」、`repo-public` は「public なので消しません」、`repo-not-linked`・`repo-description`・`repo-name` は「お試しのものと確かめられないので消しません」。`repo-missing` はもう無いので一覧に入れない
+   - `folder`（絶対パスか `null`）: 手元のフォルダ。`~/guild-trial/<名前>` がシンボリックリンクでないフォルダで、司令塔の `CLAUDE.md` に印「架空の会社「お試し商会」」があり、`origin` が `<owner>/<名前>` を指しているときだけ出す（`/guild-trial` が作るフォルダは必ずこの `origin` を持つ。印は文字なので、印だけでは認めない）。リポジトリが残るとき（`kept` に `repo-remains`）は出さない
+   - `settings`・`settingsBak`: `guild.settings.local.json` と `.bak` の `repo` と `commanderSessionDir` の両方がこのお試しを指しているか（`settingsBak` は `settings` が `true` のときだけ `true`）。`folder` と同じく、リポジトリが残るときは `false`
+   - `kept`: 消さないものの理由。一覧（2）に次の文で書く。`folder-symlink` は「シンボリックリンクなので消しません」、`folder-not-trial` は「お試しのフォルダと確かめられないので消しません」、`repo-public` は「public なので消しません」、`repo-not-linked`・`repo-description`・`repo-name` は「お試しのものと確かめられないので消しません」。`repo-missing` はもう無いので一覧に入れない。`repo-remains` は「リポジトリが残るので、フォルダと手元の設定も消しません」。フォルダ・設定・`.bak` は、リポジトリを一緒に消すときか、リポジトリがもう無いときだけ消す（リニューアルオープンの途中の会社を消さないため）。`repo-remains` が出たら次も添える
+     - `/guild-trial-renew` を途中で止めていれば（説明を変えたあとで止まると `repo-description` になる）、片付けずに `/guild-trial-renew` の 5 章で続ける
+     - 前の形 `<日付>-<4 文字>` の名前なら、リポジトリは説明が無く道具では消せないので、GitHub で自分で消してもらう。消したあとでもう一度 `/guild-trial-cleanup` を呼べば、フォルダと手元の設定を片付けられる
 
    それぞれ次のように扱う
    - フォルダ: `folder` が出たら消すものに入れる。作ったあとに使われたかを一覧に添えるため、`git -C "<folder>" rev-list --count HEAD`（作った直後は 1）と `git -C "<folder>" status --porcelain`（作った直後は何も出ない）を見る
    - リポジトリ: `repo` が出たら消すものに入れる
-   - 手元の設定: `settings` が `true` なら `guild.settings.local.json` を、`settingsBak` も `true` なら `guild.settings.local.json.bak` も消すものに入れる。`.bak` があって `settingsBak` が `false` なら本物の会社の控えなので残し、一覧で「残します」と伝える。`guild.settings.local.json` があって `settings` が `false` なら、消さずに「`guild.settings.local.json` は別の設定（自分の会社など）を使っているので消しません」と一覧に書く
+   - 手元の設定: `settings` が `true` なら `guild.settings.local.json` を、`settingsBak` も `true` なら `guild.settings.local.json.bak` も消すものに入れる。`.bak` があって `settingsBak` が `false` なら本物の会社の控えなので残し、一覧で「残します」と伝える。`guild.settings.local.json` があって `settings` が `false` なら（`repo-remains` のときを除く）、消さずに「`guild.settings.local.json` は別の設定（自分の会社など）を使っているので消しません」と一覧に書く
    - 集めたデータ: `guild.settings.local.json` を消すものに入れたとき（画面がこのお試しを集めていたとき）だけ、`ls -d apps/web/.data/snapshot.json`（conect-guild のリポジトリ直下からの相対。collector が書いたお試しのデータ）が出たら消すものに入れる。無ければ飛ばす。手元の設定が別の会社を指しているときは、その会社のデータなので入れない
    - 画面: `guild.settings.local.json` を消すものに入れたときだけ、5273 番で待ち受けているプロセスを見る。何も出なければ飛ばす。手元の設定が別の会社を指しているときは見ない
 
