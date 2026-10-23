@@ -44,7 +44,7 @@ conect-guild のリポジトリ直下で、`/guild-trial`（[.claude/skills/guil
    ```
 
    道具は何も変えず、1 行の JSON を出す。終了コードが 0 でなければ（`"ok":false`）、何も消さずに止まり、`failed` の種類を伝える（`gh-failed`・`gh-invalid` は docs/setup.md の 3 章「`gh issue list` が動かない」を案内する。`base-symlink` は置き場がシンボリックリンク、`settings-unreadable` は手元の設定か `.bak` が読めない）。0 なら、消すものには道具が出した値だけを使う
-   - `repo`（`<owner>/<名前>` か `null`）: GitHub のリポジトリ。道具は、フォルダの `origin` か手元の設定でこのお試しと結びつき、private で、`guild-trial`・`guild-trial-<番号>` なら説明が `conect-guild のお試し商会（架空の会社）`（`/guild-trial` が付ける説明）と完全に一致するときだけ出す（お試しを手で消したあとに作った同じ名前の本物の private のリポジトリを消さないため）。前の形 `<日付>-<4 文字>` は説明が無いので、お試しのフォルダ（下の `folder`）があり、その `origin` がこのリポジトリを指すときだけ説明を問わない。フォルダが無く手元の設定だけで結びつく前の形のリポジトリは `repo-description` で残る（利用者に GitHub で自分で消してもらう）
+   - `repo`（`<owner>/<名前>` か `null`）: GitHub のリポジトリ。道具は、フォルダの `origin` か手元の設定でこのお試しと結びつき、private で、説明が `conect-guild のお試し商会（架空の会社）`（`/guild-trial` が付ける説明）と完全に一致するときだけ出す（お試しを手で消したあとに作った同じ名前の本物の private のリポジトリを消さないため。残ったフォルダの `origin` もそのリポジトリを指すので、`origin` だけでは見分けられない）。名前の形によらない。前の形 `<日付>-<4 文字>` のリポジトリは説明が無いので、いつも `repo-description` で残る（利用者に GitHub で自分で消してもらう）
    - `folder`（絶対パスか `null`）: 手元のフォルダ。`~/guild-trial/<名前>` がシンボリックリンクでないフォルダで、司令塔の `CLAUDE.md` に印「架空の会社「お試し商会」」があり、`origin` が `<owner>/<名前>` を指しているときだけ出す（`/guild-trial` が作るフォルダは必ずこの `origin` を持つ。印は文字なので、印だけでは認めない）
    - `settings`・`settingsBak`: `guild.settings.local.json` と `.bak` の `repo` と `commanderSessionDir` の両方がこのお試しを指しているか（`settingsBak` は `settings` が `true` のときだけ `true`）
    - `kept`: 消さないものの理由。一覧（2）に次の文で書く。`folder-symlink` は「シンボリックリンクなので消しません」、`folder-not-trial` は「お試しのフォルダと確かめられないので消しません」、`repo-public` は「public なので消しません」、`repo-not-linked`・`repo-description`・`repo-name` は「お試しのものと確かめられないので消しません」。`repo-missing` はもう無いので一覧に入れない

@@ -133,7 +133,8 @@ describe('trial:check cleanup keeps the repository', () => {
     });
   });
 
-  it('does not ask for the description of an old-form name whose trial folder points at it', async () => {
+  it('keeps an old-form repository without the description even when a trial folder points at it', async () => {
+    // A real repository made under the deleted trial's name: the leftover folder points at it.
     const world = trialWorld();
     const old = 'tester/20261015-a3f9';
     const folder = `${BASE}/20261015-a3f9`;
@@ -143,9 +144,9 @@ describe('trial:check cleanup keeps the repository', () => {
     world.origins.set(folder, `https://github.com/${old}.git`);
     world.repos.set(old, repoJson(old, true, ''));
     expect((await checkIn(world, ['cleanup', old])).result).toMatchObject({
-      repo: old,
+      repo: null,
       folder,
-      kept: [],
+      kept: ['repo-description'],
     });
   });
 
