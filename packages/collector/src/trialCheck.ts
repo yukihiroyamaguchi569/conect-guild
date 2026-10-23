@@ -177,7 +177,7 @@ async function checkCleanup(t: Target, deps: CheckDeps): Promise<CheckResult> {
   const folder = await folderFacts(t, deps);
   const trialFolder = isTrialFolder(folder, t);
   const linked = settings.settings || trialFolder;
-  const repoKept = linked ? await cleanupRepoKinds(t, deps) : ['repo-not-linked'];
+  const repoKept = linked ? await cleanupRepoKinds(t, trialFolder, deps) : ['repo-not-linked'];
   if (repoKept.includes('gh-failed') || repoKept.includes('gh-invalid')) {
     return { ok: false, failed: repoKept };
   }
@@ -215,9 +215,18 @@ const isTrialFolder = (folder: FolderFacts, t: Target): boolean =>
   folder.marks > 0 &&
   pointsToRepo(folder.origin, t.full);
 
-/** The new-form names are common, so their repository must also have /guild-trial's description. */
-async function cleanupRepoKinds(t: Target, deps: CheckDeps): Promise<string[]> {
-  const description = CURRENT_TRIAL_NAME.test(t.name) ? TRIAL_DESCRIPTION : null;
+/**
+ * The repository must have /guild-trial's description, except an old-form one (made before the
+ * description) that the trial folder's origin points at. Linked by the settings alone, a
+ * repository without it may be a real one made after the trial was deleted by hand.
+ */
+async function cleanupRepoKinds(
+  t: Target,
+  trialFolder: boolean,
+  deps: CheckDeps,
+): Promise<string[]> {
+  const oldWithFolder = !CURRENT_TRIAL_NAME.test(t.name) && trialFolder;
+  const description = oldWithFolder ? null : TRIAL_DESCRIPTION;
   return repoKinds(await viewRepo(t.full, deps), t.full, description);
 }
 

@@ -5,6 +5,7 @@ import {
   BASE,
   CLAUDE_MD,
   checkIn,
+  COMMANDER_MD,
   depsOf,
   FOLDER,
   REPO,
@@ -132,14 +133,33 @@ describe('trial:check cleanup keeps the repository', () => {
     });
   });
 
-  it('does not ask for the description of an old-form name', async () => {
+  it('does not ask for the description of an old-form name whose trial folder points at it', async () => {
+    const world = trialWorld();
+    const old = 'tester/20261015-a3f9';
+    const folder = `${BASE}/20261015-a3f9`;
+    world.files.set(SETTINGS, settingsJson(old, '~/guild-trial/20261015-a3f9'));
+    world.dirs.add(folder);
+    world.files.set(`${folder}/CLAUDE.md`, COMMANDER_MD);
+    world.origins.set(folder, `https://github.com/${old}.git`);
+    world.repos.set(old, repoJson(old, true, ''));
+    expect((await checkIn(world, ['cleanup', old])).result).toMatchObject({
+      repo: old,
+      folder,
+      kept: [],
+    });
+  });
+
+  it('keeps an old-form repository without the description that only the settings link', async () => {
+    // The trial may have been deleted by hand and a real private repository made with its name.
     const world = trialWorld();
     const old = 'tester/20261015-a3f9';
     world.files.set(SETTINGS, settingsJson(old, '~/guild-trial/20261015-a3f9'));
     world.repos.set(old, repoJson(old, true, ''));
     expect((await checkIn(world, ['cleanup', old])).result).toMatchObject({
-      repo: old,
+      repo: null,
       folder: null,
+      settings: true,
+      kept: ['repo-description'],
     });
   });
 
