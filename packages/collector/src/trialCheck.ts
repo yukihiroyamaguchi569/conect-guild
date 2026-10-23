@@ -175,8 +175,8 @@ async function checkCleanup(t: Target, deps: CheckDeps): Promise<CheckResult> {
   const settings = cleanupSettings(t, deps);
   if (settings === null) return { ok: false, failed: ['settings-unreadable'] };
   const folder = await folderFacts(t, deps);
-  const trialFolder = isTrialFolder(folder);
-  const linked = settings.settings || (trialFolder && pointsToRepo(folder.origin, t.full));
+  const trialFolder = isTrialFolder(folder, t);
+  const linked = settings.settings || trialFolder;
   const repoKept = linked ? await cleanupRepoKinds(t, deps) : ['repo-not-linked'];
   if (repoKept.includes('gh-failed') || repoKept.includes('gh-invalid')) {
     return { ok: false, failed: repoKept };
@@ -204,9 +204,16 @@ function cleanupSettings(
   return { settings: settings === 'yes', settingsBak: bak === 'yes' };
 }
 
-/** A real folder whose 司令塔's CLAUDE.md (a file, not a link) has the trial mark. */
-const isTrialFolder = (folder: FolderFacts): boolean =>
-  folder.entry === 'dir' && folder.claudeMd === 'file' && folder.marks > 0;
+/**
+ * A real folder whose 司令塔's CLAUDE.md (a file, not a link) has the trial mark and whose origin
+ * is the trial's repository. /guild-trial always gives it that origin (`gh repo create --source`),
+ * so the mark alone, which any text can carry, is not enough.
+ */
+const isTrialFolder = (folder: FolderFacts, t: Target): boolean =>
+  folder.entry === 'dir' &&
+  folder.claudeMd === 'file' &&
+  folder.marks > 0 &&
+  pointsToRepo(folder.origin, t.full);
 
 /** The new-form names are common, so their repository must also have /guild-trial's description. */
 async function cleanupRepoKinds(t: Target, deps: CheckDeps): Promise<string[]> {

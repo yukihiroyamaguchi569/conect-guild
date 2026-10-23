@@ -68,15 +68,15 @@ describe('trial:check cleanup', () => {
 });
 
 describe('trial:check cleanup keeps', () => {
-  it('keeps the repository and asks no gh when neither the folder nor the settings link it', async () => {
+  it('keeps the folder and the repository, and asks no gh, when the origin is another repository and the settings are elsewhere', async () => {
     const world = trialWorld();
     world.files.delete(SETTINGS);
     world.origins.set(FOLDER, 'https://github.com/tester/real.git');
     expect((await checkIn(world, cleanup)).result).toMatchObject({
       ok: true,
       repo: null,
-      folder: FOLDER,
-      kept: ['repo-not-linked'],
+      folder: null,
+      kept: ['folder-not-trial', 'repo-not-linked'],
     });
     expect(world.ghCalls).toEqual([]);
   });
@@ -99,6 +99,13 @@ describe('trial:check cleanup keeps', () => {
     ],
     ['without a CLAUDE.md', (w: ReturnType<typeof trialWorld>) => w.files.delete(CLAUDE_MD)],
     ['whose CLAUDE.md is a link', (w: ReturnType<typeof trialWorld>) => w.links.add(CLAUDE_MD)],
+    // The mark alone is any text; /guild-trial's folder always has the trial's origin.
+    ['without an origin', (w: ReturnType<typeof trialWorld>) => w.origins.delete(FOLDER)],
+    [
+      'whose origin is another repository',
+      (w: ReturnType<typeof trialWorld>) =>
+        w.origins.set(FOLDER, 'https://github.com/tester/real.git'),
+    ],
   ])('keeps a folder %s', async (_, change) => {
     const world = trialWorld();
     change(world);
