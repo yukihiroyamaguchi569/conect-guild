@@ -17,8 +17,16 @@ import { TRIAL_DEPARTMENTS } from './trialScaffold.ts';
 /** What /guild-trial's tool writes into the 司令塔's CLAUDE.md (trialScaffold.ts). */
 export const TRIAL_MARK = '架空の会社「お試し商会」';
 
-/** The names /guild-trial gives a trial company (the same as /guild-trial-cleanup's). */
-const TRIAL_NAME = /^(?:guild-trial(?:-[1-9]\d*)?|\d{8}-[0-9a-f]{4})$/;
+/** The names /guild-trial gives a trial company now: `guild-trial`, `guild-trial-<n>`. */
+export const CURRENT_TRIAL_NAME = /^guild-trial(?:-[1-9]\d*)?$/;
+
+/** The names it gave before Issue #221: `<date>-<4 hex>`. */
+const OLD_TRIAL_NAME = /^\d{8}-[0-9a-f]{4}$/;
+
+/** A name /guild-trial gives a trial company (the same as /guild-trial-cleanup's). */
+export function isTrialName(name: string): boolean {
+  return CURRENT_TRIAL_NAME.test(name) || OLD_TRIAL_NAME.test(name);
+}
 
 export interface Cell {
   /** Absolute, `~` expanded. */
@@ -47,7 +55,7 @@ export function trialCompanyOf(path: string, home: string): string | null {
   const root = join(home, 'guild-trial');
   if (!path.startsWith(`${root}/`)) return null;
   const name = path.slice(root.length + 1).split('/')[0] ?? '';
-  return TRIAL_NAME.test(name) ? join(root, name) : null;
+  return isTrialName(name) ? join(root, name) : null;
 }
 
 const NOT_TRIAL = 'お試しの会社の設定ではないので、まとめて開きません';
