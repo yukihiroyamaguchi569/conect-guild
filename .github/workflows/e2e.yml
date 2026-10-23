@@ -17,6 +17,14 @@ jobs:
   # Browser E2E (Issue #34): slow, so it runs beside ci.yml's verify. Dummy sample data only.
   e2e:
     runs-on: ubuntu-latest
+    # Split into 4 shards run side by side (Issue #256): the wait matters more than the minutes.
+    # Each shard pays about a minute to get ready (container, npm ci, the dev servers); 4 brings the
+    # longest shard to under 3 minutes of tests, as demo.spec.ts (about 2 minutes) stays in one.
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     # Playwright's own image (Issue #255): the browsers and the OS libraries/fonts are baked in, so
     # nothing comes from apt or the browser CDN. Its version must equal @playwright/test in the
     # lockfile (checked below). `--user 1001` is the runner's user, as in Playwright's CI docs.
@@ -42,10 +50,10 @@ jobs:
           const pkg = require('@playwright/test/package.json').version;
           if (image !== pkg) { console.error('Playwright image ' + image + ' != @playwright/test ' + pkg); process.exit(1); }
           console.log('Playwright ' + pkg);"
-      - run: npm run test:e2e
+      - run: npm run test:e2e -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shardIndex }}
           path: apps/web/playwright-report/
           retention-days: 7
