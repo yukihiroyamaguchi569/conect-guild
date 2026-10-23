@@ -35,7 +35,8 @@ jobs:
       - run: npm ci --ignore-scripts
       # Fail before the tests when the image and @playwright/test differ (a Playwright bump that
       # forgot the image above). The image records its version in /ms-playwright/.docker-info.
-      - run: >-
+      - name: Check the image matches @playwright/test
+        run: >-
           node -e "const fs = require('node:fs');
           const image = JSON.parse(fs.readFileSync('/ms-playwright/.docker-info', 'utf8')).driverVersion;
           const pkg = require('@playwright/test/package.json').version;
