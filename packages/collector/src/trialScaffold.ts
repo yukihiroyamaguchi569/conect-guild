@@ -94,7 +94,7 @@ export function trialDepartments(count: number): TrialDepartment[] {
   return [...departments.slice(0, -1), catchAll];
 }
 
-const TRIAL_NOTE =
+export const TRIAL_NOTE =
   'これは conect-guild を試すための架空の会社「お試し商会」のものである。実在の会社・人・取引とは関係ない。';
 
 export interface ScaffoldArgs {
