@@ -261,6 +261,14 @@ const FILTER_LABELS = {
   white-space: nowrap;
 }
 
+/* The whole title of the row under the pointer (Issue #261), drawn in the page so it shows in every browser. */
+.scroll:hover .scroll__title,
+.guest-item:hover .guest-item__title {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .board__none,
 .board__more {
   margin: 0 0.5em 0.1em;
