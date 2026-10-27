@@ -3,7 +3,7 @@ import type { BoardGroup, GuestBoardGroup } from '../app/guildView';
 import type { BoardFilter } from '../app/useBoardFilter';
 import { maskTitle } from '../domain/mask';
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     groups: readonly BoardGroup[];
     /** The お客さん section (Issue #108); empty without guests, and then not shown. */
@@ -19,6 +19,11 @@ withDefaults(
   }>(),
   { masked: false, show: 'near', hidden: 0 },
 );
+
+/** A title as shown on the board, and in its hover tooltip (Issue #261): masked in the show mode. */
+function shown(title: string): string {
+  return props.masked ? maskTitle(title) : title;
+}
 
 const emit = defineEmits<{ 'toggle-show': [] }>();
 
@@ -60,7 +65,7 @@ const FILTER_LABELS = {
         <ul class="board__scrolls">
           <li v-for="quest in group.quests" :key="quest.number" class="scroll">
             <span class="scroll__number">#{{ quest.number }}</span>
-            <span class="scroll__title">{{ masked ? maskTitle(quest.title) : quest.title }}</span>
+            <span class="scroll__title" :title="shown(quest.title)">{{ shown(quest.title) }}</span>
             <span
               v-if="quest.multiDepartment"
               class="scroll__multi"
@@ -85,7 +90,9 @@ const FILTER_LABELS = {
           <li v-for="item in guest.items" :key="item.number" class="guest-item">
             <span class="guest-item__number">#{{ item.number }}</span>
             <span v-if="item.isPr" class="guest-item__pr">PR</span>
-            <span class="guest-item__title">{{ masked ? maskTitle(item.title) : item.title }}</span>
+            <span class="guest-item__title" :title="shown(item.title)">{{
+              shown(item.title)
+            }}</span>
           </li>
         </ul>
         <p v-if="guest.more > 0" class="board__more">ほか {{ guest.more }} 件</p>
