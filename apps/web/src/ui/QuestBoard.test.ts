@@ -124,6 +124,7 @@ describe('QuestBoard: the show mode (Issue #144)', () => {
     expect(html).toContain('みのり');
     expect(html).toContain('たびびと');
     expect(html).toContain('＊＊＊＊＊＊＊');
+    expect(html).toContain('title="＊＊＊＊＊＊＊"');
   });
 
   it('shows the titles when not masked', async () => {
@@ -131,6 +132,12 @@ describe('QuestBoard: the show mode (Issue #144)', () => {
     expect(html).toContain('取引先との契約');
     expect(html).toContain('架空の Issue');
     expect(html).not.toContain('＊');
+  });
+
+  it('puts the whole title in the hover tooltip of every row (Issue #261)', async () => {
+    const html = await renderBoard(false);
+    expect(html).toContain('title="取引先との契約"');
+    expect(html).toContain('title="架空の Issue"');
   });
 });
 
