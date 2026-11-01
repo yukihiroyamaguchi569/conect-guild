@@ -7,6 +7,7 @@
 - Node.js 26.10 以上
 - Claude Code
 - `gh` でログインしていること（`gh auth status` で確かめます）。private のリポジトリを作る権限が要ります
+  - GitHub のアカウントがない方、`gh` を使ったことがない方は [GitHub を使えるようにする](github-start.md) へ
 - conect-guild の clone と `npm ci --ignore-scripts`。README の「[デモを見る](../README.md#1-デモを見る)」で済ませていれば要りません。作る道具がワークスペースのパッケージを使うので、無いと動きません
 
   ```bash
