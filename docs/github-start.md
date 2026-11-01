@@ -2,7 +2,7 @@
 
 conect-guild は、GitHub の Issue・PR を `gh`（GitHub CLI）で読みます。GitHub のアカウントがない方、`gh` を使ったことがない方は、このページを上から順に進めてください。終わったら、来たページに戻ります。
 
-先に Claude Code を入れておきます。3 と 4 で使います。
+先に Claude Code を入れておきます。3 と 4 で使います。入れ方は [Claude Code の公式の案内](https://code.claude.com/docs/en/setup)にあります。
 
 ## 1. GitHub のアカウントを作る
 
@@ -47,7 +47,7 @@ https://cli.github.com の案内に沿って入れます。
 3. `XXXX-XXXX` のような 1 回限りのコードが表示されます。Enter を押すとブラウザが開くので、そのコードを入れて許可します。ブラウザが開かなければ、表示された URL を自分で開きます
 4. Claude Code に戻り、ログインできたという表示が出れば終わりです
 
-質問が出ずに止まるときは、「ターミナル」アプリで `gh auth login` を打ち、同じように進めます。
+質問が出ずに止まるときは、Mac なら「ターミナル」アプリ、Windows・Linux ならふだん使う端末で `gh auth login` を打ち、同じように進めます。
 
 ## 4. ログインできたか確かめる
 
