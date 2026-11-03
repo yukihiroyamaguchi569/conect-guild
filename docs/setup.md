@@ -17,6 +17,7 @@ GitHub の Issue・PR で仕事を回しているチームなら、自分のリ�
 - **PR を Issue に結ぶこと。** PR の本文に `Closes #番号` を書きます（題名や本文の `#番号` でも結べます）。または、部門の接頭辞で始まるブランチ名（例: `accounting/12-monthly-report`）にします。どちらも無い PR は「担当不明」として受付に置かれます
 - **Node.js 26.10 以上。**
 - **GitHub CLI（`gh`）で対象のリポジトリを読めること。** collector は `gh` の認証をそのまま使います。会社のリポジトリの直下で Claude Code に `gh issue list` を実行させ、一覧が出れば足ります。出なければ [3 章](#gh-issue-list-が動かない)を見てください
+  - GitHub のアカウントがない方、`gh` を使ったことがない方は [GitHub を使えるようにする](github-start.md) へ
 - **司令塔と部門のセッションを並べて開ける端末アプリ。** 4 部門なら 5 つのセッションです。[MulmoTerminal](https://github.com/receptron/mulmoterminal) を勧めます。cmux などほかの端末アプリでも、Issue・PR の表示は動きます
 - 「いま作業中」「許可待ち」などのセッションの状態と、王様の呼びかけは、MulmoTerminal のときだけ出ます。そのためには、設定に書いたフォルダとまったく同じフォルダで、各セッションを起動します（[settings.md の 6 章](settings.md#6-mulmoterminal-との関係)）
 - Codex などほかのエージェントでも、Issue・PR の表示は動きます。`/guild-setup` とセッションの状態の表示は、Claude Code 向けに作っています
