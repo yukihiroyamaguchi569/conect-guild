@@ -1,5 +1,5 @@
 import { constants, type Dirent, type Stats } from 'node:fs';
-import { lstat, open, readdir } from 'node:fs/promises';
+import { lstat, open, readdir, type FileHandle } from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin } from 'vite';
 import type { SnapshotRequest, SnapshotResponse } from './vite-plugin-snapshot.ts';
@@ -44,7 +44,8 @@ function fromAnotherOrigin(req: CardsRequest): boolean {
   const origin = header(req, 'origin');
   if (origin === undefined) return false;
   try {
-    return new URL(origin).host !== header(req, 'host');
+    // The dev server speaks http only.
+    return new URL(origin).origin !== `http://${header(req, 'host') ?? ''}`;
   } catch {
     return true;
   }
@@ -142,6 +143,18 @@ export async function listCards(dir: string, fs: CardsFs = REAL_FS): Promise<Car
   return cards.toSorted((a, b) => a.number - b.number);
 }
 
+/**
+ * The file opened without following a link; null when it cannot be (gone, or replaced by a link,
+ * a folder or a socket since it was looked at).
+ */
+async function openOrNull(file: string): Promise<FileHandle | null> {
+  try {
+    return await open(file, OPEN_FLAGS);
+  } catch {
+    return null;
+  }
+}
+
 /** True when the file opened is an own file, still under `file`'s name, in real folders. */
 async function isStillOpened(
   fs: CardsFs,
@@ -167,15 +180,11 @@ export async function readCard(
 ): Promise<Uint8Array | null> {
   if (!(await inRealFolders(fs, dir))) return null;
   const file = path.join(dir, `${String(number)}.png`);
-  let handle;
-  try {
-    handle = await open(file, OPEN_FLAGS);
-  } catch (error) {
-    const code = errorCode(error);
-    // ENOENT: no picture; ELOOP: a link; EISDIR and the like: not a file.
-    if (code === 'ENOENT' || code === 'ELOOP' || code === 'EISDIR') return null;
-    throw error;
-  }
+  // A socket, a FIFO, a link or a folder is not opened at all.
+  const named = await lstatOrNull(fs, file);
+  if (named === null || !isOwnFile(named)) return null;
+  const handle = await openOrNull(file);
+  if (handle === null) return null;
   try {
     return (await isStillOpened(fs, dir, file, await handle.stat()))
       ? await handle.readFile()

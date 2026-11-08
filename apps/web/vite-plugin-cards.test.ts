@@ -10,6 +10,7 @@ import {
   utimes,
   writeFile,
 } from 'node:fs/promises';
+import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -285,12 +286,36 @@ describe('files outside the cards folder (codex review)', () => {
   });
 });
 
+describe('other kinds of files (codex review)', () => {
+  it('refuses a socket with 404, not 500', async (context) => {
+    const server = createServer();
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(path.join(cards, '7.png'), resolve);
+      });
+    } catch (error) {
+      // A sandbox that forbids sockets (Claude Code's on macOS) cannot make one.
+      if (error instanceof Error && 'code' in error && error.code === 'EPERM') context.skip();
+      throw error;
+    }
+    try {
+      expect(await listCards(cards)).toEqual([]);
+      expect(await readCard(cards, 7)).toBeNull();
+      expect((await request('/cards/7.png')).recorded.statusCode).toBe(404);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+});
+
 describe('requests of another origin (codex review)', () => {
   it.each([
     ['another port of this machine', { origin: 'http://127.0.0.1:3000' }],
     ['localhost', { origin: 'http://localhost:5273' }],
     ['a site', { origin: 'https://example.com' }],
     ['a broken origin', { origin: 'not a url' }],
+    ['the same host over https', { origin: 'https://127.0.0.1:5273' }],
     ['a page of another site, by Sec-Fetch-Site', { 'sec-fetch-site': 'cross-site' }],
     ['a page of a sibling site, by Sec-Fetch-Site', { 'sec-fetch-site': 'same-site' }],
   ])('refuses %s with 403', async (_label, extra) => {
