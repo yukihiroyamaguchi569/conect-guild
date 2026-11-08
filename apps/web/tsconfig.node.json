@@ -13,6 +13,8 @@
   },
   "include": [
     "vite.config.ts",
+    "vite-plugin-cards.ts",
+    "vite-plugin-cards.test.ts",
     "vite-plugin-settings.ts",
     "vite-plugin-settings.test.ts",
     "vite-plugin-snapshot.ts",
