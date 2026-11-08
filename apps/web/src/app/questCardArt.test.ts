@@ -16,7 +16,8 @@ const ALL_MEMBERS: readonly MemberId[] = [
 describe('cardArtOf (Issue #269)', () => {
   it.each(ALL_MEMBERS)('shows %s’s own picture in the department frame', (id) => {
     const art = cardArtOf({ id, crown: false });
-    expect(art.picture).toBe(CARD_PICTURES[id]);
+    // The file of that member, not only the table's entry (two swapped entries would pass that).
+    expect(art.picture).toMatch(new RegExp(`ill-${id}[^/]*\\.webp$`));
     expect(art.frame).toBe(CARD_FRAMES.department);
   });
 

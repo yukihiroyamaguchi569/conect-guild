@@ -331,5 +331,19 @@ test('the card’s pictures come from this server only, and load (Issue #269)', 
       .toBeGreaterThan(0);
   }
   await expect(card.locator('img.card__picture')).toHaveAttribute('src', /ill-minori/);
+  // The back is a CSS background: it must load too.
+  const back = await card
+    .locator('.card-back')
+    .evaluate(
+      (element) => /url\("?([^")]+)"?\)/.exec(getComputedStyle(element).backgroundImage)?.[1] ?? '',
+    );
+  expect(back).toMatch(/back[^/]*\.webp$/);
+  const backWidth = await page.evaluate(async (url) => {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    return image.naturalWidth;
+  }, back);
+  expect(backWidth).toBeGreaterThan(0);
   expect(elsewhere).toEqual([]);
 });
