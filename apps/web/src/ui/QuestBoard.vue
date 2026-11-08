@@ -40,7 +40,8 @@ const root = useTemplateRef<HTMLElement>('root');
  */
 function focusRow(number: number): void {
   const row = root.value?.querySelector<HTMLElement>(`[data-quest="${String(number)}"]`);
-  (row ?? root.value)?.focus();
+  // Shown as keyboard focus even after a mouse close, so the place stays visible.
+  (row ?? root.value)?.focus({ focusVisible: true });
 }
 
 defineExpose({ focusRow });

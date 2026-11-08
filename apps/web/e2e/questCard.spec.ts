@@ -70,6 +70,8 @@ test('a PR that changes rules waits for the president; とじる closes the card
   await card.getByRole('button', { name: 'とじる' }).click();
   await expect(card).toBeHidden();
   await expect(row).toBeFocused();
+  // Closed by the mouse, the row still shows it has the focus.
+  await expect(row).toHaveCSS('outline-style', 'solid');
 });
 
 test('the show mode masks the card’s title, not its number or owner', async ({ page }) => {
@@ -155,8 +157,8 @@ test('Tab never reaches the screen behind the card', async ({ page }) => {
 test('focus goes to the board when the card’s row went away', async ({ page, snapshotServer }) => {
   await page.goto('/');
   const board = page.getByRole('region', { name: 'クエスト掲示板' });
-  // By the keyboard, so the board shows where the focus went.
-  await board.getByRole('button', { name: /#104/ }).press('Enter');
+  // By the mouse: the focus put back must show all the same.
+  await board.getByRole('button', { name: /#104/ }).click();
   const card = page.getByRole('dialog', { name: 'クエスト #104 のカード' });
   await expect(card).toBeVisible();
   const later = NOW + 60_000;
