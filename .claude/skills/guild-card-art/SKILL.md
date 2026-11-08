@@ -116,8 +116,8 @@ test -L apps/web/.data -o -L apps/web/.data/cards && echo link || echo ok
    Strict rules: absolutely NO text, letters, numbers, or writing-like symbols anywhere (papers, signs and screens show only abstract shapes). No real-world logos, brands or flags. Do NOT imitate any real game. Save only the one requested file.
    ```
 
-4. **渡す直前にもう一度見直す。** `prompt.txt` を Read で読み、説明の行が 2 で確かめたものと同じで、ほかの行に題名や固有名詞が入っていないかを確かめる。違っていたら `rm "apps/web/.data/cards/.work-<番号>/prompt.txt"` で消し、3 から作り直す
-5. codex で描く。sandbox の中の codex は API に届かないので、この 1 行は初めから sandbox の外で実行する（許可を求められる）。数分かかる。`umask 077` で、codex の出力・結果・ログも本人だけが読めるようにする
+4. **渡す直前にもう一度見直す。** `prompt.txt` を Read で読み、説明の行が 2 で確かめたものと同じで、ほかの行が上のひな形から 1 文字も変わっていない（題名や固有名詞が足されていない）かを確かめる。ひな形の固定の行（参考画像のファイル名や絵柄の説明）は見直しの対象にしない。違っていたら `rm "apps/web/.data/cards/.work-<番号>/prompt.txt"` で消し、3 から作り直す
+5. codex で描く。sandbox の中の codex は API に届かないので、この 1 行は初めから sandbox の外で実行する（許可を求められる）。数分かかる。`umask 077` で、codex の出力・結果・ログも本人だけが読めるようにする。codex の sandbox（`workspace-write`）は書ける場所を作業のフォルダに絞るが、読み取りは絞れない。codex が `apps/web/.data/snapshot.json` などを読まないのは、指示の「添えた画像のほかは読まない」に頼っている（手順書の限界）。codex の出力（`log.txt`）に作業のフォルダの外のファイルを読んだ跡があれば、止まって伝える
 
    ```bash
    umask 077 && codex exec --skip-git-repo-check -s workspace-write -C "apps/web/.data/cards/.work-<番号>" -o "apps/web/.data/cards/.work-<番号>/result.txt" -i "apps/web/.data/cards/.work-<番号>/ill-kaname.png" -i "apps/web/.data/cards/.work-<番号>/ill-minori.png" - < "apps/web/.data/cards/.work-<番号>/prompt.txt" > "apps/web/.data/cards/.work-<番号>/log.txt" 2>&1
