@@ -22,6 +22,7 @@ The demo mode with made-up data.
 
 - **The guild hall**: draws the work of the commander, the departments (two to six) and the president, taken from GitHub Issues and PRs, as a retro RPG guild
 - **Visitors**: up to two sessions outside the company, drawn as guests who visit the hall
+- **Task pictures**: `/guild-card-art` has codex draw a picture for each open Issue's quest card (Claude first rewrites the title as a general description without names)
 
 How it all moves is for you to find out on the screen.
 
