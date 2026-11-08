@@ -1,7 +1,6 @@
 import type { Snapshot, SnapshotPr } from '@conect-guild/snapshot';
 import { describe, expect, it } from 'vitest';
 import { MEMBERS } from '../guild.config';
-import { faceColors } from '../domain/faceColor';
 import type { BoardGroup } from './guildView';
 import { buildQuestCard, costOf, CROWN_FRAME, markText, prsOf, RARITY_DAYS } from './questCard';
 
@@ -103,7 +102,7 @@ describe('buildQuestCard (Issue #267)', () => {
         label: '経理',
         frame: MEMBERS.minori.color,
         crown: false,
-        face: faceColors('minori'),
+        id: 'minori',
       },
       rarity: 'normal',
       prs: [],
