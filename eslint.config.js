@@ -16,6 +16,8 @@ export default defineConfig(
       'coverage/**',
       // The local settings before Issue #89: in no tsconfig, git-ignored, never read.
       'guild.settings.local.ts',
+      // Issue #269: the card pictures' build scripts, run by hand like the Python ones in assets/.
+      'assets/card/*.mjs',
     ],
   },
   js.configs.recommended,

@@ -15,3 +15,6 @@ __pycache__/
 coverage/
 playwright-report/
 test-results/
+# The card pictures' codex outputs and parts (Issue #269): only the WebP files are kept.
+assets/card/gen/
+assets/card/final/
