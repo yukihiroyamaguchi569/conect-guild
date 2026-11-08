@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardGroup, GuestBoardGroup } from '../app/guildView';
 import type { BoardFilter } from '../app/useBoardFilter';
+import { useTemplateRef } from 'vue';
 import { maskTitle } from '../domain/mask';
 
 const props = withDefaults(
@@ -25,7 +26,30 @@ function shown(title: string): string {
   return props.masked ? maskTitle(title) : title;
 }
 
-const emit = defineEmits<{ 'toggle-show': [] }>();
+const emit = defineEmits<{
+  'toggle-show': [];
+  /** A company row was pressed (Issue #267): the card of that Issue opens. */
+  'open-quest': [number: number];
+}>();
+
+const root = useTemplateRef<HTMLElement>('root');
+
+/**
+ * Focus back where the quest card was opened (Issue #267): the row of `number`, or the board
+ * itself when the row is gone (closed, filtered out).
+ */
+function focusRow(number: number): void {
+  const target =
+    root.value?.querySelector<HTMLElement>(`[data-quest="${String(number)}"]`) ?? root.value;
+  if (target === null) return;
+  // Marked until it loses the focus, so its outline shows after a mouse close too, in every
+  // browser (`:focus-visible` may not hold for a focus put back by a script).
+  target.dataset.returned = '';
+  target.addEventListener('blur', () => delete target.dataset.returned, { once: true });
+  target.focus();
+}
+
+defineExpose({ focusRow });
 
 /** The switch's label for each filter. */
 const FILTER_LABELS = {
@@ -36,7 +60,7 @@ const FILTER_LABELS = {
 </script>
 
 <template>
-  <section class="rpg-window board" aria-label="クエスト掲示板">
+  <section ref="root" class="rpg-window board" aria-label="クエスト掲示板" tabindex="-1">
     <h2 class="rpg-window__title board__title">クエスト掲示板</h2>
     <p class="board__filter">
       <button
@@ -64,14 +88,23 @@ const FILTER_LABELS = {
         </h3>
         <ul class="board__scrolls">
           <li v-for="quest in group.quests" :key="quest.number" class="scroll">
-            <span class="scroll__number">#{{ quest.number }}</span>
-            <span class="scroll__title" :title="shown(quest.title)">{{ shown(quest.title) }}</span>
-            <span
-              v-if="quest.multiDepartment"
-              class="scroll__multi"
-              title="部門ラベルが複数あります。最初の部門が担当します"
-              >複数部門</span
+            <button
+              type="button"
+              class="scroll__button"
+              :data-quest="quest.number"
+              @click="emit('open-quest', quest.number)"
             >
+              <span class="scroll__number">#{{ quest.number }}</span>
+              <span class="scroll__title" :title="shown(quest.title)">{{
+                shown(quest.title)
+              }}</span>
+              <span
+                v-if="quest.multiDepartment"
+                class="scroll__multi"
+                title="部門ラベルが複数あります。最初の部門が担当します"
+                >複数部門</span
+              >
+            </button>
           </li>
         </ul>
       </div>
@@ -105,6 +138,22 @@ const FILTER_LABELS = {
 .board {
   display: flex;
   flex-direction: column;
+}
+
+/* Where the focus goes back to when the quest card's row has gone (Issue #267). */
+.board:focus {
+  outline: none;
+}
+
+.board:focus-visible {
+  outline: 0.15em solid var(--accent);
+  outline-offset: 0.1em;
+}
+
+/* A rule of its own: a browser that does not know focus-visible drops a whole list that has it. */
+.board[data-returned]:focus {
+  outline: 0.15em solid var(--accent);
+  outline-offset: 0.1em;
 }
 
 .board__title {
@@ -164,9 +213,6 @@ const FILTER_LABELS = {
 
 .scroll {
   position: relative;
-  display: flex;
-  align-items: baseline;
-  gap: 0.4em;
   margin: 0 0.5em 0.25em;
   padding: 0.2em 0.9em;
   background: var(--scroll-paper);
@@ -174,6 +220,31 @@ const FILTER_LABELS = {
   border-top: 0.1em solid var(--scroll-edge);
   border-bottom: 0.1em solid var(--scroll-edge);
   font-weight: 700;
+}
+
+/* The row is a button (Issue #267) that keeps the scroll's look. */
+.scroll__button {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.scroll__button:focus-visible {
+  outline: 0.15em solid var(--scroll-ink);
+  outline-offset: 0.1em;
+}
+
+.scroll__button[data-returned]:focus {
+  outline: 0.15em solid var(--scroll-ink);
+  outline-offset: 0.1em;
 }
 
 /* Rolled ends of the scroll. */

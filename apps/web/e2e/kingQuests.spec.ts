@@ -43,3 +43,22 @@ test('the board lists おうさまの クエスト first, and the king’s row c
   const king = party.getByRole('listitem').filter({ hasText: 'ゆきひろ' });
   await expect(king).toContainText('やること 2 件');
 });
+
+test('a king’s quest opens a card of the king in the crowned frame (Issue #267)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const row = page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#31/ });
+  await row.click();
+  const card = page.getByRole('dialog', { name: 'クエスト #31 のカード' });
+  await expect(card).toContainText(KING_QUESTS[0].title);
+  await expect(card).toContainText('ゆきひろ（社長）');
+  await expect(card.locator('.card__crown')).toBeVisible();
+  await expect(card).toContainText('ノーマル');
+  await expect(card).toContainText('PR なし');
+  await page.keyboard.press('Escape');
+  await expect(card).toBeHidden();
+  await expect(row).toBeFocused();
+});

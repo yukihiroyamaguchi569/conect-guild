@@ -4,6 +4,7 @@ import {
   daysToDoDay,
   isNearQuest,
   isTodayQuest,
+  monthDayAfter,
   NEAR_DEADLINE_DAYS,
 } from './deadline';
 
@@ -259,5 +260,14 @@ describe('isTodayQuest (Issue #178)', () => {
   it('drops a deadline within the week that the near filter keeps', () => {
     expect(isNearQuest('〆10/20 資料', OCT_17)).toBe(true);
     expect(isTodayQuest('〆10/20 資料', OCT_17)).toBe(false);
+  });
+});
+
+describe('monthDayAfter (Issue #267)', () => {
+  it('writes M/D of the local day so many days away, across months and years', () => {
+    expect(monthDayAfter(OCT_17, 0)).toBe('10/17');
+    expect(monthDayAfter(OCT_17, 7)).toBe('10/24');
+    expect(monthDayAfter(OCT_17, -17)).toBe('9/30');
+    expect(monthDayAfter(at(2026, 12, 30), 3)).toBe('1/2');
   });
 });

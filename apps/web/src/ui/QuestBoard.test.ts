@@ -3,6 +3,7 @@ import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it } from 'vitest';
 import type { GuestBoardGroup } from '../app/guildView';
 import QuestBoard from './QuestBoard.vue';
+import boardSource from './QuestBoard.vue?raw';
 
 const GUEST: GuestBoardGroup = {
   key: 'guest:0',
@@ -208,5 +209,48 @@ describe('QuestBoard: the near filter (Issue #174)', () => {
     expect(html).toContain('ちかい クエストは ありません');
     expect(html).toContain('ほか 1 件');
     expect(html).not.toContain('いまは クエストが ありません');
+  });
+});
+
+describe('QuestBoard: the rows open the quest card (Issue #267)', () => {
+  it('makes the company rows buttons and leaves the お客さん rows as they were', async () => {
+    const html = await renderToString(
+      createSSRApp(QuestBoard, {
+        groups: [
+          {
+            key: 'king',
+            label: 'おうさまの クエスト',
+            color: '#8e44ad',
+            quests: [{ number: 7, title: '架空の勅命' }],
+          },
+          {
+            key: 'reception',
+            label: 'かなめの受付',
+            color: '#e0b040',
+            quests: [{ number: 8, title: '架空の受付' }],
+          },
+        ],
+        guests: [GUEST],
+        loaded: true,
+      }),
+    );
+    expect(html.match(/<button type="button" class="scroll__button"/g)).toHaveLength(2);
+    expect(html).toMatch(
+      /<button type="button" class="scroll__button"[^>]*><span class="scroll__number"[^>]*>#7</,
+    );
+    const guests = html.slice(html.indexOf('class="board__guests"'));
+    expect(guests).toContain('架空の Issue');
+    expect(guests).not.toContain('<button');
+  });
+});
+
+describe('QuestBoard: the outline of the focus put back (Issue #267)', () => {
+  it('keeps [data-returned] out of the :focus-visible rules', () => {
+    // A browser without :focus-visible drops a whole selector list that has it.
+    // The text before each `{`, after the previous block's `}`: a selector list.
+    const selectors = boardSource.split('{').map((part) => part.slice(part.lastIndexOf('}') + 1));
+    const returned = selectors.filter((selector) => selector.includes('[data-returned]'));
+    expect(returned).toHaveLength(2);
+    for (const selector of returned) expect(selector).not.toContain(':focus-visible');
   });
 });

@@ -107,3 +107,10 @@ export function isTodayQuest(title: string, nowMs: number): boolean {
   const doDay = daysToDoDay(title, nowMs);
   return (deadline !== null && deadline <= 0) || (doDay !== null && doDay <= 0);
 }
+
+/** `M/D` of the local calendar day `days` after the day of `nowMs` (negative: before), e.g. 10/24. */
+export function monthDayAfter(nowMs: number, days: number): string {
+  const now = new Date(nowMs);
+  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + days);
+  return `${String(date.getMonth() + 1)}/${String(date.getDate())}`;
+}
