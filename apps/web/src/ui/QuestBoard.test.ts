@@ -3,6 +3,7 @@ import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it } from 'vitest';
 import type { GuestBoardGroup } from '../app/guildView';
 import QuestBoard from './QuestBoard.vue';
+import boardSource from './QuestBoard.vue?raw';
 
 const GUEST: GuestBoardGroup = {
   key: 'guest:0',
@@ -240,5 +241,16 @@ describe('QuestBoard: the rows open the quest card (Issue #267)', () => {
     const guests = html.slice(html.indexOf('class="board__guests"'));
     expect(guests).toContain('架空の Issue');
     expect(guests).not.toContain('<button');
+  });
+});
+
+describe('QuestBoard: the outline of the focus put back (Issue #267)', () => {
+  it('keeps [data-returned] out of the :focus-visible rules', () => {
+    // A browser without :focus-visible drops a whole selector list that has it.
+    // The text before each `{`, after the previous block's `}`: a selector list.
+    const selectors = boardSource.split('{').map((part) => part.slice(part.lastIndexOf('}') + 1));
+    const returned = selectors.filter((selector) => selector.includes('[data-returned]'));
+    expect(returned).toHaveLength(2);
+    for (const selector of returned) expect(selector).not.toContain(':focus-visible');
   });
 });

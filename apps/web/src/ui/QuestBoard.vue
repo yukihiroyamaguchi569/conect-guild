@@ -145,7 +145,12 @@ const FILTER_LABELS = {
   outline: none;
 }
 
-.board:focus-visible,
+.board:focus-visible {
+  outline: 0.15em solid var(--accent);
+  outline-offset: 0.1em;
+}
+
+/* A rule of its own: a browser that does not know focus-visible drops a whole list that has it. */
 .board[data-returned]:focus {
   outline: 0.15em solid var(--accent);
   outline-offset: 0.1em;
@@ -232,7 +237,11 @@ const FILTER_LABELS = {
   cursor: pointer;
 }
 
-.scroll__button:focus-visible,
+.scroll__button:focus-visible {
+  outline: 0.15em solid var(--scroll-ink);
+  outline-offset: 0.1em;
+}
+
 .scroll__button[data-returned]:focus {
   outline: 0.15em solid var(--scroll-ink);
   outline-offset: 0.1em;
