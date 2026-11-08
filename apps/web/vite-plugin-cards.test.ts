@@ -174,6 +174,7 @@ describe('createCardsMiddleware', () => {
     '/cards/%2e%2e%2fsnapshot.json',
     '/cards/..%2fsnapshot.json',
     '/cards/',
+    '/cards',
     '/cards/sub/101.png',
   ])('answers 404 with no-store for %s', async (url) => {
     await writeFile(path.join(cards, '101.png'), PNG);

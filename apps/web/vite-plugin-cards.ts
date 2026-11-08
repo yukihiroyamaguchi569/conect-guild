@@ -184,7 +184,7 @@ async function answer(
 export function createCardsMiddleware(dir: string) {
   return (req: SnapshotRequest, res: SnapshotResponse, next: () => void): void => {
     const route = pathnameOf(req.url);
-    if (route?.startsWith('/cards/') !== true) {
+    if (route !== '/cards' && route?.startsWith('/cards/') !== true) {
       next();
       return;
     }

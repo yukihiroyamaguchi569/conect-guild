@@ -68,20 +68,36 @@ test('a failed list leaves the member’s picture, with no error of the page', a
   pageErrors.splice(0);
 });
 
-test('a picture listed but gone falls back to the member’s', async ({ page, cardServer }) => {
-  cardServer.draw(101);
-  await page.goto('/');
-  await page.route('**/cards/101.png*', (route) =>
-    route.fulfill({
-      status: 200,
-      body: 'not a png',
-      headers: { 'Cache-Control': 'no-store', 'x-e2e-snapshot': '1' },
-    }),
-  );
-  const picture = await openCard(page, 101);
-  await expect(picture).toHaveAttribute('src', /ill-minori/);
-  await expect.poll(() => loaded(picture)).toBe(true);
-});
+/** Chrome's own line for the 404 of a picture listed but gone. */
+const HTTP_404_LINE =
+  'console: Failed to load resource: the server responded with a status of 404 (Not Found)';
+
+for (const [label, status, body, lines] of [
+  ['gone (404)', 404, '', [HTTP_404_LINE]],
+  ['broken', 200, 'not a png', []],
+] as const) {
+  test(`a picture listed but ${label} falls back to the member’s`, async ({
+    page,
+    cardServer,
+    pageErrors,
+  }) => {
+    cardServer.draw(101);
+    await page.goto('/');
+    await page.route('**/cards/101.png*', (route) =>
+      route.fulfill({
+        status,
+        body,
+        headers: { 'Cache-Control': 'no-store', 'x-e2e-snapshot': '1' },
+      }),
+    );
+    const picture = await openCard(page, 101);
+    await expect(picture).toHaveAttribute('src', /ill-minori/);
+    await expect.poll(() => loaded(picture)).toBe(true);
+    // Only the browser's own line for the 404, if any; nothing else of the page.
+    expect(pageErrors).toEqual(lines);
+    pageErrors.splice(0);
+  });
+}
 
 test('the show mode shows the picture as it is', async ({ page, cardServer }) => {
   cardServer.draw(101);
