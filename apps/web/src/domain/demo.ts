@@ -316,6 +316,7 @@ export function demoSnapshotAt(
               {
                 number: king.number,
                 title: king.title,
+                createdAt: iso(loopStart(king.loop) + DEMO_KING_QUEST.openAt),
                 updatedAt: iso(loopStart(king.loop) + DEMO_KING_QUEST.openAt),
               },
             ],

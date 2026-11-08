@@ -235,7 +235,7 @@ packages/collector ──検証して一時ファイルに書き rename──▶
     recent: [{ kind: "issue-completed" | "pr-merged", number, title, at }]   // 直近 7 日、最大 20 件
   } | null)[],                         // null は repo が無いか、まだ取れていない
   president?: {                        // 設定に president があるときだけ（Issue #141）
-    issues: [{ number, title, updatedAt }],  // ラベル「社長」（設定の値）の open の Issue。このラベルの Issue は issues に入れない
+    issues: [{ number, title, createdAt?, updatedAt }],  // ラベル「社長」（設定の値）の open の Issue。このラベルの Issue は issues に入れない。createdAt は Issue #266（任意。collector はいつも書く）
     closed?: [{ number, closedAt }]          // 直近 7 日に閉じた王様の Issue。題名なし（Issue #172）
   }
 }
@@ -247,7 +247,7 @@ packages/collector ──検証して一時ファイルに書き rename──▶
 
 お客さん（Issue #108）の名前とフォルダは snapshot に入れない（画面は設定から番号で引く）。`guests` と `sessions.guests` は設定の `guests` と同じ数・同じ並びで、`sessions` が `ok` なら両方の数が同じ（schema で確かめる）。開発時の画面は、数か `repo` が読み込んだ設定と合わない（設定を変えた直後など）ときは、お客さんの分（`guests` と `sessions.guests`）を全員まとめて無視し、ほかは今までどおり出す（止めない）。1 人だけ合わないときも全員を無視するのは、collector が前の設定のまま動いている印で、`repo` を持たない状態の並びも前の設定のものかもしれないため（実装時の判断）。build のダミーは照合しない。
 
-`president`（Issue #141）は任意の項目として足し、`schemaVersion` は上げなかった（古い collector の snapshot も読める）。`president.closed`（Issue #172）も同じく任意で、無ければ王様のクリアを数えない。番号はそれぞれの一覧の中で重ならない（schema で確かめる）。
+`president`（Issue #141）は任意の項目として足し、`schemaVersion` は上げなかった（古い collector の snapshot も読める）。`president.closed`（Issue #172）も同じく任意で、無ければ王様のクリアを数えない。`president.issues` の `createdAt`（Issue #266。クエストのカードのレア度に使う）も同じく任意。番号はそれぞれの一覧の中で重ならない（schema で確かめる）。
 
 `schemaVersion` は M3 で 2 に上げた（`sessions` を足したため）。Issue #19 で 3 に上げた（`history` を足したため）。Issue #108 で 4 に上げた（お客さんを足したため）。古い版の snapshot（古い collector が書いたもの）は、画面が「収集スクリプトを更新してください」で止める。
 
