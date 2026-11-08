@@ -3,7 +3,8 @@
  * (docs/DESIGN.md 6 章 M4). A score is a list of notes; `toTones` turns it into timed tones.
  */
 
-export type SoundCue = 'scroll' | 'chest' | 'clear' | 'levelup' | 'permission' | 'summon' | 'text';
+export type SoundCue =
+  'scroll' | 'chest' | 'clear' | 'levelup' | 'permission' | 'summon' | 'text' | 'card';
 
 export type Wave = 'square' | 'triangle';
 
@@ -74,6 +75,13 @@ export const SCORES: Readonly<Record<SoundCue, Score>> = {
   permission: { wave: 'triangle', gain: 1, notes: [n(88, 160), n(null, 40), n(81, 320)] },
   // 王様の呼びかけ (Issue #28): two low notes up a fourth, D4 then G4 (ポ・ポン), lower than every other cue.
   summon: { wave: 'square', gain: 0.7, notes: [n(62, 90), n(null, 30), n(67, 180)] },
+  // クエストのカードをめくる (Issue #268): a soft, quick sweep up on the triangle wave (シュルッ),
+  // landing on a short D7, as long as the flip itself.
+  card: {
+    wave: 'triangle',
+    gain: 0.6,
+    notes: [n(79, 30), n(83, 30), n(86, 30), n(91, 30), n(98, 120)],
+  },
   // 文字送り: three soft, very short blips (ピピピ).
   text: {
     wave: 'square',

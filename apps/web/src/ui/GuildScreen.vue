@@ -80,6 +80,7 @@ const {
   toggleSound,
   cycleVolume,
   callStarted,
+  cardOpened,
 } = useSound({ message, party, halted: () => state.halted }, demo?.storage);
 /** The show mode (Issue #144): live screen only, the demo's titles are fictional. */
 const { masked, toggleMask } = useMask(demo === null);
@@ -105,6 +106,11 @@ const questCard = computed(() =>
 watch(questCard, (card) => {
   if (card === null) openQuest.value = null;
 });
+/** Opens the card of a board row (Issue #267), with the sound of its flip (Issue #268). */
+function openCard(number: number): void {
+  openQuest.value = number;
+  cardOpened();
+}
 const questBoard = useTemplateRef<InstanceType<typeof QuestBoard>>('questBoard');
 /** Once the card has gone, the focus goes back to its row, or to the board without one. */
 watch(
@@ -203,7 +209,7 @@ function onStageShown(shown: boolean): void {
           :show="show"
           :hidden="shownBoard.hidden"
           @toggle-show="toggleShow"
-          @open-quest="openQuest = $event"
+          @open-quest="openCard"
         />
         <KingBubble class="stage__king" :waiting="king.waiting" :detail="king.detail" />
         <MessageWindow

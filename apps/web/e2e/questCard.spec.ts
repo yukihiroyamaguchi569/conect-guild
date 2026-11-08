@@ -1,4 +1,7 @@
 // The quest card (Issue #267): pressing a board row opens its card over the screen.
+import { midiToFrequency, SCORES } from '../src/audio/scores.ts';
+import { installFakeAudio } from './fakeAudio.ts';
+import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures.ts';
 import { NOW, sampleSnapshot } from './sampleSnapshot.ts';
 
@@ -193,4 +196,114 @@ test('the focus put back shows even where focus() ignores focusVisible', async (
   await card.getByRole('button', { name: 'とじる' }).click();
   await expect(row).toBeFocused();
   await expect(row).toHaveCSS('outline-style', 'solid');
+});
+
+/** The frequencies (Hz, rounded) the card's flip plays, as the fake audio records them. */
+const CARD_TONES = SCORES.card.notes.flatMap((note) =>
+  note.midi === null ? [] : [Math.round(midiToFrequency(note.midi))],
+);
+
+test('opening a card plays its flip once, with the sound on (Issue #268)', async ({ page }) => {
+  await page.addInitScript(installFakeAudio);
+  await page.goto('/');
+  await page.getByRole('button', { name: '♪ 音を出す' }).click();
+  // The blip of the button, then nothing until the card opens.
+  await expect.poll(() => page.evaluate(() => window.e2eStartedTones)).toBeGreaterThan(0);
+  await page.evaluate(() => {
+    window.e2eToneFrequencies = [];
+  });
+  await page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#101/ })
+    .click();
+  await expect(page.getByRole('dialog', { name: 'クエスト #101 のカード' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.e2eToneFrequencies)).toEqual(CARD_TONES);
+});
+
+test('opening a card plays nothing while the sound is off (Issue #268)', async ({ page }) => {
+  await page.addInitScript(installFakeAudio);
+  await page.goto('/');
+  await page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#101/ })
+    .click();
+  const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
+  await expect(card).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(card).toBeHidden();
+  // Turning the sound on now blips; the card's flip was never played (nor is it played late).
+  await page.getByRole('button', { name: '♪ 音を出す' }).click();
+  await expect.poll(() => page.evaluate(() => window.e2eStartedTones)).toBeGreaterThan(0);
+  const heard = await page.evaluate(() => window.e2eToneFrequencies ?? []);
+  expect(heard.filter((hz) => CARD_TONES.includes(hz))).toEqual([]);
+});
+
+/** The card's flip in the page now: its progress (ms), or null when there is none. */
+function flipAt(page: Page): Promise<number | null> {
+  return page.locator('.card-scene').evaluate((element) => {
+    const [flip] = element.getAnimations();
+    return flip === undefined || flip.playState === 'finished' ? null : Number(flip.currentTime);
+  });
+}
+
+/**
+ * Holds the card's flip at `ms` and returns its transform there. `matrix3d(-1, …)` is the card
+ * turned half round: its back towards the viewer.
+ */
+function holdFlip(page: Page, ms: number): Promise<string> {
+  return page.locator('.card-scene').evaluate((element, at) => {
+    const [flip] = element.getAnimations();
+    if (flip === undefined) throw new Error('no flip');
+    flip.pause();
+    flip.currentTime = at;
+    return getComputedStyle(element).transform;
+  }, ms);
+}
+
+const BACK_FACING = /^matrix3d\(-1, /;
+
+/** Whether a computed transform is no turn at all, however the browser writes it (2D or 3D). */
+function isFaceUp(page: Page, transform: string): Promise<boolean> {
+  return page.evaluate((value) => new DOMMatrix(value).isIdentity, transform);
+}
+
+test('the card turns over from its back, and is face up from the start without motion (Issue #268)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const row = page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#101/ });
+  await row.click();
+  expect(await holdFlip(page, 0)).toMatch(BACK_FACING);
+  // At the end it is face up.
+  expect(await isFaceUp(page, await holdFlip(page, 500))).toBe(true);
+  expect(await isFaceUp(page, await holdFlip(page, 0))).toBe(false);
+  await page.keyboard.press('Escape');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await row.click();
+  const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
+  await expect(card).toBeVisible();
+  expect(await flipAt(page)).toBeNull();
+  await expect(page.locator('.card-scene')).toHaveCSS('transform', 'none');
+});
+
+test('closing a card while it turns over leaves nothing behind (Issue #268)', async ({ page }) => {
+  await page.goto('/');
+  const row = page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#101/ });
+  await row.click();
+  // Held in the middle of the flip, still turned away, then closed.
+  expect(await holdFlip(page, 100)).toMatch(/^matrix3d\(/);
+  await page.keyboard.press('Escape');
+  const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
+  await expect(card).toBeHidden();
+  await expect(row).toBeFocused();
+  // Opened again, it starts from its back once more.
+  await row.click();
+  await expect(card).toBeVisible();
+  expect(await holdFlip(page, 0)).toMatch(BACK_FACING);
+  await expect(card.getByRole('button', { name: 'とじる' })).toBeFocused();
 });
