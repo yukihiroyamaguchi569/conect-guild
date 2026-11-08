@@ -64,6 +64,30 @@ test('the demo has no show mode: no button, and its titles stay even when the li
   expect(errors).toEqual([]);
 });
 
+test('the demo’s cards show the members’ pictures, never asking for /cards (Issue #271)', async ({
+  page,
+  context,
+}) => {
+  // Answered here (never by the dev server, which would read apps/web/.data/cards) and counted.
+  const cardRequests: string[] = [];
+  await context.route('**/cards/**', (route) => {
+    cardRequests.push(route.request().url());
+    return route.fulfill({ status: 404, body: '' });
+  });
+  const { errors } = await openDemo(page, context);
+  await page.getByRole('button', { name: '▶ はじめる' }).click();
+  const row = page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /10 月分の請求書を作る/ });
+  await row.click({ timeout: FIRST_EVENT_TIMEOUT });
+  const card = page.getByRole('dialog', { name: /のカード$/ });
+  await expect(card.locator('img.card__picture')).toHaveAttribute('src', /ill-/);
+  await page.keyboard.press('Escape');
+  await expect(card).toBeHidden();
+  expect(cardRequests).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
 test('?demo=1 plays the fictional script with sound, never reading /snapshot.json', async ({
   page,
   context,

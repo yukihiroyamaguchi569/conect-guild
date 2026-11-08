@@ -10,6 +10,7 @@ import musubiUrl from '../../../../assets/card/ill-musubi.webp';
 import sasaeUrl from '../../../../assets/card/ill-sasae.webp';
 import takumiUrl from '../../../../assets/card/ill-takumi.webp';
 import yukihiroUrl from '../../../../assets/card/ill-yukihiro.webp';
+import type { CardIndex } from '../adapters/cardIndex';
 import type { MemberId } from '../guild.config';
 import type { QuestCardOwner } from './questCard';
 
@@ -91,10 +92,31 @@ export interface CardArt {
   readonly picture: string;
 }
 
-/** The frame and the picture of a card: the crown for the king, the member in charge's picture. */
-export function cardArtOf(owner: Pick<QuestCardOwner, 'id' | 'crown'>): CardArt {
+/**
+ * The quest's own picture (Issue #271), when the list has its number: its URL under `base`, with
+ * the time it was drawn so a redrawn picture is loaded again. Null otherwise (no list, not drawn).
+ */
+export function taskPictureOf(
+  index: CardIndex | null,
+  number: number,
+  base: string,
+): string | null {
+  const entry = index?.cards.find((card) => card.number === number);
+  return entry === undefined
+    ? null
+    : `${base}${String(entry.number)}.png?v=${String(entry.updatedAt)}`;
+}
+
+/**
+ * The frame and the picture of a card: the crown for the king; the quest's own picture when there
+ * is one (Issue #271), else the member in charge's picture.
+ */
+export function cardArtOf(
+  owner: Pick<QuestCardOwner, 'id' | 'crown'>,
+  taskPicture: string | null = null,
+): CardArt {
   return {
     frame: owner.crown ? CARD_FRAMES.crown : CARD_FRAMES.department,
-    picture: CARD_PICTURES[owner.id],
+    picture: taskPicture ?? CARD_PICTURES[owner.id],
   };
 }

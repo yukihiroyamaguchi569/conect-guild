@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, useTemplateRef } from 'vue';
+import { computed, onMounted, shallowRef, useTemplateRef, watch } from 'vue';
 import { RARITY_LABELS, type QuestCard } from '../app/questCard';
 import { CARD_BACK, cardArtOf, type CardBox } from '../app/questCardArt';
 import { maskTitle } from '../domain/mask';
@@ -9,14 +9,29 @@ const props = withDefaults(
     card: QuestCard;
     /** The show mode (Issue #144): the title is masked, the number and names are not. */
     masked?: boolean;
+    /** The quest's own picture (Issue #271); null: the member in charge's. */
+    taskPicture?: string | null;
   }>(),
-  { masked: false },
+  { masked: false, taskPicture: null },
 );
 const emit = defineEmits<{ close: [] }>();
 
 const title = computed(() => (props.masked ? maskTitle(props.card.title) : props.card.title));
-/** The frame and the picture (Issue #269). */
-const art = computed(() => cardArtOf(props.card.owner));
+/** The quest's own picture did not load: the member's is shown instead (Issue #271). */
+const taskPictureFailed = shallowRef(false);
+watch(
+  () => props.taskPicture,
+  () => {
+    taskPictureFailed.value = false;
+  },
+);
+/** The frame and the picture (Issues #269, #271). */
+const art = computed(() =>
+  cardArtOf(props.card.owner, taskPictureFailed.value ? null : props.taskPicture),
+);
+function onPictureError(): void {
+  if (art.value.picture === props.taskPicture) taskPictureFailed.value = true;
+}
 const dialog = useTemplateRef<HTMLDialogElement>('dialog');
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton');
 
@@ -62,7 +77,13 @@ function onClick(event: MouseEvent): void {
           :class="card.rarity === null ? null : `card--${card.rarity}`"
           :style="{ '--frame': card.owner.frame }"
         >
-          <img class="card__picture" :src="art.picture" alt="" :style="place(art.frame.window)" />
+          <img
+            class="card__picture"
+            :src="art.picture"
+            alt=""
+            :style="place(art.frame.window)"
+            @error="onPictureError"
+          />
           <img class="card__layer" :src="art.frame.image" alt="" data-part="frame" />
           <div
             v-if="art.frame.tinted"
