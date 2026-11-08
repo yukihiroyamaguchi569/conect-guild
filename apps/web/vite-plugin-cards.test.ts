@@ -171,7 +171,6 @@ describe('createCardsMiddleware', () => {
     expect((await request('/cards/8.png')).recorded.statusCode).toBe(404);
     expect((await request('/cards/9.png')).recorded.statusCode).toBe(404);
   });
-
 });
 
 describe('createCardsMiddleware refusals', () => {
