@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ACTIVE_MEMBER_IDS, type MemberId } from '../guild.config';
-import { CARD_BACK, CARD_FRAMES, CARD_PICTURES, cardArtOf, type CardBox } from './questCardArt';
+import {
+  CARD_BACK,
+  CARD_FRAMES,
+  CARD_PICTURES,
+  cardArtOf,
+  taskPictureOf,
+  type CardBox,
+} from './questCardArt';
 
 const ALL_MEMBERS: readonly MemberId[] = [
   'kaname',
@@ -53,5 +60,41 @@ describe('CARD_FRAMES: the parts sit inside the card, in their order', () => {
     expect(frame.band.top + frame.band.height).toBeLessThanOrEqual(frame.window.top);
     expect(frame.window.top + frame.window.height).toBeLessThanOrEqual(frame.text.top);
     expect(frame.cost.left + frame.cost.width).toBeLessThanOrEqual(frame.band.left);
+  });
+});
+
+describe('taskPictureOf (Issue #271)', () => {
+  const index = {
+    cards: [
+      { number: 7, updatedAt: 1_700_000_000_000 },
+      { number: 101, updatedAt: 42 },
+    ],
+  };
+
+  it('is the listed quest’s picture, with the time it was drawn', () => {
+    expect(taskPictureOf(index, 101, '/cards/')).toBe('/cards/101.png?v=42');
+    expect(taskPictureOf(index, 7, '/base/cards/')).toBe('/base/cards/7.png?v=1700000000000');
+  });
+
+  it('is null for a quest not listed, an empty list or no list', () => {
+    expect(taskPictureOf(index, 102, '/cards/')).toBeNull();
+    expect(taskPictureOf({ cards: [] }, 101, '/cards/')).toBeNull();
+    expect(taskPictureOf(null, 101, '/cards/')).toBeNull();
+  });
+});
+
+describe('cardArtOf with a quest’s own picture (Issue #271)', () => {
+  it('shows it in place of the member’s, keeping the frame', () => {
+    expect(cardArtOf({ id: 'minori', crown: false }, '/cards/1.png?v=1')).toEqual({
+      frame: CARD_FRAMES.department,
+      picture: '/cards/1.png?v=1',
+    });
+    expect(cardArtOf({ id: 'yukihiro', crown: true }, '/cards/2.png?v=1').frame).toBe(
+      CARD_FRAMES.crown,
+    );
+  });
+
+  it('falls back to the member’s picture without one', () => {
+    expect(cardArtOf({ id: 'minori', crown: false }, null).picture).toBe(CARD_PICTURES.minori);
   });
 });
