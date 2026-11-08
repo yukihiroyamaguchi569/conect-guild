@@ -314,10 +314,9 @@ test('closing a card while it turns over leaves nothing behind (Issue #268)', as
 });
 
 test('the card’s pictures come from this server only, and load (Issue #269)', async ({ page }) => {
-  const elsewhere: string[] = [];
+  const origins = new Set<string>();
   page.on('request', (request) => {
-    const url = new URL(request.url());
-    if (url.hostname !== '127.0.0.1') elsewhere.push(url.origin);
+    origins.add(new URL(request.url()).origin);
   });
   await page.goto('/');
   await page
@@ -345,5 +344,42 @@ test('the card’s pictures come from this server only, and load (Issue #269)', 
     return image.naturalWidth;
   }, back);
   expect(backWidth).toBeGreaterThan(0);
-  expect(elsewhere).toEqual([]);
+  // Every request went to the page's own origin (host, port and scheme).
+  expect([...origins]).toEqual([new URL(page.url()).origin]);
+});
+
+test('a long description scrolls in the scroll from its first line (Issue #269)', async ({
+  page,
+  snapshotServer,
+}) => {
+  const sample = await sampleSnapshot(NOW);
+  const extra = [120, 121, 122, 123, 124, 125].map((number) => ({
+    number,
+    title: '架空の PR',
+    state: 'open' as const,
+    mergedAt: null,
+    closedAt: null,
+    headRef: `accounting/extra-${String(number)}`,
+    linkedIssues: [101],
+    changedFiles: ['accounting/a.md'],
+  }));
+  snapshotServer.serve({ ...sample, prs: [...sample.prs, ...extra] });
+  await page.goto('/');
+  await page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#101/ })
+    .click();
+  const text = page.getByRole('dialog', { name: 'クエスト #101 のカード' }).locator('.card__text');
+  await expect(text).toContainText('#125');
+  // Overflowing, its first line (担当) is still inside the box, at the top of the scroll.
+  const placed = await text.evaluate((element) => {
+    const first = element.querySelector('dt');
+    return {
+      overflows: element.scrollHeight > element.clientHeight,
+      firstInside:
+        first !== null &&
+        first.getBoundingClientRect().top >= element.getBoundingClientRect().top - 1,
+    };
+  });
+  expect(placed).toEqual({ overflows: true, firstInside: true });
 });

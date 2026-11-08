@@ -280,7 +280,7 @@ function onClick(event: MouseEvent): void {
 .card__text {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  align-content: center;
+  align-content: safe center;
   gap: 0 0.6em;
   margin: 0;
   overflow-y: auto;
