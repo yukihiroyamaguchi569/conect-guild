@@ -42,50 +42,59 @@ function onClick(event: MouseEvent): void {
     @close="emit('close')"
     @click="onClick"
   >
-    <article
-      class="card"
-      :class="card.rarity === null ? null : `card--${card.rarity}`"
-      :style="{ '--frame': card.owner.frame }"
-    >
-      <header class="card__band">
-        <span class="card__cost" :title="card.deadline ?? '締め切りなし'">{{ card.cost }}</span>
-        <span class="card__number">#{{ card.number }}</span>
-        <span class="card__title">{{ title }}</span>
-      </header>
-      <div class="card__art">
-        <span v-if="card.owner.crown" class="card__crown" aria-hidden="true">♛</span>
-        <span
-          class="card__face"
-          :style="{ background: card.owner.face.fill, color: card.owner.face.ink }"
-          >{{ card.owner.name.charAt(0) }}</span
+    <div class="card-scene">
+      <article
+        class="card"
+        :class="card.rarity === null ? null : `card--${card.rarity}`"
+        :style="{ '--frame': card.owner.frame }"
+      >
+        <header class="card__band">
+          <span class="card__cost" :title="card.deadline ?? '締め切りなし'">{{ card.cost }}</span>
+          <span class="card__number">#{{ card.number }}</span>
+          <span class="card__title">{{ title }}</span>
+        </header>
+        <div class="card__art">
+          <span v-if="card.owner.crown" class="card__crown" aria-hidden="true">♛</span>
+          <span
+            class="card__face"
+            :style="{ background: card.owner.face.fill, color: card.owner.face.ink }"
+            >{{ card.owner.name.charAt(0) }}</span
+          >
+        </div>
+        <dl class="card__text">
+          <dt>担当</dt>
+          <dd>{{ card.owner.name }}（{{ card.owner.label }}）</dd>
+          <template v-if="card.rarity !== null">
+            <dt>レア度</dt>
+            <dd>{{ RARITY_LABELS[card.rarity] }}</dd>
+          </template>
+          <dt>締め切り</dt>
+          <dd>{{ card.deadline ?? 'なし' }}</dd>
+          <template v-if="card.doDay !== null">
+            <dt>やる日</dt>
+            <dd>{{ card.doDay }}</dd>
+          </template>
+          <dt>PR</dt>
+          <dd v-if="card.prs.length === 0">PR なし</dd>
+          <dd v-for="pr in card.prs" v-else :key="pr.number">
+            <span class="card__chest" aria-hidden="true">▣</span>#{{ pr.number }}・{{
+              pr.files
+            }}
+            ファイル・{{ pr.wait }}
+          </dd>
+        </dl>
+        <button
+          ref="closeButton"
+          type="button"
+          class="rpg-button card__close"
+          @click="emit('close')"
         >
-      </div>
-      <dl class="card__text">
-        <dt>担当</dt>
-        <dd>{{ card.owner.name }}（{{ card.owner.label }}）</dd>
-        <template v-if="card.rarity !== null">
-          <dt>レア度</dt>
-          <dd>{{ RARITY_LABELS[card.rarity] }}</dd>
-        </template>
-        <dt>締め切り</dt>
-        <dd>{{ card.deadline ?? 'なし' }}</dd>
-        <template v-if="card.doDay !== null">
-          <dt>やる日</dt>
-          <dd>{{ card.doDay }}</dd>
-        </template>
-        <dt>PR</dt>
-        <dd v-if="card.prs.length === 0">PR なし</dd>
-        <dd v-for="pr in card.prs" v-else :key="pr.number">
-          <span class="card__chest" aria-hidden="true">▣</span>#{{ pr.number }}・{{
-            pr.files
-          }}
-          ファイル・{{ pr.wait }}
-        </dd>
-      </dl>
-      <button ref="closeButton" type="button" class="rpg-button card__close" @click="emit('close')">
-        とじる
-      </button>
-    </article>
+          とじる
+        </button>
+      </article>
+      <!-- The back (Issue #268): CSS only; the picture comes with #269. -->
+      <div class="card-back" aria-hidden="true"><span class="card-back__mark">✦</span></div>
+    </div>
   </dialog>
 </template>
 
@@ -107,6 +116,69 @@ function onClick(event: MouseEvent): void {
 .card-backdrop[open] {
   display: grid;
   place-items: center;
+  perspective: 60em;
+}
+
+/*
+ * The card comes face down and turns over (Issue #268). Without motion (prefers-reduced-motion)
+ * it is face up from the start.
+ */
+.card-scene {
+  position: relative;
+  transform-style: preserve-3d;
+  animation: card-flip 0.5s ease-out both;
+}
+
+@keyframes card-flip {
+  from {
+    transform: rotateY(180deg);
+  }
+
+  to {
+    transform: rotateY(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-scene {
+    animation: none;
+  }
+}
+
+.card,
+.card-back {
+  backface-visibility: hidden;
+}
+
+.card-back {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 0.4em solid var(--accent);
+  border-radius: 0.8em;
+  background:
+    repeating-linear-gradient(45deg, rgb(255 216 74 / 18%) 0 0.15em, transparent 0.15em 1.2em),
+    repeating-linear-gradient(-45deg, rgb(255 216 74 / 18%) 0 0.15em, transparent 0.15em 1.2em),
+    var(--window-bg-deep);
+  box-shadow:
+    0 0 0 0.15em #000,
+    inset 0 0 0 0.5em var(--window-bg),
+    inset 0 0 0 0.65em var(--accent);
+  transform: rotateY(180deg);
+}
+
+.card-back__mark {
+  display: grid;
+  place-items: center;
+  width: 3em;
+  height: 3em;
+  border: 0.15em solid var(--accent);
+  border-radius: 50%;
+  background: var(--window-bg);
+  color: var(--accent);
+  font-size: 1.6em;
 }
 
 .card-backdrop::backdrop {
