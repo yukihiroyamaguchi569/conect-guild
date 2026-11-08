@@ -37,10 +37,10 @@ conect-guild のリポジトリ直下で、開いている Issue（王様の Iss
 3. 開いている Issue を取る（王様の Issue も同じリポジトリにある）。失敗したら docs/setup.md の 3 章「`gh issue list` が動かない」を案内して止まる
 
    ```bash
-   gh issue list -R <repo> --state open --limit 500 --json number,title
+   gh issue list -R <repo> --state open --limit 5000 --json number,title
    ```
 
-   `number` が正の整数でないものは飛ばす。題名は 3 の抽象化にだけ使う。ちょうど 500 件返ったら、取りこぼしがありうることを最後（5）に添える
+   `number` が正の整数でないものは飛ばす。題名は 3 の抽象化にだけ使う。ちょうど 5000 件返ったら、取りこぼしがありうるので、何も描かずに止まって件数が多すぎることを伝える（`gh` は上限までページをめくって全件を取る）
 
 4. 置き場がシンボリックリンクでないことを確かめる。`link` が出たら、何も書かずに止まる（リンクの先、つまり `apps/web/.data/` の外に書いてしまうため）
 
