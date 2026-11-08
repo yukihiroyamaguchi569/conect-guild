@@ -1,0 +1,17 @@
+Generate ONE image and save it in the current directory as frame-crown.png.
+This is the card frame for the King's quests, matching the 2nd card (gold with a crown on top) in card-b.png.
+CANVAS: portrait PNG, 1024x1536. Fill everything outside the card with pure flat magenta #FF00FF (it will be keyed out to transparency). The card is centered, portrait, aspect ratio exactly 5:7 (about 1000 px wide x 1400 px tall), with a little magenta margin on every side. Card corners slightly rounded.
+CARD LAYOUT (same as the 1st card in card-b.png), as fractions of the card size:
+- outer ornate border about 4% thick all around, with karakusa scroll ornaments in the four corners and a small ornament centered on the top and bottom edges.
+- a title band across the top: from 4% to 15% of card height, spanning the inner width; empty, no text.
+- a round badge (empty ring) at the top-left, overlapping the left end of the title band, diameter about 15% of card width.
+- the illustration window: a single large rectangle from 17% to 73% of card height, from 6% to 94% of card width (so its aspect is about 1.18 : 1, wider than tall), with a thin inner bevel trim.
+- the description panel at the bottom: a horizontal rolled parchment scroll from 76% to 95% of card height, spanning the inner width, light parchment color, empty, no text.
+Additionally a small golden crown with red jewels sits on the top center of the border, sticking out above the card top (keep it inside the canvas; magenta around it).
+COLOR RULES:
+- The whole frame (border, karakusa ornaments, crown, badge ring, window trim) is rich polished gold with multi-step shading and dark brown outlines, like card 2 in card-b.png. The title band is a warm gold / golden-yellow fill (fixed colors, not tinted later).
+- The INSIDE of the illustration window and the INSIDE of the round badge are filled with pure flat magenta #FF00FF (they will become transparent holes).
+- The parchment scroll at the bottom keeps its light parchment / cream color.
+STYLE: exactly the same art style as card-b.png (attached design sheet, which the client approved): finer, detailed 16-bit era pixel art (late Super-Famicom-era RPG feel), each art pixel about 3-4 screen pixels, rich palette with careful dithering and multi-step shading, ornate arabesque / scroll-leaf (karakusa) corner ornaments, and a rolled parchment scroll as the description panel at the bottom. Clean, crisp pixel art; no blur, no painterly rendering, no photographic texture.
+Strict rules: absolutely NO text, letters, numbers, or writing-like symbols anywhere. Do NOT imitate any real card game (Yu-Gi-Oh, Magic: The Gathering, Pokemon, Hearthstone, etc.), no real-world logos, no real people.
+Do NOT launch a browser, Playwright, or any GUI app. Do not write code to draw; use your built-in image generation tool. Save only the one requested file.

@@ -1,0 +1,18 @@
+Generate ONE image with your built-in image generation tool and save it in the current directory as card-b.png (PNG, landscape, about 1600x900). Do NOT launch a browser, Playwright, or any GUI app. Do not write any code to draw it; use image generation.
+
+Purpose: design proposal for "quest cards" in a retro RPG guild-hall web app (attached: demo-overview.png is the current screen; kaname.png, minori.png, source-sheet.png are the character sprites). The image is a design sheet showing 5 card pieces laid out side by side in one row on a plain dark navy background (#14182c), evenly spaced, each card portrait (ratio about 5:7), same size.
+
+The 5 pieces, left to right:
+1. Standard card frame (empty template): a central illustration window (empty, filled with flat mid gray), a title band across the top (empty, no text), a round cost badge at the top-left corner (empty circle, no number), and a description panel at the bottom (empty, flat light parchment, no text). The colored parts of the frame (outer border fill, title band) must be ONE flat single color (use flat neutral light gray #c8c8c8 with only dark outline pixels) so the app can tint it with each department's color later. Metal trims/rivets in a neutral dark tone are fine.
+2. Crown frame for the King's quests: same layout as 1, but with a golden crown motif on top of the frame and gold trim. Again the main frame fill stays one flat neutral color for tinting; gold accents allowed.
+3. Card back: an original symmetric emblem (a guild shield with a quill and a key, or a simple compass-star) on a patterned background. Must be original, not resembling any existing card game back.
+4. Standard frame with an illustration of KANAME in the window: a girl with long purple hair, big red hair ribbons, white top with red shrine-maiden-style hakama, holding a golden folding fan, standing at a reception counter. Keep her sprite features (face, hair color, ribbons, outfit) exactly as in kaname.png / source-sheet.png. Frame fill tinted gold-yellow (#e0b040) as an example.
+5. Standard frame with an illustration of MINORI in the window: a young man with short lavender-gray hair, round glasses, white shirt with red tie, dark green vest, brown trousers, holding an abacus with coins and a ledger nearby. Keep his sprite features exactly as in minori.png / source-sheet.png. Frame fill tinted green (#4caf50) as an example.
+
+STYLE: Finer, more detailed 16-bit era pixel art (like a late Super-Famicom-era RPG): smaller pixels (each art pixel about 3-4 screen pixels), richer palette with careful dithering and multi-step shading on metal and wood, more ornament detail on the frames. The characters in the windows are drawn as more detailed half-body pixel portraits (taller than chibi, more facial detail), but must clearly keep the same identity, hair, colors and outfit as the attached sprites. Still pure pixel art.
+
+Strict rules:
+- Absolutely NO text, letters, numbers, or symbols that look like writing anywhere in the image. Title band, cost circle and description panel stay blank.
+- Do NOT imitate any real card game (no Yu-Gi-Oh, Magic: The Gathering, Pokemon, Hearthstone etc. layouts, logos, mana symbols, or card backs). No real-world logos or real people.
+- Clean, crisp, consistent pixel art; no blur, no anti-aliased painterly rendering, no photographic texture.
+- Characters appear only inside cards 4 and 5; only these two characters.

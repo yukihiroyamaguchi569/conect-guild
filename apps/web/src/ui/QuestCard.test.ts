@@ -15,7 +15,7 @@ const CARD: Card = {
     label: '経理',
     frame: '#4caf50',
     crown: false,
-    face: { fill: '#c3adbe', ink: '#000000' },
+    id: 'minori',
   },
   rarity: 'rare',
   prs: [
@@ -64,10 +64,29 @@ describe('QuestCard (Issue #267)', () => {
     const html = await render({
       ...CARD,
       rarity: null,
-      owner: { ...CARD.owner, name: 'ゆきひろ', label: '社長', crown: true },
+      owner: { ...CARD.owner, id: 'yukihiro', name: 'ゆきひろ', label: '社長', crown: true },
     });
     expect(html).not.toContain('レア度');
     expect(html).not.toContain('card--');
-    expect(html).toContain('card__crown');
+    // The king's gold crown frame, not tinted, with his picture (Issue #269).
+    expect(html).toMatch(/src="[^"]*frame-crown[^"]*\.webp"/);
+    expect(html).not.toContain('card__tint');
+    expect(html).toMatch(/class="card__picture"[^>]*src="[^"]*ill-yukihiro[^"]*\.webp"/);
+  });
+});
+
+describe('QuestCard: the pictures (Issue #269)', () => {
+  it('lays the member’s picture, the grey frame tinted with its colour and the scroll', async () => {
+    const html = await render(CARD);
+    expect(html).toMatch(/class="card__picture"[^>]*src="[^"]*ill-minori[^"]*\.webp"[^>]*alt=""/);
+    expect(html).toMatch(/src="[^"]*frame-dept-metal[^"]*\.webp"/);
+    expect(html).toMatch(/src="[^"]*frame-dept-scroll[^"]*\.webp"/);
+    expect(html).toMatch(
+      /class="card__layer card__tint"[^>]*mask-image:url\([^)]*frame-dept-metal/,
+    );
+    expect(html).toContain('--frame:#4caf50');
+    expect(html).toMatch(
+      /class="card-back"[^>]*aria-hidden="true"[^>]*background-image:url\([^)]*back[^)]*\.webp/,
+    );
   });
 });
