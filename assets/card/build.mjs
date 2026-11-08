@@ -1,11 +1,13 @@
 // Turn codex outputs in gen/ into final card parts in final/.
 // usage: node build.mjs   (reads the codex outputs in gen/, made by run.sh; writes final/)
 import { readPng, writePng, crop, resize, bbox, windowBox, blank, paste } from './png.mjs';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 
 const GEN = new URL('./gen/', import.meta.url).pathname;
 const OUT = new URL('./final/', import.meta.url).pathname;
 const CARD_W = 600, CARD_H = 840;
+// final/ is not kept in the repository (.gitignore): make it on a fresh checkout.
+mkdirSync(OUT, { recursive: true });
 
 const magenta = (d, o) => Math.min(d[o], d[o + 2]) - d[o + 1];
 
@@ -62,6 +64,8 @@ const has = (n) => (want.length === 0 || want.includes(n)) && existsSync(`${GEN}
 
 let win = null;
 if (has('frame-dept')) win = windowBox(buildCard('frame-dept', { gray: true }));
+// Building the illustrations alone: cut them to the window of the frame made before.
+else if (existsSync(`${OUT}frame-dept.png`)) win = windowBox(readPng(`${OUT}frame-dept.png`));
 if (has('frame-crown')) buildCard('frame-crown');
 if (has('back')) buildCard('back', { fill: true });
 
