@@ -2,7 +2,7 @@ import { shallowRef, type Ref } from 'vue';
 import { loadCardIndex, type CardIndex } from '../adapters/cardIndex';
 
 export interface CardPictures {
-  /** The last list read; null before one or after a failed read. */
+  /** The list read; null before one, while reading again and after a failed read. */
   readonly index: Readonly<Ref<CardIndex | null>>;
   /** Reads the list again, e.g. when a card opens, so a picture drawn since then shows. */
   readonly refresh: () => void;
@@ -25,6 +25,8 @@ export function useCardPictures(
       if (!enabled) return;
       latest += 1;
       const ticket = latest;
+      // An old list could name a picture removed since: the member's shows until the new one.
+      index.value = null;
       void load().then((read) => {
         if (ticket === latest) index.value = read;
       });

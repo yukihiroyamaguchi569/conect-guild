@@ -90,3 +90,26 @@ test('the show mode shows the picture as it is', async ({ page, cardServer }) =>
   const picture = await openCard(page, 101);
   await expect(picture).toHaveAttribute('src', /^\/cards\/101\.png\?v=/);
 });
+
+test('a picture removed since the list was last read is not asked for', async ({
+  page,
+  cardServer,
+}) => {
+  cardServer.draw(101);
+  await page.goto('/');
+  // Another card reads the list, with #101 on it.
+  const other = await openCard(page, 102);
+  await expect.poll(() => cardServer.requests).toContain('/cards/index.json');
+  await expect.poll(() => loaded(other)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(other).toBeHidden();
+
+  cardServer.erase(101);
+  const asked = cardServer.requests.length;
+  const picture = await openCard(page, 101);
+  await expect.poll(() => cardServer.requests.slice(asked)).toContain('/cards/index.json');
+  await expect(picture).toHaveAttribute('src', /ill-minori/);
+  await expect.poll(() => loaded(picture)).toBe(true);
+  // No 404 for the old picture (the pageErrors fixture would see it on the console too).
+  expect(cardServer.requests.slice(asked)).not.toContain('/cards/101.png');
+});

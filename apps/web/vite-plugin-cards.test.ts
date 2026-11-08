@@ -1,5 +1,15 @@
 import { execFile } from 'node:child_process';
-import { link, lstat, mkdir, mkdtemp, rm, symlink, utimes, writeFile } from 'node:fs/promises';
+import {
+  link,
+  lstat,
+  mkdir,
+  readdir,
+  mkdtemp,
+  rm,
+  symlink,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -234,6 +244,7 @@ describe('files outside the cards folder (codex review)', () => {
     await writeFile(path.join(cards, '3.png'), PNG);
     await symlink(path.join(root, 'snapshot.json'), path.join(root, 'a-link'));
     const fs: CardsFs = {
+      readdir: realReaddir,
       lstat: (file) => {
         if (file.endsWith('1.png')) return Promise.reject(enoent());
         return lstat(file.endsWith('2.png') ? path.join(root, 'a-link') : file);
@@ -246,10 +257,17 @@ describe('files outside the cards folder (codex review)', () => {
     await writeFile(path.join(cards, '5.png'), PNG);
     await writeFile(path.join(cards, '4.png'), PNG);
     const fs: CardsFs = {
+      readdir: realReaddir,
       lstat: (file) => lstat(file.endsWith('5.png') ? path.join(cards, '4.png') : file),
     };
     expect(await readCard(cards, 5, fs)).toBeNull();
     expect(await readCard(cards, 4, fs)).toEqual(Buffer.from(PNG));
+  });
+
+  it('lists nothing when the folder goes away while it is listed', async () => {
+    await writeFile(path.join(cards, '5.png'), PNG);
+    const fs: CardsFs = { lstat, readdir: () => Promise.reject(enoent()) };
+    expect(await listCards(cards, fs)).toEqual([]);
   });
 
   it('keeps every /cards answer to its own origin', async () => {
@@ -260,6 +278,10 @@ describe('files outside the cards folder (codex review)', () => {
     }
   });
 });
+
+function realReaddir(dir: string) {
+  return readdir(dir, { withFileTypes: true });
+}
 
 function enoent(): Error {
   return Object.assign(new Error('missing'), { code: 'ENOENT' });

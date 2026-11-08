@@ -24,6 +24,8 @@ export interface CollectorStatusServer {
 export interface CardServer {
   /** Lists `number` in /cards/index.json and answers its picture (a fictional one). */
   draw(number: number, updatedAt?: number): void;
+  /** Takes `number` off the list and answers 404 for its picture. */
+  erase(number: number): void;
   /** Answers /cards/index.json with an empty response of `status` from the next request on. */
   failIndexWith(status: number): void;
   /** The paths of the /cards requests so far. */
@@ -147,6 +149,9 @@ export const test = base.extend<GuildFixtures>({
       await use({
         draw: (number, updatedAt = 1_760_000_000_000) => {
           drawn.set(number, updatedAt);
+        },
+        erase: (number) => {
+          drawn.delete(number);
         },
         failIndexWith: (status) => {
           indexStatus = status;

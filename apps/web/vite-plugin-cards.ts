@@ -1,4 +1,4 @@
-import { constants, type Stats } from 'node:fs';
+import { constants, type Dirent, type Stats } from 'node:fs';
 import { lstat, open, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin } from 'vite';
@@ -57,9 +57,10 @@ function send(
 /** The file system calls that look at a path; tests swap them to play a change in between. */
 export interface CardsFs {
   readonly lstat: (file: string) => Promise<Stats>;
+  readonly readdir: (dir: string) => Promise<Dirent[]>;
 }
 
-const REAL_FS: CardsFs = { lstat };
+const REAL_FS: CardsFs = { lstat, readdir: (dir) => readdir(dir, { withFileTypes: true }) };
 
 /** No link is followed, and a FIFO does not keep the request waiting (it is refused after). */
 const OPEN_FLAGS = constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK;
@@ -93,7 +94,14 @@ function isOwnFile(stat: Stats): boolean {
 /** The pictures in `dir`: own regular files named <number>.png only. None when there is no folder. */
 export async function listCards(dir: string, fs: CardsFs = REAL_FS): Promise<CardIndexEntry[]> {
   if (!(await inRealFolders(fs, dir))) return [];
-  const entries = await readdir(dir, { withFileTypes: true });
+  let entries: Dirent[];
+  try {
+    entries = await fs.readdir(dir);
+  } catch (error) {
+    // Removed since it was checked: no pictures, as without the folder.
+    if (errorCode(error) === 'ENOENT') return [];
+    throw error;
+  }
   const cards: CardIndexEntry[] = [];
   for (const entry of entries) {
     const match = PICTURE_FILE.exec(entry.name);

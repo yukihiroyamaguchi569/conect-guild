@@ -36,6 +36,25 @@ describe('useCardPictures (Issue #271)', () => {
     });
   });
 
+  it('forgets the old list as soon as it reads again, so a removed picture is not asked for', async () => {
+    const next = deferred();
+    const load = vi
+      .fn<() => Promise<CardIndex | null>>()
+      .mockResolvedValueOnce(ONE)
+      .mockReturnValueOnce(next.promise);
+    const pictures = useCardPictures(true, load);
+    pictures.refresh();
+    await vi.waitFor(() => {
+      expect(pictures.index.value).toEqual(ONE);
+    });
+    pictures.refresh();
+    expect(pictures.index.value).toBeNull();
+    next.resolve(TWO);
+    await vi.waitFor(() => {
+      expect(pictures.index.value).toEqual(TWO);
+    });
+  });
+
   it('drops a read that ends after a newer one', async () => {
     const slow = deferred();
     const fast = deferred();
