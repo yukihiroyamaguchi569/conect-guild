@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { test as base, expect, type Locator, type Page } from '@playwright/test';
 import type { CollectorStatus, Snapshot } from '@conect-guild/snapshot';
 import { NOW, sampleSnapshot } from './sampleSnapshot.ts';
@@ -20,6 +21,23 @@ export interface CollectorStatusServer {
   report(status: CollectorStatus | null): void;
 }
 
+export interface CardServer {
+  /** Lists `number` in /cards/index.json and answers its picture (a fictional one). */
+  draw(number: number, updatedAt?: number): void;
+  /** Takes `number` off the list and answers 404 for its picture. */
+  erase(number: number): void;
+  /** Answers /cards/index.json with an empty response of `status` from the next request on. */
+  failIndexWith(status: number): void;
+  /** The paths of the /cards requests so far. */
+  readonly requests: readonly string[];
+}
+
+/** A fictional picture for the cards' own pictures (the concept art, no real Issue in it). */
+export const FICTIONAL_CARD_PICTURE = new URL(
+  '../../../assets/concept/rpg-company-ui.png',
+  import.meta.url,
+);
+
 interface GuildFixtures {
   /** Console errors and uncaught page errors; every test ends by checking there are none. */
   pageErrors: string[];
@@ -27,6 +45,8 @@ interface GuildFixtures {
   snapshotServer: SnapshotServer;
   /** Answers every /collector-status.json request (Issue #74); starts with 204 (not run). */
   collectorStatus: CollectorStatusServer;
+  /** Answers every /cards request (Issue #271); starts with an empty list. */
+  cardServer: CardServer;
 }
 
 /**
@@ -96,6 +116,49 @@ export const test = base.extend<GuildFixtures>({
           current = status;
         },
       });
+    },
+    { auto: true },
+  ],
+  /** Like snapshotServer: the pictures in the dev server's real apps/web/.data/cards are never read. */
+  cardServer: [
+    async ({ context, page }, use) => {
+      const picture = await readFile(FICTIONAL_CARD_PICTURE);
+      const drawn = new Map<number, number>();
+      let indexStatus: number | null = null;
+      const requests: string[] = [];
+      await context.route('**/cards/**', (route) => {
+        const { pathname } = new URL(route.request().url());
+        requests.push(pathname);
+        const headers = { 'Cache-Control': 'no-store', [SERVED_HEADER]: '1' };
+        if (pathname === '/cards/index.json') {
+          if (indexStatus !== null)
+            return route.fulfill({ status: indexStatus, body: '', headers });
+          const cards = [...drawn].map(([number, updatedAt]) => ({ number, updatedAt }));
+          return route.fulfill({ json: { cards }, headers });
+        }
+        const number = Number(/^\/cards\/(\d+)\.png$/.exec(pathname)?.[1]);
+        return drawn.has(number)
+          ? route.fulfill({ body: picture, contentType: 'image/png', headers })
+          : route.fulfill({ status: 404, body: '', headers });
+      });
+      const responses: boolean[] = [];
+      page.on('response', (response) => {
+        if (new URL(response.url()).pathname.startsWith('/cards/'))
+          responses.push(response.headers()[SERVED_HEADER] === '1');
+      });
+      await use({
+        draw: (number, updatedAt = 1_760_000_000_000) => {
+          drawn.set(number, updatedAt);
+        },
+        erase: (number) => {
+          drawn.delete(number);
+        },
+        failIndexWith: (status) => {
+          indexStatus = status;
+        },
+        requests,
+      });
+      expect(responses.filter((served) => !served)).toEqual([]);
     },
     { auto: true },
   ],
