@@ -1,4 +1,4 @@
-import { constants } from 'node:fs';
+import { constants, type Stats } from 'node:fs';
 import { lstat, open, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin } from 'vite';
@@ -43,6 +43,8 @@ function send(
 ): void {
   res.statusCode = statusCode;
   res.setHeader('Cache-Control', 'no-store');
+  // Another site's page may not even embed them (an <img> there would tell which exist).
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
   if (body === undefined) {
     res.end();
     return;
@@ -52,43 +54,87 @@ function send(
   res.end(body.head ? undefined : body.bytes);
 }
 
-/** True when `dir` is a real folder (not a link to one elsewhere). */
-async function isRealDirectory(dir: string): Promise<boolean> {
+/** The file system calls that look at a path; tests swap them to play a change in between. */
+export interface CardsFs {
+  readonly lstat: (file: string) => Promise<Stats>;
+}
+
+const REAL_FS: CardsFs = { lstat };
+
+/** No link is followed, and a FIFO does not keep the request waiting (it is refused after). */
+const OPEN_FLAGS = constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK;
+
+async function lstatOrNull(fs: CardsFs, file: string): Promise<Stats | null> {
   try {
-    return (await lstat(dir)).isDirectory();
+    return await fs.lstat(file);
   } catch (error) {
-    if (errorCode(error) === 'ENOENT') return false;
+    if (errorCode(error) === 'ENOENT') return null;
     throw error;
   }
 }
 
-/** The pictures in `dir`: regular files named <number>.png only. None when there is no folder. */
-export async function listCards(dir: string): Promise<CardIndexEntry[]> {
-  if (!(await isRealDirectory(dir))) return [];
+/**
+ * True when `dir` and its parent (.data) are real folders, not links to folders elsewhere. The
+ * folders above them are the project's own.
+ */
+async function inRealFolders(fs: CardsFs, dir: string): Promise<boolean> {
+  for (const folder of [path.dirname(dir), dir]) {
+    const stat = await lstatOrNull(fs, folder);
+    if (stat?.isDirectory() !== true) return false;
+  }
+  return true;
+}
+
+/** A regular file with no other name (a hard link would be a file kept somewhere else). */
+function isOwnFile(stat: Stats): boolean {
+  return stat.isFile() && stat.nlink === 1;
+}
+
+/** The pictures in `dir`: own regular files named <number>.png only. None when there is no folder. */
+export async function listCards(dir: string, fs: CardsFs = REAL_FS): Promise<CardIndexEntry[]> {
+  if (!(await inRealFolders(fs, dir))) return [];
   const entries = await readdir(dir, { withFileTypes: true });
   const cards: CardIndexEntry[] = [];
   for (const entry of entries) {
     const match = PICTURE_FILE.exec(entry.name);
     // A Dirent of a link is not a file: links are left out.
     if (match === null || !entry.isFile()) continue;
-    const stat = await lstat(path.join(dir, entry.name));
+    // Looked at again: it may have been removed or replaced since the folder was read.
+    const stat = await lstatOrNull(fs, path.join(dir, entry.name));
+    if (stat === null || !isOwnFile(stat)) continue;
     cards.push({ number: Number(match[1]), updatedAt: Math.trunc(stat.mtimeMs) });
   }
   return cards.toSorted((a, b) => a.number - b.number);
 }
 
+/** True when the file opened is an own file, still under `file`'s name, in real folders. */
+async function isStillOpened(
+  fs: CardsFs,
+  dir: string,
+  file: string,
+  opened: Stats,
+): Promise<boolean> {
+  if (!isOwnFile(opened)) return false;
+  const named = await lstatOrNull(fs, file);
+  const same = named !== null && named.dev === opened.dev && named.ino === opened.ino;
+  return same && (await inRealFolders(fs, dir));
+}
+
 /**
- * The bytes of picture `number` in `dir`; null when it is not a regular file there. The file is
- * opened without following a link (O_NOFOLLOW), so a link swapped in after the check is refused.
+ * The bytes of picture `number` in `dir`; null unless it is an own regular file there. The file is
+ * opened without following a link; then the folders are checked again and the name must still be
+ * the file that was opened, so a folder swapped for a link while it was opened is refused.
  */
-export async function readCard(dir: string, number: number): Promise<Uint8Array | null> {
-  if (!(await isRealDirectory(dir))) return null;
+export async function readCard(
+  dir: string,
+  number: number,
+  fs: CardsFs = REAL_FS,
+): Promise<Uint8Array | null> {
+  if (!(await inRealFolders(fs, dir))) return null;
+  const file = path.join(dir, `${String(number)}.png`);
   let handle;
   try {
-    handle = await open(
-      path.join(dir, `${String(number)}.png`),
-      constants.O_RDONLY | constants.O_NOFOLLOW,
-    );
+    handle = await open(file, OPEN_FLAGS);
   } catch (error) {
     const code = errorCode(error);
     // ENOENT: no picture; ELOOP: a link; EISDIR and the like: not a file.
@@ -96,8 +142,9 @@ export async function readCard(dir: string, number: number): Promise<Uint8Array 
     throw error;
   }
   try {
-    if (!(await handle.stat()).isFile()) return null;
-    return await handle.readFile();
+    return (await isStillOpened(fs, dir, file, await handle.stat()))
+      ? await handle.readFile()
+      : null;
   } finally {
     await handle.close();
   }

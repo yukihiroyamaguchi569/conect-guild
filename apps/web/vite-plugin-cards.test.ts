@@ -1,8 +1,16 @@
-import { mkdir, mkdtemp, rm, symlink, utimes, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { link, lstat, mkdir, mkdtemp, rm, symlink, utimes, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cardsPlugin, createCardsMiddleware, listCards, readCard } from './vite-plugin-cards.ts';
+import {
+  cardsPlugin,
+  createCardsMiddleware,
+  listCards,
+  readCard,
+  type CardsFs,
+} from './vite-plugin-cards.ts';
 import type { SnapshotResponse } from './vite-plugin-snapshot.ts';
 
 interface Recorded {
@@ -195,3 +203,64 @@ describe('cardsPlugin', () => {
     expect(cardsPlugin().apply).toBe('serve');
   });
 });
+
+describe('files outside the cards folder (codex review)', () => {
+  it('refuses a cards folder under a .data that is a link', async () => {
+    const real = path.join(root, 'real-data');
+    await mkdir(path.join(real, 'cards'), { recursive: true });
+    await writeFile(path.join(real, 'cards', '5.png'), PNG);
+    await symlink(real, path.join(root, 'data'));
+    const dir = path.join(root, 'data', 'cards');
+    expect(await listCards(dir)).toEqual([]);
+    expect(await readCard(dir, 5)).toBeNull();
+    expect((await request('/cards/5.png', 'GET', dir)).recorded.statusCode).toBe(404);
+  });
+
+  it('refuses a hard link to a file kept elsewhere', async () => {
+    await link(path.join(root, 'snapshot.json'), path.join(cards, '9.png'));
+    expect(await listCards(cards)).toEqual([]);
+    expect(await readCard(cards, 9)).toBeNull();
+  });
+
+  it('refuses a FIFO without waiting for a writer', async () => {
+    await promisify(execFile)('mkfifo', [path.join(cards, '6.png')]);
+    expect(await listCards(cards)).toEqual([]);
+    expect(await readCard(cards, 6)).toBeNull();
+  });
+
+  it('skips a picture removed or replaced by a link while the folder is listed', async () => {
+    await writeFile(path.join(cards, '1.png'), PNG);
+    await writeFile(path.join(cards, '2.png'), PNG);
+    await writeFile(path.join(cards, '3.png'), PNG);
+    await symlink(path.join(root, 'snapshot.json'), path.join(root, 'a-link'));
+    const fs: CardsFs = {
+      lstat: (file) => {
+        if (file.endsWith('1.png')) return Promise.reject(enoent());
+        return lstat(file.endsWith('2.png') ? path.join(root, 'a-link') : file);
+      },
+    };
+    expect((await listCards(cards, fs)).map((card) => card.number)).toEqual([3]);
+  });
+
+  it('refuses a picture whose name no longer is the file opened', async () => {
+    await writeFile(path.join(cards, '5.png'), PNG);
+    await writeFile(path.join(cards, '4.png'), PNG);
+    const fs: CardsFs = {
+      lstat: (file) => lstat(file.endsWith('5.png') ? path.join(cards, '4.png') : file),
+    };
+    expect(await readCard(cards, 5, fs)).toBeNull();
+    expect(await readCard(cards, 4, fs)).toEqual(Buffer.from(PNG));
+  });
+
+  it('keeps every /cards answer to its own origin', async () => {
+    await writeFile(path.join(cards, '5.png'), PNG);
+    for (const url of ['/cards/5.png', '/cards/index.json', '/cards/7.png', '/cards/x']) {
+      const { recorded } = await request(url);
+      expect(recorded.headers.get('cross-origin-resource-policy')).toBe('same-origin');
+    }
+  });
+});
+
+function enoent(): Error {
+  return Object.assign(new Error('missing'), { code: 'ENOENT' });
+}
