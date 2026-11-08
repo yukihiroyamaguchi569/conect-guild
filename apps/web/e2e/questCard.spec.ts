@@ -238,10 +238,29 @@ test('opening a card plays nothing while the sound is off (Issue #268)', async (
   expect(heard.filter((hz) => CARD_TONES.includes(hz))).toEqual([]);
 });
 
-/** The running animations of the card (its flip). */
-function flips(page: Page): Promise<number> {
-  return page.locator('.card-scene').evaluate((element) => element.getAnimations().length);
+/** The card's flip in the page now: its progress (ms), or null when there is none. */
+function flipAt(page: Page): Promise<number | null> {
+  return page.locator('.card-scene').evaluate((element) => {
+    const [flip] = element.getAnimations();
+    return flip === undefined || flip.playState === 'finished' ? null : Number(flip.currentTime);
+  });
 }
+
+/**
+ * Holds the card's flip at `ms` and returns its transform there. `matrix3d(-1, …)` is the card
+ * turned half round: its back towards the viewer.
+ */
+function holdFlip(page: Page, ms: number): Promise<string> {
+  return page.locator('.card-scene').evaluate((element, at) => {
+    const [flip] = element.getAnimations();
+    if (flip === undefined) throw new Error('no flip');
+    flip.pause();
+    flip.currentTime = at;
+    return getComputedStyle(element).transform;
+  }, ms);
+}
+
+const BACK_FACING = /^matrix3d\(-1, /;
 
 test('the card turns over from its back, and is face up from the start without motion (Issue #268)', async ({
   page,
@@ -251,14 +270,16 @@ test('the card turns over from its back, and is face up from the start without m
     .getByRole('region', { name: 'クエスト掲示板' })
     .getByRole('button', { name: /#101/ });
   await row.click();
-  expect(await flips(page)).toBe(1);
+  expect(await holdFlip(page, 0)).toMatch(BACK_FACING);
+  // At the end it is face up.
+  await expect.poll(() => holdFlip(page, 500)).toBe('matrix(1, 0, 0, 1, 0, 0)');
   await page.keyboard.press('Escape');
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await row.click();
   const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
   await expect(card).toBeVisible();
-  expect(await flips(page)).toBe(0);
+  expect(await flipAt(page)).toBeNull();
   await expect(page.locator('.card-scene')).toHaveCSS('transform', 'none');
 });
 
@@ -268,12 +289,15 @@ test('closing a card while it turns over leaves nothing behind (Issue #268)', as
     .getByRole('region', { name: 'クエスト掲示板' })
     .getByRole('button', { name: /#101/ });
   await row.click();
-  expect(await flips(page)).toBe(1);
+  // Held in the middle of the flip, still turned away, then closed.
+  expect(await holdFlip(page, 100)).toMatch(/^matrix3d\(/);
   await page.keyboard.press('Escape');
   const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
   await expect(card).toBeHidden();
   await expect(row).toBeFocused();
+  // Opened again, it starts from its back once more.
   await row.click();
   await expect(card).toBeVisible();
+  expect(await holdFlip(page, 0)).toMatch(BACK_FACING);
   await expect(card.getByRole('button', { name: 'とじる' })).toBeFocused();
 });
