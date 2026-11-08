@@ -29,10 +29,10 @@ function render(card: Card, masked = false): Promise<string> {
 }
 
 describe('QuestCard (Issue #267)', () => {
-  it('is a named modal dialog with the number, the title as text, the cost and the owner', async () => {
+  it('is a named dialog with the number, the title as text, the cost and the owner', async () => {
     const html = await render(CARD);
-    expect(html).toContain('role="dialog"');
-    expect(html).toContain('aria-modal="true"');
+    // A native <dialog>, opened with showModal() on mounting (modal: the screen behind is inert).
+    expect(html).toMatch(/^<dialog /);
     expect(html).toContain('aria-label="クエスト #12 のカード"');
     expect(html).toContain('&lt;b&gt;架空の請求書&lt;/b&gt;');
     expect(html).not.toContain('<b>');

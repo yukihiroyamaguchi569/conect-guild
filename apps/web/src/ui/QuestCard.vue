@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
+import { computed, onMounted, useTemplateRef } from 'vue';
 import { RARITY_LABELS, type QuestCard } from '../app/questCard';
 import { maskTitle } from '../domain/mask';
 
@@ -14,35 +14,38 @@ const props = withDefaults(
 const emit = defineEmits<{ close: [] }>();
 
 const title = computed(() => (props.masked ? maskTitle(props.card.title) : props.card.title));
+const dialog = useTemplateRef<HTMLDialogElement>('dialog');
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton');
-/** The row's button that opened the card: focus goes back to it on closing. */
-let opener: HTMLElement | null = null;
 
-function onKeydown(event: KeyboardEvent): void {
-  if (event.key === 'Escape') emit('close');
-}
-
+/**
+ * A modal <dialog>: the screen behind is inert, so Tab stays in the card. Esc (cancel) and the
+ * browser closing it both go through `close`; the screen owns whether it is open and where the
+ * focus goes back to.
+ */
 onMounted(() => {
-  const active = globalThis.document.activeElement;
-  opener = active instanceof globalThis.HTMLElement ? active : null;
+  dialog.value?.showModal();
   closeButton.value?.focus();
-  globalThis.document.addEventListener('keydown', onKeydown);
 });
-onBeforeUnmount(() => {
-  globalThis.document.removeEventListener('keydown', onKeydown);
-  if (opener?.isConnected === true) opener.focus();
-});
+
+/** A click on the dark backdrop (the dialog itself, outside the card) closes it. */
+function onClick(event: MouseEvent): void {
+  if (event.target === dialog.value) emit('close');
+}
 </script>
 
 <template>
-  <div class="card-backdrop" @click.self="emit('close')">
+  <dialog
+    ref="dialog"
+    class="card-backdrop"
+    :aria-label="`クエスト #${card.number} のカード`"
+    @cancel.prevent="emit('close')"
+    @close="emit('close')"
+    @click="onClick"
+  >
     <article
       class="card"
       :class="card.rarity === null ? null : `card--${card.rarity}`"
       :style="{ '--frame': card.owner.frame }"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="`クエスト #${card.number} のカード`"
     >
       <header class="card__band">
         <span class="card__cost" :title="card.deadline ?? '締め切りなし'">{{ card.cost }}</span>
@@ -83,18 +86,31 @@ onBeforeUnmount(() => {
         とじる
       </button>
     </article>
-  </div>
+  </dialog>
 </template>
 
 <style scoped>
 .card-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
+  box-sizing: border-box;
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgb(0 0 0 / 65%);
+  color: var(--window-text);
+  font-size: clamp(13px, 1.4vw, 18px);
+}
+
+.card-backdrop[open] {
   display: grid;
   place-items: center;
-  background: rgb(0 0 0 / 65%);
-  font-size: clamp(13px, 1.4vw, 18px);
+}
+
+.card-backdrop::backdrop {
+  background: transparent;
 }
 
 .card {

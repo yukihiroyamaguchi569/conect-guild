@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { BoardGroup, GuestBoardGroup } from '../app/guildView';
 import type { BoardFilter } from '../app/useBoardFilter';
+import { useTemplateRef } from 'vue';
 import { maskTitle } from '../domain/mask';
 
 const props = withDefaults(
@@ -31,6 +32,19 @@ const emit = defineEmits<{
   'open-quest': [number: number];
 }>();
 
+const root = useTemplateRef<HTMLElement>('root');
+
+/**
+ * Focus back where the quest card was opened (Issue #267): the row of `number`, or the board
+ * itself when the row is gone (closed, filtered out).
+ */
+function focusRow(number: number): void {
+  const row = root.value?.querySelector<HTMLElement>(`[data-quest="${String(number)}"]`);
+  (row ?? root.value)?.focus();
+}
+
+defineExpose({ focusRow });
+
 /** The switch's label for each filter. */
 const FILTER_LABELS = {
   today: 'きょう',
@@ -40,7 +54,7 @@ const FILTER_LABELS = {
 </script>
 
 <template>
-  <section class="rpg-window board" aria-label="クエスト掲示板">
+  <section ref="root" class="rpg-window board" aria-label="クエスト掲示板" tabindex="-1">
     <h2 class="rpg-window__title board__title">クエスト掲示板</h2>
     <p class="board__filter">
       <button
@@ -68,7 +82,12 @@ const FILTER_LABELS = {
         </h3>
         <ul class="board__scrolls">
           <li v-for="quest in group.quests" :key="quest.number" class="scroll">
-            <button type="button" class="scroll__button" @click="emit('open-quest', quest.number)">
+            <button
+              type="button"
+              class="scroll__button"
+              :data-quest="quest.number"
+              @click="emit('open-quest', quest.number)"
+            >
               <span class="scroll__number">#{{ quest.number }}</span>
               <span class="scroll__title" :title="shown(quest.title)">{{
                 shown(quest.title)
@@ -112,6 +131,7 @@ const FILTER_LABELS = {
 <style scoped>
 .board {
   display: flex;
+  outline: none;
   flex-direction: column;
 }
 

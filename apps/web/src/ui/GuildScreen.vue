@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CollectorFailureKind } from '@conect-guild/snapshot';
-import { computed, shallowRef, watch } from 'vue';
+import { computed, shallowRef, useTemplateRef, watch } from 'vue';
 import type { SnapshotLoadResult } from '../adapters/snapshot';
 import type { DemoSession } from '../app/demo';
 import { liveGuildOptions } from '../app/screenMode';
@@ -105,6 +105,15 @@ const questCard = computed(() =>
 watch(questCard, (card) => {
   if (card === null) openQuest.value = null;
 });
+const questBoard = useTemplateRef<InstanceType<typeof QuestBoard>>('questBoard');
+/** Once the card has gone, the focus goes back to its row, or to the board without one. */
+watch(
+  openQuest,
+  (now, before) => {
+    if (now === null && before !== null) questBoard.value?.focusRow(before);
+  },
+  { flush: 'post' },
+);
 const { narration, next, idleSeeds, setIdleSince, examine } = useNarration({
   message,
   party,
@@ -184,6 +193,7 @@ function onStageShown(shown: boolean): void {
       </section>
       <template v-else>
         <QuestBoard
+          ref="questBoard"
           class="stage__board"
           :style="{ '--board-max-height': `${SELECTED_LAYOUT.boardMaxCqw ?? BOARD_MAX_CQW}cqw` }"
           :groups="shownBoard.groups"

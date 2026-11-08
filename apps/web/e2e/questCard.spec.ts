@@ -116,3 +116,57 @@ test('the card shows on a narrow screen too, inside the screen', async ({ page }
   const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
   await expect(card).toBeInViewport({ ratio: 1 });
 });
+
+test('focus goes back to the pressed row even when the click did not focus it (Safari)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const board = page.getByRole('region', { name: 'クエスト掲示板' });
+  const filter = board.getByRole('button', { name: 'ちかいもの' });
+  await filter.focus();
+  const row = board.getByRole('button', { name: /#101/ });
+  // A click event without moving the focus, as Safari does for buttons.
+  await row.dispatchEvent('click');
+  const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
+  await expect(card).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(card).toBeHidden();
+  await expect(row).toBeFocused();
+});
+
+test('Tab never reaches the screen behind the card', async ({ page }) => {
+  await page.goto('/');
+  await page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#101/ })
+    .click();
+  const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
+  for (const key of ['Tab', 'Tab', 'Shift+Tab', 'Shift+Tab', 'Shift+Tab']) {
+    await page.keyboard.press(key);
+    // In the card, or out of the page to the browser's own controls (body): never the screen behind.
+    const inside = await card.evaluate((element) => {
+      const active = document.activeElement;
+      return active === null || active === document.body || element.contains(active);
+    });
+    expect(inside).toBe(true);
+  }
+});
+
+test('focus goes to the board when the card’s row went away', async ({ page, snapshotServer }) => {
+  await page.goto('/');
+  const board = page.getByRole('region', { name: 'クエスト掲示板' });
+  await board.getByRole('button', { name: /#104/ }).click();
+  const card = page.getByRole('dialog', { name: 'クエスト #104 のカード' });
+  await expect(card).toBeVisible();
+  const later = NOW + 60_000;
+  const sample = await sampleSnapshot(later);
+  const at = new Date(later).toISOString();
+  snapshotServer.serve({
+    ...sample,
+    issues: sample.issues.map((issue) =>
+      issue.number === 104 ? { ...issue, state: 'closed', closedAt: at, updatedAt: at } : issue,
+    ),
+  });
+  await expect(card).toBeHidden({ timeout: 15_000 });
+  await expect(board).toBeFocused();
+});
