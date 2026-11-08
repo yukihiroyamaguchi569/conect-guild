@@ -39,9 +39,14 @@ const root = useTemplateRef<HTMLElement>('root');
  * itself when the row is gone (closed, filtered out).
  */
 function focusRow(number: number): void {
-  const row = root.value?.querySelector<HTMLElement>(`[data-quest="${String(number)}"]`);
-  // Shown as keyboard focus even after a mouse close, so the place stays visible.
-  (row ?? root.value)?.focus({ focusVisible: true });
+  const target =
+    root.value?.querySelector<HTMLElement>(`[data-quest="${String(number)}"]`) ?? root.value;
+  if (target === null) return;
+  // Marked until it loses the focus, so its outline shows after a mouse close too, in every
+  // browser (`:focus-visible` may not hold for a focus put back by a script).
+  target.dataset.returned = '';
+  target.addEventListener('blur', () => delete target.dataset.returned, { once: true });
+  target.focus();
 }
 
 defineExpose({ focusRow });
@@ -140,7 +145,8 @@ const FILTER_LABELS = {
   outline: none;
 }
 
-.board:focus-visible {
+.board:focus-visible,
+.board[data-returned]:focus {
   outline: 0.15em solid var(--accent);
   outline-offset: 0.1em;
 }
@@ -226,7 +232,8 @@ const FILTER_LABELS = {
   cursor: pointer;
 }
 
-.scroll__button:focus-visible {
+.scroll__button:focus-visible,
+.scroll__button[data-returned]:focus {
   outline: 0.15em solid var(--scroll-ink);
   outline-offset: 0.1em;
 }

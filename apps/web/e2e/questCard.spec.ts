@@ -174,3 +174,23 @@ test('focus goes to the board when the card’s row went away', async ({ page, s
   await expect(board).toBeFocused();
   await expect(board).toHaveCSS('outline-style', 'solid');
 });
+
+test('the focus put back shows even where focus() ignores focusVisible', async ({ page }) => {
+  // A browser without the option: focus() is called as if it had none.
+  await page.addInitScript(() => {
+    const focus: unknown = Reflect.get(HTMLElement.prototype, 'focus');
+    if (typeof focus !== 'function') return;
+    HTMLElement.prototype.focus = function focusWithoutOptions(this: HTMLElement) {
+      Reflect.apply(focus, this, []);
+    };
+  });
+  await page.goto('/');
+  const row = page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#103/ });
+  await row.click();
+  const card = page.getByRole('dialog', { name: 'クエスト #103 のカード' });
+  await card.getByRole('button', { name: 'とじる' }).click();
+  await expect(row).toBeFocused();
+  await expect(row).toHaveCSS('outline-style', 'solid');
+});
