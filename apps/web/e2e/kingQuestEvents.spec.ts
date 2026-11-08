@@ -60,6 +60,7 @@ function reading(now: number, quests: readonly { number: number; title: string }
     president: {
       issues: quests.map((quest, i) => ({
         ...quest,
+        createdAt: new Date(now - (i + 1) * 86_400_000).toISOString(),
         updatedAt: new Date(now - (i + 1) * 60_000).toISOString(),
       })),
     },

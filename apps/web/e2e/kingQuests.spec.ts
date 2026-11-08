@@ -19,6 +19,7 @@ test.beforeEach(({ snapshotServer }) => {
     president: {
       issues: KING_QUESTS.map((quest, i) => ({
         ...quest,
+        createdAt: new Date(NOW - (i + 1) * 86_400_000).toISOString(),
         updatedAt: new Date(NOW - (i + 1) * 60_000).toISOString(),
       })),
     },
