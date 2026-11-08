@@ -119,6 +119,8 @@ export const snapshotHistorySchema = z
 export const presidentIssueSchema = z.strictObject({
   number: issueNumber,
   title: z.string(),
+  // Issue #266: for the quest card's rarity. Optional: an older collector's snapshot still reads.
+  createdAt: isoDateTime.optional(),
   updatedAt: isoDateTime,
 });
 

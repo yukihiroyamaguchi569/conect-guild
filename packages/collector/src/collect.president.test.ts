@@ -33,17 +33,28 @@ describe('splitPresidentIssues', () => {
     const issues = [
       issue(1, [KING]),
       issue(2, ['経理']),
-      issue(3, ['経理', KING]),
+      issue(3, ['経理', KING], { createdAt: '2026-10-09T00:00:00.000Z' }),
       issue(4, []),
       issue(5, [KING], { state: 'closed', closedAt: '2026-10-11T09:00:00.000Z' }),
     ];
     const split = splitPresidentIssues(issues, KING);
     // The closed one leaves too: no clear at a desk or the reception (the king's scene is #142).
     expect(split.issues.map((i) => i.number)).toEqual([2, 4]);
+    // Issue #266: each keeps its createdAt, for the quest card's rarity.
     expect(split.president).toStrictEqual({
       issues: [
-        { number: 3, title: '架空の題 3', updatedAt: '2026-10-11T03:00:00.000Z' },
-        { number: 1, title: '架空の題 1', updatedAt: '2026-10-11T01:00:00.000Z' },
+        {
+          number: 3,
+          title: '架空の題 3',
+          createdAt: '2026-10-09T00:00:00.000Z',
+          updatedAt: '2026-10-11T03:00:00.000Z',
+        },
+        {
+          number: 1,
+          title: '架空の題 1',
+          createdAt: '2026-10-10T00:00:00.000Z',
+          updatedAt: '2026-10-11T01:00:00.000Z',
+        },
       ],
       // Issue #172: the closed one goes to `closed`, number and time only (no title).
       closed: [{ number: 5, closedAt: '2026-10-11T09:00:00.000Z' }],

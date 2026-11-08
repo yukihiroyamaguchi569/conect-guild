@@ -40,7 +40,17 @@ describe('snapshotSchema: president', () => {
     expect(withPresident({ issues: [ISSUE] }).data?.president?.closed).toBeUndefined();
   });
 
+  it('accepts createdAt on the king’s open Issues (Issue #266), and none (an older collector)', () => {
+    const created = withPresident({ issues: [{ ...ISSUE, createdAt: T }] });
+    expect(created.data?.president?.issues[0]?.createdAt).toBe(T);
+    expect(
+      withPresident({ issues: [ISSUE] }).data?.president?.issues[0]?.createdAt,
+    ).toBeUndefined();
+  });
+
   it.each([
+    ['a createdAt not in ISO 8601', { issues: [{ ...ISSUE, createdAt: '10/12' }] }],
+    ['a createdAt null', { issues: [{ ...ISSUE, createdAt: null }] }],
     ['a repeated number', { issues: [ISSUE, ISSUE] }],
     [
       'a repeated closed number',

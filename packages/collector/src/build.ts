@@ -78,7 +78,7 @@ export function splitPresidentIssues(
   const king = issues
     .filter((issue) => issue.state === 'open' && isKing(issue))
     .toSorted((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-    .map(({ number, title, updatedAt }) => ({ number, title, updatedAt }));
+    .map(({ number, title, createdAt, updatedAt }) => ({ number, title, createdAt, updatedAt }));
   // Issue #172: the closed ones (since the cutoff of `issues`) count in the week's clears.
   const closed = issues
     .filter((issue) => issue.state === 'closed' && isKing(issue))
