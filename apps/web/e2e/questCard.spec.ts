@@ -155,7 +155,8 @@ test('Tab never reaches the screen behind the card', async ({ page }) => {
 test('focus goes to the board when the card’s row went away', async ({ page, snapshotServer }) => {
   await page.goto('/');
   const board = page.getByRole('region', { name: 'クエスト掲示板' });
-  await board.getByRole('button', { name: /#104/ }).click();
+  // By the keyboard, so the board shows where the focus went.
+  await board.getByRole('button', { name: /#104/ }).press('Enter');
   const card = page.getByRole('dialog', { name: 'クエスト #104 のカード' });
   await expect(card).toBeVisible();
   const later = NOW + 60_000;
@@ -169,4 +170,5 @@ test('focus goes to the board when the card’s row went away', async ({ page, s
   });
   await expect(card).toBeHidden({ timeout: 15_000 });
   await expect(board).toBeFocused();
+  await expect(board).toHaveCSS('outline-style', 'solid');
 });

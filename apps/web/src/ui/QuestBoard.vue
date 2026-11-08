@@ -131,8 +131,17 @@ const FILTER_LABELS = {
 <style scoped>
 .board {
   display: flex;
-  outline: none;
   flex-direction: column;
+}
+
+/* Where the focus goes back to when the quest card's row has gone (Issue #267). */
+.board:focus {
+  outline: none;
+}
+
+.board:focus-visible {
+  outline: 0.15em solid var(--accent);
+  outline-offset: 0.1em;
 }
 
 .board__title {
