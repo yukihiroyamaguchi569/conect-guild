@@ -120,6 +120,11 @@ test('the card shows on a narrow screen too, inside the screen', async ({ page }
     .press('Enter');
   const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
   await expect(card).toBeInViewport({ ratio: 1 });
+  // The card itself (its frame and picture) and 「とじる」 under it fit in too (Issue #269).
+  await expect(card.locator('article.card')).toBeInViewport({ ratio: 1 });
+  await expect(card.getByRole('button', { name: 'とじる' })).toBeInViewport({ ratio: 1 });
+  const width = await card.locator('article.card').evaluate((element) => element.clientWidth);
+  expect(width).toBeGreaterThan(250);
 });
 
 test('focus goes back to the pressed row even when the click did not focus it (Safari)', async ({
@@ -306,4 +311,25 @@ test('closing a card while it turns over leaves nothing behind (Issue #268)', as
   await expect(card).toBeVisible();
   expect(await holdFlip(page, 0)).toMatch(BACK_FACING);
   await expect(card.getByRole('button', { name: 'とじる' })).toBeFocused();
+});
+
+test('the card’s pictures come from this server only, and load (Issue #269)', async ({ page }) => {
+  const elsewhere: string[] = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.hostname !== '127.0.0.1') elsewhere.push(url.origin);
+  });
+  await page.goto('/');
+  await page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#101/ })
+    .click();
+  const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
+  for (const picture of await card.locator('img').all()) {
+    await expect
+      .poll(() => picture.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
+      .toBeGreaterThan(0);
+  }
+  await expect(card.locator('img.card__picture')).toHaveAttribute('src', /ill-minori/);
+  expect(elsewhere).toEqual([]);
 });
