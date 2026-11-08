@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CollectorFailureKind } from '@conect-guild/snapshot';
-import { computed, watch } from 'vue';
+import { computed, shallowRef, watch } from 'vue';
 import type { SnapshotLoadResult } from '../adapters/snapshot';
 import type { DemoSession } from '../app/demo';
 import { liveGuildOptions } from '../app/screenMode';
@@ -9,6 +9,7 @@ import { filterBoard, useBoardFilter } from '../app/useBoardFilter';
 import { useMask } from '../app/useMask';
 import { useMissingLabels } from '../app/useMissingLabels';
 import { useNarration } from '../app/useNarration';
+import { buildQuestCard } from '../app/questCard';
 import { useSound } from '../app/useSound';
 import { SELECTED_LAYOUT } from '../render/layouts';
 import { BOARD_MAX_CQW, FETCH_TAB } from '../render/map';
@@ -23,6 +24,7 @@ import MissingLabelsBanner from './MissingLabelsBanner.vue';
 import MixupsBanner from './MixupsBanner.vue';
 import PartyStatus from './PartyStatus.vue';
 import QuestBoard from './QuestBoard.vue';
+import QuestCard from './QuestCard.vue';
 import SoundControl from './SoundControl.vue';
 
 const props = defineProps<{
@@ -90,6 +92,19 @@ const shownBoard = computed(() =>
     state.snapshot === null ? 0 : Date.parse(state.snapshot.fetchedAt),
   ),
 );
+/**
+ * The quest card (Issue #267): the Issue number of the open card, looked up again on every snapshot.
+ * It closes when the board no longer lists the Issue (closed, filtered out) or the screen halts.
+ */
+const openQuest = shallowRef<number | null>(null);
+const questCard = computed(() =>
+  openQuest.value === null || state.snapshot === null || state.halted
+    ? null
+    : buildQuestCard(shownBoard.value.groups, state.snapshot, openQuest.value),
+);
+watch(questCard, (card) => {
+  if (card === null) openQuest.value = null;
+});
 const { narration, next, idleSeeds, setIdleSince, examine } = useNarration({
   message,
   party,
@@ -178,6 +193,7 @@ function onStageShown(shown: boolean): void {
           :show="show"
           :hidden="shownBoard.hidden"
           @toggle-show="toggleShow"
+          @open-quest="openQuest = $event"
         />
         <KingBubble class="stage__king" :waiting="king.waiting" :detail="king.detail" />
         <MessageWindow
@@ -234,6 +250,7 @@ function onStageShown(shown: boolean): void {
         <MaskControl v-if="demo === null" :masked="masked" @toggle="toggleMask" />
       </FetchStatus>
     </div>
+    <QuestCard v-if="questCard" :card="questCard" :masked="masked" @close="openQuest = null" />
   </main>
 </template>
 

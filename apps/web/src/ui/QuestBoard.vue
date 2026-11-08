@@ -25,7 +25,11 @@ function shown(title: string): string {
   return props.masked ? maskTitle(title) : title;
 }
 
-const emit = defineEmits<{ 'toggle-show': [] }>();
+const emit = defineEmits<{
+  'toggle-show': [];
+  /** A company row was pressed (Issue #267): the card of that Issue opens. */
+  'open-quest': [number: number];
+}>();
 
 /** The switch's label for each filter. */
 const FILTER_LABELS = {
@@ -64,14 +68,18 @@ const FILTER_LABELS = {
         </h3>
         <ul class="board__scrolls">
           <li v-for="quest in group.quests" :key="quest.number" class="scroll">
-            <span class="scroll__number">#{{ quest.number }}</span>
-            <span class="scroll__title" :title="shown(quest.title)">{{ shown(quest.title) }}</span>
-            <span
-              v-if="quest.multiDepartment"
-              class="scroll__multi"
-              title="部門ラベルが複数あります。最初の部門が担当します"
-              >複数部門</span
-            >
+            <button type="button" class="scroll__button" @click="emit('open-quest', quest.number)">
+              <span class="scroll__number">#{{ quest.number }}</span>
+              <span class="scroll__title" :title="shown(quest.title)">{{
+                shown(quest.title)
+              }}</span>
+              <span
+                v-if="quest.multiDepartment"
+                class="scroll__multi"
+                title="部門ラベルが複数あります。最初の部門が担当します"
+                >複数部門</span
+              >
+            </button>
           </li>
         </ul>
       </div>
@@ -164,9 +172,6 @@ const FILTER_LABELS = {
 
 .scroll {
   position: relative;
-  display: flex;
-  align-items: baseline;
-  gap: 0.4em;
   margin: 0 0.5em 0.25em;
   padding: 0.2em 0.9em;
   background: var(--scroll-paper);
@@ -174,6 +179,26 @@ const FILTER_LABELS = {
   border-top: 0.1em solid var(--scroll-edge);
   border-bottom: 0.1em solid var(--scroll-edge);
   font-weight: 700;
+}
+
+/* The row is a button (Issue #267) that keeps the scroll's look. */
+.scroll__button {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.scroll__button:focus-visible {
+  outline: 0.15em solid var(--scroll-ink);
+  outline-offset: 0.1em;
 }
 
 /* Rolled ends of the scroll. */
