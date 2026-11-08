@@ -23,6 +23,33 @@ export interface CardIndexEntry {
   readonly updatedAt: number;
 }
 
+/** The request as the middleware reads it: the snapshot plugin's, with the headers. */
+export interface CardsRequest extends SnapshotRequest {
+  readonly headers?: Readonly<Record<string, string | string[] | undefined>>;
+}
+
+function header(req: CardsRequest, name: string): string | undefined {
+  const value = req.headers?.[name];
+  return Array.isArray(value) ? value.join(',') : value;
+}
+
+/**
+ * True when the request comes from another origin: a page of another site, or of another port of
+ * this machine (Vite's CORS lets those read the answers). The screen's own fetch and <img> are
+ * same-origin; an address typed in has no Origin.
+ */
+function fromAnotherOrigin(req: CardsRequest): boolean {
+  const site = header(req, 'sec-fetch-site');
+  if (site === 'cross-site' || site === 'same-site') return true;
+  const origin = header(req, 'origin');
+  if (origin === undefined) return false;
+  try {
+    return new URL(origin).host !== header(req, 'host');
+  } catch {
+    return true;
+  }
+}
+
 function pathnameOf(url: string | undefined): string | null {
   if (url === undefined) return null;
   try {
@@ -159,7 +186,7 @@ export async function readCard(
 }
 
 async function answer(
-  req: SnapshotRequest,
+  req: CardsRequest,
   res: SnapshotResponse,
   dir: string,
   route: string,
@@ -182,7 +209,7 @@ async function answer(
 
 /** Connect-style middleware for /cards/index.json and /cards/<number>.png from `dir`. */
 export function createCardsMiddleware(dir: string) {
-  return (req: SnapshotRequest, res: SnapshotResponse, next: () => void): void => {
+  return (req: CardsRequest, res: SnapshotResponse, next: () => void): void => {
     const route = pathnameOf(req.url);
     if (route !== '/cards' && route?.startsWith('/cards/') !== true) {
       next();
@@ -195,6 +222,10 @@ export function createCardsMiddleware(dir: string) {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');
       send(res, 405);
+      return;
+    }
+    if (fromAnotherOrigin(req)) {
+      send(res, 403);
       return;
     }
     void answer(req, res, dir, route);

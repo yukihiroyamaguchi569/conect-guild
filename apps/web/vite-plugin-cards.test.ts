@@ -69,10 +69,15 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-async function request(url: string, method = 'GET', dir = cards) {
+async function request(
+  url: string,
+  method = 'GET',
+  dir = cards,
+  headers: Readonly<Record<string, string>> = { host: '127.0.0.1:5273' },
+) {
   const { res, recorded, done } = fakeResponse();
   const next = vi.fn();
-  createCardsMiddleware(dir)({ method, url }, res, next);
+  createCardsMiddleware(dir)({ method, url, headers }, res, next);
   if (next.mock.calls.length === 0) await done;
   return { recorded, next };
 }
@@ -277,6 +282,38 @@ describe('files outside the cards folder (codex review)', () => {
       const { recorded } = await request(url);
       expect(recorded.headers.get('cross-origin-resource-policy')).toBe('same-origin');
     }
+  });
+});
+
+describe('requests of another origin (codex review)', () => {
+  it.each([
+    ['another port of this machine', { origin: 'http://127.0.0.1:3000' }],
+    ['localhost', { origin: 'http://localhost:5273' }],
+    ['a site', { origin: 'https://example.com' }],
+    ['a broken origin', { origin: 'not a url' }],
+    ['a page of another site, by Sec-Fetch-Site', { 'sec-fetch-site': 'cross-site' }],
+    ['a page of a sibling site, by Sec-Fetch-Site', { 'sec-fetch-site': 'same-site' }],
+  ])('refuses %s with 403', async (_label, extra) => {
+    await writeFile(path.join(cards, '5.png'), PNG);
+    for (const url of ['/cards/5.png', '/cards/index.json']) {
+      const { recorded } = await request(url, 'GET', cards, { host: '127.0.0.1:5273', ...extra });
+      expect(recorded.statusCode).toBe(403);
+      expect(recorded.body).toBeUndefined();
+      expect(recorded.headers.get('cache-control')).toBe('no-store');
+    }
+  });
+
+  it.each([
+    ['the screen itself', { origin: 'http://127.0.0.1:5273', 'sec-fetch-site': 'same-origin' }],
+    ['an <img> of the screen (no Origin)', { 'sec-fetch-site': 'same-origin' }],
+    ['the address typed in (no Origin)', { 'sec-fetch-site': 'none' }],
+  ])('serves %s', async (_label, extra) => {
+    await writeFile(path.join(cards, '5.png'), PNG);
+    const { recorded } = await request('/cards/5.png', 'GET', cards, {
+      host: '127.0.0.1:5273',
+      ...extra,
+    });
+    expect(recorded.statusCode).toBe(200);
   });
 });
 
