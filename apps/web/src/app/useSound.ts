@@ -65,6 +65,10 @@ export function useSound(sources: SoundSources, storage: KeyValueStore = createK
       controller.cycleVolume();
       settings.value = controller.settings();
     },
+    /** A quest card opened (Issue #268): the flip's sound. */
+    cardOpened: () => {
+      controller.cardOpened();
+    },
     /** The canvas started a call of the king (Issue #28): its sound rings with it. */
     callStarted: () => {
       controller.callStarted();

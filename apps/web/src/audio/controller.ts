@@ -34,6 +34,8 @@ export interface SoundController {
    * still plays. The stage starts a call only while it is seen, after the call before it.
    */
   callStarted(): void;
+  /** A quest card opened (Issue #268): its flip rings once, as every sound may. */
+  cardOpened(): void;
   setHidden(hidden: boolean): void;
 }
 
@@ -119,6 +121,9 @@ export function createSoundController(options: SoundControllerOptions): SoundCon
     },
     callStarted() {
       if (callRings(now(), otherEndsAt)) play('summon');
+    },
+    cardOpened() {
+      play('card');
     },
     setHidden(next) {
       hidden = next;

@@ -25,7 +25,15 @@ class FakeStorage implements StorageLike {
   }
 }
 
-const CUES: readonly SoundCue[] = ['scroll', 'chest', 'clear', 'permission', 'summon', 'text'];
+const CUES: readonly SoundCue[] = [
+  'scroll',
+  'chest',
+  'clear',
+  'permission',
+  'summon',
+  'text',
+  'card',
+];
 
 /** Records what would ring, by cue name. */
 class FakePlayer implements TonePlayer {
@@ -319,5 +327,43 @@ describe("createSoundController: the king's call gives way", () => {
     controller.callStarted();
     show({ party: party('minori') });
     expect(cues(player)).toEqual(['summon', 'permission']);
+  });
+});
+
+describe('createSoundController: the quest card (Issue #268)', () => {
+  it('rings once each time a card opens', () => {
+    const { player, controller } = setup({ enabled: true, volume: 3 });
+    controller.cardOpened();
+    controller.cardOpened();
+    expect(player.played).toEqual([
+      { cue: 'card', volume: VOLUME_GAIN[3] },
+      { cue: 'card', volume: VOLUME_GAIN[3] },
+    ]);
+  });
+
+  it('is silent while muted, hidden or halted, and does not catch up', () => {
+    const { player, controller, show } = setup({ enabled: true, volume: 2 });
+    controller.setHidden(true);
+    controller.cardOpened();
+    controller.setHidden(false);
+    show({ halted: true });
+    controller.cardOpened();
+    show({ halted: false });
+    expect(player.played).toEqual([]);
+
+    const muted = setup();
+    muted.controller.cardOpened();
+    expect(muted.player.played).toEqual([]);
+  });
+
+  it('makes the king’s call give way while it plays', () => {
+    const { player, controller, clock } = setup({ enabled: true, volume: 2 });
+    controller.cardOpened();
+    clock.now = scoreLengthMs(SCORES.card) - 1;
+    controller.callStarted();
+    expect(cues(player)).toEqual(['card']);
+    clock.now = scoreLengthMs(SCORES.card);
+    controller.callStarted();
+    expect(cues(player)).toEqual(['card', 'summon']);
   });
 });

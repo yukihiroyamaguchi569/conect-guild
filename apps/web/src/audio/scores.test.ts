@@ -16,6 +16,7 @@ const CUES: readonly SoundCue[] = [
   'permission',
   'summon',
   'text',
+  'card',
 ];
 
 const pitches = (cue: SoundCue) => SCORES[cue].notes.flatMap((note) => note.midi ?? []);
@@ -130,5 +131,16 @@ describe('toTones', () => {
   it('returns nothing for a score with only rests or no notes', () => {
     expect(toTones({ ...score, notes: [{ midi: null, ms: 100 }] }, 0, 1)).toEqual([]);
     expect(toTones({ ...score, notes: [] }, 0, 1)).toEqual([]);
+  });
+});
+
+describe('SCORES.card', () => {
+  it('card is a soft rising sweep on the triangle wave, as short as the flip (Issue #268)', () => {
+    const p = pitches('card');
+    expect(SCORES.card.wave).toBe('triangle');
+    for (let i = 1; i < p.length; i += 1) expect(p[i]).toBeGreaterThan(p[i - 1] ?? Infinity);
+    expect(scoreLengthMs(SCORES.card)).toBeLessThanOrEqual(300);
+    expect(SCORES.card.gain).toBeLessThan(SCORES.scroll.gain);
+    expect(SCORES.card).not.toEqual(SCORES.scroll);
   });
 });
