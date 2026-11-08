@@ -1,7 +1,6 @@
 import type { Snapshot } from '@conect-guild/snapshot';
-import { departmentMember, MEMBERS, type MemberConfig } from '../guild.config';
+import { departmentMember, MEMBERS, type MemberConfig, type MemberId } from '../guild.config';
 import { daysToDeadline, daysToDoDay, monthDayAfter } from '../domain/deadline';
-import { faceColors, type FaceColors } from '../domain/faceColor';
 import { prWaitKind, type PrWaitKind } from '../domain/party';
 import type { BoardGroup } from './guildView';
 
@@ -34,8 +33,8 @@ export interface QuestCardOwner {
   /** The frame's colour: the member's colour, gold for the king. */
   readonly frame: string;
   readonly crown: boolean;
-  /** The picture window's round face (the party window's colours). */
-  readonly face: FaceColors;
+  /** Who is in charge: the picture in the window (Issue #269). */
+  readonly id: MemberId;
 }
 
 export interface QuestCardPr {
@@ -88,7 +87,7 @@ function ownerOf(member: MemberConfig, label: string, crown = false): QuestCardO
     label,
     frame: crown ? CROWN_FRAME : member.color,
     crown,
-    face: faceColors(member.id),
+    id: member.id,
   };
 }
 

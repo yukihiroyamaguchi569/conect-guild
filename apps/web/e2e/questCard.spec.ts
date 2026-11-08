@@ -120,6 +120,11 @@ test('the card shows on a narrow screen too, inside the screen', async ({ page }
     .press('Enter');
   const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
   await expect(card).toBeInViewport({ ratio: 1 });
+  // The card itself (its frame and picture) and 「とじる」 under it fit in too (Issue #269).
+  await expect(card.locator('article.card')).toBeInViewport({ ratio: 1 });
+  await expect(card.getByRole('button', { name: 'とじる' })).toBeInViewport({ ratio: 1 });
+  const width = await card.locator('article.card').evaluate((element) => element.clientWidth);
+  expect(width).toBeGreaterThan(250);
 });
 
 test('focus goes back to the pressed row even when the click did not focus it (Safari)', async ({
@@ -306,4 +311,75 @@ test('closing a card while it turns over leaves nothing behind (Issue #268)', as
   await expect(card).toBeVisible();
   expect(await holdFlip(page, 0)).toMatch(BACK_FACING);
   await expect(card.getByRole('button', { name: 'とじる' })).toBeFocused();
+});
+
+test('the card’s pictures come from this server only, and load (Issue #269)', async ({ page }) => {
+  const origins = new Set<string>();
+  page.on('request', (request) => {
+    origins.add(new URL(request.url()).origin);
+  });
+  await page.goto('/');
+  await page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#101/ })
+    .click();
+  const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
+  for (const picture of await card.locator('img').all()) {
+    await expect
+      .poll(() => picture.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth))
+      .toBeGreaterThan(0);
+  }
+  await expect(card.locator('img.card__picture')).toHaveAttribute('src', /ill-minori/);
+  // The back is a CSS background: it must load too.
+  const back = await card
+    .locator('.card-back')
+    .evaluate(
+      (element) => /url\("?([^")]+)"?\)/.exec(getComputedStyle(element).backgroundImage)?.[1] ?? '',
+    );
+  expect(back).toMatch(/back[^/]*\.webp$/);
+  const backWidth = await page.evaluate(async (url) => {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    return image.naturalWidth;
+  }, back);
+  expect(backWidth).toBeGreaterThan(0);
+  // Every request went to the page's own origin (host, port and scheme).
+  expect([...origins]).toEqual([new URL(page.url()).origin]);
+});
+
+test('a long description scrolls in the scroll from its first line (Issue #269)', async ({
+  page,
+  snapshotServer,
+}) => {
+  const sample = await sampleSnapshot(NOW);
+  const extra = [120, 121, 122, 123, 124, 125].map((number) => ({
+    number,
+    title: '架空の PR',
+    state: 'open' as const,
+    mergedAt: null,
+    closedAt: null,
+    headRef: `accounting/extra-${String(number)}`,
+    linkedIssues: [101],
+    changedFiles: ['accounting/a.md'],
+  }));
+  snapshotServer.serve({ ...sample, prs: [...sample.prs, ...extra] });
+  await page.goto('/');
+  await page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#101/ })
+    .click();
+  const text = page.getByRole('dialog', { name: 'クエスト #101 のカード' }).locator('.card__text');
+  await expect(text).toContainText('#125');
+  // Overflowing, its first line (担当) is still inside the box, at the top of the scroll.
+  const placed = await text.evaluate((element) => {
+    const first = element.querySelector('dt');
+    return {
+      overflows: element.scrollHeight > element.clientHeight,
+      firstInside:
+        first !== null &&
+        first.getBoundingClientRect().top >= element.getBoundingClientRect().top - 1,
+    };
+  });
+  expect(placed).toEqual({ overflows: true, firstInside: true });
 });
