@@ -262,6 +262,11 @@ function holdFlip(page: Page, ms: number): Promise<string> {
 
 const BACK_FACING = /^matrix3d\(-1, /;
 
+/** Whether a computed transform is no turn at all, however the browser writes it (2D or 3D). */
+function isFaceUp(page: Page, transform: string): Promise<boolean> {
+  return page.evaluate((value) => new DOMMatrix(value).isIdentity, transform);
+}
+
 test('the card turns over from its back, and is face up from the start without motion (Issue #268)', async ({
   page,
 }) => {
@@ -272,7 +277,8 @@ test('the card turns over from its back, and is face up from the start without m
   await row.click();
   expect(await holdFlip(page, 0)).toMatch(BACK_FACING);
   // At the end it is face up.
-  await expect.poll(() => holdFlip(page, 500)).toBe('matrix(1, 0, 0, 1, 0, 0)');
+  expect(await isFaceUp(page, await holdFlip(page, 500))).toBe(true);
+  expect(await isFaceUp(page, await holdFlip(page, 0))).toBe(false);
   await page.keyboard.press('Escape');
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
