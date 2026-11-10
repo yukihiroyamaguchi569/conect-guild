@@ -89,4 +89,13 @@ describe('QuestCard: the pictures (Issue #269)', () => {
       /class="card-back"[^>]*aria-hidden="true"[^>]*background-image:url\([^)]*back[^)]*\.webp/,
     );
   });
+
+  it('shows the quest’s own picture in the window when given one (Issue #271)', async () => {
+    const html = await renderToString(
+      createSSRApp(QuestCard, { card: CARD, taskPicture: '/cards/12.png?v=5' }),
+    );
+    expect(html).toMatch(/class="card__picture"[^>]*src="\/cards\/12\.png\?v=5"/);
+    expect(html).not.toContain('ill-minori');
+    expect(html).toMatch(/src="[^"]*frame-dept-metal[^"]*\.webp"/);
+  });
 });

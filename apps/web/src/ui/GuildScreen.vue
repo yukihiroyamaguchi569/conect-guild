@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CollectorFailureKind } from '@conect-guild/snapshot';
 import { computed, shallowRef, useTemplateRef, watch } from 'vue';
+import { defaultCardsBase } from '../adapters/cardIndex';
 import type { SnapshotLoadResult } from '../adapters/snapshot';
 import type { DemoSession } from '../app/demo';
 import { liveGuildOptions } from '../app/screenMode';
@@ -10,6 +11,8 @@ import { useMask } from '../app/useMask';
 import { useMissingLabels } from '../app/useMissingLabels';
 import { useNarration } from '../app/useNarration';
 import { buildQuestCard } from '../app/questCard';
+import { taskPictureOf } from '../app/questCardArt';
+import { useCardPictures } from '../app/useCardPictures';
 import { useSound } from '../app/useSound';
 import { SELECTED_LAYOUT } from '../render/layouts';
 import { BOARD_MAX_CQW, FETCH_TAB } from '../render/map';
@@ -106,9 +109,20 @@ const questCard = computed(() =>
 watch(questCard, (card) => {
   if (card === null) openQuest.value = null;
 });
-/** Opens the card of a board row (Issue #267), with the sound of its flip (Issue #268). */
+/** The quests' own pictures (Issue #271): live screen only, the demo's quests have none. */
+const cardPictures = useCardPictures(demo === null);
+const taskPicture = computed(() =>
+  questCard.value === null
+    ? null
+    : taskPictureOf(cardPictures.index.value, questCard.value.number, defaultCardsBase()),
+);
+/**
+ * Opens the card of a board row (Issue #267), with the sound of its flip (Issue #268), reading the
+ * list of pictures again so one drawn since shows (Issue #271).
+ */
 function openCard(number: number): void {
   openQuest.value = number;
+  cardPictures.refresh();
   cardOpened();
 }
 const questBoard = useTemplateRef<InstanceType<typeof QuestBoard>>('questBoard');
@@ -266,7 +280,13 @@ function onStageShown(shown: boolean): void {
         <MaskControl v-if="demo === null" :masked="masked" @toggle="toggleMask" />
       </FetchStatus>
     </div>
-    <QuestCard v-if="questCard" :card="questCard" :masked="masked" @close="openQuest = null" />
+    <QuestCard
+      v-if="questCard"
+      :card="questCard"
+      :masked="masked"
+      :task-picture="taskPicture"
+      @close="openQuest = null"
+    />
   </main>
 </template>
 
