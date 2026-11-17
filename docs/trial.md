@@ -27,6 +27,7 @@
   npm ci --ignore-scripts
   ```
 - `guild.settings.local.json` が無いこと。初めて使うときは無いので、気にしなくてかまいません。これまでに conect-guild を自分の会社やお試しで使ったことがある場合だけ、conect-guild の直下にあるか確かめます。あると、自分の会社の設定を上書きしないよう、何も作らずに止まります
+  - 前のお試しの会社の司令塔のフォルダ（`~/guild-trial/guild-trial`）か GitHub のリポジトリ（`guild-trial`）が残っていると、止まらずに `guild-trial-2` のように番号を足した名前で作ります。conect-guild を clone し直すと手元の設定は消えますが、フォルダとリポジトリは残ります。同じ名前で作り直したいときは、先に `/guild-trial-cleanup` で片付けます（片付けはフォルダから探すので、フォルダが無くリポジトリだけ残っているときは、GitHub で消します）
 
 **あなたがやること**
 
@@ -35,6 +36,8 @@
 1. ターミナルで conect-guild の直下に移り、`claude` と打って Claude Code を起動します
 
    ![conect-guild の直下で claude と打ったところ](../assets/screenshots/start-claude.png)
+
+   `git:(main)` の部分は、ターミナルの設定によっては表示されません。表示されていなくてもかまいません
 2. Claude Code で `/guild-trial` を実行します（「お試しの会社を作って」と頼んでも使われます）
 3. 部門の数を聞かれたら答えます（2〜6。決めていなければ 4）
 4. 作るものの一覧が出たら、確かめて承認します。承認を求められるのは、リポジトリを作る前のこの 1 回だけです
