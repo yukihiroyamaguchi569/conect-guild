@@ -1,14 +1,16 @@
 name: E2E
 
 on:
-  # Same triggers as ci.yml, except that a pull request touching only Markdown skips the browser
-  # tests (Issue #229): documents never reach the page. main always runs them after a merge.
+  # Same triggers as ci.yml, except that a pull request touching only Markdown or the documents'
+  # screenshots skips the browser tests (Issue #229, #297): neither reaches the page. main always
+  # runs them after a merge.
   push:
     branches:
       - main
   pull_request:
     paths-ignore:
       - '**/*.md'
+      - 'assets/screenshots/**'
 
 permissions:
   contents: read
