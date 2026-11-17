@@ -35,7 +35,7 @@ interface Keyframe extends Daylight {
 }
 
 const WHITE: Rgb = { r: 255, g: 255, b: 255 };
-const NIGHT: Daylight = { shade: { r: 58, g: 70, b: 130 }, darkness: 1, sun: 0 };
+const NIGHT: Daylight = { shade: { r: 95, g: 108, b: 160 }, darkness: 1, sun: 0 };
 const DAY: Daylight = { shade: WHITE, darkness: 0, sun: 1 };
 
 /** The light through the day, in order; between two keyframes it changes linearly. */
