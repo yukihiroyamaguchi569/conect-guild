@@ -19,15 +19,13 @@
 
 **用意するもの**
 
-- conect-guild の clone と `npm ci --ignore-scripts`。README の「[デモを見る](../README.md#1-デモを見る)」で済ませていれば要りません。作る道具がワークスペースのパッケージを使うので、無いと動きません
+- conect-guild を手元に取ってきて（clone）、動かすのに要る部品を入れます（`npm ci --ignore-scripts`）。README の「[デモを見る](../README.md#1-デモを見る)」で済ませていれば、飛ばしてかまいません
 
   ```bash
   git clone https://github.com/yukihiroyamaguchi569/conect-guild.git
   cd conect-guild
   npm ci --ignore-scripts
   ```
-- `guild.settings.local.json` が無いこと。初めて使うときは無いので、気にしなくてかまいません。これまでに conect-guild を自分の会社やお試しで使ったことがある場合だけ、conect-guild の直下にあるか確かめます。あると、自分の会社の設定を上書きしないよう、何も作らずに止まります
-  - 前のお試しの会社の司令塔のフォルダ（`~/guild-trial/guild-trial`）か GitHub のリポジトリ（`guild-trial`）が残っていると、止まらずに `guild-trial-2` のように番号を足した名前で作ります。conect-guild を clone し直すと手元の設定は消えますが、フォルダとリポジトリは残ります。同じ名前で作り直したいときは、先に `/guild-trial-cleanup` で片付けます（片付けはフォルダから探すので、フォルダが無くリポジトリだけ残っているときは、GitHub で消します）
 
 **あなたがやること**
 
@@ -39,12 +37,13 @@
 
    `git:(main)` の部分は、ターミナルの設定によっては表示されません。表示されていなくてもかまいません
 2. Claude Code で `/guild-trial` を実行します（「お試しの会社を作って」と頼んでも使われます）
+   - → スキル: 手元の設定 `guild.settings.local.json` があるかを確かめます。初めて使うときは無いので、そのまま進みます。あれば（自分の会社やお試しの会社をもう使っているとき）、その設定を上書きしないよう、何も作らずに止まります
 3. 部門の数を聞かれたら答えます（2〜6。決めていなければ 4）
 4. 作るものの一覧が出たら、確かめて承認します。承認を求められるのは、リポジトリを作る前のこの 1 回だけです
    - → スキル: GitHub に private のリポジトリ `<あなたのアカウント>/guild-trial` を作り、部門のラベルと架空の Issue を置きます。片付けで見分けるため、説明に「conect-guild のお試し商会（架空の会社）」が入ります
    - → スキル: 手元に司令塔のフォルダ `~/guild-trial/guild-trial` と、その下の部門のフォルダを作ります（それぞれ `CLAUDE.md` 付き）
    - → スキル: 手元の設定 `guild.settings.local.json` を書きます
-   - → スキル: 同じ名前のリポジトリかフォルダが既にあれば、`guild-trial-2`、`guild-trial-3` … と番号を足した名前にします
+   - → スキル: 同じ名前のリポジトリかフォルダが既にあれば、`guild-trial-2`、`guild-trial-3` … と番号を足した名前にします。前のお試しの会社が残っているとき（conect-guild を clone し直すと手元の設定は消えますが、フォルダとリポジトリは残ります）に起こります。同じ名前で作り直したいときは、先に `/guild-trial-cleanup` で片付けます（片付けはフォルダから探すので、フォルダが無くリポジトリだけ残っているときは、GitHub で消します）
 5. 許可を求められたら許可します。手元のフォルダを書くときと、`npm run dev:all` を起動するときの 2 回です（どちらも Claude Code の sandbox の外で動かすため）
    - → スキル: `npm run dev:all` を起動し、collector が集め終わるのを待って、開く URL を伝えます。既に `npm run dev:all` が動いていたら止めずに、止めて起動し直すよう伝えます
 6. スキルが終わったら、司令塔と部門のセルを開きます
