@@ -10,6 +10,7 @@ import type { MemberId } from '@conect-guild/snapshot/settings';
 import { drawnLevels, installCanvasTextRecorder } from './canvasText.ts';
 import { installFakeAudio } from './fakeAudio.ts';
 import { waitForRoom } from './fixtures.ts';
+import { E2E_COMMIT_HASH } from '../commit-hash.ts';
 import { refuseStorage, showEveryNote, withOldUnreadableSessions } from './everyNote.ts';
 import { guestsSnapshot } from './guestsSnapshot.ts';
 import { bubbleBox } from '../src/render/overhead.ts';
@@ -260,8 +261,10 @@ test('the fetch status keeps every note on one line as the tab (Issues #121, #13
   expect(party.bottom).toBeLessThanOrEqual(layout.partyWindow.tallestBottom);
   expectBubblesClear(layout.desks, [party]);
 
-  // One line inside the modelled tab, every box in it within the tab's height. The tab carries
-  // the commit hash too (Issue #281): the E2E server goes through vite.config.ts `define`.
+  // The commit hash is on the tab at its longest, 12 characters (Issue #281): the E2E servers
+  // show this fixed one (vite.config.ts), so the checks below hold with it.
+  await expect(fetch).toContainText(E2E_COMMIT_HASH);
+  // One line inside the modelled tab, every box in it within the tab's height.
   expectWithin(await logicalBox(page, fetch), tabArea);
   const boxes = await fetch.evaluate((element) => {
     const outer = element.getBoundingClientRect();

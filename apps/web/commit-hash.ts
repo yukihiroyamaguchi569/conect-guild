@@ -28,3 +28,14 @@ export function readCommitHash(cwd: string, run: RunFile = runFile): string | nu
     return null;
   }
 }
+
+/**
+ * The hash the E2E servers show instead of the real one: fixed, and as long as a hash may be, so
+ * that the tests can see it and check that the tab keeps its buttons whole with it.
+ */
+export const E2E_COMMIT_HASH = 'abcdef123456';
+
+/** The hash for a Vite mode: the fixed one in the E2E modes (`e2e`, `e2e-departments`), else git's. */
+export function commitHashFor(mode: string, read: () => string | null): string | null {
+  return mode.startsWith('e2e') ? E2E_COMMIT_HASH : read();
+}

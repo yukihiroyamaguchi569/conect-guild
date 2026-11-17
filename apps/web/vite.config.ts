@@ -1,14 +1,17 @@
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vite';
-import { readCommitHash } from './commit-hash.ts';
+import { commitHashFor, readCommitHash } from './commit-hash.ts';
 import { cardsPlugin } from './vite-plugin-cards.ts';
 import { settingsPlugin } from './vite-plugin-settings.ts';
 import { snapshotPlugin } from './vite-plugin-snapshot.ts';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [vue(), settingsPlugin(), snapshotPlugin(), cardsPlugin()],
-  // The running version, shown in the fetch status (Issue #281); null when git cannot tell.
-  define: { __COMMIT_HASH__: JSON.stringify(readCommitHash(import.meta.dirname)) },
+  // The running version, shown in the fetch status (Issue #281); null when git cannot tell. The
+  // E2E servers show a fixed one instead.
+  define: {
+    __COMMIT_HASH__: JSON.stringify(commitHashFor(mode, () => readCommitHash(import.meta.dirname))),
+  },
   server: {
     // Never expose the dev server to the LAN (see docs/DESIGN.md 5).
     host: '127.0.0.1',
@@ -31,4 +34,4 @@ export default defineConfig({
     // The collector rewrites .data/snapshot.json every minute; do not watch it.
     watch: { ignored: ['**/.data/**'] },
   },
-});
+}));
