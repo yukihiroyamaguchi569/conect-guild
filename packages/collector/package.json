@@ -7,6 +7,6 @@
   },
   "dependencies": {
     "@conect-guild/snapshot": "*",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   }
 }
