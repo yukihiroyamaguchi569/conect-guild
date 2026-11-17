@@ -10,6 +10,7 @@ import type { MemberId } from '@conect-guild/snapshot/settings';
 import { drawnLevels, installCanvasTextRecorder } from './canvasText.ts';
 import { installFakeAudio } from './fakeAudio.ts';
 import { waitForRoom } from './fixtures.ts';
+import { E2E_COMMIT_HASH } from '../commit-hash.ts';
 import { refuseStorage, showEveryNote, withOldUnreadableSessions } from './everyNote.ts';
 import { guestsSnapshot } from './guestsSnapshot.ts';
 import { bubbleBox } from '../src/render/overhead.ts';
@@ -260,6 +261,9 @@ test('the fetch status keeps every note on one line as the tab (Issues #121, #13
   expect(party.bottom).toBeLessThanOrEqual(layout.partyWindow.tallestBottom);
   expectBubblesClear(layout.desks, [party]);
 
+  // The commit hash is on the tab at its longest, 12 characters (Issue #281): the E2E servers
+  // show this fixed one (vite.config.ts), so the checks below hold with it.
+  await expect(fetch).toContainText(E2E_COMMIT_HASH);
   // One line inside the modelled tab, every box in it within the tab's height.
   expectWithin(await logicalBox(page, fetch), tabArea);
   const boxes = await fetch.evaluate((element) => {
@@ -274,10 +278,12 @@ test('the fetch status keeps every note on one line as the tab (Issues #121, #13
   // The buttons are whole and inside the tab; the notes give way to an ellipsis, their text in
   // the tooltip.
   const tabBox = await logicalBox(page, fetch);
-  for (const name of ['基準を消す', /音を/, /音量/]) {
-    const button = fetch.getByRole('button', { name });
-    expect(await button.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
-    expectWithin(await logicalBox(page, button), tabBox);
+  // Every button, the last one (見せる) too, and the commit hash before them: none pushed out.
+  const buttons = await fetch.getByRole('button').all();
+  expect(buttons.length).toBeGreaterThanOrEqual(4);
+  for (const element of [...buttons, fetch.locator('.fetch__commit')]) {
+    expect(await element.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    expectWithin(await logicalBox(page, element), tabBox);
   }
   await expect(fetch.getByRole('status')).toHaveAttribute('title', /取得失敗/);
   // Some note did not fit: it ends in an ellipsis of its own text, the whole of it in the title.

@@ -14,7 +14,7 @@ function devScript(path: string): string {
 // Issue #82: the dev server must stay on 127.0.0.1 even when vite.config.ts is not read.
 describe('dev server host', () => {
   it('is pinned in vite.config.ts', () => {
-    expect(config.server?.host).toBe('127.0.0.1');
+    expect(config({ command: 'serve', mode: 'development' }).server?.host).toBe('127.0.0.1');
   });
 
   it('is pinned on the command line, so a missed config cannot fall back to localhost', () => {

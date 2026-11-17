@@ -57,3 +57,34 @@ describe('FetchStatus as the tab on the message window (Issues #121, #132)', () 
     expect(html).toContain('title="作業中・許可待ちは GitHub');
   });
 });
+
+describe('FetchStatus shows the running commit (Issue #281)', () => {
+  function renderWith(commit: string | null): Promise<string> {
+    return renderToString(
+      createSSRApp({
+        render: () =>
+          h(FetchStatus, {
+            status: EVERY_NOTE,
+            effectsAvailable: true,
+            baselineNotice: null,
+            commit,
+          }),
+      }),
+    );
+  }
+
+  it('puts the short hash on the line of the last fetch, with a tooltip', async () => {
+    const html = await renderWith('a1b2c3d');
+    const firstLine = html.slice(0, html.indexOf('</p>'));
+    expect(firstLine).toContain('最終取得 12:34');
+    expect(firstLine).toMatch(
+      /class="fetch__commit" title="このコミットで動いています"[^>]*>a1b2c3d<\/span>/,
+    );
+  });
+
+  it('shows nothing when the hash is unknown', async () => {
+    const html = await renderWith(null);
+    expect(html).not.toContain('fetch__commit');
+    expect(html).not.toContain('このコミットで動いています');
+  });
+});
