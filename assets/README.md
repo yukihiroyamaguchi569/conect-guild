@@ -4,6 +4,7 @@
 |---|---|---|---|
 | `concept/rpg-company-ui.png` | コンセプト画（1672×940） | codex の画像生成（2026-10-12）。指示書は `concept/prompt.txt` | このリポジトリと同じ MIT |
 | `screenshots/demo-overview.png` | README に載せる画面（1600×900） | このアプリのデモモード（`?demo=1&hour=12`、架空のデータ）を Playwright で撮った画面（2026-10-12）。実データは写っていない | このリポジトリと同じ MIT |
+| `screenshots/start-claude.png` | docs/trial.md に載せる、conect-guild の直下で `claude` と打ったターミナル（704×96） | 社長が MacBook のターミナルで撮ったスクショ（2026-11-18）。写っているのはフォルダ名・ブランチ名・コマンドだけ | このリポジトリと同じ MIT |
 | `tiles/tiles_raw.png` | タイルシートの生成元（1024×512、背景 #FF00FF） | codex の画像生成（2026-10-12）。`concept/rpg-company-ui.png` を参考画像として渡した。指示書は `tiles/prompt.txt` | このリポジトリと同じ MIT |
 | `tiles/counter_raw.png` | 受付カウンターの生成元（1024×512、背景 #FF00FF。左端・くり返す中央・右端） | codex の画像生成（2026-10-12）。`tiles/tiles_raw.png` と `concept/rpg-company-ui.png` を参考画像として渡した。指示書は `tiles/prompt-counter.txt` | このリポジトリと同じ MIT |
 | `tiles/tileset.png` | タイルシート（32px グリッド 10×6 = 320×192、透過）。位置と大きさは `tiles/tiles.ts` | `tiles/tiles_raw.png` と `tiles/counter_raw.png` を `tiles/build_tileset.py` で切り出し・縮小・透過したもの | このリポジトリと同じ MIT |
