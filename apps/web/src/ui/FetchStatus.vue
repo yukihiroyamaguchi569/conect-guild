@@ -14,6 +14,8 @@ defineProps<{
    * shrink to an ellipsis, their whole text in the tooltip.
    */
   tab?: boolean;
+  /** Short hash of the running commit (Issue #281); null or absent shows nothing. */
+  commit?: string | null;
 }>();
 
 const emit = defineEmits<{ 'clear-baseline': [] }>();
@@ -32,6 +34,9 @@ const SESSIONS_HINT = '作業中・許可待ちは GitHub だけでは分から�
         title="5 分以上更新されていません。収集スクリプトが止まっているかもしれません"
         >情報が古い</span
       >
+      <span v-if="commit" class="fetch__commit" title="このコミットで動いています">{{
+        commit
+      }}</span>
     </p>
     <p
       v-if="status.sessions !== null"
@@ -114,6 +119,11 @@ const SESSIONS_HINT = '作業中・許可待ちは GitHub だけでは分から�
 
 .fetch__note {
   color: var(--muted-text);
+}
+
+.fetch__commit {
+  color: var(--muted-text);
+  font-size: 0.85em;
 }
 
 /*

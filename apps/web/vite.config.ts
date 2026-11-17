@@ -1,11 +1,14 @@
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vite';
+import { readCommitHash } from './commit-hash.ts';
 import { cardsPlugin } from './vite-plugin-cards.ts';
 import { settingsPlugin } from './vite-plugin-settings.ts';
 import { snapshotPlugin } from './vite-plugin-snapshot.ts';
 
 export default defineConfig({
   plugins: [vue(), settingsPlugin(), snapshotPlugin(), cardsPlugin()],
+  // The running version, shown in the fetch status (Issue #281); null when git cannot tell.
+  define: { __COMMIT_HASH__: JSON.stringify(readCommitHash(import.meta.dirname)) },
   server: {
     // Never expose the dev server to the LAN (see docs/DESIGN.md 5).
     host: '127.0.0.1',

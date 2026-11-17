@@ -36,7 +36,11 @@ export default defineConfig(
   },
   {
     files: ['**/*.vue'],
-    languageOptions: { parserOptions: { parser: tseslint.parser } },
+    languageOptions: {
+      parserOptions: { parser: tseslint.parser },
+      // Defined by apps/web/vite.config.ts (Issue #281); typed in apps/web/src/env.d.ts.
+      globals: { __COMMIT_HASH__: 'readonly' },
+    },
   },
   {
     files: ['**/*.js'],

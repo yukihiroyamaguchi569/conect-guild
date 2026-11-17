@@ -47,6 +47,8 @@ const emit = defineEmits<{
   'not-collected': [];
 }>();
 const demo = props.demo;
+/** The running version, shown in the fetch status (Issue #281). */
+const commitHash = __COMMIT_HASH__;
 /** はじめる waits for a click in the demo of ?demo=1 only; the automatic one starts itself. */
 const demoWaiting = computed(() => demo !== null && !demo.auto && !demo.started.value);
 /** Department labels missing in the repository (Issue #85), read on the live screen only. */
@@ -255,6 +257,7 @@ function onStageShown(shown: boolean): void {
           :effects-available="state.effectsAvailable"
           :baseline-notice="state.baselineNotice"
           :demo="demo !== null"
+          :commit="commitHash"
           @clear-baseline="clearBaseline"
         >
           <SoundControl
@@ -274,6 +277,7 @@ function onStageShown(shown: boolean): void {
         :effects-available="state.effectsAvailable"
         :baseline-notice="state.baselineNotice"
         :demo="demo !== null"
+        :commit="commitHash"
         @clear-baseline="clearBaseline"
       >
         <SoundControl :settings="soundSettings" @toggle="toggleSound" @cycle-volume="cycleVolume" />
