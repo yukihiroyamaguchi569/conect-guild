@@ -2,12 +2,23 @@
 
 自分の会社の準備ができていなくても、架空の会社「お試し商会」を作って、GitHub の本物のリポジトリに置いた架空の Issue で画面を試せます。
 
+**事前準備**
+
+- Node.js 26.10 以上。ターミナルで次を打ち、`v26.10.0` 以上が出れば大丈夫です
+
+  ```bash
+  node -v
+  ```
+- Claude Code
+- `gh` でログインしていること。ターミナルで次を打ち、`Logged in to github.com account <あなたのアカウント>` が出れば大丈夫です。private のリポジトリを作る権限が要ります
+
+  ```bash
+  gh auth status
+  ```
+  - GitHub のアカウントがない方、`gh` を使ったことがない方は [GitHub を使えるようにする](github-start.md) へ
+
 **用意するもの**
 
-- Node.js 26.10 以上
-- Claude Code
-- `gh` でログインしていること（`gh auth status` で確かめます）。private のリポジトリを作る権限が要ります
-  - GitHub のアカウントがない方、`gh` を使ったことがない方は [GitHub を使えるようにする](github-start.md) へ
 - conect-guild の clone と `npm ci --ignore-scripts`。README の「[デモを見る](../README.md#1-デモを見る)」で済ませていれば要りません。作る道具がワークスペースのパッケージを使うので、無いと動きません
 
   ```bash
@@ -15,25 +26,28 @@
   cd conect-guild
   npm ci --ignore-scripts
   ```
-- `guild.settings.local.json` が無いこと。あると、自分の会社の設定を上書きしないよう、何も作らずに止まります
+- `guild.settings.local.json` が無いこと。初めて使うときは無いので、気にしなくてかまいません。これまでに conect-guild を自分の会社やお試しで使ったことがある場合だけ、conect-guild の直下にあるか確かめます。あると、自分の会社の設定を上書きしないよう、何も作らずに止まります
 
 **あなたがやること**
 
 番号の手順があなたのやることです。「→ スキル:」の行は、その間に `/guild-trial` がやることです。
 
-1. conect-guild の直下で Claude Code を起動し、`/guild-trial` を実行します（「お試しの会社を作って」でも使われます）
-2. 部門の数を聞かれたら答えます（2〜6。決めていなければ 4）
-3. 作るものの一覧が出たら、確かめて承認します。承認を求められるのは、リポジトリを作る前のこの 1 回だけです
+1. ターミナルで conect-guild の直下に移り、`claude` と打って Claude Code を起動します
+
+   ![conect-guild の直下で claude と打ったところ](../assets/screenshots/start-claude.png)
+2. Claude Code で `/guild-trial` を実行します（「お試しの会社を作って」と頼んでも使われます）
+3. 部門の数を聞かれたら答えます（2〜6。決めていなければ 4）
+4. 作るものの一覧が出たら、確かめて承認します。承認を求められるのは、リポジトリを作る前のこの 1 回だけです
    - → スキル: GitHub に private のリポジトリ `<あなたのアカウント>/guild-trial` を作り、部門のラベルと架空の Issue を置きます。片付けで見分けるため、説明に「conect-guild のお試し商会（架空の会社）」が入ります
    - → スキル: 手元に司令塔のフォルダ `~/guild-trial/guild-trial` と、その下の部門のフォルダを作ります（それぞれ `CLAUDE.md` 付き）
    - → スキル: 手元の設定 `guild.settings.local.json` を書きます
    - → スキル: 同じ名前のリポジトリかフォルダが既にあれば、`guild-trial-2`、`guild-trial-3` … と番号を足した名前にします
-4. 許可を求められたら許可します。手元のフォルダを書くときと、`npm run dev:all` を起動するときの 2 回です（どちらも Claude Code の sandbox の外で動かすため）
+5. 許可を求められたら許可します。手元のフォルダを書くときと、`npm run dev:all` を起動するときの 2 回です（どちらも Claude Code の sandbox の外で動かすため）
    - → スキル: `npm run dev:all` を起動し、collector が集め終わるのを待って、開く URL を伝えます。既に `npm run dev:all` が動いていたら止めずに、止めて起動し直すよう伝えます
-5. スキルが終わったら、司令塔と部門のセルを開きます
+6. スキルが終わったら、司令塔と部門のセルを開きます
    - MulmoTerminal なら、Claude Code で `! npm run trial:open-cells` を打ちます。司令塔と部門のセルがまとめて開くので、各セルの「信頼しますか？」に答えます。Claude Code の安全確認で止まるので、スキルは代わりに実行しません。お試しの会社の設定のときだけ動き、MulmoTerminal が動いていなければ何も開きません
    - ほかの端末では、司令塔のフォルダと部門のフォルダをそれぞれ開いて Claude Code を起動します（フォルダそのもので起動します。[orchestration.md の 3-5](orchestration.md#3-5-部門のセッションを開く)）
-6. ブラウザで http://127.0.0.1:5273 を開きます。「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られていれば成功です。MulmoTerminal でセルを開いたなら、`npm run dev:all` の出力が `sessions=<部門の数 + 1> ok` になり、画面にもセッションの動きが出ます
+7. ブラウザで http://127.0.0.1:5273 を開きます。「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られていれば成功です。MulmoTerminal でセルを開いたなら、`npm run dev:all` の出力が `sessions=<部門の数 + 1> ok` になり、画面にもセッションの動きが出ます
 
 **片付け**
 
