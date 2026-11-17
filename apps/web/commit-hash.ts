@@ -11,12 +11,14 @@ const runFile: RunFile = (file, args, cwd) =>
     timeout: 5000,
   });
 
-const SHORT_HASH = /^[0-9a-f]{4,40}$/;
+// At most 12 characters: a longer one (a large core.abbrev) could push the tab's buttons out.
+const SHORT_HASH = /^[0-9a-f]{4,12}$/;
 
 /**
  * The short hash of the commit this checkout is on (Issue #281), shown in the fetch status so
  * that one can tell which version is running. Null when git is missing, this is not a repository,
- * or anything else goes wrong: the build and the dev server go on without it.
+ * the hash is longer than 12 characters, or anything else goes wrong: the build and the dev
+ * server go on without it.
  */
 export function readCommitHash(cwd: string, run: RunFile = runFile): string | null {
   try {

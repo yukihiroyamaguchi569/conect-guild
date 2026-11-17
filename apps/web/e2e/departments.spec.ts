@@ -260,7 +260,8 @@ test('the fetch status keeps every note on one line as the tab (Issues #121, #13
   expect(party.bottom).toBeLessThanOrEqual(layout.partyWindow.tallestBottom);
   expectBubblesClear(layout.desks, [party]);
 
-  // One line inside the modelled tab, every box in it within the tab's height.
+  // One line inside the modelled tab, every box in it within the tab's height. The tab carries
+  // the commit hash too (Issue #281): the E2E server goes through vite.config.ts `define`.
   expectWithin(await logicalBox(page, fetch), tabArea);
   const boxes = await fetch.evaluate((element) => {
     const outer = element.getBoundingClientRect();

@@ -23,4 +23,13 @@ describe('readCommitHash (Issue #281)', () => {
     expect(readCommitHash('/repo', () => '')).toBeNull();
     expect(readCommitHash('/repo', () => 'HEAD\n')).toBeNull();
   });
+
+  it('keeps a hash of up to 12 characters, so that the tab keeps its buttons whole', () => {
+    expect(readCommitHash('/repo', () => 'a1b2c3d4e5f6\n')).toBe('a1b2c3d4e5f6');
+  });
+
+  it('is null for 13 characters or more (a long core.abbrev)', () => {
+    expect(readCommitHash('/repo', () => 'a1b2c3d4e5f6a\n')).toBeNull();
+    expect(readCommitHash('/repo', () => `${'a'.repeat(40)}\n`)).toBeNull();
+  });
 });
