@@ -47,7 +47,7 @@
 5. 許可を求められたら許可します。手元のフォルダを書くときと、`npm run dev:all` を起動するときの 2 回です（どちらも Claude Code の sandbox の外で動かすため）
    - → スキル: `npm run dev:all` を起動し、collector が集め終わるのを待って、開く URL を伝えます。既に `npm run dev:all` が動いていたら止めずに、止めて起動し直すよう伝えます
 6. スキルが終わったら、司令塔と部門のセルを開きます
-   - MulmoTerminal なら、Claude Code で `! npm run trial:open-cells` を打ちます。司令塔と部門のセルがまとめて開くので、各セルの「信頼しますか？」に答えます。Claude Code の安全確認で止まるので、スキルは代わりに実行しません。お試しの会社の設定のときだけ動き、MulmoTerminal が動いていなければ何も開きません
+   - MulmoTerminal なら、Claude Code で `! npm run trial:open-cells` を打ちます。司令塔と部門のセルがまとめて開きます。初めてのときは、先に MulmoTerminal で司令塔のフォルダのセルを手で 1 つ開き、「信頼しますか？」で「Yes, I trust this folder」を選んで、そのセルを閉じてから打ちます（まとめて開いたセルには最初の指示が打ち込まれるので、まだ信頼していないフォルダでは信頼の画面で「No, exit」が選ばれて落ちます。先に打ってしまっても、未信頼なら何も開かずに止まって同じ案内が出ます）。Claude Code の安全確認で止まるので、スキルは代わりに実行しません。お試しの会社の設定のときだけ動き、MulmoTerminal が動いていなければ何も開きません
    - ほかの端末では、司令塔のフォルダと部門のフォルダをそれぞれ開いて Claude Code を起動します（フォルダそのもので起動します。[orchestration.md の 3-5](orchestration.md#3-5-部門のセッションを開く)）
 7. ブラウザで http://127.0.0.1:5273 を開きます。「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られていれば成功です。MulmoTerminal でセルを開いたなら、`npm run dev:all` の出力が `sessions=<部門の数 + 1> ok` になり、画面にもセッションの動きが出ます
 
