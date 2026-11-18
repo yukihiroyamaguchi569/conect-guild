@@ -17,7 +17,7 @@ export function claudeConfigPath(configDirEnv: string | undefined, home: string)
 }
 
 const configSchema = z.object({ projects: z.record(z.string(), z.unknown()) });
-const acceptedSchema = z.object({ hasTrustDialogAccepted: z.literal(true) });
+const entrySchema = z.object({ hasTrustDialogAccepted: z.boolean().optional() });
 
 /** The folder and each of its parents, up to the root. */
 function selfAndParents(folder: string): string[] {
@@ -26,7 +26,11 @@ function selfAndParents(folder: string): string[] {
   return paths;
 }
 
-/** Trusted when the folder (absolute) or one of its parents has accepted the trust dialog. */
+/**
+ * Trusted when the folder (absolute) or one of its parents has accepted the trust dialog. Unknown
+ * when the entry of one of them is not an object with an optional boolean; other folders' entries
+ * are not looked at.
+ */
 export function folderTrust(configText: string | null, folder: string): FolderTrust {
   if (configText === null) return 'unknown';
   let json: unknown;
@@ -38,8 +42,10 @@ export function folderTrust(configText: string | null, folder: string): FolderTr
   const parsed = configSchema.safeParse(json);
   if (!parsed.success) return 'unknown';
   const { projects } = parsed.data;
-  const accepted = selfAndParents(folder).some(
-    (path) => Object.hasOwn(projects, path) && acceptedSchema.safeParse(projects[path]).success,
-  );
-  return accepted ? 'trusted' : 'untrusted';
+  const entries = selfAndParents(folder)
+    .filter((path) => Object.hasOwn(projects, path))
+    .map((path) => entrySchema.safeParse(projects[path]));
+  // An entry of the folder or a parent in another shape: the file is not what we know.
+  if (entries.some((e) => !e.success)) return 'unknown';
+  return entries.some((e) => e.data?.hasTrustDialogAccepted === true) ? 'trusted' : 'untrusted';
 }

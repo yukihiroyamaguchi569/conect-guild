@@ -25,9 +25,18 @@ describe('folderTrust', () => {
       'untrusted',
     );
     expect(folderTrust(config({ [FOLDER]: {} }), FOLDER)).toBe('untrusted');
-    expect(folderTrust(config({ [FOLDER]: { hasTrustDialogAccepted: 'yes' } }), FOLDER)).toBe(
-      'untrusted',
-    );
+  });
+
+  it('is unknown when the entry of the folder or a parent has another shape', () => {
+    for (const entry of [null, 'x', 1, [], { hasTrustDialogAccepted: 'true' }]) {
+      expect(folderTrust(config({ [FOLDER]: entry }), FOLDER)).toBe('unknown');
+      expect(folderTrust(config({ '/home/tester': entry }), FOLDER)).toBe('unknown');
+    }
+  });
+
+  it('ignores the shape of entries of other folders', () => {
+    const text = config({ '/home/tester/other': null, [`${FOLDER}/x`]: 'x' });
+    expect(folderTrust(text, FOLDER)).toBe('untrusted');
   });
 
   it('is untrusted when neither the folder nor a parent is in projects', () => {
