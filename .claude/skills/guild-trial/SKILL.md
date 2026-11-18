@@ -190,6 +190,6 @@ conect-guild のリポジトリ直下で、架空の会社「お試し商会」�
    - 「http://127.0.0.1:5273 を開いてください」（「デモ表示中」の帯が消え、お試しの Issue が部門の机に配られる）
    - 片付けるときは `/guild-trial-cleanup` を使う
    - 自分の会社として使い続けたくなったら、`/guild-trial-renew` で自分の会社にする（リニューアルオープン。名前を変え、お試しの印を外す。片付けの対象から外れる）
-   - 任意（動きを見たい人だけ）: MulmoTerminal を使っているなら、`! npm run trial:open-cells` を打つと、司令塔のフォルダ（`~/guild-trial/<名前>`）と部門のフォルダ（`~/guild-trial/<名前>/accounting` など）のセルがまとめて開く（各セルの「信頼しますか？」に答える）。お試しの Issue はセッションが無くても机に配られる
+   - 任意（動きを見たい人だけ）: MulmoTerminal を使っているなら、`! npm run trial:open-cells` を打つと、司令塔のフォルダ（`~/guild-trial/<名前>`）と部門のフォルダ（`~/guild-trial/<名前>/accounting` など）のセルがまとめて開く。初めてのときは、先に MulmoTerminal で司令塔のフォルダのセルを手で 1 つ開いて「Yes, I trust this folder」を選び、そのセルを閉じてから打つ（MulmoTerminal が最初の指示を打ち込むので、まだ信頼していないフォルダでは「信頼しますか？」の画面に当たってセルが落ちる。Issue #294。先に打ってしまっても、未信頼なら何も開かずに止まって同じ案内が出る）。お試しの Issue はセッションが無くても机に配られる
 
    **Claude は `npm run trial:open-cells` を自分で実行しない。** MulmoTerminal にセルを開かせる操作なので Claude Code の安全確認で止まる。利用者が `!` を付けて打つよう案内するだけにする
