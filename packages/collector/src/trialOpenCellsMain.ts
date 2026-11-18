@@ -11,6 +11,7 @@ const base = mulmoTerminalBase(process.env.MULMOTERMINAL_PORT);
 process.exitCode = await runTrialOpenCells(process.argv.slice(2), {
   root: SETTINGS_ROOT,
   home: homedir(),
+  claudeConfigDir: process.env.CLAUDE_CONFIG_DIR,
   exists: existsSync,
   readText: (path) => readFileSync(path, 'utf8'),
   isSymlink: (path) => lstatSync(path, { throwIfNoEntry: false })?.isSymbolicLink() === true,
