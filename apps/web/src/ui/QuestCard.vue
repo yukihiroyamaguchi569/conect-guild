@@ -107,8 +107,6 @@ function onClick(event: MouseEvent): void {
             <span class="card__title">{{ title }}</span>
           </header>
           <dl class="card__text" :style="place(art.frame.text)">
-            <dt>担当</dt>
-            <dd>{{ card.owner.name }}（{{ card.owner.label }}）</dd>
             <template v-if="card.rarity !== null">
               <dt>レア度</dt>
               <dd>{{ RARITY_LABELS[card.rarity] }}</dd>
@@ -294,8 +292,8 @@ function onClick(event: MouseEvent): void {
   overflow: hidden;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
 .card__text {

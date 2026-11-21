@@ -371,7 +371,7 @@ test('a long description scrolls in the scroll from its first line (Issue #269)'
     .click();
   const text = page.getByRole('dialog', { name: 'クエスト #101 のカード' }).locator('.card__text');
   await expect(text).toContainText('#125');
-  // Overflowing, its first line (担当) is still inside the box, at the top of the scroll.
+  // Overflowing, its first line is still inside the box, at the top of the scroll.
   const placed = await text.evaluate((element) => {
     const first = element.querySelector('dt');
     return {
