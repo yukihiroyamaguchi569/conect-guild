@@ -18,7 +18,7 @@ test.beforeEach(async ({ snapshotServer }) => {
   });
 });
 
-test('a department row opens its card: number, cost, owner and PR; Esc closes it', async ({
+test('a department row opens its card: number, deadline and PR; Esc closes it', async ({
   page,
 }) => {
   await page.goto('/');
@@ -29,9 +29,9 @@ test('a department row opens its card: number, cost, owner and PR; Esc closes it
   const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
   await expect(card).toBeVisible();
   await expect(card).toContainText(DUE_TITLE);
-  await expect(card.locator('.card__cost')).toHaveText('3');
+  await expect(card.locator('.card__number')).toHaveText('#101');
   await expect(card).toContainText('〆10/15 あと 3 日');
-  await expect(card).toContainText('みのり（経理）');
+  await expect(card).not.toContainText('担当');
   await expect(card).toContainText('ノーマル');
   await expect(card).toContainText('#110・1 ファイル・かなめ待ち');
   await expect(card.getByRole('button', { name: 'とじる' })).toBeFocused();
@@ -41,15 +41,14 @@ test('a department row opens its card: number, cost, owner and PR; Esc closes it
   await expect(row).toBeFocused();
 });
 
-test('the reception row gives かなめ the card; a click outside closes it', async ({ page }) => {
+test('the reception row opens its card; a click outside closes it', async ({ page }) => {
   await page.goto('/');
   const row = page
     .getByRole('region', { name: 'クエスト掲示板' })
     .getByRole('button', { name: /#104/ });
   await row.click();
   const card = page.getByRole('dialog', { name: 'クエスト #104 のカード' });
-  await expect(card).toContainText('かなめ（受付）');
-  await expect(card.locator('.card__cost')).toHaveText('―');
+  await expect(card.locator('.card__number')).toHaveText('#104');
   await expect(card).toContainText('PR なし');
 
   await page.mouse.click(5, 5);
@@ -87,7 +86,7 @@ test('the show mode masks the card’s title, not its number or owner', async ({
   const card = page.getByRole('dialog', { name: 'クエスト #101 のカード' });
   await expect(card).toContainText('＊＊＊＊');
   await expect(card).not.toContainText('架空商事');
-  await expect(card).toContainText('みのり（経理）');
+  await expect(card.locator('.card__number')).toHaveText('#101');
 });
 
 test('the card closes when its Issue is closed', async ({ page, snapshotServer }) => {

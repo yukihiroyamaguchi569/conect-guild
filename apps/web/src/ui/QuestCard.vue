@@ -96,14 +96,8 @@ function onClick(event: MouseEvent): void {
             :src="art.frame.scroll"
             alt=""
           />
-          <span
-            class="card__cost"
-            :style="place(art.frame.cost)"
-            :title="card.deadline ?? '締め切りなし'"
-            >{{ card.cost }}</span
-          >
+          <span class="card__number" :style="place(art.frame.number)">#{{ card.number }}</span>
           <header class="card__band" :style="place(art.frame.band)">
-            <span class="card__number">#{{ card.number }}</span>
             <span class="card__title">{{ title }}</span>
           </header>
           <dl class="card__text" :style="place(art.frame.text)">
@@ -240,7 +234,7 @@ function onClick(event: MouseEvent): void {
 
 .card__picture,
 .card__layer,
-.card__cost,
+.card__number,
 .card__band,
 .card__text {
   position: absolute;
@@ -264,14 +258,17 @@ function onClick(event: MouseEvent): void {
   mix-blend-mode: color;
 }
 
-.card__cost {
+/* The quest number in the corner (Issue #302): a rounded box that holds four digits. */
+.card__number {
   display: grid;
   place-items: center;
-  border-radius: 50%;
+  border-radius: 18%;
   background: #1d3aa8;
   color: #fff;
-  font-size: 7cqw;
+  font-size: 4.2cqw;
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .card__band {
@@ -281,10 +278,6 @@ function onClick(event: MouseEvent): void {
   padding: 0 0.6em;
   font-size: 3.8cqw;
   font-weight: 700;
-}
-
-.card__number {
-  flex: none;
 }
 
 .card__title {
