@@ -26,7 +26,7 @@ function render(card: Card, masked = false): Promise<string> {
 }
 
 describe('QuestCard (Issue #267)', () => {
-  it('is a named dialog with the number, the title as text and the number in the corner, without the owner’s line (Issue #302)', async () => {
+  it('is a named dialog with the number, the title as text and the number in the ring, without the owner’s line (Issue #302)', async () => {
     const html = await render(CARD);
     // A native <dialog>, opened with showModal() on mounting (modal: the screen behind is inert).
     expect(html).toMatch(/^<dialog /);

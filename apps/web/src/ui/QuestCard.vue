@@ -258,14 +258,14 @@ function onClick(event: MouseEvent): void {
   mix-blend-mode: color;
 }
 
-/* The quest number in the corner (Issue #302): a rounded box that holds four digits. */
+/* The quest number in the frame's ring (Issue #302): a circle that holds four digits. */
 .card__number {
   display: grid;
   place-items: center;
-  border-radius: 18%;
+  border-radius: 50%;
   background: #1d3aa8;
   color: #fff;
-  font-size: 4.2cqw;
+  font-size: 3.8cqw;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   white-space: nowrap;

@@ -35,7 +35,7 @@ export interface CardFrame {
   readonly scroll: string | null;
   /** True when the metal takes the member's colour (the department frame). */
   readonly tinted: boolean;
-  /** The picture's window, the number's corner, the title band and the scroll's writing area. */
+  /** The picture's window, the number's ring, the title band and the scroll's writing area. */
   readonly window: CardBox;
   readonly number: CardBox;
   readonly band: CardBox;
