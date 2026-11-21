@@ -1,7 +1,8 @@
 import { join } from 'node:path';
 import { loadSettingsFile, type SettingsReader } from '@conect-guild/snapshot/settingsFile';
 import { escapeForTerminal, type GuildSettings } from '@conect-guild/snapshot/settingsSchema';
-import { expandHome } from './home.ts';
+import { claudeConfigPath, folderTrust } from './claudeTrust.ts';
+import { contractHome, expandHome } from './home.ts';
 import type { CallFailure, MulmoTerminalClient } from './mulmoTerminal.ts';
 import {
   forgetTargets,
@@ -29,6 +30,8 @@ export interface OpenCellsDeps extends SettingsReader {
   /** The repository root, where the settings files sit. */
   readonly root: string;
   readonly home: string;
+  /** CLAUDE_CONFIG_DIR as set (undefined when not): where Claude Code's `.claude.json` is. */
+  readonly claudeConfigDir: string | undefined;
   /** True when the path itself is a symbolic link (lstat). */
   readonly isSymlink: (path: string) => boolean;
   /** null when MULMOTERMINAL_PORT is not a port number. */
@@ -72,6 +75,36 @@ async function openCell(client: MulmoTerminalClient, cell: Cell): Promise<CallFa
   return spawned.ok ? null : spawned.failure;
 }
 
+/** Claude Code's `.claude.json` (read only), or null when it is missing or unreadable. */
+function readClaudeConfig(deps: OpenCellsDeps): string | null {
+  const path = claudeConfigPath(deps.claudeConfigDir, deps.home);
+  try {
+    return deps.exists(path) ? deps.readText(path) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Issue #294: MulmoTerminal types the first message into the cell, and on a folder Claude Code
+ * does not trust yet that lands on the trust dialog (No, exit by default). The departments are
+ * under the 司令塔's folder (trialCells), so its trust covers them. When it cannot be told, opens
+ * as before.
+ */
+function untrustedText(commander: string, home: string): string {
+  const where = escapeForTerminal(contractHome(commander, home));
+  return `まだ Claude Code で信頼していないフォルダなので、何も開きません。MulmoTerminal で司令塔のフォルダ（${where}）のセルを手で 1 つ開き、『Yes, I trust this folder』を選んで、そのセルを閉じてから、もう一度 \`npm run trial:open-cells\` を打ってください\n`;
+}
+
+/** True (and says what to do) when Claude Code does not trust the 司令塔's folder yet. */
+function untrustedCommander(deps: OpenCellsDeps, cells: readonly Cell[]): boolean {
+  const commander = cells[0]?.path;
+  if (commander === undefined) return false;
+  if (folderTrust(readClaudeConfig(deps), commander) !== 'untrusted') return false;
+  deps.err(untrustedText(commander, deps.home));
+  return true;
+}
+
 async function openAll(deps: OpenCellsDeps, client: MulmoTerminalClient): Promise<number> {
   const result = cellsToOpen(deps);
   if (!result.ok) {
@@ -79,6 +112,7 @@ async function openAll(deps: OpenCellsDeps, client: MulmoTerminalClient): Promis
     return 1;
   }
   const { cells } = result;
+  if (untrustedCommander(deps, cells)) return 1;
   let failed = 0;
   for (const [i, cell] of cells.entries()) {
     const failure = await openCell(client, cell);

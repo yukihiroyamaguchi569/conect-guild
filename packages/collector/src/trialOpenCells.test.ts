@@ -41,11 +41,13 @@ function deps(
   fetchFn: FetchLike,
   files: Record<string, string>,
   existing: readonly string[] = [],
+  claudeConfigDir?: string,
 ): OpenCellsDeps & { out: (t: string) => void; lines: string[] } {
   const lines: string[] = [];
   return {
     root: ROOT,
     home: HOME,
+    claudeConfigDir,
     exists: (path) => path in files || existing.includes(path),
     isSymlink: () => false,
     readText: (path) => {
@@ -123,6 +125,90 @@ describe('runTrialOpenCells: open', () => {
     expect(await runTrialOpenCells([], d)).toBe(1);
     expect(sent).toEqual([]);
     expect(d.lines).toEqual(['ERR お試しの会社の設定ではないので、まとめて開きません\n']);
+  });
+});
+
+const UNTRUSTED =
+  'ERR まだ Claude Code で信頼していないフォルダなので、何も開きません。MulmoTerminal で司令塔のフォルダ（~/guild-trial/guild-trial）のセルを手で 1 つ開き、『Yes, I trust this folder』を選んで、そのセルを閉じてから、もう一度 `npm run trial:open-cells` を打ってください\n';
+
+const claudeJson = (projects: unknown): string => JSON.stringify({ projects });
+
+describe('runTrialOpenCells: Claude Code trust (Issue #294)', () => {
+  it('opens all when the 司令塔 folder is trusted', async () => {
+    const { fetchFn, sent } = fakeFetch(working);
+    const files = {
+      ...trialFiles(),
+      [`${HOME}/.claude.json`]: claudeJson({ [COMMANDER]: { hasTrustDialogAccepted: true } }),
+    };
+    const d = deps(fetchFn, files);
+    expect(await runTrialOpenCells([], d)).toBe(0);
+    expect(sent).toHaveLength(6);
+  });
+
+  it('opens all when a parent of the 司令塔 folder is trusted', async () => {
+    const { fetchFn, sent } = fakeFetch(working);
+    const files = {
+      ...trialFiles(),
+      [`${HOME}/.claude.json`]: claudeJson({ [HOME]: { hasTrustDialogAccepted: true } }),
+    };
+    expect(await runTrialOpenCells([], deps(fetchFn, files))).toBe(0);
+    expect(sent).toHaveLength(6);
+  });
+
+  it.each([
+    ['not in projects', claudeJson({ [`${HOME}/other`]: { hasTrustDialogAccepted: true } })],
+    ['false', claudeJson({ [COMMANDER]: { hasTrustDialogAccepted: false } })],
+  ])('sends nothing and says what to do when it is %s', async (_name, text) => {
+    const { fetchFn, sent } = fakeFetch(working);
+    const d = deps(fetchFn, { ...trialFiles(), [`${HOME}/.claude.json`]: text });
+    expect(await runTrialOpenCells([], d)).toBe(1);
+    expect(sent).toEqual([]);
+    expect(d.lines).toEqual([UNTRUSTED]);
+  });
+});
+
+describe('runTrialOpenCells: Claude Code trust that cannot be told, and CLAUDE_CONFIG_DIR (Issue #294)', () => {
+  it.each([
+    ['not JSON', '{ not json'],
+    ['projects is an array', claudeJson([{ hasTrustDialogAccepted: false }])],
+    ['without projects', JSON.stringify({ numStartups: 1 })],
+  ])('opens as before when the file is %s', async (_name, text) => {
+    const { fetchFn, sent } = fakeFetch(working);
+    const d = deps(fetchFn, { ...trialFiles(), [`${HOME}/.claude.json`]: text });
+    expect(await runTrialOpenCells([], d)).toBe(0);
+    expect(sent).toHaveLength(6);
+  });
+
+  it.each([
+    ['missing', []],
+    ['there but unreadable', [`${HOME}/.claude.json`]],
+  ])('opens as before when the file is %s', async (_name, existing) => {
+    const { fetchFn, sent } = fakeFetch(working);
+    const d = deps(fetchFn, trialFiles(), existing);
+    expect(await runTrialOpenCells([], d)).toBe(0);
+    expect(sent).toHaveLength(6);
+  });
+
+  it('reads $CLAUDE_CONFIG_DIR/.claude.json when it is set', async () => {
+    const untrusted = claudeJson({});
+    const trusted = claudeJson({ [COMMANDER]: { hasTrustDialogAccepted: true } });
+    const set = fakeFetch(working);
+    const d = deps(
+      set.fetchFn,
+      { ...trialFiles(), [`${HOME}/.claude.json`]: trusted, '/cfg/.claude.json': untrusted },
+      [],
+      '/cfg',
+    );
+    expect(await runTrialOpenCells([], d)).toBe(1);
+    expect(set.sent).toEqual([]);
+    const other = fakeFetch(working);
+    const files = {
+      ...trialFiles(),
+      [`${HOME}/.claude.json`]: untrusted,
+      '/cfg/.claude.json': trusted,
+    };
+    expect(await runTrialOpenCells([], deps(other.fetchFn, files, [], '/cfg'))).toBe(0);
+    expect(other.sent).toHaveLength(6);
   });
 });
 
