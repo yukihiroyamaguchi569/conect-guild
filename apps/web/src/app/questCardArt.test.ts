@@ -54,12 +54,12 @@ describe('CARD_FRAMES: the parts sit inside the card, in their order', () => {
     box.left >= 0 && box.top >= 0 && box.left + box.width <= 100 && box.top + box.height <= 100;
 
   it.each(Object.entries(CARD_FRAMES))('%s', (_name, frame) => {
-    for (const part of [frame.window, frame.cost, frame.band, frame.text])
+    for (const part of [frame.window, frame.number, frame.band, frame.text])
       expect(inside(part)).toBe(true);
     // Top to bottom: the band (with the cost beside it), the picture's window, the scroll.
     expect(frame.band.top + frame.band.height).toBeLessThanOrEqual(frame.window.top);
     expect(frame.window.top + frame.window.height).toBeLessThanOrEqual(frame.text.top);
-    expect(frame.cost.left + frame.cost.width).toBeLessThanOrEqual(frame.band.left);
+    expect(frame.number.left + frame.number.width).toBeLessThanOrEqual(frame.band.left);
   });
 });
 

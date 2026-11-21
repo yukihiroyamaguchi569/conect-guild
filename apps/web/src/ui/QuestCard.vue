@@ -96,19 +96,11 @@ function onClick(event: MouseEvent): void {
             :src="art.frame.scroll"
             alt=""
           />
-          <span
-            class="card__cost"
-            :style="place(art.frame.cost)"
-            :title="card.deadline ?? '締め切りなし'"
-            >{{ card.cost }}</span
-          >
+          <span class="card__number" :style="place(art.frame.number)">#{{ card.number }}</span>
           <header class="card__band" :style="place(art.frame.band)">
-            <span class="card__number">#{{ card.number }}</span>
             <span class="card__title">{{ title }}</span>
           </header>
           <dl class="card__text" :style="place(art.frame.text)">
-            <dt>担当</dt>
-            <dd>{{ card.owner.name }}（{{ card.owner.label }}）</dd>
             <template v-if="card.rarity !== null">
               <dt>レア度</dt>
               <dd>{{ RARITY_LABELS[card.rarity] }}</dd>
@@ -242,7 +234,7 @@ function onClick(event: MouseEvent): void {
 
 .card__picture,
 .card__layer,
-.card__cost,
+.card__number,
 .card__band,
 .card__text {
   position: absolute;
@@ -266,14 +258,17 @@ function onClick(event: MouseEvent): void {
   mix-blend-mode: color;
 }
 
-.card__cost {
+/* The quest number in the frame's ring (Issue #302): a circle that holds four digits. */
+.card__number {
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: #1d3aa8;
   color: #fff;
-  font-size: 7cqw;
+  font-size: 3.8cqw;
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .card__band {
@@ -285,17 +280,13 @@ function onClick(event: MouseEvent): void {
   font-weight: 700;
 }
 
-.card__number {
-  flex: none;
-}
-
 .card__title {
   display: -webkit-box;
   overflow: hidden;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
 .card__text {

@@ -7,12 +7,9 @@ import QuestCard from './QuestCard.vue';
 const CARD: Card = {
   number: 12,
   title: '<b>架空の請求書</b>',
-  cost: '3',
   deadline: '〆10/20 あと 3 日',
   doDay: '@10/18 あと 1 日',
   owner: {
-    name: 'みのり',
-    label: '経理',
     frame: '#4caf50',
     crown: false,
     id: 'minori',
@@ -29,15 +26,17 @@ function render(card: Card, masked = false): Promise<string> {
 }
 
 describe('QuestCard (Issue #267)', () => {
-  it('is a named dialog with the number, the title as text, the cost and the owner', async () => {
+  it('is a named dialog with the number, the title as text and the number in the ring, without the owner’s line (Issue #302)', async () => {
     const html = await render(CARD);
     // A native <dialog>, opened with showModal() on mounting (modal: the screen behind is inert).
     expect(html).toMatch(/^<dialog /);
     expect(html).toContain('aria-label="クエスト #12 のカード"');
     expect(html).toContain('&lt;b&gt;架空の請求書&lt;/b&gt;');
     expect(html).not.toContain('<b>');
-    expect(html).toMatch(/class="card__cost"[^>]*>3</);
-    expect(html).toContain('みのり（経理）');
+    expect(html).toMatch(/class="card__number"[^>]*>#12</);
+    expect(html).not.toContain('card__cost');
+    expect(html).not.toContain('担当');
+    expect(html).not.toContain('みのり（経理）');
     expect(html).toContain('〆10/20 あと 3 日');
     expect(html).toContain('@10/18 あと 1 日');
     expect(html).toContain('レア');
@@ -52,19 +51,18 @@ describe('QuestCard (Issue #267)', () => {
     expect(await render({ ...CARD, prs: [] })).toContain('PR なし');
   });
 
-  it('masks the title in the show mode, not the number or the names', async () => {
+  it('masks the title in the show mode, not the number', async () => {
     const html = await render(CARD, true);
     expect(html).not.toContain('架空の請求書');
     expect(html).toContain('＊＊＊＊＊＊＊＊');
     expect(html).toContain('#12');
-    expect(html).toContain('みのり（経理）');
   });
 
   it('leaves out the rarity when it is not known, and crowns the king', async () => {
     const html = await render({
       ...CARD,
       rarity: null,
-      owner: { ...CARD.owner, id: 'yukihiro', name: 'ゆきひろ', label: '社長', crown: true },
+      owner: { ...CARD.owner, id: 'yukihiro', crown: true },
     });
     expect(html).not.toContain('レア度');
     expect(html).not.toContain('card--');

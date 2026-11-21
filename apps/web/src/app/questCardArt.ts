@@ -35,9 +35,9 @@ export interface CardFrame {
   readonly scroll: string | null;
   /** True when the metal takes the member's colour (the department frame). */
   readonly tinted: boolean;
-  /** The picture's window, the cost's ring, the title band and the scroll's writing area. */
+  /** The picture's window, the number's ring, the title band and the scroll's writing area. */
   readonly window: CardBox;
-  readonly cost: CardBox;
+  readonly number: CardBox;
   readonly band: CardBox;
   readonly text: CardBox;
 }
@@ -59,7 +59,7 @@ export const CARD_FRAMES = {
     scroll: scrollFrameUrl,
     tinted: true,
     window: box(53, 201, 494, 382),
-    cost: box(65, 82, 92, 92),
+    number: box(65, 82, 92, 92),
     band: box(165, 78, 380, 88),
     text: box(95, 628, 410, 136),
   },
@@ -68,7 +68,7 @@ export const CARD_FRAMES = {
     scroll: null,
     tinted: false,
     window: box(51, 208, 497, 411),
-    cost: box(62, 103, 84, 84),
+    number: box(62, 103, 84, 84),
     band: box(152, 95, 393, 85),
     text: box(100, 660, 400, 120),
   },
