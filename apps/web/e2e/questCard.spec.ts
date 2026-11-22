@@ -66,7 +66,7 @@ test('a PR that changes rules waits for the president; とじる closes the card
   await row.click();
   const card = page.getByRole('dialog', { name: 'クエスト #103 のカード' });
   // Labelled 企画 and 広報: the first in the settings' order is in charge, as on the board.
-  await expect(card).toContainText('ひびき（広報）');
+  await expect(card.locator('.card__picture')).toHaveAttribute('src', /ill-hibiki/);
   await expect(card).toContainText('#111・1 ファイル・社長待ち');
 
   await card.getByRole('button', { name: 'とじる' }).click();
@@ -76,7 +76,7 @@ test('a PR that changes rules waits for the president; とじる closes the card
   await expect(row).toHaveCSS('outline-style', 'solid');
 });
 
-test('the show mode masks the card’s title, not its number or owner', async ({ page }) => {
+test('the show mode masks the card’s title, not its number', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '見せる' }).click();
   await page
