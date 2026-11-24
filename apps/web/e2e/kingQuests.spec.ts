@@ -54,7 +54,6 @@ test('a king’s quest opens a card of the king in the crowned frame (Issue #267
   await row.click();
   const card = page.getByRole('dialog', { name: 'クエスト #31 のカード' });
   await expect(card).toContainText(KING_QUESTS[0].title);
-  await expect(card).toContainText('ゆきひろ（社長）');
   // The gold crown frame (Issue #269).
   await expect(card.locator('img[data-part="frame"]')).toHaveAttribute('src', /frame-crown/);
   await expect(card).toContainText('ノーマル');

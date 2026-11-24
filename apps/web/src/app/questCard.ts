@@ -27,9 +27,6 @@ export const RARITY_LABELS: Readonly<Record<Rarity, string>> = {
 export const CROWN_FRAME = '#e8c66a';
 
 export interface QuestCardOwner {
-  readonly name: string;
-  /** The department label, 受付 or the king's role. */
-  readonly label: string;
   /** The frame's colour: the member's colour, gold for the king. */
   readonly frame: string;
   readonly crown: boolean;
@@ -46,8 +43,6 @@ export interface QuestCardPr {
 export interface QuestCard {
   readonly number: number;
   readonly title: string;
-  /** Days to the deadline, 「!」 past it, 「―」 without one. */
-  readonly cost: string;
   /** e.g. 「〆10/24 あと 3 日」; null without 〆M/D. */
   readonly deadline: string | null;
   /** e.g. 「@10/22 あと 1 日」; null without @M/D. */
@@ -67,12 +62,6 @@ export function rarityOf(daysOpen: number): Rarity {
   return daysOpen >= RARITY_DAYS.rare ? 'rare' : 'normal';
 }
 
-/** The cost circle: the days left, 「!」 past the deadline, 「―」 without one. */
-export function costOf(days: number | null): string {
-  if (days === null) return '―';
-  return days < 0 ? '!' : String(days);
-}
-
 /** 「〆10/24 あと 3 日」, 「〆10/21 きょう」 or 「〆10/20 1 日 すぎた」. */
 export function markText(mark: '〆' | '@', days: number | null, nowMs: number): string | null {
   if (days === null) return null;
@@ -81,10 +70,8 @@ export function markText(mark: '〆' | '@', days: number | null, nowMs: number):
   return days > 0 ? `${date} あと ${String(days)} 日` : `${date} ${String(-days)} 日 すぎた`;
 }
 
-function ownerOf(member: MemberConfig, label: string, crown = false): QuestCardOwner {
+function ownerOf(member: MemberConfig, crown = false): QuestCardOwner {
   return {
-    name: member.name,
-    label,
     frame: crown ? CROWN_FRAME : member.color,
     crown,
     id: member.id,
@@ -93,10 +80,10 @@ function ownerOf(member: MemberConfig, label: string, crown = false): QuestCardO
 
 /** Who is in charge of a board section. */
 export function ownerOfGroup(key: BoardGroup['key']): QuestCardOwner {
-  if (key === 'king') return ownerOf(MEMBERS.yukihiro, MEMBERS.yukihiro.role, true);
-  if (key === 'reception') return ownerOf(MEMBERS.kaname, '受付');
+  if (key === 'king') return ownerOf(MEMBERS.yukihiro, true);
+  if (key === 'reception') return ownerOf(MEMBERS.kaname);
   const department = key.slice('department:'.length);
-  return ownerOf(MEMBERS[departmentMember(department)], department);
+  return ownerOf(MEMBERS[departmentMember(department)]);
 }
 
 const WAIT_LABELS: Readonly<Record<PrWaitKind, string>> = {
@@ -136,7 +123,6 @@ export function buildQuestCard(
     return {
       number,
       title: quest.title,
-      cost: costOf(deadline),
       deadline: markText('〆', deadline, nowMs),
       doDay: markText('@', daysToDoDay(quest.title, nowMs), nowMs),
       owner: ownerOfGroup(group.key),

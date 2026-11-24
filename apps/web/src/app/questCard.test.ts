@@ -2,7 +2,7 @@ import type { Snapshot, SnapshotPr } from '@conect-guild/snapshot';
 import { describe, expect, it } from 'vitest';
 import { MEMBERS } from '../guild.config';
 import type { BoardGroup } from './guildView';
-import { buildQuestCard, costOf, CROWN_FRAME, markText, prsOf, RARITY_DAYS } from './questCard';
+import { buildQuestCard, CROWN_FRAME, markText, prsOf, RARITY_DAYS } from './questCard';
 
 /** Local noon of 2026-10-17, so the dates hold in any time zone. */
 const NOW = new Date(2026, 9, 17, 12).getTime();
@@ -71,14 +71,7 @@ function snapshot(
   };
 }
 
-describe('costOf and markText', () => {
-  it('shows the days left, ! past the deadline, ― without one', () => {
-    expect(costOf(3)).toBe('3');
-    expect(costOf(0)).toBe('0');
-    expect(costOf(-1)).toBe('!');
-    expect(costOf(null)).toBe('―');
-  });
-
+describe('markText', () => {
   it('writes the date and the days to it', () => {
     expect(markText('〆', 3, NOW)).toBe('〆10/20 あと 3 日');
     expect(markText('〆', 0, NOW)).toBe('〆10/17 きょう');
@@ -89,17 +82,14 @@ describe('costOf and markText', () => {
 });
 
 describe('buildQuestCard (Issue #267)', () => {
-  it('builds a department quest’s card: cost, deadline, the member and the department', () => {
+  it('builds a department quest’s card: deadline and the member', () => {
     const card = buildQuestCard(GROUPS, snapshot(), 101);
     expect(card).toEqual({
       number: 101,
       title: '〆10/20 架空の請求書',
-      cost: '3',
       deadline: '〆10/20 あと 3 日',
       doDay: null,
       owner: {
-        name: MEMBERS.minori.name,
-        label: '経理',
         frame: MEMBERS.minori.color,
         crown: false,
         id: 'minori',
@@ -111,24 +101,19 @@ describe('buildQuestCard (Issue #267)', () => {
 
   it('gives a reception quest to かなめ, and a king’s quest to the king in a gold frame', () => {
     const reception = buildQuestCard(GROUPS, snapshot(), 104);
-    expect(reception?.owner).toMatchObject({
-      name: MEMBERS.kaname.name,
-      label: '受付',
-      crown: false,
-    });
+    expect(reception?.owner).toMatchObject({ id: 'kaname', crown: false });
     expect(reception?.owner.frame).toBe(MEMBERS.kaname.color);
-    expect(reception?.cost).toBe('―');
     expect(reception?.deadline).toBeNull();
     const king = buildQuestCard(GROUPS, snapshot(), 30);
     expect(king?.owner).toMatchObject({
-      name: MEMBERS.yukihiro.name,
+      id: 'yukihiro',
       crown: true,
       frame: CROWN_FRAME,
     });
     expect(king?.rarity).toBe('rare');
   });
 
-  it('marks a past deadline with ! and reads the day to do it', () => {
+  it('reads a past deadline and the day to do it', () => {
     const groups: BoardGroup[] = [
       {
         key: 'reception',
@@ -138,7 +123,6 @@ describe('buildQuestCard (Issue #267)', () => {
       },
     ];
     const card = buildQuestCard(groups, snapshot(), 104);
-    expect(card?.cost).toBe('!');
     expect(card?.deadline).toBe('〆10/15 2 日 すぎた');
     expect(card?.doDay).toBe('@10/19 あと 2 日');
   });
