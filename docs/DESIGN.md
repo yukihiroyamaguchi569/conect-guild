@@ -639,6 +639,7 @@ X と note の動画を撮るため、架空のクエストで一連の演出を
 - 実データ（`apps/web/.data/snapshot.json`）は Vite の `public/` に置かない。`.gitignore` で除き、パーミッションは 0600
 - タスクの絵（`apps/web/.data/cards/`、4.18）も同じ扱い。`.gitignore` で除き、開発サーバーのプラグインだけが no-store で返す。`public/` に置かない
 - 実データを画面に出す経路は、開発サーバーの自作プラグインだけ。開発サーバーは `127.0.0.1` に固定し、`--host` に `127.0.0.1` 以外（`0.0.0.0` や値なし）を渡したり `server.host: true` を使ったりしない（LAN に出さない）
+- 開発サーバーは CORS のヘッダを返さない（`server.cors: false`、Issue #276）。Vite の既定は同じ機械の別のポート（`localhost`・`127.0.0.1`）のページに応答を読ませるので、ほかの開発サーバーのページから実データや設定を読めてしまう。画面は自分の origin からしか読まない
 - `vite build` と CI は `apps/web/public/snapshot.sample.json`（架空の題名のダミー）だけを使う。プラグインは開発時だけ有効なので、ビルドに実データは入らない
 - `dist/` は配布しない（GitHub Pages などに載せない）
 - localStorage には題名を残さない（4.4）

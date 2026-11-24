@@ -18,6 +18,10 @@ export default defineConfig(({ mode }) => ({
     // Vite's default 5173 is also MulmoClaude's; fail instead of drifting to another port.
     port: 5273,
     strictPort: true,
+    // No CORS headers at all (Issue #276): Vite's default lets pages of other ports of this machine
+    // read every answer, the real snapshot and the modules with the settings among them. The
+    // screen only fetches its own origin.
+    cors: false,
     // The real snapshot and card pictures are reachable only through the plugins' routes.
     fs: {
       deny: [
