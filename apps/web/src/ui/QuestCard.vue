@@ -55,9 +55,14 @@ onMounted(() => {
   closeButton.value?.focus();
 });
 
-/** A click on the dark backdrop (the dialog itself, outside the card) closes it. */
+/**
+ * A click on the dark backdrop (the dialog itself, outside the card) or on the card closes it
+ * (Issue #309). 「とじる」 closes it by itself; the gap around it does nothing.
+ */
 function onClick(event: MouseEvent): void {
-  if (event.target === dialog.value) emit('close');
+  const target = event.target;
+  const onCard = target instanceof Element && target.closest('.card-scene') !== null;
+  if (target === dialog.value || onCard) emit('close');
 }
 </script>
 
@@ -173,6 +178,7 @@ function onClick(event: MouseEvent): void {
  */
 .card-scene {
   position: relative;
+  cursor: pointer;
   transform-style: preserve-3d;
   animation: card-flip 0.5s ease-out both;
 }

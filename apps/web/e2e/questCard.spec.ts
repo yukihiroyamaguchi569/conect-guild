@@ -56,6 +56,22 @@ test('the reception row opens its card; a click outside closes it', async ({ pag
   await expect(row).toBeFocused();
 });
 
+test('a click on the card itself closes it too (Issue #309)', async ({ page }) => {
+  await page.goto('/');
+  const row = page
+    .getByRole('region', { name: 'クエスト掲示板' })
+    .getByRole('button', { name: /#104/ });
+  await row.click();
+  const card = page.getByRole('dialog', { name: 'クエスト #104 のカード' });
+  await card.locator('.card__picture').click();
+  await expect(card).toBeHidden();
+  await expect(row).toBeFocused();
+
+  await row.click();
+  await card.locator('.card__text').click();
+  await expect(card).toBeHidden();
+});
+
 test('a PR that changes rules waits for the president; とじる closes the card', async ({
   page,
 }) => {
