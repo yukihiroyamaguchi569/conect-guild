@@ -1,7 +1,7 @@
 // The quest card (Issue #267): pressing a board row opens its card over the screen.
 import { midiToFrequency, SCORES } from '../src/audio/scores.ts';
 import { installFakeAudio } from './fakeAudio.ts';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures.ts';
 import { NOW, sampleSnapshot } from './sampleSnapshot.ts';
 
@@ -63,14 +63,21 @@ test('a click on the card itself closes it too (Issue #309)', async ({ page }) =
     .getByRole('button', { name: /#104/ });
   await row.click();
   const card = page.getByRole('dialog', { name: 'クエスト #104 のカード' });
-  await card.locator('.card__picture').click();
+  // The frame's layer lies over the picture, so click where they are, as a person would.
+  await clickCenterOf(page, card.locator('.card__picture'));
   await expect(card).toBeHidden();
   await expect(row).toBeFocused();
 
   await row.click();
-  await card.locator('.card__text').click();
+  await clickCenterOf(page, card.locator('.card__text'));
   await expect(card).toBeHidden();
 });
+
+async function clickCenterOf(page: Page, target: Locator): Promise<void> {
+  const box = await target.boundingBox();
+  if (box === null) throw new Error('the target is not on the screen');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
 
 test('a PR that changes rules waits for the president; とじる closes the card', async ({
   page,
