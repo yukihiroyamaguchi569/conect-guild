@@ -248,6 +248,8 @@ export const TRINKETS = {
   sleepTalkSlotMs: 40_000,
   sleepTalkMs: 2_500,
   sleepTalkShare: 0.5,
+  /** The pet says 「わん！」 for `toastBarkMs` from the toast's 「かんぱーい！」 (Issue #315). */
+  toastBarkMs: 2_000,
   /** The light patches drift with the sun (from morning to evening) and sway a little. */
   patchDriftPx: 16,
   patchSwayPx: 2,
