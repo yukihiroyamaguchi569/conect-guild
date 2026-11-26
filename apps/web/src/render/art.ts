@@ -43,6 +43,8 @@ export interface DecorArt {
   drawDecor(ctx: CanvasRenderingContext2D, name: DecorName, x: number, y: number): void;
   /** The same, with its top-left at `at` and `at.scale` times its own size. */
   drawDecorScaled(ctx: CanvasRenderingContext2D, name: DecorName, at: ScaledAt): void;
+  /** As drawDecor, mirrored left to right around the picture's centre (the spinning pet). */
+  drawDecorFlipped(ctx: CanvasRenderingContext2D, name: DecorName, x: number, y: number): void;
 }
 
 /** Where a picture drawn bigger (or smaller) than its own size goes, logical px. */
@@ -154,6 +156,10 @@ const placeholderSprites: SpriteArt = {
 /** A small brown box per thing when the decor sheet cannot be loaded. */
 const placeholderDecor: DecorArt = {
   drawDecor(ctx, name, x, y) {
+    placeholderDecor.drawDecorScaled(ctx, name, { x, y, scale: 1 });
+  },
+  // A box is the same both ways round.
+  drawDecorFlipped(ctx, name, x, y) {
     placeholderDecor.drawDecorScaled(ctx, name, { x, y, scale: 1 });
   },
   drawDecorScaled(ctx, _name, { x, y, scale }) {

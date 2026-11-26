@@ -38,6 +38,8 @@ export interface DecorCues {
   readonly petCompany: boolean;
   /** The pet was clicked and is up wagging its tail (petting.ts, Issue #186). */
   readonly petted: boolean;
+  /** When the spin going on started (petting.spinningSince, Issue #312); null when none. */
+  readonly spinningSince: number | null;
 }
 
 export const NO_CUES: DecorCues = {
@@ -46,6 +48,7 @@ export const NO_CUES: DecorCues = {
   clearedAt: {},
   petCompany: false,
   petted: false,
+  spinningSince: null,
 };
 
 /**
@@ -86,6 +89,7 @@ export function decorCuesOf(
     petCompany: members.some((m) => m.withPet),
     // The render loop knows the presses (cast.stageAt, petting.ts).
     petted: false,
+    spinningSince: null,
   };
 }
 
@@ -340,6 +344,8 @@ export interface PetPose {
   readonly name: DecorName;
   /** Added to the picture's top, logical px. */
   readonly dy: number;
+  /** Drawn mirrored (DecorArt.drawDecorFlipped): only while it spins. */
+  readonly flipped?: true;
 }
 
 /**
@@ -366,15 +372,35 @@ export function hopDyAt(elapsed: number): number {
 }
 
 /**
- * The pet's pose with `cues`: wagging its tail while it is up from a click (DecorCues.petted,
- * petting.ts), else up and hopping while confetti flies (DecorCues.clearedAt), else as petPoseAt.
+ * The pet spinning, `elapsed` ms into its spin (Issue #312): its face, its tail to one side, its
+ * face mirrored and its tail to the other side mirrored, TRINKETS.petSpinFrameMs each, with a small
+ * hop per turn so it reads as turning round.
+ */
+export function spinPoseAt(elapsed: number): PetPose {
+  const [left, right] = PET_WAG_DECOR;
+  const turnMs = 4 * TRINKETS.petSpinFrameMs;
+  const frame = Math.floor(elapsed / TRINKETS.petSpinFrameMs) % 4;
+  // + 0 turns -0 into 0.
+  const dy =
+    -Math.round(TRINKETS.petSpinHopPx * Math.sin((Math.PI * (elapsed % turnMs)) / turnMs)) + 0;
+  if (frame === 0) return { name: PET_AWAKE_DECOR, dy };
+  if (frame === 1) return { name: left, dy };
+  if (frame === 2) return { name: PET_AWAKE_DECOR, dy, flipped: true };
+  return { name: right, dy, flipped: true };
+}
+
+/**
+ * The pet's pose with `cues`: spinning after many presses (DecorCues.spinningSince), else wagging
+ * its tail while it is up from a click (DecorCues.petted, petting.ts), else up and hopping while
+ * confetti flies (DecorCues.clearedAt), else as petPoseAt.
  */
 export function petLookAt(
   asleep: DecorName,
   phaseMs: number,
   now: number,
-  cues: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt'>,
+  cues: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt' | 'spinningSince'>,
 ): PetPose {
+  if (cues.spinningSince !== null) return spinPoseAt(now - cues.spinningSince);
   if (cues.petted) return { name: wagDecorAt(now), dy: 0 };
   const starts = Object.values(cues.clearedAt);
   if (starts.length > 0) {

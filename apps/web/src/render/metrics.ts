@@ -240,6 +240,16 @@ export const TRINKETS = {
   /** The pet hops while a quest's confetti flies (Issue #311): up to `hopPx`, one hop every `hopMs`. */
   hopPx: 3,
   hopMs: 400,
+  /**
+   * Petted `petSpinPresses` times within `petSpinWindowMs` (Issue #312), the pet spins for `petSpinMs`: a
+   * turn is four pictures of `petSpinFrameMs` each (one ambient frame), with a hop of `petSpinHopPx` per
+   * turn. `petSpinMs` is two whole turns.
+   */
+  petSpinPresses: 5,
+  petSpinWindowMs: 4_000,
+  petSpinFrameMs: 140,
+  petSpinMs: 1_120,
+  petSpinHopPx: 2,
   /** The light patches drift with the sun (from morning to evening) and sway a little. */
   patchDriftPx: 16,
   patchSwayPx: 2,
