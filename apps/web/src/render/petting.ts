@@ -42,22 +42,37 @@ export function barkFeet(rect: PxRect): Point {
   return { x: (rect.left + rect.right) / 2, y: rect.top + HEAD_TOP - tail + OVERHEAD_OFFSET };
 }
 
-/** The bubble of the pet's 「わん」: a murmur's. */
-export const BARK_BUBBLE: BubbleOf = { voice: 'whisper', chars: Array.from(BARK).length };
+/** The bubble of a word of the pet's (`text`): a murmur's. */
+export function petBubbleOf(text: string): BubbleOf {
+  return { voice: 'whisper', chars: Array.from(text).length };
+}
 
-/** Everything drawn for the 「わん」 of the pet in `rect` (overhead.bubbleBox), logical px. */
+/** The bubble of the pet's 「わん」. */
+export const BARK_BUBBLE: BubbleOf = petBubbleOf(BARK);
+
+/** Everything drawn for the word `text` of the pet in `rect` (overhead.bubbleBox), logical px. */
+export function petLineBox(rect: PxRect, text: string): Box {
+  return bubbleBox(barkFeet(rect), petBubbleOf(text), 'right', 0);
+}
+
+/** Everything drawn for the 「わん」 of the pet in `rect`. */
 export function barkBox(rect: PxRect): Box {
-  return bubbleBox(barkFeet(rect), BARK_BUBBLE, 'right', 0);
+  return petLineBox(rect, BARK);
 }
 
 /**
- * Whether the 「わん」 of the pet in `rect` is drawn: only clear of `bubbles` (those over the
+ * Whether the word `text` of the pet in `rect` is drawn: only clear of `bubbles` (those over the
  * members this frame, overheadPlace.placedBox). The king's words and calls go over the throne next
- * to the pet; theirs come first, and the pet wags on without its bubble.
+ * to the pet; theirs come first, and the pet goes on without its bubble.
  */
+export function petLineClear(rect: PxRect, text: string, bubbles: readonly Box[]): boolean {
+  const line = petLineBox(rect, text);
+  return !bubbles.some((box) => meet(line, box));
+}
+
+/** Whether the 「わん」 of the pet in `rect` is drawn (petLineClear). */
 export function barkClear(rect: PxRect, bubbles: readonly Box[]): boolean {
-  const bark = barkBox(rect);
-  return !bubbles.some((box) => meet(bark, box));
+  return petLineClear(rect, BARK, bubbles);
 }
 
 /** The stage when the pet is pressed. */

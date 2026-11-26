@@ -216,6 +216,7 @@ export function stageAt(
   const cues = {
     ...decorCuesOf(party.moods, director.bursts, t, view.frame.members),
     petted: cast.petting.isPetted(t, party.halted),
+    halted: party.halted,
   };
   const said = cast.remarksAt(t, view);
   // The answers to clicks (Issue #191) show where the remarks do, under them, and put the murmurs
