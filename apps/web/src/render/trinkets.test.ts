@@ -145,6 +145,7 @@ describe('activeSince', () => {
     petCompany: false,
     petted: false,
     halted: false,
+    kingBlessing: false,
   };
 
   it('always moves a thing with no trigger', () => {

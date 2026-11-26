@@ -39,10 +39,10 @@ interface Drawing {
   readonly art: GuildArt;
   readonly now: number;
   /**
-   * Someone stays by the pet, it was clicked, or confetti flies (DecorCues.petCompany,
-   * DecorCues.petted, DecorCues.clearedAt).
+   * Someone stays by the pet, it was clicked, confetti flies, or the king's words for a click show
+   * (DecorCues.petCompany, DecorCues.petted, DecorCues.clearedAt, DecorCues.kingBlessing).
    */
-  readonly pet: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt'>;
+  readonly pet: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing'>;
 }
 
 /** One thing at its place, with the time it has been moving since (its trigger). */
