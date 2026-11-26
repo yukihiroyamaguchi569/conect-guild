@@ -154,17 +154,20 @@ describe('the pet up from a press', () => {
   it('wags whether it slept or had company, and is as before otherwise', () => {
     const asleep = TRINKETS.petSitMs;
     for (const petCompany of [false, true]) {
-      expect(petLookAt('sleeping-poodle', 0, asleep, { petCompany, petted: true })).toEqual({
+      expect(
+        petLookAt('sleeping-poodle', 0, asleep, { petCompany, petted: true, clearedAt: {} }),
+      ).toEqual({
         name: wagDecorAt(asleep),
         dy: 0,
       });
-      expect(petLookAt('sleeping-poodle', 0, asleep, { petCompany, petted: false })).toEqual(
-        petPoseAt('sleeping-poodle', 0, asleep, petCompany),
-      );
+      expect(
+        petLookAt('sleeping-poodle', 0, asleep, { petCompany, petted: false, clearedAt: {} }),
+      ).toEqual(petPoseAt('sleeping-poodle', 0, asleep, petCompany));
     }
-    expect(petLookAt('sleeping-poodle', 0, asleep, { petCompany: true, petted: false }).name).toBe(
-      PET_AWAKE_DECOR,
-    );
+    expect(
+      petLookAt('sleeping-poodle', 0, asleep, { petCompany: true, petted: false, clearedAt: {} })
+        .name,
+    ).toBe(PET_AWAKE_DECOR);
   });
 
   it('says 「わん」 with the bubble’s tail ending just over its head', () => {

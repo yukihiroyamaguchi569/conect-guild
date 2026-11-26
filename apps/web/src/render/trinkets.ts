@@ -357,16 +357,29 @@ export function petPoseAt(
 }
 
 /**
+ * How far the pet is up, `elapsed` ms after the latest confetti started (DecorCues.clearedAt): a
+ * hop of TRINKETS.hopPx every TRINKETS.hopMs, from the floor (Issue #311). Never above it.
+ */
+export function hopDyAt(elapsed: number): number {
+  // + 0 turns -0 into 0.
+  return -Math.round(TRINKETS.hopPx * Math.abs(Math.sin((Math.PI * elapsed) / TRINKETS.hopMs))) + 0;
+}
+
+/**
  * The pet's pose with `cues`: wagging its tail while it is up from a click (DecorCues.petted,
- * petting.ts), else as petPoseAt.
+ * petting.ts), else up and hopping while confetti flies (DecorCues.clearedAt), else as petPoseAt.
  */
 export function petLookAt(
   asleep: DecorName,
   phaseMs: number,
   now: number,
-  cues: Pick<DecorCues, 'petCompany' | 'petted'>,
+  cues: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt'>,
 ): PetPose {
   if (cues.petted) return { name: wagDecorAt(now), dy: 0 };
+  const starts = Object.values(cues.clearedAt);
+  if (starts.length > 0) {
+    return { name: PET_AWAKE_DECOR, dy: hopDyAt(now - Math.max(...starts)) };
+  }
   return petPoseAt(asleep, phaseMs, now, cues.petCompany);
 }
 

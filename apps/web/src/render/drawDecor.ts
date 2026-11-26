@@ -38,8 +38,11 @@ interface Drawing {
   readonly ctx: CanvasRenderingContext2D;
   readonly art: GuildArt;
   readonly now: number;
-  /** Someone stays by the pet, or it was clicked (DecorCues.petCompany, DecorCues.petted). */
-  readonly pet: Pick<DecorCues, 'petCompany' | 'petted'>;
+  /**
+   * Someone stays by the pet, it was clicked, or confetti flies (DecorCues.petCompany,
+   * DecorCues.petted, DecorCues.clearedAt).
+   */
+  readonly pet: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt'>;
 }
 
 /** One thing at its place, with the time it has been moving since (its trigger). */
@@ -86,7 +89,8 @@ function drawFlame(d: Drawing, thing: Thing): void {
 
 /**
  * The pet breathes, and now and then wakes and sits up (its awake picture, not scaled); it sits up
- * all the while someone stays by it, and wags its tail while it is up from a click.
+ * all the while someone stays by it, hops while confetti flies, and wags its tail while it is up
+ * from a click.
  */
 function drawPet(d: Drawing, thing: Thing): void {
   const { name, dy } = petLookAt(thing.name, thing.phaseMs, d.now, d.pet);

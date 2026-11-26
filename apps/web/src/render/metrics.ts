@@ -237,6 +237,9 @@ export const TRINKETS = {
    */
   pettedMs: 3_000,
   wagMs: 280,
+  /** The pet hops while a quest's confetti flies (Issue #311): up to `hopPx`, one hop every `hopMs`. */
+  hopPx: 3,
+  hopMs: 400,
   /** The light patches drift with the sun (from morning to evening) and sway a little. */
   patchDriftPx: 16,
   patchSwayPx: 2,
