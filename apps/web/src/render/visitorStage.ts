@@ -6,6 +6,7 @@ import type { IdlePoses } from './idle';
 import { DEFAULT_SEATS } from './scenes';
 import type { Point } from './path';
 import {
+  comingInSince,
   cutTrip,
   planTrip,
   replyOf,
@@ -42,6 +43,8 @@ export interface VisitorStage {
   clear(): void;
   /** True while a visitor is in the room (as of the frame drawn last). */
   isVisiting(): boolean;
+  /** When the visitor now coming in set off from the door (comingInSince); null for none. */
+  comingInSince(): number | null;
   /**
    * The visitor was clicked at `t` (Issue #212): a reply over the head for VISITOR.replyMs while it
    * walks, never the reply said just before. Dropped (not kept for later) while halted, while it
@@ -151,6 +154,7 @@ export function createVisitorStage(
       show(null);
     },
     isVisiting: () => trip !== null,
+    comingInSince: () => comingInSince(trip),
     reply(t) {
       // A trip cut short says nothing more (cutTrip); at the seat its own words come first.
       if (halted || !trip?.talk) return false;

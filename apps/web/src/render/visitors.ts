@@ -127,6 +127,15 @@ export function planTrip(
   return { kind: visit.kind, words: wordsOf(visit), seat: member.seat, segments, talk };
 }
 
+/**
+ * When the visitor of `trip` set off from the door (Issue #317): only while the trip still goes to
+ * the seat; null for no trip, and once it turned back (cutTrip).
+ */
+export function comingInSince(trip: Trip | null): number | null {
+  if (!trip?.talk) return null;
+  return trip.segments[0]?.start ?? null;
+}
+
 export function tripEnd(trip: Trip): number {
   return trip.segments.at(-1)?.end ?? Number.NEGATIVE_INFINITY;
 }

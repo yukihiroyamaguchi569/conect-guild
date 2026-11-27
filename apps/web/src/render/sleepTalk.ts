@@ -2,8 +2,8 @@ import type { DecorName } from '../../../../assets/decor/decor';
 import { ANIMATED_DECOR } from './animatedDecor';
 import { PET_DECOR } from './idleSpots';
 import { TRINKETS } from './metrics';
-import { BARK, TOAST_BARK } from './petting';
-import { hashStep, petLookAt, type DecorCues } from './trinkets';
+import { BARK, TOAST_BARK, VISITOR_BARK } from './petting';
+import { hashStep, petLookAt, visitorBarking, type DecorCues } from './trinkets';
 
 /**
  * The pet talks in its sleep (Issue #313, docs/DESIGN.md 8): now and then, while it sleeps, a
@@ -53,11 +53,13 @@ export function toastBarking(now: number, cues: DecorCues): boolean {
 }
 
 /**
- * What the pet of the selected layout says at `now`: 「わん」 while petted, else 「わん！」 as the
- * toast's tankards go up (Issue #315), else its sleep talk.
+ * What the pet of the selected layout says at `now`: 「わん」 while petted, else 「わんわん」 at a
+ * visitor coming in (Issue #317), else 「わん！」 as the toast's tankards go up (Issue #315), else its
+ * sleep talk.
  */
 export function petLineAt(now: number, cues: DecorCues): string | null {
   if (cues.petted) return BARK;
+  if (!cues.halted && visitorBarking(now, cues)) return VISITOR_BARK;
   if (toastBarking(now, cues)) return TOAST_BARK;
   return sleepTalkAt(PET_DECOR, PET_PHASE_MS, now, cues);
 }

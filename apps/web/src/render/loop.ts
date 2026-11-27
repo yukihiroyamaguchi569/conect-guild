@@ -437,7 +437,18 @@ function paintAt(
     t,
     visitorScene(stage.frame.members, cast.crew.poses(), busy),
   );
-  paint(painter, scale, { ...party, ...stage, now: t, month, wall, guests: guestNow, visitor });
+  // The visitor's frame follows the members' (visitorScene): its cue joins theirs only now.
+  const cues = { ...stage.cues, visitorInAt: room.visitors.comingInSince() };
+  paint(painter, scale, {
+    ...party,
+    ...stage,
+    cues,
+    now: t,
+    month,
+    wall,
+    guests: guestNow,
+    visitor,
+  });
   // A call needs no more than the ambient pace: its words and turns change every few hundred ms.
   const ambient = Object.keys(party.moods).length > 0 || ANIMATED_DECOR.length > 0 || calling;
   return {
