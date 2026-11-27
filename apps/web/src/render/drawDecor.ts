@@ -8,7 +8,7 @@ import { drawBubble } from './drawBubble';
 import type { PxRect } from './map';
 import { TILE_SIZE, TRINKETS } from './metrics';
 import type { Box } from './overhead';
-import { BARK, BARK_BUBBLE, barkClear, barkFeet } from './petting';
+import { barkFeet, petBubbleOf, petLineClear } from './petting';
 import {
   activeSince,
   FILE_TOP,
@@ -258,14 +258,16 @@ export function drawAnimatedDecor(
 }
 
 /**
- * The pet's 「わん」 (petting.ts) in a murmur's bubble just over its head in `rect`, when it meets
- * none of `bubbles` (petting.barkClear).
+ * A word of the pet's (`text`: its 「わん」, petting.ts, or its sleep talk, sleepTalk.ts) in a
+ * murmur's bubble just over its head in `rect`, when it meets none of `bubbles`
+ * (petting.petLineClear).
  */
-export function drawPetBark(
+export function drawPetLine(
   ctx: CanvasRenderingContext2D,
   rect: PxRect,
+  text: string,
   bubbles: readonly Box[],
 ): void {
-  if (!barkClear(rect, bubbles)) return;
-  drawBubble(ctx, { text: BARK, color: BARK_COLOR, ...BARK_BUBBLE }, barkFeet(rect), 'right');
+  if (!petLineClear(rect, text, bubbles)) return;
+  drawBubble(ctx, { text, color: BARK_COLOR, ...petBubbleOf(text) }, barkFeet(rect), 'right');
 }

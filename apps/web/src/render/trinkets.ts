@@ -38,6 +38,8 @@ export interface DecorCues {
   readonly petCompany: boolean;
   /** The pet was clicked and is up wagging its tail (petting.ts, Issue #186). */
   readonly petted: boolean;
+  /** The screen is halted: the pet does not talk in its sleep (sleepTalk.ts, Issue #313). */
+  readonly halted: boolean;
 }
 
 export const NO_CUES: DecorCues = {
@@ -46,6 +48,7 @@ export const NO_CUES: DecorCues = {
   clearedAt: {},
   petCompany: false,
   petted: false,
+  halted: false,
 };
 
 /**
@@ -84,8 +87,9 @@ export function decorCuesOf(
     awaitingPresident: moods.yukihiro === 'fidget',
     clearedAt,
     petCompany: members.some((m) => m.withPet),
-    // The render loop knows the presses (cast.stageAt, petting.ts).
+    // The render loop knows the presses and the halt (cast.stageAt, petting.ts).
     petted: false,
+    halted: false,
   };
 }
 
