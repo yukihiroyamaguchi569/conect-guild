@@ -73,6 +73,12 @@ export const DECOR = {
   onigiri: { col: 7, row: 14, w: 1, h: 1 },
   dango: { col: 6, row: 15, w: 1, h: 1 },
   medal: { col: 7, row: 15, w: 1, h: 1 },
+  // The poodle barking, walking and chewing a bone (Issue #316).
+  'bark-poodle': { col: 0, row: 16, w: 1, h: 1 },
+  'walk-poodle-a': { col: 1, row: 16, w: 1, h: 1 },
+  'walk-poodle-b': { col: 2, row: 16, w: 1, h: 1 },
+  'bone-poodle-a': { col: 3, row: 16, w: 1, h: 1 },
+  'bone-poodle-b': { col: 4, row: 16, w: 1, h: 1 },
 } as const;
 
 export type DecorName = keyof typeof DECOR;
