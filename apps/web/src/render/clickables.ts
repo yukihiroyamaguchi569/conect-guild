@@ -2,7 +2,7 @@ import { PRESIDENT_ID } from '@conect-guild/snapshot/settings';
 import { ACTIVE_MEMBER_IDS, MEMBERS, type MemberId, type TilePos } from '../guild.config';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH, type PxRect } from './map';
 import { tileToPoint, type Point } from './path';
-import { PET_RECT } from './petting';
+import { PET_RECT, type PetAt } from './petting';
 import { DEFAULT_SEATS } from './scenes';
 import { thingName, thingsIn, type RoomThing, type Thing } from './examine';
 import { SELECTED_LAYOUT } from './layouts';
@@ -168,8 +168,25 @@ export function withMembers(
   return [...clickables.filter((item) => item.id !== 'thing'), ...members, ...things];
 }
 
+const SELECTED_THINGS = thingsIn(SELECTED_LAYOUT);
+
 /** What can be pressed in the selected layout (clickablesWith). */
-export const CLICKABLES: readonly Clickable[] = clickablesWith(PET_RECT, thingsIn(SELECTED_LAYOUT));
+export const CLICKABLES: readonly Clickable[] = clickablesWith(PET_RECT, SELECTED_THINGS);
+
+/**
+ * What can be pressed in the selected layout with `members` (withMembers) and the pet where it was
+ * drawn (`pet`). Away from its place, walking round (Issue #319), it is drawn behind the members,
+ * and goes behind them: a press on a member by a desk never pets it.
+ */
+export function pressablesWith(
+  pet: PetAt | null,
+  members: readonly Clickable[],
+): readonly Clickable[] {
+  if (pet?.away !== true)
+    return withMembers(clickablesWith(pet?.rect ?? null, SELECTED_THINGS), members);
+  const dog = clickablesWith(pet.rect).filter((item) => item.id === 'dog');
+  return withMembers(clickablesWith(null, SELECTED_THINGS), [...members, ...dog]);
+}
 
 /**
  * The logical point of `offset` (CSS px from the canvas's top left) on a canvas displayed `size`

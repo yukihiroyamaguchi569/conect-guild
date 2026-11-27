@@ -6,6 +6,7 @@ import { SELECTED_LAYOUT } from './layouts';
 import type { GuildLayout } from './layouts/types';
 import { PET_DECOR } from './idleSpots';
 import { CONFETTI, TRINKETS } from './metrics';
+import { petRoutesIn, petStepAt } from './petWalk';
 import type { Point } from './path';
 
 /**
@@ -370,9 +371,11 @@ export interface PetPose {
   readonly name: DecorName;
   /** Added to the picture's top, logical px. */
   readonly dy: number;
+  /** Added to the picture's left, logical px: only while it walks round (Issue #319). */
+  readonly dx?: number;
   /**
-   * Drawn mirrored (DecorArt.drawDecorFlipped): only while it spins, and while it barks where the
-   * door is on its left (barkFlippedIn).
+   * Drawn mirrored (DecorArt.drawDecorFlipped): only while it spins, while it barks where the door
+   * is on its left (barkFlippedIn), and while it walks to the left (Issue #319).
    */
   readonly flipped?: true;
 }
@@ -395,10 +398,34 @@ export function boneDecorAt(now: number): DecorName | null {
   return Math.floor(elapsed / TRINKETS.boneFrameMs) % 2 === 0 ? first : second;
 }
 
+/** Its two pictures walking to the right (Issue #316), the legs one way and the other. */
+export const PET_WALK_DECOR: readonly [DecorName, DecorName] = ['walk-poodle-a', 'walk-poodle-b'];
+
+/** Added to the slot for the hash that picks a walk, so it does not follow the bone's. */
+const WALK_SALT = 0x3b57;
+
+const PET_ROUTES = petRoutesIn(SELECTED_LAYOUT);
+
+/**
+ * The pet walking round the guild at `now` (Issue #319), or null: from the time slots alone
+ * (TRINKETS.petWalkSlotMs, petWalkShare), the slots taking the walks of the layout in turn.
+ */
+export function petWalkAt(now: number): PetPose | null {
+  const slot = Math.floor(now / TRINKETS.petWalkSlotMs);
+  if (hashStep(slot + WALK_SALT) >= TRINKETS.petWalkShare) return null;
+  const route = PET_ROUTES[slot % PET_ROUTES.length];
+  const step = route === undefined ? null : petStepAt(route, now - slot * TRINKETS.petWalkSlotMs);
+  if (step === null) return null;
+  const [first, second] = PET_WALK_DECOR;
+  const pose = { name: step.second ? second : first, dx: step.dx, dy: step.dy };
+  return step.left ? { ...pose, flipped: true } : pose;
+}
+
 /**
  * The pet (`asleep`, its sleeping picture) breathes while it sleeps and sits still while it is up:
- * all the while someone stays by it (`company`, DecorCues.petCompany), else chewing a bone now and
- * then (boneDecorAt), else sitting up now and then on its own.
+ * all the while someone stays by it (`company`, DecorCues.petCompany: a walk stops, and it is back
+ * in its place), else walking round now and then (petWalkAt), else chewing a bone now and then
+ * (boneDecorAt), else sitting up now and then on its own.
  */
 export function petPoseAt(
   asleep: DecorName,
@@ -407,6 +434,8 @@ export function petPoseAt(
   company: boolean,
 ): PetPose {
   if (company) return { name: PET_AWAKE_DECOR, dy: 0 };
+  const walk = petWalkAt(now);
+  if (walk !== null) return walk;
   const bone = boneDecorAt(now);
   if (bone !== null) return { name: bone, dy: 0 };
   if (petAwakeAt(phaseMs, now)) return { name: PET_AWAKE_DECOR, dy: 0 };

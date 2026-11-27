@@ -101,12 +101,14 @@ function drawFlame(d: Drawing, thing: Thing): void {
 /**
  * The pet breathes, and now and then wakes and sits up (its awake picture, not scaled); it sits up
  * all the while someone stays by it, hops while confetti flies, wags its tail while it is up
- * from a click, and spins (some pictures mirrored) after many clicks.
+ * from a click, spins (some pictures mirrored) after many clicks, and now and then walks round
+ * the guild (moved by its dx and dy).
  */
 function drawPet(d: Drawing, thing: Thing): void {
-  const { name, dy, flipped } = petLookAt(thing.name, thing.phaseMs, d.now, d.pet);
-  if (flipped === true) d.art.decor.drawDecorFlipped(d.ctx, name, thing.x, thing.y + dy);
-  else d.art.decor.drawDecor(d.ctx, name, thing.x, thing.y + dy);
+  const { name, dx = 0, dy, flipped } = petLookAt(thing.name, thing.phaseMs, d.now, d.pet);
+  const [x, y] = [thing.x + dx, thing.y + dy];
+  if (flipped === true) d.art.decor.drawDecorFlipped(d.ctx, name, x, y);
+  else d.art.decor.drawDecor(d.ctx, name, x, y);
 }
 
 /** The ink of the pet's 「わん」, as of the members' lines (draw.ts LINE_COLOR). */

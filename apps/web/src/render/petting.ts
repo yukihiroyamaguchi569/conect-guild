@@ -36,6 +36,15 @@ export function petRectIn(layout: GuildLayout): PxRect | null {
 /** Where the pet of the selected layout is drawn (petRectIn); null when it has none. */
 export const PET_RECT: PxRect | null = petRectIn(SELECTED_LAYOUT);
 
+/** Where the pet was drawn (logical px), and whether it was away from its place, walking round (Issue #319). */
+export interface PetAt {
+  readonly rect: PxRect;
+  readonly away: boolean;
+}
+
+/** The pet of the selected layout in its place; null when it has none. */
+export const HOME_PET: PetAt | null = PET_RECT === null ? null : { rect: PET_RECT, away: false };
+
 /** Logical px from the top of the pet's picture down to its head in the wagging pictures. */
 const HEAD_TOP = 5;
 
@@ -159,11 +168,16 @@ export interface Petting {
   spinningSince(now: number, halted: boolean): number | null;
   /** The screen is halted or not (Cast.receive): a halt ends the time up (pettedAfterHalt). */
   setHalted(halted: boolean): void;
+  /** Where the pet was drawn in the frame drawn now (loop.paintAt), for the clicks. */
+  drew(at: PetAt | null): void;
+  /** Where it was drawn last; HOME_PET before the first frame. */
+  drawn(): PetAt | null;
 }
 
 export function createPetting(): Petting {
   let until: number | null = null;
   let spin = NO_SPIN;
+  let drawnAt = HOME_PET;
   return {
     press(moment, t) {
       until = pettedUntil(until, moment, t);
@@ -176,5 +190,9 @@ export function createPetting(): Petting {
       until = pettedAfterHalt(until, halted);
       if (halted) spin = NO_SPIN;
     },
+    drew(at) {
+      drawnAt = at;
+    },
+    drawn: () => drawnAt,
   };
 }

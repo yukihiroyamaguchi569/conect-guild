@@ -17,6 +17,7 @@ import type { StageGuest } from './guests';
 import { createGuestStage, guestControls, type GuestStage } from './guestStage';
 import { SELECTED_LAYOUT } from './layouts';
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH } from './map';
+import { petAt } from './sleepTalk';
 import type { IdleSeeds, IdleSince } from './idle';
 import { freeIn, playEvent, recallHome, type HomeIn } from './idleCrew';
 import type { Levels } from './levelTags';
@@ -439,6 +440,7 @@ function paintAt(
   );
   // The visitor's frame follows the members' (visitorScene): its cue joins theirs only now.
   const cues = { ...stage.cues, visitorInAt: room.visitors.comingInSince() };
+  cast.petting.drew(petAt(t, cues));
   paint(painter, scale, {
     ...party,
     ...stage,
