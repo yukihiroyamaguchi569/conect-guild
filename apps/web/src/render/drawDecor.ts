@@ -40,12 +40,19 @@ interface Drawing {
   readonly now: number;
   /**
    * Someone stays by the pet, it was clicked (and spins), confetti flies, the king's words for a
-   * click show, or the toast goes on (DecorCues.petCompany, DecorCues.petted,
-   * DecorCues.spinningSince, DecorCues.clearedAt, DecorCues.kingBlessing, DecorCues.toasting).
+   * click show, the toast goes on, or a visitor comes in (DecorCues.petCompany, DecorCues.petted,
+   * DecorCues.spinningSince, DecorCues.clearedAt, DecorCues.kingBlessing, DecorCues.toasting,
+   * DecorCues.visitorInAt).
    */
   readonly pet: Pick<
     DecorCues,
-    'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing' | 'toasting' | 'spinningSince'
+    | 'petCompany'
+    | 'petted'
+    | 'clearedAt'
+    | 'kingBlessing'
+    | 'toasting'
+    | 'spinningSince'
+    | 'visitorInAt'
   >;
 }
 

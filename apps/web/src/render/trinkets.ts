@@ -4,6 +4,7 @@ import { DEPARTMENT_MEMBERS, type MemberId } from '../guild.config';
 import { decorPose, type AmbientMoods } from './ambient';
 import { SELECTED_LAYOUT } from './layouts';
 import type { GuildLayout } from './layouts/types';
+import { PET_DECOR } from './idleSpots';
 import { CONFETTI, TRINKETS } from './metrics';
 import type { Point } from './path';
 
@@ -48,6 +49,11 @@ export interface DecorCues {
   readonly toasting: boolean;
   /** When the toast's 「かんぱーい！」 started (toast.toastCueAt); null when none. */
   readonly cheeredAt: number | null;
+  /**
+   * When the visitor now coming in set off from the door (VisitorStage.comingInSince, Issue #317);
+   * null when none is coming in.
+   */
+  readonly visitorInAt: number | null;
 }
 
 export const NO_CUES: DecorCues = {
@@ -61,6 +67,7 @@ export const NO_CUES: DecorCues = {
   kingBlessing: false,
   toasting: false,
   cheeredAt: null,
+  visitorInAt: null,
 };
 
 /**
@@ -107,6 +114,8 @@ export function decorCuesOf(
     // The render loop reads the toast from the director (cast.stageAt, toast.toastCueAt).
     toasting: false,
     cheeredAt: null,
+    // The render loop reads the visitor after the members' frame (loop.paintAt).
+    visitorInAt: null,
   };
 }
 
@@ -361,7 +370,10 @@ export interface PetPose {
   readonly name: DecorName;
   /** Added to the picture's top, logical px. */
   readonly dy: number;
-  /** Drawn mirrored (DecorArt.drawDecorFlipped): only while it spins. */
+  /**
+   * Drawn mirrored (DecorArt.drawDecorFlipped): only while it spins, and while it barks where the
+   * door is on its left (barkFlippedIn).
+   */
   readonly flipped?: true;
 }
 
@@ -410,10 +422,27 @@ export function spinPoseAt(elapsed: number): PetPose {
   return { name: PET_SIDE_DECOR, dy, flipped: true };
 }
 
+/** Its picture barking, facing to the right (Issue #316). */
+export const PET_BARK_DECOR: DecorName = 'bark-poodle';
+
+/** Whether the pet of `layout` barks mirrored, to face the door (GuildLayout.offstage) on its left. */
+export function barkFlippedIn(layout: GuildLayout): boolean {
+  const pet = layout.decor.find((item) => item.name === PET_DECOR);
+  return pet !== undefined && layout.offstage.col < pet.col;
+}
+
+const BARK_FLIPPED = barkFlippedIn(SELECTED_LAYOUT);
+
+/** True while the pet barks at the visitor coming in: TRINKETS.visitorBarkMs from DecorCues.visitorInAt. */
+export function visitorBarking(now: number, cues: Pick<DecorCues, 'visitorInAt'>): boolean {
+  const since = cues.visitorInAt;
+  return since !== null && now >= since && now < since + TRINKETS.visitorBarkMs;
+}
+
 /**
  * The pet's pose with `cues`: spinning after many presses (DecorCues.spinningSince), else wagging
- * its tail while it is up from a click (DecorCues.petted, petting.ts), else up and hopping while
- * confetti flies (DecorCues.clearedAt), else as petPoseAt, up and sitting while the toast goes on
+ * its tail while it is up from a click (DecorCues.petted, petting.ts), else barking towards the door
+ * at a visitor coming in (DecorCues.visitorInAt), else up and hopping while confetti flies (DecorCues.clearedAt), else as petPoseAt, up and sitting while the toast goes on
  * (DecorCues.toasting) or the king's words for a click show (DecorCues.kingBlessing), as with
  * company.
  */
@@ -423,11 +452,22 @@ export function petLookAt(
   now: number,
   cues: Pick<
     DecorCues,
-    'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing' | 'toasting' | 'spinningSince'
+    | 'petCompany'
+    | 'petted'
+    | 'clearedAt'
+    | 'kingBlessing'
+    | 'toasting'
+    | 'spinningSince'
+    | 'visitorInAt'
   >,
 ): PetPose {
   if (cues.spinningSince !== null) return spinPoseAt(now - cues.spinningSince);
   if (cues.petted) return { name: wagDecorAt(now), dy: 0 };
+  if (visitorBarking(now, cues)) {
+    return BARK_FLIPPED
+      ? { name: PET_BARK_DECOR, dy: 0, flipped: true }
+      : { name: PET_BARK_DECOR, dy: 0 };
+  }
   const starts = Object.values(cues.clearedAt);
   if (starts.length > 0) {
     return { name: PET_AWAKE_DECOR, dy: hopDyAt(now - Math.max(...starts)) };

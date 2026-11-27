@@ -22,6 +22,9 @@ export const BARK = 'わん';
 /** What the pet says as the toast's tankards go up (Issue #315). */
 export const TOAST_BARK = 'わん！';
 
+/** What the pet says at a visitor coming in (Issue #317). */
+export const VISITOR_BARK = 'わんわん';
+
 /** Where the pet of `layout` is drawn, logical px; null when the layout has no pet. */
 export function petRectIn(layout: GuildLayout): PxRect | null {
   const pet = layout.decor.find((item) => item.name === PET_DECOR);

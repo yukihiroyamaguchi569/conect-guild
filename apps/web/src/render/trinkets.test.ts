@@ -149,6 +149,7 @@ describe('activeSince', () => {
     kingBlessing: false,
     toasting: false,
     cheeredAt: null,
+    visitorInAt: null,
   };
 
   it('always moves a thing with no trigger', () => {
