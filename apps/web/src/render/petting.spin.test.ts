@@ -5,8 +5,9 @@ import { createPetting, NO_SPIN, spinAfterPress, spinningSince, type Spin } from
 import {
   NO_CUES,
   PET_AWAKE_DECOR,
-  PET_WAG_DECOR,
+  PET_SIDE_DECOR,
   petLookAt,
+  SPIN_TURN_FRAMES,
   spinPoseAt,
   wagDecorAt,
 } from './trinkets';
@@ -34,10 +35,10 @@ describe('counting the presses', () => {
     expect(pressAll(presses(4, 100)).since).toBeNull();
   });
 
-  it('does not spin when the 5th press is the window or more after the 1st', () => {
+  it('spins when the 5th press is the window after the 1st, not 1 ms later', () => {
     const gap = TRINKETS.petSpinWindowMs / 4;
-    expect(pressAll(presses(5, gap)).since).toBeNull();
-    expect(pressAll(presses(5, gap - 1)).since).toBe(T0 + 4 * (gap - 1));
+    expect(pressAll(presses(5, gap)).since).toBe(T0 + TRINKETS.petSpinWindowMs);
+    expect(pressAll([...presses(4, gap), T0 + TRINKETS.petSpinWindowMs + 1]).since).toBeNull();
   });
 
   it('counts the presses within the window only, and keeps no more than it needs', () => {
@@ -110,15 +111,25 @@ describe('the spin', () => {
 
 describe('the spinning pose', () => {
   const frame = TRINKETS.petSpinFrameMs;
-  const [left, right] = PET_WAG_DECOR;
 
-  it('turns round: face, tail, mirrored face, mirrored tail', () => {
+  it('turns round: facing us, side on to the right, side on to the left (mirrored)', () => {
     const at = (i: number) => spinPoseAt(i * frame + 1);
     expect([at(0).name, at(0).flipped]).toEqual([PET_AWAKE_DECOR, undefined]);
-    expect([at(1).name, at(1).flipped]).toEqual([left, undefined]);
-    expect([at(2).name, at(2).flipped]).toEqual([PET_AWAKE_DECOR, true]);
-    expect([at(3).name, at(3).flipped]).toEqual([right, true]);
-    expect(at(4)).toEqual(at(0));
+    expect([at(1).name, at(1).flipped]).toEqual([PET_SIDE_DECOR, undefined]);
+    expect([at(2).name, at(2).flipped]).toEqual([PET_SIDE_DECOR, true]);
+    expect(at(SPIN_TURN_FRAMES)).toEqual(at(0));
+  });
+
+  it('changes picture on the frame boundaries', () => {
+    expect(spinPoseAt(frame - 1).name).toBe(PET_AWAKE_DECOR);
+    expect(spinPoseAt(frame).name).toBe(PET_SIDE_DECOR);
+    expect(spinPoseAt(2 * frame - 1).flipped).toBeUndefined();
+    expect(spinPoseAt(2 * frame).flipped).toBe(true);
+  });
+
+  it('lasts whole turns, so it ends side on to the left and wags facing us', () => {
+    expect(TRINKETS.petSpinMs % (SPIN_TURN_FRAMES * frame)).toBe(0);
+    expect(spinPoseAt(TRINKETS.petSpinMs - 1).flipped).toBe(true);
   });
 
   it('hops a little, never below the floor', () => {
@@ -128,9 +139,17 @@ describe('the spinning pose', () => {
     expect(Math.max(...dys)).toBe(0);
   });
 
-  it('comes before wagging and hopping', () => {
+  it('comes before wagging, hopping, the toast, the king and company', () => {
     const now = T0 + 1_000;
-    const cues = { ...NO_CUES, petted: true, clearedAt: { kaname: T0 }, spinningSince: T0 + 500 };
+    const cues = {
+      ...NO_CUES,
+      petted: true,
+      petCompany: true,
+      kingBlessing: true,
+      toasting: true,
+      clearedAt: { kaname: T0 },
+      spinningSince: T0 + 500,
+    };
     expect(petLookAt('sleeping-poodle', 0, now, cues)).toEqual(spinPoseAt(500));
     expect(petLookAt('sleeping-poodle', 0, now, { ...cues, spinningSince: null })).toEqual({
       name: wagDecorAt(now),

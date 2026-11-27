@@ -388,22 +388,26 @@ export function hopDyAt(elapsed: number): number {
   return -Math.round(TRINKETS.hopPx * Math.abs(Math.sin((Math.PI * elapsed) / TRINKETS.hopMs))) + 0;
 }
 
+/** Its picture side on, walking to the right (Issue #316): mirrored, it faces the left. */
+export const PET_SIDE_DECOR: DecorName = 'walk-poodle-a';
+
+/** The spin turns round through this many pictures (spinPoseAt). */
+export const SPIN_TURN_FRAMES = 3;
+
 /**
- * The pet spinning, `elapsed` ms into its spin (Issue #312): its face, its tail to one side, its
- * face mirrored and its tail to the other side mirrored, TRINKETS.petSpinFrameMs each, with a small
- * hop per turn so it reads as turning round.
+ * The pet spinning, `elapsed` ms into its spin (Issue #312): facing us, side on to the right, and
+ * side on to the left (the right one mirrored), TRINKETS.petSpinFrameMs each, with a small hop per
+ * turn so it reads as turning round. Mirroring the face alone did not read as turning round.
  */
 export function spinPoseAt(elapsed: number): PetPose {
-  const [left, right] = PET_WAG_DECOR;
-  const turnMs = 4 * TRINKETS.petSpinFrameMs;
-  const frame = Math.floor(elapsed / TRINKETS.petSpinFrameMs) % 4;
+  const turnMs = SPIN_TURN_FRAMES * TRINKETS.petSpinFrameMs;
+  const frame = Math.floor(elapsed / TRINKETS.petSpinFrameMs) % SPIN_TURN_FRAMES;
   // + 0 turns -0 into 0.
   const dy =
     -Math.round(TRINKETS.petSpinHopPx * Math.sin((Math.PI * (elapsed % turnMs)) / turnMs)) + 0;
   if (frame === 0) return { name: PET_AWAKE_DECOR, dy };
-  if (frame === 1) return { name: left, dy };
-  if (frame === 2) return { name: PET_AWAKE_DECOR, dy, flipped: true };
-  return { name: right, dy, flipped: true };
+  if (frame === 1) return { name: PET_SIDE_DECOR, dy };
+  return { name: PET_SIDE_DECOR, dy, flipped: true };
 }
 
 /**

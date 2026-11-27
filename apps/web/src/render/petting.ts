@@ -134,7 +134,7 @@ function spinning(since: number | null, now: number): boolean {
  */
 export function spinAfterPress(spin: Spin, moment: PetMoment, t: number): Spin {
   if (!mayPet(moment) || spinning(spin.since, t)) return spin;
-  const presses = [...spin.presses.filter((p) => t - p < TRINKETS.petSpinWindowMs), t].slice(
+  const presses = [...spin.presses.filter((p) => t - p <= TRINKETS.petSpinWindowMs), t].slice(
     -TRINKETS.petSpinPresses,
   );
   if (presses.length < TRINKETS.petSpinPresses) return { presses, since: spin.since };
