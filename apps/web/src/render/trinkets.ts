@@ -38,6 +38,8 @@ export interface DecorCues {
   readonly petCompany: boolean;
   /** The pet was clicked and is up wagging its tail (petting.ts, Issue #186). */
   readonly petted: boolean;
+  /** When the spin going on started (petting.spinningSince, Issue #312); null when none. */
+  readonly spinningSince: number | null;
   /** The screen is halted: the pet does not talk in its sleep (sleepTalk.ts, Issue #313). */
   readonly halted: boolean;
   /** The king's words for a click show (blessing.ts): the pet is up, listening (Issue #314). */
@@ -54,6 +56,7 @@ export const NO_CUES: DecorCues = {
   clearedAt: {},
   petCompany: false,
   petted: false,
+  spinningSince: null,
   halted: false,
   kingBlessing: false,
   toasting: false,
@@ -98,6 +101,7 @@ export function decorCuesOf(
     petCompany: members.some((m) => m.withPet),
     // The render loop knows the presses and the halt (cast.stageAt, petting.ts).
     petted: false,
+    spinningSince: null,
     halted: false,
     kingBlessing: false,
     // The render loop reads the toast from the director (cast.stageAt, toast.toastCueAt).
@@ -357,6 +361,8 @@ export interface PetPose {
   readonly name: DecorName;
   /** Added to the picture's top, logical px. */
   readonly dy: number;
+  /** Drawn mirrored (DecorArt.drawDecorFlipped): only while it spins. */
+  readonly flipped?: true;
 }
 
 /**
@@ -382,18 +388,45 @@ export function hopDyAt(elapsed: number): number {
   return -Math.round(TRINKETS.hopPx * Math.abs(Math.sin((Math.PI * elapsed) / TRINKETS.hopMs))) + 0;
 }
 
+/** Its picture side on, walking to the right (Issue #316): mirrored, it faces the left. */
+export const PET_SIDE_DECOR: DecorName = 'walk-poodle-a';
+
+/** The spin turns round through this many pictures (spinPoseAt). */
+export const SPIN_TURN_FRAMES = 3;
+
 /**
- * The pet's pose with `cues`: wagging its tail while it is up from a click (DecorCues.petted,
- * petting.ts), else up and hopping while confetti flies (DecorCues.clearedAt), else as petPoseAt,
- * up and sitting while the toast goes on (DecorCues.toasting) or the king's words for a click show
- * (DecorCues.kingBlessing), as with company.
+ * The pet spinning, `elapsed` ms into its spin (Issue #312): facing us, side on to the right, and
+ * side on to the left (the right one mirrored), TRINKETS.petSpinFrameMs each, with a small hop per
+ * turn so it reads as turning round. Mirroring the face alone did not read as turning round.
+ */
+export function spinPoseAt(elapsed: number): PetPose {
+  const turnMs = SPIN_TURN_FRAMES * TRINKETS.petSpinFrameMs;
+  const frame = Math.floor(elapsed / TRINKETS.petSpinFrameMs) % SPIN_TURN_FRAMES;
+  // + 0 turns -0 into 0.
+  const dy =
+    -Math.round(TRINKETS.petSpinHopPx * Math.sin((Math.PI * (elapsed % turnMs)) / turnMs)) + 0;
+  if (frame === 0) return { name: PET_AWAKE_DECOR, dy };
+  if (frame === 1) return { name: PET_SIDE_DECOR, dy };
+  return { name: PET_SIDE_DECOR, dy, flipped: true };
+}
+
+/**
+ * The pet's pose with `cues`: spinning after many presses (DecorCues.spinningSince), else wagging
+ * its tail while it is up from a click (DecorCues.petted, petting.ts), else up and hopping while
+ * confetti flies (DecorCues.clearedAt), else as petPoseAt, up and sitting while the toast goes on
+ * (DecorCues.toasting) or the king's words for a click show (DecorCues.kingBlessing), as with
+ * company.
  */
 export function petLookAt(
   asleep: DecorName,
   phaseMs: number,
   now: number,
-  cues: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing' | 'toasting'>,
+  cues: Pick<
+    DecorCues,
+    'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing' | 'toasting' | 'spinningSince'
+  >,
 ): PetPose {
+  if (cues.spinningSince !== null) return spinPoseAt(now - cues.spinningSince);
   if (cues.petted) return { name: wagDecorAt(now), dy: 0 };
   const starts = Object.values(cues.clearedAt);
   if (starts.length > 0) {

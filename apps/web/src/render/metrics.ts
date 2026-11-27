@@ -241,6 +241,16 @@ export const TRINKETS = {
   hopPx: 3,
   hopMs: 400,
   /**
+   * Petted `petSpinPresses` times within `petSpinWindowMs` (Issue #312), the pet spins for `petSpinMs`: a
+   * turn is three pictures of `petSpinFrameMs` each (one ambient frame), with a hop of `petSpinHopPx`
+   * per turn. `petSpinMs` is three whole turns.
+   */
+  petSpinPresses: 5,
+  petSpinWindowMs: 4_000,
+  petSpinFrameMs: 140,
+  petSpinMs: 1_260,
+  petSpinHopPx: 2,
+  /**
    * The pet asleep talks in its sleep now and then (Issue #313): in a share `sleepTalkShare` of the
    * time slots of `sleepTalkSlotMs` (picked by a fixed hash of the slot), for `sleepTalkMs` from the
    * slot's start.

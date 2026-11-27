@@ -144,6 +144,7 @@ describe('activeSince', () => {
     clearedAt: { minori: 300, kaname: 900, sasae: 50 },
     petCompany: false,
     petted: false,
+    spinningSince: null,
     halted: false,
     kingBlessing: false,
     toasting: false,

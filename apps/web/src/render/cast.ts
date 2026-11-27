@@ -217,6 +217,7 @@ export function stageAt(
   const cues = {
     ...decorCuesOf(party.moods, director.bursts, t, view.frame.members),
     petted: cast.petting.isPetted(t, party.halted),
+    spinningSince: cast.petting.spinningSince(t, party.halted),
     halted: party.halted,
     kingBlessing: blessingShown(view.speeches),
     ...toastCueAt(director, t),

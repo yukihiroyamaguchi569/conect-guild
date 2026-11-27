@@ -39,13 +39,13 @@ interface Drawing {
   readonly art: GuildArt;
   readonly now: number;
   /**
-   * Someone stays by the pet, it was clicked, confetti flies, the king's words for a click show, or
-   * the toast goes on (DecorCues.petCompany, DecorCues.petted, DecorCues.clearedAt,
-   * DecorCues.kingBlessing, DecorCues.toasting).
+   * Someone stays by the pet, it was clicked (and spins), confetti flies, the king's words for a
+   * click show, or the toast goes on (DecorCues.petCompany, DecorCues.petted,
+   * DecorCues.spinningSince, DecorCues.clearedAt, DecorCues.kingBlessing, DecorCues.toasting).
    */
   readonly pet: Pick<
     DecorCues,
-    'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing' | 'toasting'
+    'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing' | 'toasting' | 'spinningSince'
   >;
 }
 
@@ -93,12 +93,13 @@ function drawFlame(d: Drawing, thing: Thing): void {
 
 /**
  * The pet breathes, and now and then wakes and sits up (its awake picture, not scaled); it sits up
- * all the while someone stays by it, hops while confetti flies, and wags its tail while it is up
- * from a click.
+ * all the while someone stays by it, hops while confetti flies, wags its tail while it is up
+ * from a click, and spins (some pictures mirrored) after many clicks.
  */
 function drawPet(d: Drawing, thing: Thing): void {
-  const { name, dy } = petLookAt(thing.name, thing.phaseMs, d.now, d.pet);
-  d.art.decor.drawDecor(d.ctx, name, thing.x, thing.y + dy);
+  const { name, dy, flipped } = petLookAt(thing.name, thing.phaseMs, d.now, d.pet);
+  if (flipped === true) d.art.decor.drawDecorFlipped(d.ctx, name, thing.x, thing.y + dy);
+  else d.art.decor.drawDecor(d.ctx, name, thing.x, thing.y + dy);
 }
 
 /** The ink of the pet's 「わん」, as of the members' lines (draw.ts LINE_COLOR). */

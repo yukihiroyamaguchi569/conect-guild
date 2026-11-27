@@ -24,6 +24,21 @@ export function decorDraw(name: DecorName): DecorDraw {
   };
 }
 
+/**
+ * A piece drawn mirrored left to right with its top-left at `x`, `y`: it is drawn at `left`, `top`
+ * after the context is turned by x -> mirrorX - x, which swaps the picture's left and right edges.
+ * Pure.
+ */
+export function flippedDraw(
+  name: DecorName,
+  x: number,
+  y: number,
+): { d: DecorDraw; left: number; top: number; mirrorX: number } {
+  const d = decorDraw(name);
+  const left = Math.round(x);
+  return { d, left, top: Math.round(y), mirrorX: 2 * left + d.w };
+}
+
 export function createDecorArt(sheet: CanvasImageSource): DecorArt {
   return {
     drawDecor(ctx, name, x, y) {
@@ -34,6 +49,14 @@ export function createDecorArt(sheet: CanvasImageSource): DecorArt {
       const d = decorDraw(name);
       const [w, h] = [d.w * scale, d.h * scale];
       ctx.drawImage(sheet, d.sx, d.sy, d.w, d.h, Math.round(x), Math.round(y), w, h);
+    },
+    drawDecorFlipped(ctx, name, x, y) {
+      const { d, left, top, mirrorX } = flippedDraw(name, x, y);
+      ctx.save();
+      ctx.translate(mirrorX, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(sheet, d.sx, d.sy, d.w, d.h, left, top, d.w, d.h);
+      ctx.restore();
     },
   };
 }

@@ -110,26 +110,68 @@ export function pettedAfterHalt(until: number | null, halted: boolean): number |
   return halted ? null : until;
 }
 
-/** The pet's presses through the loop (Cast.pet), keeping until when it is up. */
+/**
+ * The spin (Issue #312): petted TRINKETS.petSpinPresses times within TRINKETS.petSpinWindowMs, the pet
+ * is so happy it spins for TRINKETS.petSpinMs. `presses` are the recent let-through presses counted
+ * toward a spin (at most petSpinPresses, oldest first); `since` is when the spin now going started.
+ */
+export interface Spin {
+  readonly presses: readonly number[];
+  readonly since: number | null;
+}
+
+export const NO_SPIN: Spin = { presses: [], since: null };
+
+/** True while the spin from `since` goes on at `now`. */
+function spinning(since: number | null, now: number): boolean {
+  return since !== null && now >= since && now < since + TRINKETS.petSpinMs;
+}
+
+/**
+ * The spin after a press at `t`. A dropped press changes nothing. A press during a spin neither
+ * restarts it nor counts toward the next one; the presses of a spin start no other one. Otherwise
+ * the press is kept with the others within the window, and the petSpinPresses-th starts a spin.
+ */
+export function spinAfterPress(spin: Spin, moment: PetMoment, t: number): Spin {
+  if (!mayPet(moment) || spinning(spin.since, t)) return spin;
+  const presses = [...spin.presses.filter((p) => t - p <= TRINKETS.petSpinWindowMs), t].slice(
+    -TRINKETS.petSpinPresses,
+  );
+  if (presses.length < TRINKETS.petSpinPresses) return { presses, since: spin.since };
+  return { presses: [], since: t };
+}
+
+/** When the spin going on at `now` started; null when the pet does not spin (or is halted). */
+export function spinningSince(spin: Spin, now: number, halted: boolean): number | null {
+  return !halted && spinning(spin.since, now) ? spin.since : null;
+}
+
+/** The pet's presses through the loop (Cast.pet), keeping until when it is up and its spin. */
 export interface Petting {
   /** A press at `t`: true when the pet is up from it (mayPet). */
   press(moment: PetMoment, t: number): boolean;
   /** True while the pet is up from a press at `now` (isPetted). */
   isPetted(now: number, halted: boolean): boolean;
+  /** When the spin going on at `now` started, or null (spinningSince). */
+  spinningSince(now: number, halted: boolean): number | null;
   /** The screen is halted or not (Cast.receive): a halt ends the time up (pettedAfterHalt). */
   setHalted(halted: boolean): void;
 }
 
 export function createPetting(): Petting {
   let until: number | null = null;
+  let spin = NO_SPIN;
   return {
     press(moment, t) {
       until = pettedUntil(until, moment, t);
+      spin = spinAfterPress(spin, moment, t);
       return mayPet(moment);
     },
     isPetted: (now, halted) => isPetted(until, now, halted),
+    spinningSince: (now, halted) => spinningSince(spin, now, halted),
     setHalted(halted) {
       until = pettedAfterHalt(until, halted);
+      if (halted) spin = NO_SPIN;
     },
   };
 }
