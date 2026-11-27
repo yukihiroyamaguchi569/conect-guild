@@ -40,6 +40,8 @@ export interface DecorCues {
   readonly petted: boolean;
   /** The screen is halted: the pet does not talk in its sleep (sleepTalk.ts, Issue #313). */
   readonly halted: boolean;
+  /** The king's words for a click show (blessing.ts): the pet is up, listening (Issue #314). */
+  readonly kingBlessing: boolean;
 }
 
 export const NO_CUES: DecorCues = {
@@ -49,6 +51,7 @@ export const NO_CUES: DecorCues = {
   petCompany: false,
   petted: false,
   halted: false,
+  kingBlessing: false,
 };
 
 /**
@@ -90,6 +93,7 @@ export function decorCuesOf(
     // The render loop knows the presses and the halt (cast.stageAt, petting.ts).
     petted: false,
     halted: false,
+    kingBlessing: false,
   };
 }
 
@@ -371,20 +375,21 @@ export function hopDyAt(elapsed: number): number {
 
 /**
  * The pet's pose with `cues`: wagging its tail while it is up from a click (DecorCues.petted,
- * petting.ts), else up and hopping while confetti flies (DecorCues.clearedAt), else as petPoseAt.
+ * petting.ts), else up and hopping while confetti flies (DecorCues.clearedAt), else as petPoseAt,
+ * up and sitting while the king's words for a click show (DecorCues.kingBlessing) as with company.
  */
 export function petLookAt(
   asleep: DecorName,
   phaseMs: number,
   now: number,
-  cues: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt'>,
+  cues: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing'>,
 ): PetPose {
   if (cues.petted) return { name: wagDecorAt(now), dy: 0 };
   const starts = Object.values(cues.clearedAt);
   if (starts.length > 0) {
     return { name: PET_AWAKE_DECOR, dy: hopDyAt(now - Math.max(...starts)) };
   }
-  return petPoseAt(asleep, phaseMs, now, cues.petCompany);
+  return petPoseAt(asleep, phaseMs, now, cues.petCompany || cues.kingBlessing);
 }
 
 export interface PatchLook {
