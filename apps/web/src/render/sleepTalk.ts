@@ -2,7 +2,7 @@ import type { DecorName } from '../../../../assets/decor/decor';
 import { ANIMATED_DECOR } from './animatedDecor';
 import { PET_DECOR } from './idleSpots';
 import { TRINKETS } from './metrics';
-import { BARK } from './petting';
+import { BARK, TOAST_BARK } from './petting';
 import { hashStep, petLookAt, type DecorCues } from './trinkets';
 
 /**
@@ -46,8 +46,18 @@ export function sleepTalkAt(
 const PET_PHASE_MS =
   ANIMATED_DECOR.find((thing) => thing.placement.name === PET_DECOR)?.phaseMs ?? 0;
 
-/** What the pet of the selected layout says at `now`: 「わん」 while petted, else its sleep talk. */
+/** True while the pet says 「わん！」 for the toast: TRINKETS.toastBarkMs from 「かんぱーい！」. */
+export function toastBarking(now: number, cues: DecorCues): boolean {
+  const { cheeredAt } = cues;
+  return !cues.halted && cheeredAt !== null && now < cheeredAt + TRINKETS.toastBarkMs;
+}
+
+/**
+ * What the pet of the selected layout says at `now`: 「わん」 while petted, else 「わん！」 as the
+ * toast's tankards go up (Issue #315), else its sleep talk.
+ */
 export function petLineAt(now: number, cues: DecorCues): string | null {
   if (cues.petted) return BARK;
+  if (toastBarking(now, cues)) return TOAST_BARK;
   return sleepTalkAt(PET_DECOR, PET_PHASE_MS, now, cues);
 }

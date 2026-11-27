@@ -19,6 +19,9 @@ import type { Point } from './path';
 /** What the pet says while it is up from a press. */
 export const BARK = 'わん';
 
+/** What the pet says as the toast's tankards go up (Issue #315). */
+export const TOAST_BARK = 'わん！';
+
 /** Where the pet of `layout` is drawn, logical px; null when the layout has no pet. */
 export function petRectIn(layout: GuildLayout): PxRect | null {
   const pet = layout.decor.find((item) => item.name === PET_DECOR);

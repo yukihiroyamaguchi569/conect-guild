@@ -32,6 +32,7 @@ import {
 } from './remarks';
 import { createPetting, type Petting } from './petting';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
+import { toastCueAt } from './toast';
 import { decorCuesOf, type DecorCues } from './trinkets';
 import { cutVisit } from './visit';
 
@@ -218,6 +219,7 @@ export function stageAt(
     petted: cast.petting.isPetted(t, party.halted),
     halted: party.halted,
     kingBlessing: blessingShown(view.speeches),
+    ...toastCueAt(director, t),
   };
   const said = cast.remarksAt(t, view);
   // The answers to clicks (Issue #191) show where the remarks do, under them, and put the murmurs

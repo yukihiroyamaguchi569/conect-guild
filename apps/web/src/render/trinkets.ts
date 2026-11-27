@@ -42,6 +42,10 @@ export interface DecorCues {
   readonly halted: boolean;
   /** The king's words for a click show (blessing.ts): the pet is up, listening (Issue #314). */
   readonly kingBlessing: boolean;
+  /** The Friday toast goes on (toast.toastCueAt): the pet is up (Issue #315). */
+  readonly toasting: boolean;
+  /** When the toast's 「かんぱーい！」 started (toast.toastCueAt); null when none. */
+  readonly cheeredAt: number | null;
 }
 
 export const NO_CUES: DecorCues = {
@@ -52,6 +56,8 @@ export const NO_CUES: DecorCues = {
   petted: false,
   halted: false,
   kingBlessing: false,
+  toasting: false,
+  cheeredAt: null,
 };
 
 /**
@@ -94,6 +100,9 @@ export function decorCuesOf(
     petted: false,
     halted: false,
     kingBlessing: false,
+    // The render loop reads the toast from the director (cast.stageAt, toast.toastCueAt).
+    toasting: false,
+    cheeredAt: null,
   };
 }
 
@@ -376,20 +385,21 @@ export function hopDyAt(elapsed: number): number {
 /**
  * The pet's pose with `cues`: wagging its tail while it is up from a click (DecorCues.petted,
  * petting.ts), else up and hopping while confetti flies (DecorCues.clearedAt), else as petPoseAt,
- * up and sitting while the king's words for a click show (DecorCues.kingBlessing) as with company.
+ * up and sitting while the toast goes on (DecorCues.toasting) or the king's words for a click show
+ * (DecorCues.kingBlessing), as with company.
  */
 export function petLookAt(
   asleep: DecorName,
   phaseMs: number,
   now: number,
-  cues: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing'>,
+  cues: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing' | 'toasting'>,
 ): PetPose {
   if (cues.petted) return { name: wagDecorAt(now), dy: 0 };
   const starts = Object.values(cues.clearedAt);
   if (starts.length > 0) {
     return { name: PET_AWAKE_DECOR, dy: hopDyAt(now - Math.max(...starts)) };
   }
-  return petPoseAt(asleep, phaseMs, now, cues.petCompany || cues.kingBlessing);
+  return petPoseAt(asleep, phaseMs, now, cues.petCompany || cues.kingBlessing || cues.toasting);
 }
 
 export interface PatchLook {

@@ -136,6 +136,27 @@ export function planToast(
   return { tracks, lines };
 }
 
+/** The Friday toast as the pet sees it at `t` (Issue #315). */
+export interface ToastCue {
+  /** Someone of the toast holds a tankard now: on the way there, waiting, raising it or standing. */
+  readonly toasting: boolean;
+  /** When the latest 「かんぱーい！」 at or before `t` started; null when none. */
+  readonly cheeredAt: number | null;
+}
+
+/** The toast in `director` at `t` (ToastCue). Only the toast's tracks carry a tankard. */
+export function toastCueAt(director: Director, t: number): ToastCue {
+  const toasting = director.tracks.some((track) =>
+    track.segments.some(
+      (segment) => segment.held?.prop === 'tankard' && segment.start <= t && t < segment.end,
+    ),
+  );
+  const cheers = director.lines
+    .filter((said) => said.line === TOAST_LINE && said.start <= t)
+    .map((said) => said.start);
+  return { toasting, cheeredAt: cheers.length === 0 ? null : Math.max(...cheers) };
+}
+
 /** The director with the toast: scenes that need its members wait until they are back. */
 export function withToast(director: Director, toast: Toast): Director {
   const busyUntil = { ...director.busyUntil };
