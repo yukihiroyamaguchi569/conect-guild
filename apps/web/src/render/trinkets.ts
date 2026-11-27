@@ -374,9 +374,28 @@ export interface PetPose {
   readonly flipped?: true;
 }
 
+/** Its two pictures chewing a bone (Issue #318), in turn. */
+export const PET_BONE_DECOR: readonly [DecorName, DecorName] = ['bone-poodle-a', 'bone-poodle-b'];
+
+/** Added to the slot for the hash that picks the bone, so it does not follow the sleep talk's. */
+const BONE_SALT = 0x2c9f;
+
+/**
+ * The bone picture at `now`, or null when the pet does not chew: from the time slots alone
+ * (TRINKETS.boneSlotMs, boneShare, boneMs), the pictures changing every TRINKETS.boneFrameMs.
+ */
+export function boneDecorAt(now: number): DecorName | null {
+  const slot = Math.floor(now / TRINKETS.boneSlotMs);
+  const elapsed = now - slot * TRINKETS.boneSlotMs;
+  if (elapsed >= TRINKETS.boneMs || hashStep(slot + BONE_SALT) >= TRINKETS.boneShare) return null;
+  const [first, second] = PET_BONE_DECOR;
+  return Math.floor(elapsed / TRINKETS.boneFrameMs) % 2 === 0 ? first : second;
+}
+
 /**
  * The pet (`asleep`, its sleeping picture) breathes while it sleeps and sits still while it is up:
- * now and then on its own, and all the while someone stays by it (`company`, DecorCues.petCompany).
+ * all the while someone stays by it (`company`, DecorCues.petCompany), else chewing a bone now and
+ * then (boneDecorAt), else sitting up now and then on its own.
  */
 export function petPoseAt(
   asleep: DecorName,
@@ -384,7 +403,10 @@ export function petPoseAt(
   now: number,
   company: boolean,
 ): PetPose {
-  if (company || petAwakeAt(phaseMs, now)) return { name: PET_AWAKE_DECOR, dy: 0 };
+  if (company) return { name: PET_AWAKE_DECOR, dy: 0 };
+  const bone = boneDecorAt(now);
+  if (bone !== null) return { name: bone, dy: 0 };
+  if (petAwakeAt(phaseMs, now)) return { name: PET_AWAKE_DECOR, dy: 0 };
   return { name: asleep, dy: decorPose('breath', phaseMs, now).dy };
 }
 

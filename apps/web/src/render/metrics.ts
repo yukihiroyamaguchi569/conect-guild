@@ -265,6 +265,15 @@ export const TRINKETS = {
    * (Issue #317).
    */
   visitorBarkMs: 3_000,
+  /**
+   * The pet chews a bone now and then (Issue #318): in a share `boneShare` of the time slots of
+   * `boneSlotMs` (picked by a fixed hash of the slot), for `boneMs` from the slot's start, its two
+   * pictures in turn every `boneFrameMs` (four ambient frames).
+   */
+  boneSlotMs: 180_000,
+  boneMs: 20_000,
+  boneShare: 0.25,
+  boneFrameMs: 560,
   /** The light patches drift with the sun (from morning to evening) and sway a little. */
   patchDriftPx: 16,
   patchSwayPx: 2,
