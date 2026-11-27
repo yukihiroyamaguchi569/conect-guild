@@ -370,7 +370,10 @@ export interface PetPose {
   readonly name: DecorName;
   /** Added to the picture's top, logical px. */
   readonly dy: number;
-  /** Drawn mirrored (DecorArt.drawDecorFlipped): only while it spins. */
+  /**
+   * Drawn mirrored (DecorArt.drawDecorFlipped): only while it spins, and while it barks where the
+   * door is on its left (barkFlippedIn).
+   */
   readonly flipped?: true;
 }
 
