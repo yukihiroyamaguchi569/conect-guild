@@ -274,6 +274,14 @@ export const TRINKETS = {
   boneMs: 20_000,
   boneShare: 0.25,
   boneFrameMs: 560,
+  /**
+   * The pet walks round the guild now and then (Issue #319): in a share `petWalkShare` of the time
+   * slots of `petWalkSlotMs` (picked by a fixed hash of the slot), from the slot's start, staying
+   * `petWalkStayMs` at the stop (petWalk.ts).
+   */
+  petWalkSlotMs: 240_000,
+  petWalkShare: 0.2,
+  petWalkStayMs: 1_500,
   /** The light patches drift with the sun (from morning to evening) and sway a little. */
   patchDriftPx: 16,
   patchSwayPx: 2,

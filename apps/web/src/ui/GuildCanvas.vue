@@ -22,6 +22,7 @@ import type { GuildArt } from '../render/art';
 import { bubblesOf } from '../render/bubbles';
 import {
   CLICKABLES,
+  pressablesWith,
   MEMBER_SEAT_CLICKABLES,
   memberClickables,
   pressedAt,
@@ -31,11 +32,11 @@ import {
   toLogical,
   visitorClickables,
   visitorDoorClickables,
-  withMembers,
   type Clickable,
 } from '../render/clickables';
 import { pressLinesOf, type PressLines } from '../render/examine';
 import { monthAt } from '../render/ornament';
+import { HOME_PET } from '../render/petting';
 import { hourFromQuery } from '../render/daylight';
 import { levelsOf } from '../render/levelTags';
 import { kingQuestCountOf } from '../render/murmurs';
@@ -390,7 +391,11 @@ function clickableUnder(event: MouseEvent): Clickable | null {
   const reward = rewardClickables(rewardShownAt(props.reward, wallNow()));
   // The visitor too, drawn in front of the members (Issue #212).
   const front = [...reward, ...visitorClickables(loop?.visitor() ?? null)];
-  const items = withMembers(CLICKABLES, [...front, ...memberClickables(loop?.feet() ?? [])]);
+  // The pet where it was drawn too: it walks round now and then (Issue #319).
+  const items = pressablesWith(loop?.petAt() ?? HOME_PET, [
+    ...front,
+    ...memberClickables(loop?.feet() ?? []),
+  ]);
   return pressedAt(toLogical(offset, box), items);
 }
 

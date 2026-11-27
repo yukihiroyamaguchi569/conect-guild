@@ -2,6 +2,7 @@ import type { MemberId } from '../guild.config';
 import type { Asking } from './asking';
 import type { Cast, CastParty } from './cast';
 import type { Director } from './director';
+import type { PetAt } from './petting';
 import type { Scheduler } from './scheduler';
 
 /** The presses on the canvas (the king, the pet, the members), as the render loop takes them. */
@@ -28,6 +29,8 @@ export interface Presses {
   ask(id: MemberId): boolean;
   /** Where each member was drawn in the last frame (feet; the king too), for the clicks. */
   feet(): ReturnType<Asking['feet']>;
+  /** Where the pet was drawn in the last frame (it walks round: Issue #319), for the clicks. */
+  petAt(): PetAt | null;
 }
 
 /** The stage at a press: the scenes, the party, the stage time and whether drawing is paused. */
@@ -82,5 +85,6 @@ export function presses(
     pet: () => petNow(cast, schedule, now()),
     ask: (id) => askNow(cast, schedule, id, now()),
     feet: () => cast.asking.feet(),
+    petAt: () => cast.petting.drawn(),
   };
 }

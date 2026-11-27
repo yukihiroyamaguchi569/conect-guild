@@ -2,7 +2,7 @@ import type { DecorName } from '../../../../assets/decor/decor';
 import { ANIMATED_DECOR } from './animatedDecor';
 import { PET_DECOR } from './idleSpots';
 import { TRINKETS } from './metrics';
-import { BARK, TOAST_BARK, VISITOR_BARK } from './petting';
+import { BARK, PET_RECT, TOAST_BARK, VISITOR_BARK, type PetAt } from './petting';
 import { hashStep, petLookAt, visitorBarking, type DecorCues } from './trinkets';
 
 /**
@@ -62,4 +62,17 @@ export function petLineAt(now: number, cues: DecorCues): string | null {
   if (!cues.halted && visitorBarking(now, cues)) return VISITOR_BARK;
   if (toastBarking(now, cues)) return TOAST_BARK;
   return sleepTalkAt(PET_DECOR, PET_PHASE_MS, now, cues);
+}
+
+/**
+ * Where the pet of the selected layout is drawn at `now` (PET_RECT, moved as its pose: while it
+ * walks round the guild, Issue #319), for the clicks; null when it has none.
+ */
+export function petAt(now: number, cues: DecorCues): PetAt | null {
+  if (PET_RECT === null) return null;
+  const { dx, dy } = petLookAt(PET_DECOR, PET_PHASE_MS, now, cues);
+  const { left, top, right, bottom } = PET_RECT;
+  const x = dx ?? 0;
+  const rect = { left: left + x, top: top + dy, right: right + x, bottom: bottom + dy };
+  return { rect, away: dx !== undefined };
 }
