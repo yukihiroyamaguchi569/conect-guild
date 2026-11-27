@@ -40,6 +40,14 @@ export interface DecorCues {
   readonly petted: boolean;
   /** When the spin going on started (petting.spinningSince, Issue #312); null when none. */
   readonly spinningSince: number | null;
+  /** The screen is halted: the pet does not talk in its sleep (sleepTalk.ts, Issue #313). */
+  readonly halted: boolean;
+  /** The king's words for a click show (blessing.ts): the pet is up, listening (Issue #314). */
+  readonly kingBlessing: boolean;
+  /** The Friday toast goes on (toast.toastCueAt): the pet is up (Issue #315). */
+  readonly toasting: boolean;
+  /** When the toast's 「かんぱーい！」 started (toast.toastCueAt); null when none. */
+  readonly cheeredAt: number | null;
 }
 
 export const NO_CUES: DecorCues = {
@@ -49,6 +57,10 @@ export const NO_CUES: DecorCues = {
   petCompany: false,
   petted: false,
   spinningSince: null,
+  halted: false,
+  kingBlessing: false,
+  toasting: false,
+  cheeredAt: null,
 };
 
 /**
@@ -87,9 +99,14 @@ export function decorCuesOf(
     awaitingPresident: moods.yukihiro === 'fidget',
     clearedAt,
     petCompany: members.some((m) => m.withPet),
-    // The render loop knows the presses (cast.stageAt, petting.ts).
+    // The render loop knows the presses and the halt (cast.stageAt, petting.ts).
     petted: false,
     spinningSince: null,
+    halted: false,
+    kingBlessing: false,
+    // The render loop reads the toast from the director (cast.stageAt, toast.toastCueAt).
+    toasting: false,
+    cheeredAt: null,
   };
 }
 
@@ -392,13 +409,18 @@ export function spinPoseAt(elapsed: number): PetPose {
 /**
  * The pet's pose with `cues`: spinning after many presses (DecorCues.spinningSince), else wagging
  * its tail while it is up from a click (DecorCues.petted, petting.ts), else up and hopping while
- * confetti flies (DecorCues.clearedAt), else as petPoseAt.
+ * confetti flies (DecorCues.clearedAt), else as petPoseAt, up and sitting while the toast goes on
+ * (DecorCues.toasting) or the king's words for a click show (DecorCues.kingBlessing), as with
+ * company.
  */
 export function petLookAt(
   asleep: DecorName,
   phaseMs: number,
   now: number,
-  cues: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt' | 'spinningSince'>,
+  cues: Pick<
+    DecorCues,
+    'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing' | 'toasting' | 'spinningSince'
+  >,
 ): PetPose {
   if (cues.spinningSince !== null) return spinPoseAt(now - cues.spinningSince);
   if (cues.petted) return { name: wagDecorAt(now), dy: 0 };
@@ -406,7 +428,7 @@ export function petLookAt(
   if (starts.length > 0) {
     return { name: PET_AWAKE_DECOR, dy: hopDyAt(now - Math.max(...starts)) };
   }
-  return petPoseAt(asleep, phaseMs, now, cues.petCompany);
+  return petPoseAt(asleep, phaseMs, now, cues.petCompany || cues.kingBlessing || cues.toasting);
 }
 
 export interface PatchLook {

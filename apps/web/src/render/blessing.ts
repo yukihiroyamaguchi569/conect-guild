@@ -2,6 +2,7 @@ import { PRESIDENT_ID } from '@conect-guild/snapshot/settings';
 import type { Random } from './confetti';
 import type { Director } from './director';
 import type { IdleSince } from './idle';
+import type { Speeches } from './summons';
 
 /**
  * The king's gracious words when he is clicked (Issue #187, docs/DESIGN.md 4.10): one of these over
@@ -35,6 +36,12 @@ export function pickBlessing(last: BlessingLine | null, random: Random): Blessin
   const choices = BLESSINGS.filter((words) => words !== last);
   const index = Math.min(Math.floor(random() * choices.length), choices.length - 1);
   return choices[index] ?? BLESSINGS[0];
+}
+
+/** True while the king's words for a click (BLESSINGS) show over him in `speeches`. */
+export function blessingShown(speeches: Speeches): boolean {
+  const line = speeches[PRESIDENT_ID];
+  return BLESSINGS.some((words) => words === line);
 }
 
 /** True while the king has a part in a scene now or still to come: his tracks, his lines. */

@@ -2,7 +2,7 @@ import type { MemberId } from '../guild.config';
 import { createAmbientSeeds, type AmbientMoods } from './ambient';
 import type { GuildArt } from './art';
 import { createAsking, type Asking } from './asking';
-import { blessingFor, blessMomentOf, type BlessingLine } from './blessing';
+import { blessingFor, blessingShown, blessMomentOf, type BlessingLine } from './blessing';
 import { createCalls, type CallsOptions, type CallView, type Calls } from './calls';
 import type { Random } from './confetti';
 import { frameAt, hushed, isAnimating, type Director, type StageFrame } from './director';
@@ -32,6 +32,7 @@ import {
 } from './remarks';
 import { createPetting, type Petting } from './petting';
 import { DEFAULT_SEATS, type SceneContext } from './scenes';
+import { toastCueAt } from './toast';
 import { decorCuesOf, type DecorCues } from './trinkets';
 import { cutVisit } from './visit';
 
@@ -217,6 +218,9 @@ export function stageAt(
     ...decorCuesOf(party.moods, director.bursts, t, view.frame.members),
     petted: cast.petting.isPetted(t, party.halted),
     spinningSince: cast.petting.spinningSince(t, party.halted),
+    halted: party.halted,
+    kingBlessing: blessingShown(view.speeches),
+    ...toastCueAt(director, t),
   };
   const said = cast.remarksAt(t, view);
   // The answers to clicks (Issue #191) show where the remarks do, under them, and put the murmurs

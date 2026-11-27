@@ -8,7 +8,7 @@ import { drawBubble } from './drawBubble';
 import type { PxRect } from './map';
 import { TILE_SIZE, TRINKETS } from './metrics';
 import type { Box } from './overhead';
-import { BARK, BARK_BUBBLE, barkClear, barkFeet } from './petting';
+import { barkFeet, petBubbleOf, petLineClear } from './petting';
 import {
   activeSince,
   FILE_TOP,
@@ -39,10 +39,14 @@ interface Drawing {
   readonly art: GuildArt;
   readonly now: number;
   /**
-   * Someone stays by the pet, it was clicked (and spins), or confetti flies (DecorCues.petCompany,
-   * DecorCues.petted, DecorCues.spinningSince, DecorCues.clearedAt).
+   * Someone stays by the pet, it was clicked (and spins), confetti flies, the king's words for a
+   * click show, or the toast goes on (DecorCues.petCompany, DecorCues.petted,
+   * DecorCues.spinningSince, DecorCues.clearedAt, DecorCues.kingBlessing, DecorCues.toasting).
    */
-  readonly pet: Pick<DecorCues, 'petCompany' | 'petted' | 'clearedAt' | 'spinningSince'>;
+  readonly pet: Pick<
+    DecorCues,
+    'petCompany' | 'petted' | 'clearedAt' | 'kingBlessing' | 'toasting' | 'spinningSince'
+  >;
 }
 
 /** One thing at its place, with the time it has been moving since (its trigger). */
@@ -259,14 +263,16 @@ export function drawAnimatedDecor(
 }
 
 /**
- * The pet's 「わん」 (petting.ts) in a murmur's bubble just over its head in `rect`, when it meets
- * none of `bubbles` (petting.barkClear).
+ * A word of the pet's (`text`: its 「わん」, petting.ts, or its sleep talk, sleepTalk.ts) in a
+ * murmur's bubble just over its head in `rect`, when it meets none of `bubbles`
+ * (petting.petLineClear).
  */
-export function drawPetBark(
+export function drawPetLine(
   ctx: CanvasRenderingContext2D,
   rect: PxRect,
+  text: string,
   bubbles: readonly Box[],
 ): void {
-  if (!barkClear(rect, bubbles)) return;
-  drawBubble(ctx, { text: BARK, color: BARK_COLOR, ...BARK_BUBBLE }, barkFeet(rect), 'right');
+  if (!petLineClear(rect, text, bubbles)) return;
+  drawBubble(ctx, { text, color: BARK_COLOR, ...petBubbleOf(text) }, barkFeet(rect), 'right');
 }
