@@ -140,9 +140,9 @@ describe('small things sheet (decor.png)', () => {
   const size = pngSize(asset('decor/decor.png'));
   const sheet = pngAlpha(asset('decor/decor.png'));
 
-  it('is 8 x 16 tiles of 32 px and holds every piece', () => {
-    expect(size).toEqual({ width: 8 * DECOR_TILE_SIZE, height: 16 * DECOR_TILE_SIZE });
-    expect(Object.keys(DECOR)).toHaveLength(68);
+  it('is 8 x 17 tiles of 32 px and holds every piece', () => {
+    expect(size).toEqual({ width: 8 * DECOR_TILE_SIZE, height: 17 * DECOR_TILE_SIZE });
+    expect(Object.keys(DECOR)).toHaveLength(73);
     expect(piecesOutside(DECOR, DECOR_TILE_SIZE, size)).toEqual([]);
   });
 
@@ -163,6 +163,18 @@ describe('small things sheet (decor.png)', () => {
       'onigiri',
       'dango',
       'medal',
+    ] as const) {
+      expect(drawnIn(sheet, pieceRect(DECOR[name], DECOR_TILE_SIZE))).toBe(true);
+    }
+  });
+
+  it('has the poodle barking, walking and chewing a bone (Issue #316)', () => {
+    for (const name of [
+      'bark-poodle',
+      'walk-poodle-a',
+      'walk-poodle-b',
+      'bone-poodle-a',
+      'bone-poodle-b',
     ] as const) {
       expect(drawnIn(sheet, pieceRect(DECOR[name], DECOR_TILE_SIZE))).toBe(true);
     }
