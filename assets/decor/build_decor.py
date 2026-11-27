@@ -1,7 +1,9 @@
-"""Normalize the codex-generated decor sheets (decor_raw_a/b/poodle/poodle_wag/month/small.png) into decor.png.
+"""Normalize the codex-generated decor sheets (decor_raw_a/b/poodle/poodle_wag/month/small/poodle_bark/
+poodle_walk/poodle_bone.png) into decor.png.
 
 Usage: python build_decor.py <decor_raw_a.png> <decor_raw_b.png> <decor_raw_poodle.png> <decor_raw_poodle_wag.png>
-       <decor_raw_month.png> <decor_raw_small.png> <decor.png>
+       <decor_raw_month.png> <decor_raw_small.png> <decor_raw_poodle_bark.png> <decor_raw_poodle_walk.png>
+       <decor_raw_poodle_bone.png> <decor.png>
 Ran with Python 3.14.7 and Pillow 12.3.0 (installed in a throwaway venv,
 not a project dependency).
 
@@ -21,6 +23,10 @@ prompt-small.txt) are drawn on 256px cells, each a little off the scale of the o
 scaled to its own FIT_SIZE (about 1/4 of the height the prompt asked for) and placed bottom-center
 in the smallest slot it fits. The tankard at the left of decor_raw_small.png is held, so it goes to
 props.png (build_props.py); its part of the sheet is outside RAW's window here and ignored.
+The poodle barking, walking and chewing a bone (decor_raw_poodle_bark/walk/bone.png, prompt-poodle-bark/
+walk/bone.txt, Issue #316) are drawn at awake-poodle's scale and shrunk by SCALE like it. Each is cut at
+its whole region (CROP_TO_REGION), the same window of its 128px cell in both frames of a pair, so the
+two frames line up when shown in turn.
 Keep LAYOUT in sync with decor.ts (checked before building).
 """
 
@@ -36,7 +42,7 @@ from PIL import Image, ImageChops, ImageFilter
 TILE = 32
 SCALE = TILE / 128
 SHEET_COLS = 8
-SHEET_ROWS = 16
+SHEET_ROWS = 17
 # Pieces scaled to this height in px instead of by SCALE, centred on the head: the middle of the
 # opaque run HEAD_ROW of the way down the piece (the wagging poodle's two frames, as tall as
 # awake-poodle).
@@ -45,6 +51,9 @@ HEAD_ROW = 0.3
 # Pieces cut at their region's edge instead of failing when they reach past it: tsukimi as it was
 # cut when the drawings were approved (the tip of the pampas grass right of x 265 left out).
 CLIP_TO_REGION = {"tsukimi"}
+# Pieces cut at their whole region instead of their drawn bbox (the region is the same window of the
+# cell in both frames of a pair, so the frames keep their place in the cell): the poodle of Issue #316.
+CROP_TO_REGION = {"bark-poodle", "walk-poodle-a", "walk-poodle-b", "bone-poodle-a", "bone-poodle-b"}
 # Pieces scaled so one side (h = height, w = width) is this many px instead of by SCALE: the month
 # decorations (Issue #192) and the rewards (Issue #194), at the sizes chosen when they were drawn.
 FIT_SIZE = {
@@ -72,6 +81,9 @@ MIN_PX = 40
 # a dark blend with the magenta key become the outline colour.
 SPILL_REACH = 3
 OUTLINE = (44, 26, 20)
+# Sheets whose outline also carries lighter magenta blends than is_spill catches (pink dots left on
+# the edge): there any magenta tint (is_tint) within SPILL_REACH of the key becomes OUTLINE too.
+TINTED = {"poodle_bark", "poodle_walk", "poodle_bone"}
 
 # The search regions below are measured on these exact files; refuse others.
 # After regenerating a raw sheet, re-measure its regions and update the hash.
@@ -84,6 +96,9 @@ RAW = {
     "poodle_wag": ((1024, 512), "3b981b93a6db79a4d4bba3fa67e5b0530700ca299bde3766a7a07a9f6e1a4f4d", None),
     "month": ((1024, 768), "70cf30b4afb7b2021113e7c19bb85ec357c2f0689f010342e0f9a5aa047df678", None),
     "small": ((1024, 256), "ff71645d8e9c4e7f333cd9938a6a6ec235fbaff6bb4565e42be501048c5f96ae", (325, 0, 1024, 256)),
+    "poodle_bark": ((1024, 512), "e3369a8b21a7d36e92a43d58865968b3a730585dd80ba27feabe502dd0ba4a3a", None),
+    "poodle_walk": ((1024, 512), "b05b236c7b50095d9484eaab7b8979cfd23884b3a511a7231057ea6ba5169b0c", None),
+    "poodle_bone": ((1024, 512), "e1513b8930ff9c9849b87227a610d43856342cf833f784b28d8f59a82e66a4ad", None),
 }
 
 # name: (raw sheet, search region (left, top, right, bottom) in raw pixels,
@@ -160,6 +175,13 @@ LAYOUT = {
     "onigiri": ("small", (325, 0, 512, 256), 7, 14, 1, 1),
     "dango": ("small", (512, 0, 735, 256), 6, 15, 1, 1),
     "medal": ("small", (735, 0, 1024, 256), 7, 15, 1, 1),
+    # The poodle barking toward the door, walking sideways and chewing a bone (Issue #316). Each
+    # region is the bbox of the drawing (for a pair, of both frames, in its own cell).
+    "bark-poodle": ("poodle_bark", (272, 264, 372, 376), 0, 16, 1, 1),
+    "walk-poodle-a": ("poodle_walk", (268, 281, 372, 378), 1, 16, 1, 1),
+    "walk-poodle-b": ("poodle_walk", (652, 281, 756, 378), 2, 16, 1, 1),
+    "bone-poodle-a": ("poodle_bone", (269, 288, 378, 376), 3, 16, 1, 1),
+    "bone-poodle-b": ("poodle_bone", (653, 288, 762, 376), 4, 16, 1, 1),
 }
 
 
@@ -173,9 +195,16 @@ def is_spill(px):
     return r - g > 40 and b - g > 40 and abs(r - b) < 80
 
 
-def keyed(img):
+def is_tint(px):
+    r, g, b = px[:3]
+    return r - g >= 20 and b - g >= 20
+
+
+def keyed(img, tinted=False):
     """RGBA copy: the chroma key becomes transparent, and dark magenta blends
-    on the outline (within SPILL_REACH of the key) become OUTLINE."""
+    on the outline (within SPILL_REACH of the key) become OUTLINE (any magenta
+    tint there, when tinted)."""
+    spill = (lambda p: is_spill(p) or is_tint(p)) if tinted else is_spill
     rgb = img.convert("RGB")
     key = Image.new("L", rgb.size)
     key.putdata([255 if is_key(p) else 0 for p in rgb.get_flattened_data()])
@@ -185,7 +214,7 @@ def keyed(img):
     for p, k, n in zip(rgb.get_flattened_data(), key.get_flattened_data(), near.get_flattened_data()):
         if k:
             out.append((0, 0, 0, 0))
-        elif n and is_spill(p):
+        elif n and spill(p):
             out.append((*OUTLINE, 255))
         else:
             out.append((p[0], p[1], p[2], 255))
@@ -268,6 +297,8 @@ def find_pieces(sheet_id, img):
             bbox = (max(bbox[0], region[0]), max(bbox[1], region[1]), min(bbox[2], region[2]), min(bbox[3], region[3]))
         elif not (region[0] <= bbox[0] and region[1] <= bbox[1] and bbox[2] <= region[2] and bbox[3] <= region[3]):
             raise SystemExit(f"{name}: drawn pixels {bbox} reach outside its region {region}")
+        elif name in CROP_TO_REGION:
+            bbox = region
         mask = Image.new("L", img.size)
         wanted = set(mine)
         mask.putdata([255 if label in wanted else 0 for label in labels])
@@ -379,7 +410,7 @@ def load_raw(sheet_id, path):
     img = Image.open(path)
     if img.size != size:
         raise SystemExit(f"expected a {size} raw sheet {sheet_id}, got {img.size}")
-    img = keyed(img)
+    img = keyed(img, sheet_id in TINTED)
     if window is None:
         return img
     read = Image.new("RGBA", size, (0, 0, 0, 0))
@@ -391,8 +422,9 @@ def same_file(a, b):
     return os.path.realpath(a) == os.path.realpath(b) or (os.path.exists(b) and os.path.samefile(a, b))
 
 
-def main(src_a, src_b, src_poodle, src_wag, src_month, src_small, dst):
-    if any(same_file(src, dst) for src in (src_a, src_b, src_poodle, src_wag, src_month, src_small)):
+def main(src_a, src_b, src_poodle, src_wag, src_month, src_small, src_bark, src_walk, src_bone, dst):
+    sources = (src_a, src_b, src_poodle, src_wag, src_month, src_small, src_bark, src_walk, src_bone)
+    if any(same_file(src, dst) for src in sources):
         raise SystemExit("output path must differ from the source images")
     check_slots()
     check_decor_ts()
@@ -403,6 +435,9 @@ def main(src_a, src_b, src_poodle, src_wag, src_month, src_small, dst):
         "poodle_wag": load_raw("poodle_wag", src_wag),
         "month": load_raw("month", src_month),
         "small": load_raw("small", src_small),
+        "poodle_bark": load_raw("poodle_bark", src_bark),
+        "poodle_walk": load_raw("poodle_walk", src_walk),
+        "poodle_bone": load_raw("poodle_bone", src_bone),
     }
     sheet = Image.new("RGBA", (SHEET_COLS * TILE, SHEET_ROWS * TILE), (0, 0, 0, 0))
     placed = set()
@@ -418,9 +453,10 @@ def main(src_a, src_b, src_poodle, src_wag, src_month, src_small, dst):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 8:
+    if len(sys.argv) != 11:
         raise SystemExit(
             "usage: python build_decor.py <decor_raw_a.png> <decor_raw_b.png> <decor_raw_poodle.png>"
-            " <decor_raw_poodle_wag.png> <decor_raw_month.png> <decor_raw_small.png> <decor.png>"
+            " <decor_raw_poodle_wag.png> <decor_raw_month.png> <decor_raw_small.png> <decor_raw_poodle_bark.png>"
+            " <decor_raw_poodle_walk.png> <decor_raw_poodle_bone.png> <decor.png>"
         )
-    main(*sys.argv[1:8])
+    main(*sys.argv[1:11])
