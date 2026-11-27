@@ -144,6 +144,10 @@ describe('activeSince', () => {
     clearedAt: { minori: 300, kaname: 900, sasae: 50 },
     petCompany: false,
     petted: false,
+    halted: false,
+    kingBlessing: false,
+    toasting: false,
+    cheeredAt: null,
   };
 
   it('always moves a thing with no trigger', () => {

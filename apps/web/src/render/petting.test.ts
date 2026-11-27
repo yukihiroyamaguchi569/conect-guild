@@ -16,7 +16,14 @@ import {
   pettedUntil,
 } from './petting';
 import { bubbleBox } from './overhead';
-import { PET_AWAKE_DECOR, PET_WAG_DECOR, petLookAt, petPoseAt, wagDecorAt } from './trinkets';
+import {
+  NO_CUES,
+  PET_AWAKE_DECOR,
+  PET_WAG_DECOR,
+  petLookAt,
+  petPoseAt,
+  wagDecorAt,
+} from './trinkets';
 
 /** The pet clicked (Issue #186): where it is pressed, how long it is up, and what it shows. */
 
@@ -153,21 +160,15 @@ describe('the pet up from a press', () => {
 
   it('wags whether it slept or had company, and is as before otherwise', () => {
     const asleep = TRINKETS.petSitMs;
+    const look = (cues: { petCompany: boolean; petted: boolean }) =>
+      petLookAt('sleeping-poodle', 0, asleep, { ...NO_CUES, ...cues });
     for (const petCompany of [false, true]) {
-      expect(
-        petLookAt('sleeping-poodle', 0, asleep, { petCompany, petted: true, clearedAt: {} }),
-      ).toEqual({
-        name: wagDecorAt(asleep),
-        dy: 0,
-      });
-      expect(
-        petLookAt('sleeping-poodle', 0, asleep, { petCompany, petted: false, clearedAt: {} }),
-      ).toEqual(petPoseAt('sleeping-poodle', 0, asleep, petCompany));
+      expect(look({ petCompany, petted: true })).toEqual({ name: wagDecorAt(asleep), dy: 0 });
+      expect(look({ petCompany, petted: false })).toEqual(
+        petPoseAt('sleeping-poodle', 0, asleep, petCompany),
+      );
     }
-    expect(
-      petLookAt('sleeping-poodle', 0, asleep, { petCompany: true, petted: false, clearedAt: {} })
-        .name,
-    ).toBe(PET_AWAKE_DECOR);
+    expect(look({ petCompany: true, petted: false }).name).toBe(PET_AWAKE_DECOR);
   });
 
   it('says 「わん」 with the bubble’s tail ending just over its head', () => {

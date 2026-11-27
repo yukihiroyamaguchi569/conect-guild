@@ -9,7 +9,7 @@ import {
   drawStatic,
   type CachedFrontLayer,
 } from './draw';
-import { drawAnimatedDecor, drawPetBark } from './drawDecor';
+import { drawAnimatedDecor, drawPetLine } from './drawDecor';
 import { drawLightPatches, drawShade, drawWindowSun, type ShadeScratch } from './drawDaylight';
 import { drawGuestBodies, drawGuestOverheads } from './drawGuests';
 import { drawVisitorBody, drawVisitorWords } from './drawVisitor';
@@ -33,6 +33,7 @@ import {
   type Placed,
 } from './overheadPlace';
 import { PET_RECT } from './petting';
+import { petLineAt } from './sleepTalk';
 import { DEFAULT_SEATS } from './scenes';
 import { decorPoint } from './decorPoint';
 import { SELECTED_LAYOUT } from './layouts';
@@ -144,7 +145,10 @@ export function paint(painter: Painter, scale: number, moment: Moment): void {
   drawGuestOverheads(ctx, moment.guests);
   drawVisitorWords(ctx, moment.visitor, tags);
   const placed = painter.placer.place({ ...moment, tags });
-  if (moment.cues.petted && PET_RECT !== null) drawPetBark(ctx, PET_RECT, bubbleBoxes(placed));
+  const petLine = petLineAt(moment.now, moment.cues);
+  if (petLine !== null && PET_RECT !== null) {
+    drawPetLine(ctx, PET_RECT, petLine, bubbleBoxes(placed));
+  }
   drawOverhead(ctx, { placed, confetti: moment.frame.confetti });
   drawLevelUpBanners(ctx, { placed, confetti: moment.frame.confetti });
 }

@@ -240,6 +240,16 @@ export const TRINKETS = {
   /** The pet hops while a quest's confetti flies (Issue #311): up to `hopPx`, one hop every `hopMs`. */
   hopPx: 3,
   hopMs: 400,
+  /**
+   * The pet asleep talks in its sleep now and then (Issue #313): in a share `sleepTalkShare` of the
+   * time slots of `sleepTalkSlotMs` (picked by a fixed hash of the slot), for `sleepTalkMs` from the
+   * slot's start.
+   */
+  sleepTalkSlotMs: 40_000,
+  sleepTalkMs: 2_500,
+  sleepTalkShare: 0.5,
+  /** The pet says 「わん！」 for `toastBarkMs` from the toast's 「かんぱーい！」 (Issue #315). */
+  toastBarkMs: 2_000,
   /** The light patches drift with the sun (from morning to evening) and sway a little. */
   patchDriftPx: 16,
   patchSwayPx: 2,
